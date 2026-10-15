@@ -1,13 +1,9 @@
-# Contribuir para o Piano Livre
+# Contribuindo para o Piano Livre
 
-Bem-vindo! Este projeto pretende permitir estudo musical de forma acessível e aberta.
+Este é o repositório principal de desenvolvimento. Faça fork/branch e pull request; a `main` deve ser protegida pelo administrador contra alterações diretas não verificadas.
 
-- Consulte as issues existentes antes de propor alterações grandes.
-- Use um fork e abra um pull request; não há acesso de gravação automático à branch `main`.
-- Inclua testes, documentação e descrição das alterações, preservando a compatibilidade com Android, MusicXML, MIDI e modos de aprendizagem.
-- **Não anexe partituras, gravações, fontes ou imagens sem licença de redistribuição confirmada.** Composições clássicas podem ter arranjos ainda protegidos.
-- Não inclua chaves de assinatura, tokens, dados de usuários, backups privados ou logs sensíveis.
-- Pull requests de terceiros são executados apenas em runners padrão efêmeros; não execute em runner próprio pessoal.
-- Ao contribuir com código para incorporação, concorde com a distribuição da contribuição sob GPL-3.0-only; preserve avisos de copyright legítimos.
+Leia `AGENTS.md` e `docs/00-INDICE.md` e descreva objetivo, alterações, testes, limitações e riscos. Preserve compatibilidade Android, importação MusicXML, MIDI e regras pedagógicas. Ao alterar o APK, atualize a versão em `gradle.properties`.
 
-O mantenedor decide o que é incorporado na versão oficial.
+Não envie credenciais, arquivos de assinatura, dados pessoais, backups reais, partituras sem redistribuição comprovada ou recursos proprietários de terceiros. Todos os MXL distribuídos precisam constar no manifesto de direitos. A GPL do código não cobre automaticamente composições externas.
+
+Rode o validador público e os testes automatizados; contribuições não podem depender de runner pessoal, repositório privado ou downloads restritos. O mantenedor analisa PRs e decide sua integração. Código novo próprio precisa poder ser distribuído sob GPL-3.0-only.
