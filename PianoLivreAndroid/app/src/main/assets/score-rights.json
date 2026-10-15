@@ -1,0 +1,89 @@
+[
+  {
+    "file": "ode-to-joy-ludwig-van-beethoven.mxl",
+    "name": "Ode à Alegria",
+    "composer": "Ludwig van Beethoven",
+    "composition_basis": "historical-public-domain-Brazil",
+    "notation_basis": "personally-transcribed-or-arranged-by-ear-as-declared-by-owner",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted",
+    "review_note": "compositional public-domain assessment is not a warranty about all countries or third-party arrangements"
+  },
+  {
+    "file": "fur-elise-easy-ver.mxl",
+    "name": "Für Elise — Easy",
+    "composer": "Ludwig van Beethoven",
+    "composition_basis": "historical-public-domain-Brazil",
+    "notation_basis": "personally-transcribed-or-arranged-by-ear-as-declared-by-owner",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted",
+    "review_note": "compositional public-domain assessment is not a warranty about all countries or third-party arrangements"
+  },
+  {
+    "file": "lago-dos-cisnes.mxl",
+    "name": "Lago dos Cisnes",
+    "composer": "Piotr Ilitch Tchaikovsky",
+    "composition_basis": "historical-public-domain-Brazil",
+    "notation_basis": "personally-transcribed-or-arranged-by-ear-as-declared-by-owner",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted",
+    "review_note": "compositional public-domain assessment is not a warranty about all countries or third-party arrangements"
+  },
+  {
+    "file": "canon-in-d.mxl",
+    "name": "Canon em Ré",
+    "composer": "Johann Pachelbel",
+    "composition_basis": "historical-public-domain-Brazil",
+    "notation_basis": "personally-transcribed-or-arranged-by-ear-as-declared-by-owner",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted",
+    "review_note": "compositional public-domain assessment is not a warranty about all countries or third-party arrangements"
+  },
+  {
+    "file": "minuet-in-g-major-christian-petzold.mxl",
+    "name": "Minueto em Sol maior",
+    "composer": "Christian Petzold (atribuição histórica)",
+    "composition_basis": "historical-public-domain-Brazil",
+    "notation_basis": "personally-transcribed-or-arranged-by-ear-as-declared-by-owner",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted",
+    "review_note": "compositional public-domain assessment is not a warranty about all countries or third-party arrangements"
+  },
+  {
+    "file": "minuet-in-g-minor-bwv-anh-115-christian-petzold.mxl",
+    "name": "Minueto em Sol menor",
+    "composer": "Autor histórico atribuído ao período barroco",
+    "composition_basis": "historical-public-domain-Brazil",
+    "notation_basis": "personally-transcribed-or-arranged-by-ear-as-declared-by-owner",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted",
+    "review_note": "compositional public-domain assessment is not a warranty about all countries or third-party arrangements"
+  },
+  {
+    "file": "gymnopedie-no-1-satie.mxl",
+    "name": "Gymnopédie nº 1",
+    "composer": "Erik Satie",
+    "composition_basis": "historical-public-domain-Brazil",
+    "notation_basis": "personally-transcribed-or-arranged-by-ear-as-declared-by-owner",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted",
+    "review_note": "compositional public-domain assessment is not a warranty about all countries or third-party arrangements"
+  },
+  {
+    "file": "estudo-livre-01.mxl",
+    "name": "Estudo livre 01",
+    "composer": "Piano Livre - generated exercise",
+    "composition_basis": "original-generated-exercise",
+    "notation_basis": "Piano Livre generator",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted"
+  },
+  {
+    "file": "estudo-livre-02.mxl",
+    "name": "Estudo livre 02",
+    "composer": "Piano Livre - generated exercise",
+    "composition_basis": "original-generated-exercise",
+    "notation_basis": "Piano Livre generator",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted"
+  },
+  {
+    "file": "estudo-livre-03.mxl",
+    "name": "Estudo livre 03",
+    "composer": "Piano Livre - generated exercise",
+    "composition_basis": "original-generated-exercise",
+    "notation_basis": "Piano Livre generator",
+    "distribution_scope": "in-official-Piano-Livre-project-and-APK; no-independent-score-license-asserted"
+  }
+]
