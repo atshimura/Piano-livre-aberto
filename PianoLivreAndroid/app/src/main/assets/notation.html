@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<style>
+ html,body{margin:0;padding:0;background:white;color:#19334b;width:100%;height:100%;overflow:hidden}
+ #viewport{width:100%;height:100%;overflow:auto;scroll-behavior:smooth;overscroll-behavior:contain}
+ #score{width:153.846%;min-height:100%;box-sizing:border-box;padding:4px 16px 16px;transform:scale(0.65);transform-origin:top left}
+ #loading{position:absolute;left:20px;top:24px;font:14px system-ui;color:#59728b;background:#fff;padding:10px;z-index:20}
+ #score svg {overflow:visible}
+ body.continuous #viewport{overflow:hidden}
+ body.continuous #score{width:100%;height:100%;min-height:0;transform:none;padding:0;overflow:hidden}
+ body.free #viewport{overflow:auto;scroll-behavior:auto}
+ body.free #score{width:153.846%;min-height:100%;transform:scale(0.65);transform-origin:top left}
+</style>
+<script src="osmd/opensheetmusicdisplay.min.js"></script>
+<script src="temporal-notation.js"></script></head>
+<body><div id="viewport"><div id="score"></div></div><div id="loading">Preparando partitura...</div>
+<script>
+(function(){
+ 'use strict';
+ let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false;
+ let generation=0,renderTimer=null;
+ const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
+ function inform(s){message.textContent=s;message.style.display='block';}
+ function atBeat(beat,smooth){
+  if(freeLayout)return;
+  if(!loaded || !osmd || !osmd.cursor) {seekBeat=beat;return;}
+  const cursor=osmd.cursor;
+  if(!Number.isFinite(beat)||beat<0)return;
+  if(appliedBeat>=0&&Math.abs(appliedBeat-beat)<0.012)return;
+  // MusicXML quarter note = 0.25 of an OSMD whole note.
+  const target=beat/4.0-0.000025;
+  try{
+   // Apply the transition before moving the OSMD cursor. Otherwise its
+   // first update jumps instantly even when sheet scrolling is smooth.
+   const el=cursor.cursorElement;
+   if(el)el.style.transition=smooth
+      ?'left 420ms ease-in-out, top 420ms ease-in-out'
+      :'none';
+   if(appliedBeat>beat+0.002){cursor.reset();}
+   let count=0;
+   while(!cursor.iterator.endReached && cursor.iterator.currentTimeStamp.RealValue < target && count++<12000){
+    cursor.next();
+   }
+   cursor.show();
+   if(el){
+    const b=el.getBoundingClientRect();
+    const p=viewport.getBoundingClientRect();
+    const desiredY=p.top+p.height*.38;
+    const desiredX=p.left+p.width*.35;
+    const top=viewport.scrollTop+b.top-desiredY;
+    const left=viewport.scrollLeft+b.left-desiredX;
+    const maxTop=Math.max(0,viewport.scrollHeight-viewport.clientHeight);
+    const maxLeft=Math.max(0,viewport.scrollWidth-viewport.clientWidth);
+    console.log('SCORE_SEEK',beat,'cursor=',Math.round(b.left),Math.round(b.top),
+      'viewport=',Math.round(viewport.scrollTop),'max=',Math.round(maxTop));
+    // A zero-beat starting cursor should not scroll the original score away.
+    if(beat>0.01||viewport.scrollTop>0||viewport.scrollLeft>0){
+      viewport.scrollTo({top:Math.min(maxTop,Math.max(0,top)),
+       left:Math.min(maxLeft,Math.max(0,left)),behavior:smooth?'smooth':'auto'});
+    }
+   }
+   appliedBeat=beat;
+  }catch(e){ if(window.AndroidNotation)AndroidNotation.onError('Navegação: '+e.message); }
+ }
+ function render(xml,start,layout){
+  const ticket=++generation;
+  loaded=false;appliedBeat=-1;seekBeat=start||0;
+  freeLayout=(layout==='free');
+  document.body.className=freeLayout?'free':'continuous';
+  // Native pinch zoom remains available in traditional reading mode only.
+  document.querySelector('meta[name="viewport"]').setAttribute('content',
+    freeLayout?'width=device-width,initial-scale=1,minimum-scale=0.5,maximum-scale=3,user-scalable=yes'
+              :'width=device-width,initial-scale=1,user-scalable=no');
+  inform('Diagramando a partitura...');
+  document.getElementById('score').innerHTML='';
+  viewport.scrollTo({top:0,left:0,behavior:'auto'});
+  if(freeLayout&&window.TemporalNotation)TemporalNotation.teardown();
+  if(!freeLayout){
+   try{
+    const timePlan=TemporalNotation.render(xml,document.getElementById('score'),viewport,seekBeat);
+    loaded=true;message.style.display='none';
+    console.log('TEMPORAL_RENDER_SUCCESS',timePlan.plan.notes.length);
+    if(window.AndroidNotation)AndroidNotation.onRendered();
+   }catch(error){
+    inform('Partitura temporal indisponível: '+error.message);
+    if(window.AndroidNotation)AndroidNotation.onError(error.message);
+   }
+   return;
+  }
+  try{
+   if(!window.opensheetmusicdisplay){throw new Error('Motor musical indisponível');}
+   osmd=new opensheetmusicdisplay.OpenSheetMusicDisplay('score',{
+    backend:'svg',
+    autoResize:false,
+    drawTitle:false,
+    drawComposer:false,
+    drawPartNames:false,
+    drawingParameters:'compacttight',
+    renderSingleHorizontalStaffline:!freeLayout,
+    newSystemFromXML:freeLayout, // preserve source print system breaks when present
+    disableCursor:freeLayout,
+    cursorsOptions:[{type:1,color:'#008b78',alpha:0.8,follow:false}]
+   });
+   Promise.resolve(osmd.load(xml)).then(function(){
+    if(ticket!==generation)return;
+    // Keep OSMD at its default internal zoom; apply a CSS transform to the entire grand staff.
+    osmd.render();
+    if(ticket!==generation)return;
+    const svg=document.querySelector('#score svg');
+    if(!freeLayout&&svg){
+     const groups=Array.from(svg.querySelectorAll('g')).slice(0,44);
+     console.log('TEMPORAL_PROBE_GROUPS',JSON.stringify(groups.map(g=>({
+      cls:g.getAttribute('class'),id:g.id,transform:g.getAttribute('transform'),
+      bbox:(()=>{try{const b=g.getBBox();return [Math.round(b.x),Math.round(b.y),Math.round(b.width),Math.round(b.height)];}catch(e){return null;}})(),
+      xml:g.outerHTML.slice(0,150)
+     }))));
+     const notes=osmd.graphic.measureList.slice(0,2).map((measures,i)=>measures.map((m,j)=>({
+      measure:i,staff:j,sourceStart:m.parentSourceMeasure&&m.parentSourceMeasure.AbsoluteTimestamp&&m.parentSourceMeasure.AbsoluteTimestamp.RealValue,
+      abs:m.PositionAndShape.AbsolutePosition,
+      staveX:m.getVFStave&&m.getVFStave().getX(),
+      notes:m.staffEntries.slice(0,7).map(e=>({
+       t:e.getAbsoluteTimestamp().RealValue,x:e.PositionAndShape.AbsolutePosition.x,
+       vf:e.graphicalVoiceEntries.map(v=>v.vfStaveNote&&v.vfStaveNote.getX&&v.vfStaveNote.getX())
+      }))
+     })));
+     console.log('TEMPORAL_PROBE_NOTES',JSON.stringify(notes));
+    }
+    console.log('SCORE_DRAWN','zoom=',osmd.Zoom,'svg=',svg?svg.getBoundingClientRect().toJSON():null,
+      'scroll=',viewport.scrollHeight,viewport.clientHeight);
+    loaded=true;message.style.display='none';
+    if(!freeLayout&&osmd.cursor){osmd.cursor.reset();osmd.cursor.show();}
+    if(window.AndroidNotation)AndroidNotation.onRendered();
+    if(!freeLayout)requestAnimationFrame(()=>setTimeout(()=>atBeat(seekBeat,true),150));
+   }).catch(function(err){
+    inform('Falha ao abrir notação: '+err.message);
+    if(window.AndroidNotation)AndroidNotation.onError(err.message);
+   });
+  }catch(e){inform('Erro de partitura: '+e.message);if(window.AndroidNotation)AndroidNotation.onError(e.message);}
+ }
+ window.PianoNotation={
+   load:render,
+   seek:function(beat,animated,bpm,playing){
+    if(freeLayout)return;seekBeat=beat;
+    if(window.TemporalNotation)TemporalNotation.sync(beat,bpm,!!playing);
+   },
+   loopEdit:function(enabled){
+    if(!freeLayout&&window.TemporalNotation)TemporalNotation.loopEdit(!!enabled);
+   },
+   clearLoop:function(){
+    if(!freeLayout&&window.TemporalNotation)TemporalNotation.clearLoop();
+   },
+   resize:function(){
+    if(!loaded)return;
+    if(!freeLayout){if(window.TemporalNotation)TemporalNotation.resize();return;}
+    if(!osmd)return;
+    clearTimeout(renderTimer);
+    renderTimer=setTimeout(function(){try{osmd.render();appliedBeat=-1;if(!freeLayout)atBeat(seekBeat,false);}catch(e){}},220);
+   }
+ };
+ window.addEventListener('resize',function(){PianoNotation.resize();});
+ if(window.AndroidNotation)AndroidNotation.onReady();
+})();
+</script></body></html>

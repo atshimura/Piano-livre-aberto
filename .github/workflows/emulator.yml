@@ -1,0 +1,75 @@
+name: Open Piano Livre - emulator Android
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'PianoLivreAndroid/app/**'
+      - 'PianoLivreAndroid/gradle.properties'
+      - 'PianoLivreAndroid/settings.gradle'
+      - '.github/workflows/emulator.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: PianoLivreAndroid
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify safe public assets, license, and isolated Android app
+        run: python3 scripts/verify_public_snapshot.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Enable KVM on standard GitHub Linux runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_3
+          disable-animations: true
+          working-directory: PianoLivreAndroid
+          script: |
+            test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
+            gradle --no-daemon :app:assembleDebug
+            "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -q "package: name='br.org.pianolivre.opensource'"
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity
+            sleep 5
+            adb shell pidof br.org.pianolivre.opensource
+            adb logcat -c
+            adb shell am force-stop br.org.pianolivre.opensource
+            adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity --ez backup_selftest true
+            sleep 3
+            adb logcat -d -v brief | grep 'BACKUP_SELFTEST_PASS'
+            python3 tests/emulator_ui.py
+            echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
+      - name: Store Android UI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PianoLivre-public-emulator-evidence
+          retention-days: 3
+          if-no-files-found: warn
+          path: |
+            PianoLivreAndroid/piano-screen.png
+            PianoLivreAndroid/piano-library.png
+            PianoLivreAndroid/piano-song.png
+            PianoLivreAndroid/piano-engraved.png
+            PianoLivreAndroid/piano-free-reading.png
+            PianoLivreAndroid/piano-with-keyboard.png
+            PianoLivreAndroid/piano-motion.mp4
+            PianoLivreAndroid/window.xml

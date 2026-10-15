@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+"""Automated Android emulator GUI smoke test; no physical MIDI required."""
+import os, re, subprocess, time, xml.etree.ElementTree as ET, json
+from pathlib import Path
+DEFAULT_SCORE_TITLE = json.loads(Path('app/src/main/assets/catalog.json').read_text(encoding='utf-8'))[0]['name']
+
+def adb(*args, timeout=70):
+    return subprocess.run(["adb", *args], check=True, text=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          timeout=timeout).stdout
+
+def screenshot(name):
+    adb("shell", "screencap", "-p", "/sdcard/"+name)
+    adb("pull", "/sdcard/"+name, name)
+
+def dump():
+    for retry in range(3):
+        try:
+            adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
+            adb("pull", "/sdcard/ui.xml", "window.xml")
+            return ET.parse("window.xml").getroot()
+        except Exception as exc:
+            print("UI dump retry", retry+1, exc, flush=True)
+            time.sleep(4)
+    raise AssertionError("Android UI hierarchy inaccessible")
+
+def tap_text(targets):
+    root=dump()
+    for node in root.iter("node"):
+        label=node.attrib.get("text","")
+        if any(value.casefold() in label.casefold() for value in targets):
+            nums=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
+            if len(nums)==4:
+                adb("shell", "input", "tap", str((nums[0]+nums[2])//2),
+                    str((nums[1]+nums[3])//2))
+                print("Tapped",label,flush=True)
+                return label
+    labels=[n.attrib.get("text","") for n in root.iter("node") if n.attrib.get("text")]
+    raise AssertionError("Not found: "+str(targets)+"; available: "+str(labels[:40]))
+
+def assert_running():
+    try:output=adb("shell","pidof","br.org.pianolivre.opensource")
+    except subprocess.CalledProcessError:output=""
+    if not output.strip():
+        logs=adb("logcat","-d","-v","brief")
+        lines=logs.splitlines()
+        interesting=[l for l in lines if ("br.org.pianolivre.opensource" in l or "FATAL EXCEPTION" in l or "PianoLivreNotation" in l or "AndroidRuntime" in l or "chromium" in l)]
+        print("\\n".join(interesting[-120:]),flush=True)
+        raise AssertionError("Piano Livre process is not running; logs shown above")
+
+if __name__=="__main__":
+    assert_running()
+    screenshot("piano-screen.png")
+    home=dump()
+    names=[n.attrib.get("text","") for n in home.iter("node")]
+    assert any(DEFAULT_SCORE_TITLE in n for n in names), "Music library must be visible on launch: "+str(names[:30])
+    print("PASS: library visible at startup",flush=True)
+    # MIDI diagnostics must be discoverable even without a physical piano.
+    tap_text(["Conecte seu piano","MIDI indisponível"])
+    time.sleep(.6)
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Mensagens recebidas" in t for t in labels), "MIDI diagnostic counter is missing"
+    tap_text(["Fechar"])
+    print("PASS: MIDI input/output diagnostic dialog opens",flush=True)
+    screenshot("piano-library.png")
+    # Chord calibration must be discoverable, with no magic millisecond default.
+    tap_text(["Opções"])
+    time.sleep(.5)
+    options=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Calibrar acordes MIDI" in text for text in options), "Calibrar acordes option missing"
+    tap_text(["Calibrar acordes MIDI"])
+    time.sleep(.5)
+    options=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Calibrar tocando acordes" in text for text in options), "Physical calibration flow missing"
+    assert any("Não calibrada" in text for text in options), "Uncalibrated setting not identified"
+    tap_text(["Calibrar tocando acordes"])
+    time.sleep(.5)
+    options=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Conecte primeiro" in text for text in options), "Calibration must require actual MIDI input"
+    tap_text(["OK"])
+    print("PASS: calibration is discoverable, uncalibrated by default, physical MIDI required",flush=True)
+    tap_text([DEFAULT_SCORE_TITLE])
+    time.sleep(3)
+    assert_running()
+    screenshot("piano-song.png")
+    ui=dump()
+    labels=[n.attrib.get("text","") for n in ui.iter("node")]
+    assert any(DEFAULT_SCORE_TITLE in s for s in labels), "Music title absent: "+str(labels[:35])
+    assert any("VELOCIDADE" in s for s in labels), "Study speed controls missing"
+    # The legacy Canvas fallback is not sufficient: require OSMD's real
+    # MusicXML engraving engine to finish drawing in Android WebView.
+    notation_ready=False
+    for attempt in range(16):
+        logs=adb("logcat","-d","-v","brief")
+        if re.search(r"PianoLivreNotation.*NOTATION_RENDERED",logs):
+            notation_ready=True
+            break
+        time.sleep(2)
+    if not notation_ready:
+        logs=adb("logcat","-d","-v","brief")
+        print("\\n".join(line for line in logs.splitlines() if "PianoLivreNotation" in line)[-15000:],flush=True)
+    assert notation_ready, "Real MusicXML notation renderer failed; fallback is not acceptable"
+    screenshot("piano-engraved.png")
+    assert "TIMELINE_READY" in logs, "Expected proportional timeline renderer, not ordinary print layout"
+    # The generated coordinates must follow exactly x = origin + beat * pxPerBeat.
+    import json
+    frames=[l.split("TIMELINE_READY ",1)[1] for l in logs.splitlines() if "TIMELINE_READY {" in l]
+    assert frames, "No time-proportional layout diagnostics available"
+    plan=json.loads(frames[-1].split(" @",1)[0].strip())
+    beats=plan["firstBeats"];xs=plan["firstXs"];K=plan["pxPerBeat"]
+    for i in range(1,len(beats)):
+        assert abs((xs[i]-xs[0])-K*(beats[i]-beats[0]))<=2.1, "Beat-proportional x positioning is broken"
+    assert abs(plan["cursorFraction"]-.4)<.00001, "Study cursor no longer fixed at 40 percent"
+    print("PASS: exact proportional note spacing on shared musical timeline",flush=True)
+    print("PASS: temporal MusicXML engraving rendered with fixed 40-percent cursor",flush=True)
+    logs=adb("logcat","-d","-v","brief")
+    print("\\n".join(l for l in logs.splitlines() if "TEMPORAL_PROBE" in l)[-28000:],flush=True)
+
+    assert any("Contínuo" in s for s in labels), "Mode switch missing"
+    assert any("Teclado guia" in s for s in labels), "Keyboard should be hidden by default"
+    tap_text(["Teclado guia"])
+    time.sleep(.6)
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Ocultar teclado" in s for s in labels), "Keyboard toggle did not change to Hide"
+    screenshot("piano-with-keyboard.png")
+    tap_text(["Ocultar teclado"])
+    time.sleep(.4)
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Teclado guia" in s for s in labels), "Keyboard toggle did not restore hidden state"
+    print("PASS: keyboard hidden by default, shown and hidden by tap",flush=True)
+    # Direct score selection is activated from the native study toolbar.
+    tap_text(["Trecho ↻"])
+    time.sleep(.3)
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Selecionando" in t for t in labels), "Score-based loop selection did not activate"
+    tap_text(["Selecionando"])
+    print("PASS: selection mode toggles from the Trecho button",flush=True)
+    assert any("Início" in t for t in labels), "Return-to-start control missing"
+    # Traditional score is a separate no-MIDI, no-training reading surface.
+    tap_text(["Partitura Livre"])
+    time.sleep(3)
+    assert_running()
+    free_ready=False
+    for attempt in range(12):
+        logs=adb("logcat","-d","-v","brief")
+        if "FREE_RENDERED" in logs:
+            free_ready=True
+            break
+        time.sleep(2)
+    assert free_ready, "Free-reading score did not finish rendering"
+    free_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert not any("Contínuo" in s or "Teclado guia" in s for s in free_labels), "Training controls appear in free reading"
+    screenshot("piano-free-reading.png")
+    # A pixel-size threshold calibrated for the old Ode fixture is invalid
+    # for short public exercises. FREE_RENDERED plus real OSMD log is required.
+    assert os.path.getsize("piano-free-reading.png") > 5000, "Missing free-reading screenshot"
+    print("PASS: traditional free-reading score is visible without training controls",flush=True)
+    tap_text(["Biblioteca"])
+    time.sleep(1)
+    tap_text([DEFAULT_SCORE_TITLE])
+    time.sleep(3)
+    assert_running()
+    print("PASS: selected music loads with interactive study controls",flush=True)
+    tap_text(["Teclado guia"])
+    time.sleep(.5)
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Ocultar teclado" in t for t in labels), "Virtual keyboard toggle did not update"
+    tap_text(["Ocultar teclado"])
+    print("PASS: optional keyboard show/hide toggles",flush=True)
+    tap_text(["Contínuo"])
+    time.sleep(.5)
+    tap_text(["Iniciar"])
+    # Capture a moving reference video, not just static screenshots. On very
+    # limited emulators, recording is optional; functional assertions remain strict.
+    try:
+        subprocess.run(["adb","shell","screenrecord","--size","960x540",
+            "--bit-rate","1200000","--time-limit","4","/sdcard/piano-motion.mp4"],
+            check=True,timeout=24,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        adb("pull","/sdcard/piano-motion.mp4","piano-motion.mp4")
+        print("PASS: captured real-time study motion video",flush=True)
+    except Exception as exc:
+        print("WARNING: emulator video recording unavailable:",exc,flush=True)
+    logs=adb("logcat","-d","-v","brief")
+    assert re.search(r"PianoLivreUI.*mode=1", logs), "Mode button click was not recorded"
+    assert re.search(r"PianoLivreUI.*play=true", logs), "Play button click was not recorded"
+    samples=[]
+    for line in logs.splitlines():
+        if "TEMPORAL_SAMPLE {" in line:
+            try:samples.append(json.loads(line.split("TEMPORAL_SAMPLE ",1)[1].split(" @",1)[0].strip()))
+            except ValueError:pass
+    assert len(samples)>=2, "No continuous rendering frames reported"
+    for a,b in zip(samples,samples[1:]):
+        if b["beat"]>a["beat"]+.005:
+            actual=(b["offset"]-a["offset"])/(b["beat"]-a["beat"])
+            assert abs(actual-plan["pxPerBeat"])<1, "Visual velocity not uniform over musical beats"
+    print("PASS: continuous horizontal motion at proportional speed",flush=True)
+    print("PASS: mode switch and play button accepted touch input",flush=True)
+    tap_text(["Biblioteca"])
+    time.sleep(1)
+    assert_running()
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("BIBLIOTECA MUSICAL" in s for s in labels), "Returning to library failed"
+    print("PASS: navigation returns to library",flush=True)
+    logs=adb("logcat","-d","-v","brief")
+    if "FATAL EXCEPTION" in logs and "Process: br.org.pianolivre.opensource" in logs:
+        raise AssertionError("Fatal exception in Piano Livre")
+    print("PASS emulator UI: library, music, study mode, playback, navigation",flush=True)
