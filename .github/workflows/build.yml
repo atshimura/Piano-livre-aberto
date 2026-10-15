@@ -1,0 +1,122 @@
+name: Open Piano Livre - tests and APK
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: PianoLivreAndroid
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify safe public assets, license, and isolated Android app
+        run: python3 scripts/verify_public_snapshot.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Android SDK 35
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Test MusicXML library (JVM)
+        run: |
+          mkdir -p build/score-tests
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java tests/ScoreSmokeTest.java
+          java -cp build/score-tests ScoreSmokeTest
+          javac -cp build/score-tests -d build/score-tests tests/TempoMapTest.java
+          java -cp build/score-tests TempoMapTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/RepeatNavigator.java tests/RepeatNavigatorTest.java tests/MusicStructureTest.java
+          java -cp build/score-tests RepeatNavigatorTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/PerformanceRoute.java tests/PerformanceRouteTest.java
+          java -cp build/score-tests PerformanceRouteTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiPlayback.java app/src/main/java/br/org/pianolivre/KeyboardGuide.java tests/PerformanceRoutePlaybackTest.java
+          java -cp build/score-tests PerformanceRoutePlaybackTest
+          java -cp build/score-tests MusicStructureTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiProtocol.java app/src/main/java/br/org/pianolivre/MidiPlayback.java tests/MidiSmokeTest.java
+          java -cp build/score-tests MidiSmokeTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/WaitRecognizer.java app/src/main/java/br/org/pianolivre/HandNavigation.java tests/WaitRecognizerTest.java
+          java -cp build/score-tests WaitRecognizerTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/ChordCalibration.java tests/ChordCalibrationTest.java
+          java -cp build/score-tests ChordCalibrationTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiPerformance.java tests/MidiPerformanceTest.java
+          java -cp build/score-tests MidiPerformanceTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/KeyboardGuide.java tests/KeyboardGuideTest.java
+          java -cp build/score-tests KeyboardGuideTest
+          javac -cp build/score-tests -d build/score-tests tests/MusicTimelineConsistencyTest.java
+          java -cp build/score-tests MusicTimelineConsistencyTest
+      - name: Test proportional score layout (JavaScript)
+        run: |
+          node --check app/src/main/assets/temporal-notation.js
+          node tests/TemporalLayoutTest.js
+          node tests/ClefEngravingTest.js
+          node tests/NotationSpannersTest.js
+          node tests/NotationAdvancedTest.js
+          node tests/NotationOrnamentsTest.js
+      - name: Cross-check MusicXML Java model vs JavaScript score renderer
+        run: |
+          javac -cp build/score-tests -d build/score-tests tests/ScoreInventory.java
+          mkdir -p build/musicxml-audit
+          npm install --prefix build/musicxml-audit --no-save --silent '@xmldom/xmldom@0.9.8'
+          node tests/musicxml_visual_crosscheck.js
+      - name: Audit MIDI recognition over the public MusicXML corpus
+        run: |
+          mkdir -p build/recognition-tests
+          javac -d build/recognition-tests app/src/main/java/br/org/pianolivre/Score.java app/src/main/java/br/org/pianolivre/MidiProtocol.java app/src/main/java/br/org/pianolivre/MidiPlayback.java app/src/main/java/br/org/pianolivre/WaitRecognizer.java app/src/main/java/br/org/pianolivre/HandNavigation.java tests/RecognitionAudit.java
+          java -cp build/recognition-tests RecognitionAudit
+          python3 tests/recognition_corpus_audit.py
+      - name: Configure stable public-beta signing (trusted pushes only)
+        if: github.event_name != 'pull_request'
+        env:
+          PUBLIC_KEYSTORE_B64: ${{ secrets.PIANOLIVRE_PUBLIC_KEYSTORE_BASE64 }}
+          PUBLIC_STORE_PASSWORD: ${{ secrets.PIANOLIVRE_PUBLIC_STORE_PASSWORD }}
+          PUBLIC_KEY_ALIAS: ${{ secrets.PIANOLIVRE_PUBLIC_KEY_ALIAS }}
+          PUBLIC_KEY_PASSWORD: ${{ secrets.PIANOLIVRE_PUBLIC_KEY_PASSWORD }}
+        run: |
+          if [ -n "${PUBLIC_KEYSTORE_B64:-}" ]; then
+            test -n "$PUBLIC_STORE_PASSWORD"
+            test -n "$PUBLIC_KEY_ALIAS"
+            test -n "$PUBLIC_KEY_PASSWORD"
+            keypath="$RUNNER_TEMP/pianolivre-open-beta.jks"
+            printf '%s' "$PUBLIC_KEYSTORE_B64" | base64 --decode > "$keypath"
+            chmod 600 "$keypath"
+            echo "PIANOLIVRE_PUBLIC_KEYSTORE_FILE=$keypath" >> "$GITHUB_ENV"
+            echo "PIANOLIVRE_PUBLIC_STORE_PASSWORD=$PUBLIC_STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "PIANOLIVRE_PUBLIC_KEY_ALIAS=$PUBLIC_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "PIANOLIVRE_PUBLIC_KEY_PASSWORD=$PUBLIC_KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "STABLE_PUBLIC_BETA_SIGNING_CONFIGURED"
+          elif [ -n "${PUBLIC_STORE_PASSWORD:-}" ] || [ -n "${PUBLIC_KEY_ALIAS:-}" ] || [ -n "${PUBLIC_KEY_PASSWORD:-}" ]; then
+            echo "::error::Incomplete public-beta signing secrets" >&2
+            exit 1
+          else
+            echo "::warning::No stable signing secrets: artifact debug key may change every run; not upgrade-safe"
+          fi
+      - name: Compile versioned debug APK directly from Gradle properties
+        run: gradle --no-daemon :app:assembleDebug --stacktrace
+
+      - name: Verify independent public debug APK
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk | tee build/public-signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | tee build/public-apk-metadata.txt
+          grep -q "package: name='br.org.pianolivre.opensource' versionCode='20' versionName='0.9.11-open-beta'" build/public-apk-metadata.txt
+          test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
+          echo PUBLIC_DEBUG_APK_PASS
+      - name: Upload isolated public debug APK
+        if: github.event_name != 'pull_request' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PianoLivre-open-debug-apk
+          path: PianoLivreAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 3
