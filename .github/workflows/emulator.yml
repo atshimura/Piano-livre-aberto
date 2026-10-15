@@ -1,6 +1,13 @@
 name: Open Piano Livre - emulator Android
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'PianoLivreAndroid/app/**'
+      - 'PianoLivreAndroid/tests/**'
+      - 'PianoLivreAndroid/gradle.properties'
+      - '.github/workflows/emulator.yml'
   push:
     branches: [main]
     paths:
@@ -50,7 +57,7 @@ jobs:
             adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity
             sleep 5
             adb shell pidof br.org.pianolivre.opensource
-            adb logcat -c
+            adb logcat -c || echo 'WARNING: logcat clear unavailable on this emulator'
             adb shell am force-stop br.org.pianolivre.opensource
             adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity --ez backup_selftest true
             sleep 3
