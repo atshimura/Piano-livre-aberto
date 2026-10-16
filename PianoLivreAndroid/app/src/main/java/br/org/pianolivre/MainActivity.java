@@ -638,13 +638,20 @@ public class MainActivity extends Activity {
     scoreView.playhead=position;
     scoreView.invalidate();
     if(screens!=null)screens.followScore(position,false);
-    updateInfo();
+    updateInfo(!running&&!waitTraveling);
     if(!running&&screens!=null)screens.updateSelections();
    }
    handler.postDelayed(this,25);
   }
  };
- void updateInfo(){if(info==null)return;info.setText("♫ "+(score==null?"—":Math.round(score.tempoAt(position)))+" BPM × "+Math.round(tempoFactor*100)+"% · posição "+String.format(Locale.US,"%.1f",position));}
+ final StudyInfoText studyInfoText=new StudyInfoText();
+ void updateInfo(){updateInfo(true);}
+ void updateInfo(boolean immediate){
+  if(info==null)return;
+  String text=studyInfoText.update(score!=null,score==null?0:score.tempoAt(position),
+    tempoFactor,position,SystemClock.uptimeMillis(),immediate);
+  if(!android.text.TextUtils.equals(info.getText(),text))info.setText(text);
+ }
  void newProfile(){if(getProfileArray().length()>=20){message("Limite de 20 perfis neste protótipo");return;}EditText t=new EditText(this);t.setHint("Nome do usuário");new AlertDialog.Builder(this).setTitle("Novo perfil").setView(t).setPositiveButton("Criar",(d,w)->{String name=t.getText().toString().trim();if(name.isEmpty())return;JSONArray arr=getProfileArray();arr.put(name);prefs.edit().putString("profiles",arr.toString()).apply();loadProfiles();profiles.setSelection(arr.length()-1);}).setNegativeButton("Cancelar",null).show();}
  JSONArray getProfileArray(){try{return new JSONArray(prefs.getString("profiles","[\"Usuário 1\"]"));}catch(Exception e){return new JSONArray().put("Usuário 1");}}
  void loadProfiles(){

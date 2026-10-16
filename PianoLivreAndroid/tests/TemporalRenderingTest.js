@@ -42,3 +42,19 @@ T.sync(0,120,true);assert.strictEqual(frames.size,1,'loop wakes from end');frame
 T.teardown();assert.strictEqual(frames.size,0);
 T.render(xml,container,viewport,2);frame(now);assert.strictEqual(frames.size,0,'replacement score starts paused');T.teardown();
 console.log('PASS: indexed highlights, no frame geometry reads, resize, clock, pause, seek, loop and teardown');
+
+// Long synthetic score: tile count grows, per-frame DOM queries/layout reads do not.
+const measure=xml.match(/<measure[^>]*>.*?<\/measure>/)[0];
+const longXml=xml.replace(measure,Array.from({length:64},(_,i)=>measure.replace('number="1"','number="'+(i+1)+'"')).join(''));
+T.render(longXml,container,viewport,0);frame(now);
+assert(track().children.length>50,'synthetic workload spans many tiles');
+const longReads=dimensions,longQueries=queries;
+for(const beat of [0,400,800,50]){
+ T.sync(beat,120,true);frame(now+16);
+ const visible=track().children.filter(n=>n.style.display==='block');
+ assert(visible.length<=3,'only viewport tiles visible on long score');
+}
+assert.strictEqual(dimensions,longReads,'long score: no frame layout reads');
+assert.strictEqual(queries,longQueries,'long score: no frame DOM searches');
+T.sync(50,120,false);frame(now+16);assert.strictEqual(frames.size,0);T.teardown();
+console.log('PASS: long synthetic score, bounded visible tiles, forward/backward seek and idle drain');
