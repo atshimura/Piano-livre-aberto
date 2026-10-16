@@ -9,6 +9,12 @@ def adb(*args, timeout=70):
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                           timeout=timeout).stdout
 
+def dismiss_keyboard():
+    state=adb("shell","dumpsys","input_method")
+    if re.search(r"(?:mInputShown|mIsInputViewShown|isInputViewShown)=true",state):
+        adb("shell","input","keyevent","4")
+        time.sleep(.5)
+
 def screenshot(name):
     adb("shell", "screencap", "-p", "/sdcard/"+name)
     adb("pull", "/sdcard/"+name, name)
@@ -25,17 +31,25 @@ def dump():
             time.sleep(4)
     raise AssertionError("Android UI hierarchy inaccessible")
 
-def tap_text(targets, return_point=False):
+def tap_text(targets, return_point=False, exact=False, scroll=False):
     root=dump()
     for node in root.iter("node"):
         label=node.attrib.get("text","")
-        if any(value.casefold() in label.casefold() for value in targets):
+        if any((value.casefold()==label.casefold()) if exact else (value.casefold() in label.casefold()) for value in targets):
             nums=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
             if len(nums)==4:
                 adb("shell", "input", "tap", str((nums[0]+nums[2])//2),
                     str((nums[1]+nums[3])//2))
                 print("Tapped",label,flush=True)
                 return (str((nums[0]+nums[2])//2),str((nums[1]+nums[3])//2)) if return_point else label
+    if scroll:
+        for node in root.iter("node"):
+            if node.attrib.get("scrollable")=="true":
+                box=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
+                if len(box)==4:
+                    x=str((box[0]+box[2])//2)
+                    adb("shell","input","swipe",x,str(box[3]-15),x,str(box[1]+15),"400")
+                    return tap_text(targets,return_point,exact,False)
     labels=[n.attrib.get("text","") for n in root.iter("node") if n.attrib.get("text")]
     print(adb("logcat","-d","-s","PianoLivreUI:I","PianoLivreNotation:I","PianoLivreTimeline:I")[-18000:],flush=True)
     raise AssertionError("Not found: "+str(targets)+"; available: "+str(labels[:40]))
@@ -81,6 +95,24 @@ if __name__=="__main__":
     assert any("Conecte primeiro" in text for text in options), "Calibration must require actual MIDI input"
     tap_text(["OK"])
     print("PASS: calibration is discoverable, uncalibrated by default, physical MIDI required",flush=True)
+    # Native profile UI: create, avatar and confirmed deletion, with stable identity.
+    tap_text(["+"],exact=True)
+    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+    assert fields, "New profile name input missing"
+    box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
+    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    adb("shell","input","text","Perfil_Teste")
+    dismiss_keyboard()
+    tap_text(["Criar"],exact=True)
+    created=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert "Novo perfil" not in created and any("Perfil_Teste" in t for t in created) and any("PIANO LIVRE" in t for t in created), "New profile was not created and selected"
+    tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Escolher avatar"]);tap_text(["★"],exact=True)
+    assert any("★ Perfil_Teste" in n.attrib.get("text","") for n in dump().iter("node")), "Avatar was not retained"
+    tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Excluir perfil"]);tap_text(["Excluir"],exact=True)
+    after_delete=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert not any("Perfil_Teste" in t for t in after_delete), "Deleted profile remains selected"
+    if not any("BIBLIOTECA MUSICAL" in t for t in after_delete):tap_text(["Biblioteca"])
+    print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
     tap_text([DEFAULT_SCORE_TITLE])
     time.sleep(3)
     assert_running()

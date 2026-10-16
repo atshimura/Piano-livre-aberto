@@ -6,8 +6,8 @@ Plano aprovado nas instruções do Projeto em 16/10/2026. Acompanhamento: [issue
 |---|---|---|---|
 | 1 | Estabilização, desempenho e fluidez da partitura | Regressões de movimento, pausa, seek, loop e resize; custo por frame reduzido e diagnóstico reproduzível | Escopo técnico concluído; aceite físico em #11 |
 | 2 | Aprimoramento do motor musical e da fidelidade MusicXML | Fixtures musicais, comparação Java/JS e limitações explícitas | Escopo técnico concluído; limites no documento 30 |
-| 3 | Aperfeiçoamento dos modos de aprendizagem, reconhecimento MIDI e teclado guia | Regressões dos modos, novos ataques, extras, calibração, pedal e duas mãos | Em desenvolvimento |
-| 4 | Biblioteca, perfis, histórico e progresso de estudos | Busca/organização e progresso local compatíveis com retomada e backup | Pendente |
+| 3 | Aperfeiçoamento dos modos de aprendizagem, reconhecimento MIDI e teclado guia | Regressões dos modos, novos ataques, extras, calibração, pedal e duas mãos | Escopo técnico concluído; aceite físico em #11 |
+| 4 | Biblioteca, perfis, histórico e progresso de estudos | Busca/organização e progresso local compatíveis com retomada e backup | Em desenvolvimento |
 | 5 | Importação MIDI, compatibilidade musical e preservação de dados | Importação documentada, entradas adversariais e recuperação sem perda | Pendente |
 | 6 | Consolidação, testes e preparação da versão 1.0 | Matriz de aceite, APKs assinados, instalação/atualização/backup e testes reais | Pendente |
 
@@ -91,3 +91,9 @@ Correção preparada para rearmar Espera após reconexão, isolar mensagens anti
 ## Etapa 3 — 0.9.23/code32
 
 Tratamento de entrada CC120/121/123 com isolamento de canais, teclas e vozes retidas por pedal. Regressão JVM 12.672 asserções aprovada e self-test Android ampliado, pendente da própria CI. Documento 32 registra semântica, fonte e limites. Após validar/integrar a sequência MIDI, consolidar escopo técnico da Etapa 3 e seguir Etapa 4 (busca/organização, perfis estáveis, histórico local compatível com backup).
+
+## Etapa 4 iniciada — 0.9.24/code33
+
+Etapa 3 encerrada tecnicamente (#7) após PR #21 integrado em a5592f0395f619a5ee8789463d03f527fa236990; build 38946323401 e emulador 38946323387 aprovados. Hardware segue pendente em #11.
+
+Perfis com IDs estáveis, renomear/avatar/excluir sem renumerar dados de outros perfis e validação nova do backup preparados. Documento 33 descreve compatibilidade, testes isolados e limites. Confirmar CI desta entrega antes do merge; depois implementar busca/organização e histórico por perfil.

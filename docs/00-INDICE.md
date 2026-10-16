@@ -45,3 +45,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [31 — Guia visual expressivo](31-GUIA-EXPRESSIVO.md).
 
 - [32 — Continuidade da sessão MIDI](32-SESSAO-MIDI.md).
+
+- [33 — Perfis com identidade estável](33-PERFIS-ESTAVEIS.md).

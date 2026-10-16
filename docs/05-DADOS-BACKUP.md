@@ -38,3 +38,7 @@ O CI baixa o **APK real 0.9.9/code18**, instala no emulador, injeta perfil de te
 Pendências do produto: biblioteca com favoritos/coleções, nomes/avatares e operações completas em perfis, metas e avaliações, histórico detalhado, correções do MusicXML em camada separada, importação MIDI, restauração e interrupções sob cenários extremos, auditoria de segurança de entradas não confiáveis e ensaios em Realme 7 5G, Lenovo Tab M9 e Yamaha P-45.
 
 Não criar contas online, telemetria ou sincronização automática sem autorização. Não incluir dados pessoais em logs, testes, issues ou artefatos. Ver [01](01-VISAO-E-REQUISITOS.md), [07](07-ESTADO-E-ROADMAP.md), [09](09-SEGURANCA-LICENCAS.md), [16](16-BACKUP-MIDI-CONSISTENCIA.md) e [25](25-CONTINUIDADE-0.9.9-0.9.11.md).
+
+## Atualização da linha aberta — 0.9.24
+
+Perfis passam a IDs estáveis com nome/avatar e exclusão confirmada, conservando IDs/keys antigos; ver documento 33. profiles_v2/next_id entram nas preferências do backup v2 com validação antes da escrita. O texto anterior sobre índices e ausência de operações completas descreve apenas o histórico. Busca/organização e histórico ainda seguem como próximas entregas da Etapa 4.
