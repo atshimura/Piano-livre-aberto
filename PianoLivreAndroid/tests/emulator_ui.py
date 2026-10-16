@@ -195,6 +195,35 @@ if __name__=="__main__":
             assert abs(actual-plan["pxPerBeat"])<1, "Visual velocity not uniform over musical beats"
     print("PASS: continuous horizontal motion at proportional speed",flush=True)
     print("PASS: mode switch and play button accepted touch input",flush=True)
+    # Lifecycle: background during playback must pause and retain that position.
+    tap_text(["Início"])
+    tap_text(["Iniciar"])
+    time.sleep(.4)
+    adb("shell","input","keyevent","3")
+    time.sleep(.6)
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1)
+    resumed=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Iniciar" in t for t in resumed), "Background playback was not paused"
+    positions=[t for t in resumed if "posição " in t]
+    assert positions, "Position label missing after resume"
+    time.sleep(.4)
+    later=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert [t for t in later if "posição " in t]==positions, "Position advanced while paused after resume"
+    logs=adb("logcat","-d","-v","brief")
+    assert "LIFECYCLE_PAUSED" in logs and "LIFECYCLE_RESUMED" in logs
+    reports=[]
+    for line in logs.splitlines():
+        if "TEMPORAL_PERF {" in line:
+            reports.append(json.loads(line.split("TEMPORAL_PERF ",1)[1].split(" @",1)[0].strip()))
+    assert any(r["reason"]=="pause" and r["movingFrames"]>=2 for r in reports), "Moving frame summary missing"
+    assert all(r["renderMs"]>=0 and r["maxDrawMs"]>=0 for r in reports)
+    Path("piano-performance.json").write_text(json.dumps(reports,indent=2),encoding="utf-8")
+    print("PASS: background pauses transport, foreground retains position, local performance evidence captured",flush=True)
+    tap_text(["Iniciar"])
+    time.sleep(.3)
+    tap_text(["Pausar"])
+    print("PASS: playback can restart and pause after foreground",flush=True)
     tap_text(["Biblioteca"])
     time.sleep(1)
     assert_running()

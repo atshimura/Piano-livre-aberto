@@ -37,3 +37,5 @@ Arquivos de auditoria e evolução, preservados **como referências históricas,
 - [24 — Auditoria 0.9.11](24-AUDITORIA-NOTACAO-MIDI-ETAPAS-1-3.md)
 
 O índice do histórico privado, instruções de assinatura beta antiga e configuração de runner pessoal **não** são documentos operacionais deste repositório. O `AGENTS.md` público prevalece quando houver divergências.
+
+- [29 — Diagnóstico local de desempenho e lifecycle](29-DESEMPENHO-LIFECYCLE.md).

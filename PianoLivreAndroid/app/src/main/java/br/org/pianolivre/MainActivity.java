@@ -700,7 +700,18 @@ public class MainActivity extends Activity {
   if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.showHome();return;}
   super.onBackPressed();
  }
- @Override protected void onPause(){super.onPause();stopPlayback();saveSession();}
+ @Override protected void onResume(){
+  super.onResume();
+  // Exactly one ticker chain, including after repeated background/foreground.
+  handler.removeCallbacks(ticker);previousTick=SystemClock.uptimeMillis();handler.post(ticker);
+  if(screens!=null)screens.resumeNotation();
+  android.util.Log.i("PianoLivreUI","LIFECYCLE_RESUMED");
+ }
+ @Override protected void onPause(){
+  super.onPause();stopPlayback();saveSession();handler.removeCallbacks(ticker);
+  if(screens!=null)screens.pauseNotation();
+  android.util.Log.i("PianoLivreUI","LIFECYCLE_PAUSED");
+ }
  @Override protected void onDestroy(){
   handler.removeCallbacks(ticker);disconnectMidi();
   if(screens!=null)screens.destroyNotation();
