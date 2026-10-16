@@ -82,6 +82,11 @@ public class MainActivity extends Activity {
    try{android.util.Log.i("PianoLivreProfiles","PROFILES_SELFTEST_PASS assertions="+ProfilesSelfTest.run(this));}
    catch(Exception ex){throw new IllegalStateException("Profile self-test failed",ex);}
   }
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("library_selftest",false)){
+   try{android.util.Log.i("PianoLivreLibrary","LIBRARY_SELFTEST_PASS assertions="+LibrarySelfTest.run(this));}
+   catch(Exception ex){throw new IllegalStateException("Library self-test failed",ex);}
+  }
   try{BackupArchive.recover(prefs,getFilesDir());}
   catch(Exception recovery){
    android.util.Log.e("PianoLivreBackup","Não foi possível recuperar restauração anterior",recovery);
@@ -705,7 +710,7 @@ public class MainActivity extends Activity {
    if(active!=user)prefs.edit().putInt("active_profile",user).apply();
    profiles.setOnItemSelectedListener(null);
    profiles.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,names));profiles.setSelection(selected);
-   refreshChordWindow();
+   refreshChordWindow();if(screens!=null)screens.refreshLibrary();
    profiles.setOnItemSelectedListener(new Listener(index->{if(index>=0&&index<list.size()&&user!=list.get(index).id)activateProfile(list.get(index).id);}));
   }catch(RuntimeException ex){message("Não foi possível ler os perfis: "+ex.getMessage());}
  }

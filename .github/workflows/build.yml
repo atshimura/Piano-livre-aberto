@@ -62,6 +62,10 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/StudyInfoText.java tests/StudyInfoTextTest.java
           java -cp build/score-tests StudyInfoTextTest
+      - name: Test local library search (JVM)
+        run: |
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/LibrarySearch.java tests/LibrarySearchTest.java
+          java -cp build/score-tests LibrarySearchTest
       - name: Test proportional score layout (JavaScript)
         run: |
           node --check app/src/main/assets/temporal-notation.js
