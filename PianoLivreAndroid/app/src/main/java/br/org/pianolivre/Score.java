@@ -26,6 +26,7 @@ public class Score {
  }
  public final ArrayList<RepeatSection> repeatSections=new ArrayList<>();
  public final ArrayList<String> playbackWarnings=new ArrayList<>();
+ public final ArrayList<String> importWarnings=new ArrayList<>();
  /** Written measure boundaries and navigation symbols; original beat timeline
   * remains unchanged, even when the performance visits measures out of order. */
  public static final class MeasureInfo {
@@ -341,6 +342,13 @@ public class Score {
     prior.length=Math.max(prior.length,e.beat+e.length-prior.beat);
     if(!e.tieStart)sustained.remove(key);
    }else{
+    if(e.tieStop){
+     // An excerpt can start with a stop whose start is outside the file.
+     // Keep this visible note playable instead of silently hiding it in Wait.
+     e.tieStop=false;
+     String warning="Ligadura sem início correspondente: nota mantida como novo ataque";
+     if(!score.importWarnings.contains(warning))score.importWarnings.add(warning);
+    }
     merged.add(e);
     if(e.tieStart)sustained.put(key,e);
    }
