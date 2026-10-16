@@ -19,6 +19,8 @@
 - [25 — Linhagem histórica e separação de pacotes](25-CONTINUIDADE-0.9.9-0.9.11.md).
 - [27 — Migração pública e critérios finais](27-PREPARACAO-PUBLICACAO.md).
 
+- [28 — Plano sequencial até V1 e entrega da Etapa 1](28-ETAPAS-V1.md).
+
 ## Histórico técnico (versões anteriores)
 Arquivos de auditoria e evolução, preservados **como referências históricas, não declarações de testes atuais**:
 - [12 — Auditoria MIDI](12-AUDITORIA-RECONHECIMENTO-MIDI-MAOS.md)
