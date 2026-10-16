@@ -79,6 +79,8 @@ jobs:
           node tests/MusicXmlFixturesTest.js
           javac -cp build/score-tests -d build/score-tests tests/MusicXmlDynamicsTest.java
           java -cp build/score-tests MusicXmlDynamicsTest
+          javac -cp build/score-tests -d build/score-tests tests/KeyboardExpressionTest.java
+          java -cp build/score-tests KeyboardExpressionTest
       - name: Audit MIDI recognition over the public MusicXML corpus
         run: |
           mkdir -p build/recognition-tests

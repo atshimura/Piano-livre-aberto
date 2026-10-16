@@ -120,6 +120,24 @@ public class PianoView extends View {
   line(c,cursor,topRight-d(20),cursor,topLeft+spacing*4+d(21),GREEN,d(2.7f));
   p.setColor(GREEN);c.drawCircle(cursor,topRight-d(21),d(4),p);
  }
+ private int writtenShade(KeyboardGuide.Frame frame,int note,boolean white){
+  if(frame==null)return white?0xffF3F7FC:0xff263F59;
+  int velocity=Math.max(frame.rightVelocity.getOrDefault(note,0),frame.leftVelocity.getOrDefault(note,0));
+  int background=white?0xffFFF5DF:0xff795B34,target=white?0xffFFD16E:GOLD;
+  float amount=Math.max(0,Math.min(127,velocity))/127f;
+  int red=Math.round(Color.red(background)+(Color.red(target)-Color.red(background))*amount);
+  int green=Math.round(Color.green(background)+(Color.green(target)-Color.green(background))*amount);
+  int blue=Math.round(Color.blue(background)+(Color.blue(target)-Color.blue(background))*amount);
+  return Color.rgb(red,green,blue);
+ }
+ private void drawGuideDuration(Canvas c,KeyboardGuide.Frame frame,int note,float x,float top,float width,boolean white){
+  if(frame==null||!frame.both.contains(note))return;
+  boolean right=frame.right.contains(note),left=frame.left.contains(note);
+  if(width>=d(11))text(c,right?(left?"DE":"D"):"E",x+d(2),top-d(2),7,white?INK:Color.WHITE,true);
+  float usable=Math.max(0,width-d(4));
+  if(right)rect(c,GOLD,x+d(2),top,x+d(2)+usable*frame.rightRemaining.get(note).floatValue(),top+d(2),0);
+  if(left)rect(c,GOLD,x+d(2),top+d(3),x+d(2)+usable*frame.leftRemaining.get(note).floatValue(),top+d(5),0);
+ }
  private void drawKeyboard(Canvas c,float w,float yTop,float h){
   rect(c,0xff13263E,0,yTop,w,h,0);
   if(guideScore!=score){
@@ -132,7 +150,7 @@ public class PianoView extends View {
   KeyboardGuide.Range range=KeyboardGuide.range(written,pressed);
   int low=range.low,high=range.high,whiteCount=0;
   for(int n=low;n<=high;n++)if(!black(n))whiteCount++;
-  String legend="TECLADO · amarelo: partitura (duas mãos) · verde: MIDI recebido";
+  String legend="TECLADO · amarelo: partitura (D/E) · verde: MIDI · barras: duração · tom: intensidade";
   if(range.outsidePiano)legend+=" · nota fora do P-45";
   text(c,legend,d(12),yTop+d(20),10,0xffD4E4F1,true);
   float xStart=d(24),keyWidth=(w-d(48))/Math.max(1,whiteCount);
@@ -141,16 +159,18 @@ public class PianoView extends View {
   for(int n=low;n<=high;n++){
    if(black(n))continue;
    float x=xStart+keyWidth*whiteIndex++;
-   rect(c,pressed.contains(n)?0xffA3EDD9:written.contains(n)?0xffFFE0A2:0xffF3F7FC,
+   rect(c,pressed.contains(n)?0xffA3EDD9:written.contains(n)?writtenShade(sounding,n,true):0xffF3F7FC,
     x+1,top,x+keyWidth-1,bottom,d(2));
-   if(n%12==0&&keyWidth>=d(11))text(c,"Dó",x+d(2),bottom-d(5),8,MUTED,false);
+   if(!written.contains(n)&&n%12==0&&keyWidth>=d(11))text(c,"Dó",x+d(2),bottom-d(5),8,MUTED,false);
+   drawGuideDuration(c,sounding,n,x,bottom-d(7),keyWidth,true);
   }
   whiteIndex=0;
   for(int n=low;n<=high;n++){
    if(!black(n)){whiteIndex++;continue;}
    float bw=keyWidth*.63f,x=xStart+whiteIndex*keyWidth-bw*.5f;
-   rect(c,pressed.contains(n)?GREEN:written.contains(n)?GOLD:0xff263F59,
+   rect(c,pressed.contains(n)?GREEN:written.contains(n)?writtenShade(sounding,n,false):0xff263F59,
     x,top,x+bw,top+(bottom-top)*.61f,d(2));
+   drawGuideDuration(c,sounding,n,x,top+(bottom-top)*.61f-d(7),bw,false);
   }
  }
 }

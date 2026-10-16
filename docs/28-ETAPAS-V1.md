@@ -77,3 +77,7 @@ PR #14 integrado em e4f4f511dc8ebb39941e3afa8febbb14ef36c28b após build 3894306
 ## Etapa 2 — 0.9.20/code29
 
 Dinâmica numérica explícita no motor/JS e demonstração MIDI, com escopos cronológicos e velocity zero silenciosa sem ocultar a nota escrita do Espera. Nove fixtures e teste integrado MIDI/guia; fonte preservada. Ver documento 30. Depois de validar/integrar a sequência musical e confirmar critérios técnicos, avançar ao guia visual da Etapa 3. Não aguardar hardware para tarefas independentes.
+
+## Preparação da Etapa 3 — 0.9.21/code30
+
+Guia ganha marcas D/E, intensidade numérica representada no tom amarelo e barras de duração restante por pauta; preserva ambas as mãos e verde prioritário para MIDI. Não adiciona exigências ao Espera. Metadados e regressões em documento 31. Entrega depende da validação da dinâmica do PR #18 e da própria CI Android. Prosseguir depois com auditoria de modos, desconexão e notas presas.
