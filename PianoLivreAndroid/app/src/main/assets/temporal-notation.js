@@ -41,7 +41,8 @@ function xmlTimeMap(xml) {
    for(var ci=0;ci<m.children.length;ci++){
     var node=m.children[ci],tag=node.tagName;
     if(tag==="attributes"){
-     cfg.div=Math.max(1,num(node,"divisions",cfg.div));
+     var newDivisions=num(node,"divisions",cfg.div);
+     if(newDivisions>0)cfg.div=newDivisions;
      var t=direct(node,"time");if(t){
       cfg.beats=num(t,"beats",cfg.beats);cfg.unit=num(t,"beat-type",cfg.unit);
       result.time.push({at:cursor,text:cfg.beats+"/"+cfg.unit});
