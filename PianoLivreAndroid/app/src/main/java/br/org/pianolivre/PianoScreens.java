@@ -129,9 +129,10 @@ class PianoScreens {
  }
  void options(){
   new AlertDialog.Builder(a).setTitle("Ferramentas")
-   .setItems(new String[]{"Fazer backup","Restaurar backup","Importar MusicXML","Calibrar acordes MIDI","Sobre esta versão"},(dialog,i)->{
+   .setItems(new String[]{"Fazer backup","Restaurar backup","Importar MusicXML","Calibrar acordes MIDI","Sobre esta versão","Gerenciar perfil"},(dialog,i)->{
     if(i==0)a.exportBackup();else if(i==1)a.restoreBackup();else if(i==2)a.importScore();
     else if(i==3)a.showChordSettings();
+    else if(i==5)a.manageProfile();
     else {
      String version="beta";
      try{version=a.getPackageManager().getPackageInfo(a.getPackageName(),0).versionName;}

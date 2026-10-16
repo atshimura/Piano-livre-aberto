@@ -77,6 +77,11 @@ public class MainActivity extends Activity {
     throw new IllegalStateException("Backup self-test failed",ex);
    }
   }
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("profiles_selftest",false)){
+   try{android.util.Log.i("PianoLivreProfiles","PROFILES_SELFTEST_PASS assertions="+ProfilesSelfTest.run(this));}
+   catch(Exception ex){throw new IllegalStateException("Profile self-test failed",ex);}
+  }
   try{BackupArchive.recover(prefs,getFilesDir());}
   catch(Exception recovery){
    android.util.Log.e("PianoLivreBackup","Não foi possível recuperar restauração anterior",recovery);
@@ -683,30 +688,59 @@ public class MainActivity extends Activity {
     tempoFactor,position,SystemClock.uptimeMillis(),immediate);
   if(!android.text.TextUtils.equals(info.getText(),text))info.setText(text);
  }
- void newProfile(){if(getProfileArray().length()>=20){message("Limite de 20 perfis neste protótipo");return;}EditText t=new EditText(this);t.setHint("Nome do usuário");new AlertDialog.Builder(this).setTitle("Novo perfil").setView(t).setPositiveButton("Criar",(d,w)->{String name=t.getText().toString().trim();if(name.isEmpty())return;JSONArray arr=getProfileArray();arr.put(name);prefs.edit().putString("profiles",arr.toString()).apply();loadProfiles();profiles.setSelection(arr.length()-1);}).setNegativeButton("Cancelar",null).show();}
- JSONArray getProfileArray(){try{return new JSONArray(prefs.getString("profiles","[\"Usuário 1\"]"));}catch(Exception e){return new JSONArray().put("Usuário 1");}}
+ LocalProfiles profileStore(){return new LocalProfiles(prefs);}
+ void newProfile(){
+  EditText input=new EditText(this);input.setSingleLine(true);input.setHint("Nome do perfil");
+  new AlertDialog.Builder(this).setTitle("Novo perfil").setView(input).setPositiveButton("Criar",(d,w)->{
+   try{int id=profileStore().create(input.getText().toString());activateProfile(id);loadProfiles();}
+   catch(RuntimeException ex){message(ex.getMessage());}
+  }).setNegativeButton("Cancelar",null).show();
+ }
  void loadProfiles(){
-  JSONArray arr=getProfileArray();String[] names=new String[arr.length()];
-  for(int i=0;i<arr.length();i++)names[i]=arr.optString(i,"Usuário "+(i+1));
-  ArrayAdapter<String> adapter=new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,names);
-  profiles.setAdapter(adapter);
-  user=Math.max(0,Math.min(prefs.getInt("active_profile",user),names.length-1));
-  profiles.setSelection(user);
-  refreshChordWindow();
-  profiles.setOnItemSelectedListener(new Listener(p->{
-   if(user==p)return;
-   stopPlayback(); // IMPORTANT: save old user's song BEFORE switching its index.
-   user=p;
-   prefs.edit().putInt("active_profile",user).apply();
+  try{
+   List<LocalProfiles.Profile> list=profileStore().list();String[] names=new String[list.size()];int selected=0;
+   int active=prefs.getInt("active_profile",0);
+   for(int i=0;i<list.size();i++){LocalProfiles.Profile p=list.get(i);names[i]=LocalProfiles.AVATARS[p.avatar]+" "+p.name;if(p.id==active)selected=i;}
+   user=list.get(selected).id;
+   if(active!=user)prefs.edit().putInt("active_profile",user).apply();
+   profiles.setOnItemSelectedListener(null);
+   profiles.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,names));profiles.setSelection(selected);
    refreshChordWindow();
-   score=null;scoreView.score=null;scoreView.pressed.clear();currentFile="";currentName="";
-   String file=prefs.getString("user_"+user+"_file","");
-   if(!file.isEmpty())loadScore(file,false);
-   else{
-    position=0;loopStart=0;loopEnd=Double.MAX_VALUE;scoreView.invalidate();
-    screens.showHome();updateInfo();
-   }
-  }));
+   profiles.setOnItemSelectedListener(new Listener(index->{if(index>=0&&index<list.size()&&user!=list.get(index).id)activateProfile(list.get(index).id);}));
+  }catch(RuntimeException ex){message("Não foi possível ler os perfis: "+ex.getMessage());}
+ }
+ void activateProfile(int id){if(user==id)return;stopPlayback();applyProfile(id);}
+ void applyProfile(int id){
+  user=id;prefs.edit().putInt("active_profile",id).apply();refreshChordWindow();
+  score=null;scoreView.score=null;scoreView.pressed.clear();currentFile="";currentName="";
+  route=null;routeCursor=null;routeHasMarkers=false;waitRecognizer.clear();
+  currentHand=0;mode=0;tempoFactor=1;scoreView.hand=0;scoreView.showKeyboard=false;
+  String file=prefs.getString("user_"+id+"_file","");
+  if(!file.isEmpty())loadScore(file,false);
+  else{position=0;loopStart=0;loopEnd=Double.MAX_VALUE;scoreView.invalidate();screens.showHome();updateInfo();}
+ }
+ void manageProfile(){
+  try{
+   LocalProfiles.Profile current=null;for(LocalProfiles.Profile p:profileStore().list())if(p.id==user)current=p;
+   if(current==null)return;final LocalProfiles.Profile selected=current;
+   new AlertDialog.Builder(this).setTitle(selected.name).setItems(new String[]{"Renomear perfil","Escolher avatar","Excluir perfil"},(dialog,which)->{
+    if(which==0){
+     EditText input=new EditText(this);input.setSingleLine(true);input.setText(selected.name);
+     new AlertDialog.Builder(this).setTitle("Renomear perfil").setView(input).setPositiveButton("Salvar",(d,w)->{
+      try{profileStore().update(selected.id,input.getText().toString(),selected.avatar);loadProfiles();}catch(RuntimeException ex){message(ex.getMessage());}
+     }).setNegativeButton("Cancelar",null).show();
+    }else if(which==1){
+     new AlertDialog.Builder(this).setTitle("Avatar").setItems(LocalProfiles.AVATARS,(d,index)->{
+      try{profileStore().update(selected.id,selected.name,index);loadProfiles();}catch(RuntimeException ex){message(ex.getMessage());}
+     }).show();
+    }else new AlertDialog.Builder(this).setTitle("Excluir perfil?")
+     .setMessage("Excluir este perfil e seus registros de estudo? As partituras compartilhadas serão mantidas.")
+     .setPositiveButton("Excluir",(d,w)->{
+      try{stopPlayback();int active=profileStore().delete(selected.id);score=null;applyProfile(active);loadProfiles();}
+      catch(RuntimeException ex){message(ex.getMessage());}
+     }).setNegativeButton("Cancelar",null).show();
+   }).show();
+  }catch(RuntimeException ex){message(ex.getMessage());}
  }
  void saveSession(){
   if(prefs==null||score==null)return;

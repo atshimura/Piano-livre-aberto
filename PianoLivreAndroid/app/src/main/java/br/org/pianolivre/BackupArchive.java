@@ -126,6 +126,18 @@ public final class BackupArchive {
    for(int i=0;i<profiles.length();i++)
     if(profiles.getString(i).trim().isEmpty())throw new IOException("Nome de perfil vazio");
   }
+  Object profileRecords=result.get("profiles_v2");
+  if(profileRecords!=null){
+   if(!(profileRecords instanceof String))throw new IOException("Perfis v2 inválidos");
+   try{
+    List<LocalProfiles.Profile> list=LocalProfiles.decode((String)profileRecords);
+    Object next=result.get("profiles_next_id");int maxId=0;for(LocalProfiles.Profile profile:list)maxId=Math.max(maxId,profile.id);
+    if(next!=null&&(!(next instanceof Integer)||((Integer)next)<=maxId))throw new IOException("Sequência de perfis inválida");
+    Object active=result.get("active_profile");
+    if(active!=null){boolean found=false;for(LocalProfiles.Profile profile:list)if(active instanceof Integer&&profile.id==((Integer)active))found=true;
+     if(!found)throw new IOException("Perfil ativo inexistente");}
+   }catch(IllegalArgumentException ex){throw new IOException("Perfis v2 inválidos",ex);}
+  }
   return result;
  }
  private static void applyPrefs(SharedPreferences prefs,Map<String,Object> values)throws IOException{
