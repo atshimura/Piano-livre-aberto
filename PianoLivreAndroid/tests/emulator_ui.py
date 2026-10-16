@@ -9,6 +9,12 @@ def adb(*args, timeout=70):
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                           timeout=timeout).stdout
 
+def dismiss_keyboard():
+    state=adb("shell","dumpsys","input_method")
+    if re.search(r"(?:mInputShown|mIsInputViewShown|isInputViewShown)=true",state):
+        adb("shell","input","keyevent","4")
+        time.sleep(.5)
+
 def screenshot(name):
     adb("shell", "screencap", "-p", "/sdcard/"+name)
     adb("pull", "/sdcard/"+name, name)
@@ -96,8 +102,10 @@ if __name__=="__main__":
     box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
     adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
     adb("shell","input","text","Perfil_Teste")
+    dismiss_keyboard()
     tap_text(["Criar"],exact=True)
-    assert any("Perfil_Teste" in n.attrib.get("text","") for n in dump().iter("node")), "New profile was not selected"
+    created=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert "Novo perfil" not in created and any("Perfil_Teste" in t for t in created) and any("PIANO LIVRE" in t for t in created), "New profile was not created and selected"
     tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Escolher avatar"]);tap_text(["★"],exact=True)
     assert any("★ Perfil_Teste" in n.attrib.get("text","") for n in dump().iter("node")), "Avatar was not retained"
     tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Excluir perfil"]);tap_text(["Excluir"],exact=True)
