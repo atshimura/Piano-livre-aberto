@@ -13,7 +13,7 @@
 - Importação MIDI como partitura, biblioteca aprimorada (busca/favoritos/coleções), metas/histórico e perfis completos.
 - Cobertura de notação complexa, robustez de MusicXML externo e critérios musicais testados editorialmente.
 - Migração assistida de dados entre o pacote histórico `br.org.pianolivre` e a edição pública `br.org.pianolivre.opensource`.
-- Assinatura durável para atualizar APKs públicos: dependente de quatro GitHub Secrets criados pelo mantenedor.
+- Assinatura persistente confirmada na 0.9.13/code22 pelo build público 38938312341; validar o certificado em cada entrega. Atualização com preservação de dados ainda requer ensaio físico.
 
 ## Roteiro vigente
 
