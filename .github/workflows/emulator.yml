@@ -59,9 +59,10 @@ jobs:
             adb shell pidof br.org.pianolivre.opensource
             adb logcat -c || echo 'WARNING: logcat clear unavailable on this emulator'
             adb shell am force-stop br.org.pianolivre.opensource
-            adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity --ez backup_selftest true
+            adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity --ez backup_selftest true --ez midi_selftest true
             sleep 3
             adb logcat -d -v brief | grep 'BACKUP_SELFTEST_PASS'
+            adb logcat -d -v brief | grep 'MIDI_SESSION_SELFTEST_PASS'
             python3 tests/emulator_ui.py
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
       - name: Store Android UI evidence

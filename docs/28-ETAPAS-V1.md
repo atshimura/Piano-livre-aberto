@@ -5,8 +5,8 @@ Plano aprovado nas instruções do Projeto em 16/10/2026. Acompanhamento: [issue
 | Etapa | Escopo | Critério de passagem | Situação |
 |---|---|---|---|
 | 1 | Estabilização, desempenho e fluidez da partitura | Regressões de movimento, pausa, seek, loop e resize; custo por frame reduzido e diagnóstico reproduzível | Escopo técnico concluído; aceite físico em #11 |
-| 2 | Aprimoramento do motor musical e da fidelidade MusicXML | Fixtures musicais, comparação Java/JS e limitações explícitas | Em desenvolvimento |
-| 3 | Aperfeiçoamento dos modos de aprendizagem, reconhecimento MIDI e teclado guia | Regressões dos modos, novos ataques, extras, calibração, pedal e duas mãos | Pendente |
+| 2 | Aprimoramento do motor musical e da fidelidade MusicXML | Fixtures musicais, comparação Java/JS e limitações explícitas | Escopo técnico concluído; limites no documento 30 |
+| 3 | Aperfeiçoamento dos modos de aprendizagem, reconhecimento MIDI e teclado guia | Regressões dos modos, novos ataques, extras, calibração, pedal e duas mãos | Em desenvolvimento |
 | 4 | Biblioteca, perfis, histórico e progresso de estudos | Busca/organização e progresso local compatíveis com retomada e backup | Pendente |
 | 5 | Importação MIDI, compatibilidade musical e preservação de dados | Importação documentada, entradas adversariais e recuperação sem perda | Pendente |
 | 6 | Consolidação, testes e preparação da versão 1.0 | Matriz de aceite, APKs assinados, instalação/atualização/backup e testes reais | Pendente |
@@ -81,3 +81,9 @@ Dinâmica numérica explícita no motor/JS e demonstração MIDI, com escopos cr
 ## Preparação da Etapa 3 — 0.9.21/code30
 
 Guia ganha marcas D/E, intensidade numérica representada no tom amarelo e barras de duração restante por pauta; preserva ambas as mãos e verde prioritário para MIDI. Não adiciona exigências ao Espera. Metadados e regressões em documento 31. Entrega depende da validação da dinâmica do PR #18 e da própria CI Android. Prosseguir depois com auditoria de modos, desconexão e notas presas.
+
+## Etapa 3 — 0.9.22/code31
+
+Etapa 2 encerrada no escopo técnico (#8) após PRs #15–#18 e nove fixtures; limites remanescentes explicitados e vinculados à Etapa 5/#10 e aceite físico/#11. PR #19 do guia integrado em 5a98f2547b7435c2f1311e1f2c68cd33c262e205 após build 38945148110 e emulador 38945148122 aprovados.
+
+Correção preparada para rearmar Espera após reconexão, isolar mensagens antigas por geração e impedir avanço na biblioteca/background. Self-test debug usa Activity/Handler reais e preferências isoladas; resultado Android depende da CI da própria entrega. Documento 32 explica testes e limites. Próxima tarefa: controles de canal/desligamento e notas presas; depois Etapa 4.
