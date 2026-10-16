@@ -15,11 +15,8 @@
 - Migração assistida de dados entre o pacote histórico `br.org.pianolivre` e a edição pública `br.org.pianolivre.opensource`.
 - Assinatura durável para atualizar APKs públicos: dependente de quatro GitHub Secrets criados pelo mantenedor.
 
-## Roteiro
-1. Manter a CI e a documentação públicas coerentes e sem artefatos privados.
-2. Preservar repertório com licenças verificadas e não incluir obras protegidas sem autorização.
-3. Configurar proteção de `main`, assinatura durável e fluxo de PR.
-4. Testar pessoalmente dispositivos e piano antes de declarar release estável.
-5. Desenvolver incrementalmente os recursos V1 pendentes em PRs pequenos e testados.
+## Roteiro vigente
+
+O desenvolvimento segue as **seis etapas aprovadas do Projeto**, detalhadas em [28 — Etapas até V1](28-ETAPAS-V1.md) e acompanhadas na [issue #4](https://github.com/atshimura/Piano-livre-aberto/issues/4). Etapa 1 em desenvolvimento; etapas 2–6 pendentes. A entrega inicial 0.9.13 reduz custo de animação e evita reconstrução de SVG ao abrir o teclado guia; resultados atuais e pendências estão no documento 28.
 
 **Estado legal/técnico:** GPL-3.0-only apenas para o código próprio; direitos das músicas descritos separadamente. Uma execução de CI verde comprova aquele commit e cenário automatizado, não conformidade jurídica integral nem qualidade certificada do produto.

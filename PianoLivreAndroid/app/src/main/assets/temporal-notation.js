@@ -837,7 +837,7 @@ function paintRail(st,beat){
  }
 }
 function moveTiles(st,offset){
- var width=st.viewport.clientWidth||window.innerWidth;
+ var width=st.viewportWidth;
  var min=Math.max(0,Math.floor((offset-30)/st.tileWidth));
  var max=Math.min(st.tiles.length-1,Math.floor((offset+width+30)/st.tileWidth));
  var prev=st.visibleTiles||[],next=[];
@@ -860,7 +860,7 @@ function highlightNotes(st,beat){
  if(st.selectedStamp===stamp)return;
  var set=function(k,on){
   if(!k)return;
-  st.root.querySelectorAll('.musical-event[data-beat="'+k+'"] ellipse').forEach(function(el){
+  (st.noteHeads[k]||[]).forEach(function(el){
    el.setAttribute("stroke",on?"#008E78":"#1E3049");
    el.setAttribute("stroke-width",on?"3.2":(el.getAttribute("fill")==="white"?"1.9":"1"));
   });
@@ -1073,12 +1073,21 @@ function render(xml,container,viewport,startBeat){
  container.innerHTML="";container.appendChild(root);
  var status=document.createElement("div");status.style.cssText="position:absolute;bottom:0;right:9px;color:#61788B;font:10px sans-serif;background:#ffffffba;padding:4px;";
  status.textContent="♪ Espaçamento proporcional ao tempo";root.appendChild(status);
+ // Index noteheads once, including duplicates drawn across tile boundaries.
+ // Playback must not search the entire SVG tree at every note onset.
+ var noteHeads=Object.create(null);
+ root.querySelectorAll('.musical-event').forEach(function(event){
+  var stamp=event.getAttribute("data-beat");
+  var heads=noteHeads[stamp]||(noteHeads[stamp]=[]);
+  event.querySelectorAll('ellipse').forEach(function(head){heads.push(head);});
+ });
  var initial=Number.isFinite(startBeat)?startBeat:0;
  state={layout:layout,viewport:viewport,container:container,root:root,sheet:sheet,cursor:cursor,beat:initial,
   anchorBeat:initial,anchorMs:performance.now(),bpm:100,moving:false,raf:0,
   lastPosition:NaN,unsupported:plan.unsupported,sampleCount:0,lastSampleMs:0,xml:xml,
   tiles:tileNodes,tileWidth:tileWidth,rail:rail,railLabel:"",loop:null,editingLoop:false,
-  selectedStamp:"",driftReport:[],lastFrameTime:0};
+  selectedStamp:"",noteHeads:noteHeads,viewportWidth:width,viewportHeight:viewport.clientHeight,
+  railSvg:railSvg,driftReport:[],lastFrameTime:0};
  if(plan.unsupported.length){status.textContent="Partitura temporal parcial: "+plan.unsupported.length+" elementos não interpretados"; }
  setupLoopControls(state);
  paintRail(state,initial);
@@ -1098,7 +1107,7 @@ function render(xml,container,viewport,startBeat){
   }
   if(st.moving&&st.sampleCount<7&&now-st.lastSampleMs>=350){
    console.log("TEMPORAL_SAMPLE "+JSON.stringify({beat:+current.toFixed(5),
-    offset:+offset.toFixed(3),bpm:st.bpm,cursor:st.layout.origin/(st.viewport.clientWidth||1)}));
+    offset:+offset.toFixed(3),bpm:st.bpm,cursor:st.layout.origin/(st.viewportWidth||1)}));
    st.sampleCount++;st.lastSampleMs=now;
   }
   st.raf=requestAnimationFrame(animation);
@@ -1112,7 +1121,10 @@ function render(xml,container,viewport,startBeat){
 }
 function sync(beat,bpm,playing){
  if(!state||!isFinite(beat))return;
- var now=performance.now(),rate=Math.max(10,Math.min(300,Number(bpm)||100));
+ var now=performance.now(),rate=Number(bpm);
+ // Native BPM already includes the study-speed factor. Clamping it here
+ // creates a second, incorrect tempo and recurring corrective jumps.
+ if(!Number.isFinite(rate)||rate<=0)rate=100;
  var st=state;
  if(!playing){
   st.moving=false;st.anchorBeat=beat;st.anchorMs=now;st.bpm=rate;
@@ -1132,13 +1144,23 @@ function sync(beat,bpm,playing){
 }
 function resize(){
  if(!state)return;
- var width=state.viewport.clientWidth;
- // Full rebuild for orientation changes; retain loop boundaries and editing mode.
- var saved=state.beat,xml=state.xml,container=state.container,viewport=state.viewport;
- var existing=state.loop,editing=state.editingLoop;
- if(xml){render(xml,container,viewport,saved);
-  if(state){state.loop=existing;setLoopEditing(editing);}
+ var st=state,viewport=st.viewport;
+ var width=Math.max(300,viewport.clientWidth||window.innerWidth),height=viewport.clientHeight;
+ if(width===st.viewportWidth&&height===st.viewportHeight)return;
+ if(width===st.viewportWidth){
+  // Opening the guide only changes height: keep SVG, clock and loop intact.
+  var transform="scaleY("+verticalScale(viewport)+")";
+  st.sheet.style.transform=transform;st.railSvg.style.transform=transform;
+  st.viewportHeight=height;
+  return;
  }
+ // Width changes affect cursor and tiles. Preserve the running visual clock.
+ var now=performance.now();
+ var saved=st.moving?st.anchorBeat+(now-st.anchorMs)*st.bpm/60000:st.anchorBeat;
+ saved=Math.max(0,Math.min(st.layout.plan.duration,saved));
+ var existing=st.loop,editing=st.editingLoop,moving=st.moving,bpm=st.bpm;
+ render(st.xml,st.container,viewport,saved);
+ if(state){state.loop=existing;setLoopEditing(editing);sync(saved,bpm,moving);}
 }
 function teardown(){if(!state)return;cancelAnimationFrame(state.raf);state=null;}
 var exported={parse:xmlTimeMap,buildLayout:buildLayout,render:render,sync:sync,resize:resize,teardown:teardown,

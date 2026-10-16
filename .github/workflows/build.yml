@@ -70,6 +70,7 @@ jobs:
           mkdir -p build/musicxml-audit
           npm install --prefix build/musicxml-audit --no-save --silent '@xmldom/xmldom@0.9.8'
           node tests/musicxml_visual_crosscheck.js
+          node tests/TemporalRenderingTest.js
       - name: Audit MIDI recognition over the public MusicXML corpus
         run: |
           mkdir -p build/recognition-tests
@@ -109,7 +110,7 @@ jobs:
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk | tee build/public-signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | tee build/public-apk-metadata.txt
-          grep -q "package: name='br.org.pianolivre.opensource' versionCode='21' versionName='0.9.12-open-beta'" build/public-apk-metadata.txt
+          grep -q "package: name='br.org.pianolivre.opensource' versionCode='22' versionName='0.9.13-open-beta'" build/public-apk-metadata.txt
           test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
           echo PUBLIC_DEBUG_APK_PASS
       - name: Upload isolated public debug APK
