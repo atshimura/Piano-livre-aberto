@@ -39,3 +39,5 @@ Arquivos de auditoria e evolução, preservados **como referências históricas,
 O índice do histórico privado, instruções de assinatura beta antiga e configuração de runner pessoal **não** são documentos operacionais deste repositório. O `AGENTS.md` público prevalece quando houver divergências.
 
 - [29 — Diagnóstico local de desempenho e lifecycle](29-DESEMPENHO-LIFECYCLE.md).
+
+- [30 — Fixtures compartilhadas do motor musical](30-FIXTURES-MOTOR-MUSICAL.md).

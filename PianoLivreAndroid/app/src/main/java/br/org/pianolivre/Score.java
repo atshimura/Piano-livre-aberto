@@ -103,11 +103,16 @@ public class Score {
  public static class Event {
   public double beat, length;
   public int midi, staff, voice, measure, velocity=80;
+  public String voiceId;
   public boolean tieStart, tieStop;
-  public Event(double b,double l,int n,int s,int v,int m){beat=b;length=l;midi=n;staff=s;voice=v;measure=m;}
+  public Event(double b,double l,int n,int s,int v,int m){beat=b;length=l;midi=n;staff=s;voice=v;voiceId=String.valueOf(v);measure=m;}
  }
  private static String text(Element e,String tag,String def){NodeList n=e.getElementsByTagName(tag);return n.getLength()>0?n.item(0).getTextContent().trim():def;}
  private static int number(String s,int fallback){try{return Integer.parseInt(s.trim());}catch(Exception e){return fallback;}}
+ private static double decimal(String s,double fallback){
+  try{double value=Double.parseDouble(s.trim());return Double.isFinite(value)?value:fallback;}
+  catch(Exception e){return fallback;}
+ }
  private static Element first(Element e,String tag){NodeList n=e.getElementsByTagName(tag);return n.getLength()>0?(Element)n.item(0):null;}
  /** Convert a printed beat-unit mark to quarter-notes per minute. */
  private static Double metronomeQuarterBpm(Element direction){
@@ -177,7 +182,7 @@ public class Score {
     throw new IOException("Parte com múltiplas pautas requer atribuição manual das mãos");
   }
   for(int pi=0;pi<parts.getLength();pi++){
-   Element part=(Element)parts.item(pi);NodeList measures=part.getElementsByTagName("measure");base=0;int divisions=1;int lastMidi=60;int beatsPerMeasure=4;int beatType=4;
+   Element part=(Element)parts.item(pi);NodeList measures=part.getElementsByTagName("measure");base=0;double divisions=1;int lastMidi=60;int beatsPerMeasure=4;int beatType=4;
    double repeatStart=0;boolean openForwardRepeat=false;
    Set<Integer> activeEndings=new HashSet<>();
    for(int mi=0;mi<measures.getLength();mi++){
@@ -219,7 +224,7 @@ public class Score {
     NodeList children=meas.getChildNodes();double cursor=0;double lastOnset=0;double max=0;
     for(int ci=0;ci<children.getLength();ci++){
      Node node=children.item(ci);if(!(node instanceof Element))continue;Element el=(Element)node;String tag=el.getTagName();
-     if(tag.equals("attributes")){divisions=number(text(el,"divisions",""+divisions),divisions);Element time=first(el,"time");if(time!=null){beatsPerMeasure=number(text(time,"beats","4"),4);beatType=number(text(time,"beat-type","4"),4);}}
+     if(tag.equals("attributes")){double newDivisions=decimal(text(el,"divisions",""+divisions),divisions);if(newDivisions>0)divisions=newDivisions;Element time=first(el,"time");if(time!=null){beatsPerMeasure=number(text(time,"beats","4"),4);beatType=number(text(time,"beat-type","4"),4);}}
      if(tag.equals("direction")){
       if(pi==0){
        Element directionType=first(el,"direction-type");
@@ -255,22 +260,22 @@ public class Score {
       }
       if(bpm==null)bpm=metronomeQuarterBpm(el);
       if(bpm!=null&&Double.isFinite(bpm)&&bpm>=10&&bpm<=600){
-       double offset=number(text(el,"offset","0"),0)/(double)Math.max(divisions,1);
+       double offset=decimal(text(el,"offset","0"),0)/divisions;
        reportedTempos.add(new TempoChange(Math.max(0,base+cursor+offset),bpm));
       }
      }
-     if(tag.equals("backup")){cursor-=number(text(el,"duration","0"),0)/(double)divisions;}
-     if(tag.equals("forward")){cursor+=number(text(el,"duration","0"),0)/(double)divisions;max=Math.max(max,cursor);}
+     if(tag.equals("backup")){cursor-=decimal(text(el,"duration","0"),0)/divisions;}
+     if(tag.equals("forward")){cursor+=decimal(text(el,"duration","0"),0)/divisions;max=Math.max(max,cursor);}
      if(!tag.equals("note"))continue;
      boolean chord=direct(el,"chord"),rest=direct(el,"rest"),grace=direct(el,"grace");
-     double dur=number(text(el,"duration","0"),0)/(double)Math.max(divisions,1);double onset=chord?lastOnset:cursor;
+     double dur=decimal(text(el,"duration","0"),0)/divisions;double onset=chord?lastOnset:cursor;
      if(!chord)lastOnset=cursor;
      if(!rest){Element pitch=first(el,"pitch");if(pitch!=null){
        String step=text(pitch,"step","C");// Map note spelling to MIDI semitone offset.
        int offset=0;switch(step){case "D":offset=2;break;case "E":offset=4;break;case "F":offset=5;break;case "G":offset=7;break;case "A":offset=9;break;case "B":offset=11;break;}
        int n=12*(number(text(pitch,"octave","4"),4)+1)+offset+number(text(pitch,"alter","0"),0);lastMidi=n;
        int localStaff=number(text(el,"staff",pi==0?"1":"2"),1);int staff=splitHands?pi+1:localStaff;int voice=number(text(el,"voice","1"),1);
-       Event ev=new Event(base+onset,dur,n,staff,voice,mi+1);NodeList ties=el.getElementsByTagName("tie");for(int ti=0;ti<ties.getLength();ti++){Element tie=(Element)ties.item(ti);if("start".equals(tie.getAttribute("type")))ev.tieStart=true;if("stop".equals(tie.getAttribute("type")))ev.tieStop=true;}
+       Event ev=new Event(base+onset,dur,n,staff,voice,mi+1);ev.voiceId=text(el,"voice","1");NodeList ties=el.getElementsByTagName("tie");for(int ti=0;ti<ties.getLength();ti++){Element tie=(Element)ties.item(ti);if("start".equals(tie.getAttribute("type")))ev.tieStart=true;if("stop".equals(tie.getAttribute("type")))ev.tieStop=true;}
        if(!grace)score.events.add(ev);
      }}
      if(!chord&&!grace){cursor+=dur;max=Math.max(max,cursor);}
@@ -330,7 +335,7 @@ public class Score {
   Map<String,Event> sustained=new HashMap<>();
   ArrayList<Event> merged=new ArrayList<>();
   for(Event e:score.events){
-   String key=e.staff+":"+e.voice+":"+e.midi;
+   String key=e.staff+":"+e.voiceId+":"+e.midi;
    Event prior=e.tieStop?sustained.get(key):null;
    if(prior!=null){
     prior.length=Math.max(prior.length,e.beat+e.length-prior.beat);

@@ -59,3 +59,7 @@ Na 0.9.15, TemporalRenderingTest acrescenta partitura sintética de 64 compassos
 Adicionados contadores locais de render/callbacks com memória fixa, snapshots e relatórios ao pausar/desmontar. Corrigido ticker nativo que continuava sendo agendado em background; WebViews recebem pause/resume e retorno conserva a execução pausada. Regressões determinísticas passam localmente; nova validação Android exige CI do próprio commit. Procedimento/métricas/limites em [29](29-DESEMPENHO-LIFECYCLE.md). Não se declara eliminada a travada física.
 
 Após comprovar CI e integrar esta entrega: reavaliar o fechamento técnico da Etapa 1, manter validação física pendente e iniciar fixtures/auditoria Java versus JS da Etapa 2 (#8), sem aguardar hardware.
+
+## Etapa 2 iniciada — 0.9.17/code26
+
+Enquanto a CI de lifecycle da Etapa 1 é acompanhada, auditoria independente reproduziu duas falhas: durações decimais perdidas e colisão de vozes textuais em ligaduras. Corrigidas com cinco fixtures compartilhadas e resultados esperados; ver documento 30. Etapa 1 mantém aceite físico pendente e não se presume encerrada antes da CI do PR #14. Etapa 2 segue incremental.
