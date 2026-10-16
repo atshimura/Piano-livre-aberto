@@ -16,6 +16,7 @@ def screenshot(name):
 def dump():
     for retry in range(3):
         try:
+            adb("shell", "rm", "-f", "/sdcard/ui.xml")
             adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
             adb("pull", "/sdcard/ui.xml", "window.xml")
             return ET.parse("window.xml").getroot()
@@ -24,7 +25,7 @@ def dump():
             time.sleep(4)
     raise AssertionError("Android UI hierarchy inaccessible")
 
-def tap_text(targets):
+def tap_text(targets, return_point=False):
     root=dump()
     for node in root.iter("node"):
         label=node.attrib.get("text","")
@@ -34,8 +35,9 @@ def tap_text(targets):
                 adb("shell", "input", "tap", str((nums[0]+nums[2])//2),
                     str((nums[1]+nums[3])//2))
                 print("Tapped",label,flush=True)
-                return label
+                return (str((nums[0]+nums[2])//2),str((nums[1]+nums[3])//2)) if return_point else label
     labels=[n.attrib.get("text","") for n in root.iter("node") if n.attrib.get("text")]
+    print(adb("logcat","-d","-s","PianoLivreUI:I","PianoLivreNotation:I","PianoLivreTimeline:I")[-18000:],flush=True)
     raise AssertionError("Not found: "+str(targets)+"; available: "+str(labels[:40]))
 
 def assert_running():
@@ -169,7 +171,7 @@ if __name__=="__main__":
     print("PASS: optional keyboard show/hide toggles",flush=True)
     tap_text(["Contínuo"])
     time.sleep(.5)
-    tap_text(["Iniciar"])
+    playback_point=tap_text(["Iniciar"],return_point=True)
     # Capture a moving reference video, not just static screenshots. On very
     # limited emulators, recording is optional; functional assertions remain strict.
     try:
@@ -195,6 +197,46 @@ if __name__=="__main__":
             assert abs(actual-plan["pxPerBeat"])<1, "Visual velocity not uniform over musical beats"
     print("PASS: continuous horizontal motion at proportional speed",flush=True)
     print("PASS: mode switch and play button accepted touch input",flush=True)
+    # UIAutomator requires an idle hierarchy. Pause using the verified button
+    # bounds before requesting another dump; never reuse an old XML snapshot.
+    adb("shell","input","tap",*playback_point)
+    time.sleep(.3)
+    # Lifecycle: background during playback must pause and retain that position.
+    tap_text(["Início"])
+    tap_text(["Iniciar"])
+    time.sleep(.4)
+    adb("shell","input","keyevent","3")
+    time.sleep(.6)
+    adb("shell","am","start","-W","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1)
+    resumed=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Iniciar" in t for t in resumed), "Background playback was not paused"
+    positions=[t for t in resumed if "posição " in t]
+    assert positions, "Position label missing after resume"
+    time.sleep(.4)
+    later=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert [t for t in later if "posição " in t]==positions, "Position advanced while paused after resume"
+    logs=adb("logcat","-d","-v","brief")
+    assert "LIFECYCLE_PAUSED" in logs and "LIFECYCLE_RESUMED" in logs
+    reports=[]
+    for line in logs.splitlines():
+        if "TEMPORAL_PERF {" in line:
+            reports.append(json.loads(line.split("TEMPORAL_PERF ",1)[1].split(" @",1)[0].strip()))
+    assert any(r["reason"]=="pause" and r["movingFrames"]>=2 for r in reports), "Moving frame summary missing"
+    assert all(r["renderMs"]>=0 and r["maxDrawMs"]>=0 for r in reports)
+    Path("piano-performance.json").write_text(json.dumps(reports,indent=2),encoding="utf-8")
+    print("PASS: background pauses transport, foreground retains position, local performance evidence captured",flush=True)
+    resume_point=tap_text(["Iniciar"],return_point=True)
+    time.sleep(.7)
+    adb("shell","input","tap",*resume_point)
+    time.sleep(.3)
+    stopped=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Iniciar" in t for t in stopped), "Manual pause after foreground failed"
+    new_positions=[t for t in stopped if "posição " in t]
+    before=float(positions[0].split("posição ",1)[1])
+    after=float(new_positions[0].split("posição ",1)[1])
+    assert after>before+.05, "Transport did not advance after manual restart"
+    print("PASS: playback advances and can pause after foreground",flush=True)
     tap_text(["Biblioteca"])
     time.sleep(1)
     assert_running()

@@ -359,6 +359,11 @@ class PianoScreens {
   virtualKeys.pressed.clear();virtualKeys.pressed.addAll(notes);
   virtualKeys.invalidate();
  }
+ void pauseNotation(){if(notation!=null)notation.onPause();if(freeNotation!=null)freeNotation.onPause();}
+ void resumeNotation(){
+  if(notation!=null)notation.onResume();if(freeNotation!=null)freeNotation.onResume();
+  if(isStudyOpen())followScore(a.position,true);
+ }
  void destroyNotation(){if(notation!=null){notation.dispose();notation=null;}
   if(freeNotation!=null){freeNotation.dispose();freeNotation=null;}}
  boolean isFreeOpen(){return freeRoot!=null&&freeRoot.getVisibility()==View.VISIBLE;}

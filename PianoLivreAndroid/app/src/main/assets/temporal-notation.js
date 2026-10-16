@@ -979,6 +979,7 @@ function verticalScale(viewport){
 }
 function render(xml,container,viewport,startBeat){
  teardown();
+ var renderStarted=performance.now();
  if(!container||!viewport)throw Error("Visualização sem contêiner");
  var width=Math.max(300,viewport.clientWidth||window.innerWidth);
  var layout=buildLayout(xml,width),plan=layout.plan,scale=verticalScale(viewport);
@@ -1087,13 +1088,27 @@ function render(xml,container,viewport,startBeat){
   lastPosition:NaN,unsupported:plan.unsupported,sampleCount:0,lastSampleMs:0,xml:xml,
   tiles:tileNodes,tileWidth:tileWidth,rail:rail,railLabel:"",loop:null,editingLoop:false,
   selectedStamp:"",noteHeads:noteHeads,viewportWidth:width,viewportHeight:viewport.clientHeight,
-  railSvg:railSvg,driftReport:[],lastFrameTime:0};
+  railSvg:railSvg,lastFrameTime:null,renderStarted:renderStarted,
+  metrics:{renderMs:performance.now()-renderStarted,firstPaintMs:null,frames:0,
+   movingFrames:0,intervals:0,gapTotalMs:0,maxGapMs:0,gapsOver50Ms:0,maxDrawMs:0,peakVisibleTiles:0}};
  if(plan.unsupported.length){status.textContent="Partitura temporal parcial: "+plan.unsupported.length+" elementos não interpretados"; }
  setupLoopControls(state);
  paintRail(state,initial);
  function animation(now){
   if(!state)return;
   var st=state;st.raf=0;
+  var started=performance.now(),m=st.metrics;
+  m.frames++;
+  if(m.firstPaintMs===null)m.firstPaintMs=started-st.renderStarted;
+  if(st.moving){
+   m.movingFrames++;
+   if(st.lastFrameTime!==null){
+    var gap=Math.max(0,now-st.lastFrameTime);
+    m.intervals++;m.gapTotalMs+=gap;m.maxGapMs=Math.max(m.maxGapMs,gap);
+    if(gap>50)m.gapsOver50Ms++;
+   }
+   st.lastFrameTime=now;
+  }else st.lastFrameTime=null;
   var current=st.moving?st.anchorBeat+(now-st.anchorMs)*st.bpm/60000:st.anchorBeat;
   current=Math.max(0,Math.min(st.layout.plan.duration,current));
   var offset=st.layout.pixelsPerBeat*current;
@@ -1110,6 +1125,8 @@ function render(xml,container,viewport,startBeat){
     offset:+offset.toFixed(3),bpm:st.bpm,cursor:st.layout.origin/(st.viewportWidth||1)}));
    st.sampleCount++;st.lastSampleMs=now;
   }
+  m.peakVisibleTiles=Math.max(m.peakVisibleTiles,(st.visibleTiles||[]).length);
+  m.maxDrawMs=Math.max(m.maxDrawMs,performance.now()-started);
   // Pause and the end of the score sleep until another native sample.
   if(st.moving&&current<st.layout.plan.duration)requestPaint(st);
  }
@@ -1120,6 +1137,16 @@ function render(xml,container,viewport,startBeat){
   firstXs:plan.notes.slice(0,12).map(function(n){return Math.round(layout.x(n.at));}),
   cursorFraction:0.4,unsupported:plan.unsupported}));
  return layout;
+}
+// Fixed-size, local-only counters. Callback spacing is not GPU/raster FPS.
+function diagnostics(){
+ if(!state)return null;
+ var st=state,m=st.metrics;
+ return Object.assign({},m,{tiles:st.tiles.length,notes:st.layout.plan.notes.length,
+  meanGapMs:m.intervals?m.gapTotalMs/m.intervals:0,pendingFrame:!!st.raf,moving:st.moving});
+}
+function reportDiagnostics(reason){
+ var data=diagnostics();if(data)console.log("TEMPORAL_PERF "+JSON.stringify(Object.assign({reason:reason},data)));
 }
 function requestPaint(st){
  if(!st.raf)st.raf=requestAnimationFrame(st.animation);
@@ -1132,8 +1159,10 @@ function sync(beat,bpm,playing){
  if(!Number.isFinite(rate)||rate<=0)rate=100;
  var st=state;
  if(!playing){
+  var wasMoving=st.moving;st.lastFrameTime=null;
   st.moving=false;st.anchorBeat=beat;st.anchorMs=now;st.bpm=rate;
   if(st.beat!==Math.max(0,Math.min(st.layout.plan.duration,beat)))requestPaint(st);
+  if(wasMoving)reportDiagnostics("pause");
   return;
  }
  var predicted=st.moving?st.anchorBeat+(now-st.anchorMs)*st.bpm/60000:st.anchorBeat;
@@ -1146,6 +1175,7 @@ function sync(beat,bpm,playing){
   // Gently slew phase, avoiding abrupt 2–10 px frame jumps.
   st.anchorBeat+=Math.max(-.003,Math.min(.003,error*0.035));
  }
+ if(!st.moving||!st.raf)st.lastFrameTime=null;
  st.bpm=rate;st.moving=true;requestPaint(st);
 }
 function resize(){
@@ -1168,9 +1198,9 @@ function resize(){
  render(st.xml,st.container,viewport,saved);
  if(state){state.loop=existing;setLoopEditing(editing);sync(saved,bpm,moving);}
 }
-function teardown(){if(!state)return;cancelAnimationFrame(state.raf);state=null;}
+function teardown(){if(!state)return;reportDiagnostics("teardown");cancelAnimationFrame(state.raf);state=null;}
 var exported={parse:xmlTimeMap,buildLayout:buildLayout,render:render,sync:sync,resize:resize,teardown:teardown,
- loopEdit:setLoopEditing,clearLoop:clearLoop,
+ loopEdit:setLoopEditing,clearLoop:clearLoop,diagnostics:diagnostics,
  _test:{computeX:computeX,cursorPx:cursorPx,msPerBeat:msPerBeat,
   staffY:staffY,staffLineY:staffLineY,clefAnchor:clefAnchor,
   pitchY:pitchY,drawClef:drawClef,

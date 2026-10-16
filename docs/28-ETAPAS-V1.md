@@ -51,3 +51,11 @@ Próxima tarefa concreta após CI/integração: diagnóstico reproduzível de fr
 Evidências 0.9.14: [PR #12](https://github.com/atshimura/Piano-livre-aberto/pull/12) integrado em `04ee7fb70d2006922776f824d991bafa7557568b`, após [build 38939921990](https://github.com/atshimura/Piano-livre-aberto/actions/runs/38939921990) e [emulador 38939921996](https://github.com/atshimura/Piano-livre-aberto/actions/runs/38939921996) aprovados no commit `309397d1f992f62506aaf11b47c4c7b6eb4f739c`. A assinatura do push da main deve ser conferida separadamente.
 
 Na 0.9.15, TemporalRenderingTest acrescenta partitura sintética de 64 compassos, mais de 50 tiles: busca adiante/atrás conserva no máximo três tiles visíveis e não realiza leitura de dimensões ou busca DOM por frame no cenário determinístico. Teste passou localmente. Não mede carga inicial real, FPS ou rasterização da WebView.
+
+## 0.9.16/code25 — diagnóstico e lifecycle
+
+0.9.15 integrada no PR #13 em ad2f29b; build main 38940939099 e emulador main 38940938990 aprovados, assinatura persistente/code24 confirmados.
+
+Adicionados contadores locais de render/callbacks com memória fixa, snapshots e relatórios ao pausar/desmontar. Corrigido ticker nativo que continuava sendo agendado em background; WebViews recebem pause/resume e retorno conserva a execução pausada. Regressões determinísticas passam localmente; nova validação Android exige CI do próprio commit. Procedimento/métricas/limites em [29](29-DESEMPENHO-LIFECYCLE.md). Não se declara eliminada a travada física.
+
+Após comprovar CI e integrar esta entrega: reavaliar o fechamento técnico da Etapa 1, manter validação física pendente e iniciar fixtures/auditoria Java versus JS da Etapa 2 (#8), sem aguardar hardware.

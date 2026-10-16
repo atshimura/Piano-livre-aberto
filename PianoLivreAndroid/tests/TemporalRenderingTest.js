@@ -58,3 +58,16 @@ assert.strictEqual(dimensions,longReads,'long score: no frame layout reads');
 assert.strictEqual(queries,longQueries,'long score: no frame DOM searches');
 T.sync(50,120,false);frame(now+16);assert.strictEqual(frames.size,0);T.teardown();
 console.log('PASS: long synthetic score, bounded visible tiles, forward/backward seek and idle drain');
+
+T.render(xml,container,viewport,0);frame(10000);
+T.sync(0,120,true);frame(10016);frame(10032);frame(10112);
+let metrics=T.diagnostics();
+assert.strictEqual(metrics.frames,4);assert.strictEqual(metrics.movingFrames,3);
+assert.strictEqual(metrics.intervals,2);assert.strictEqual(metrics.maxGapMs,80);
+assert.strictEqual(metrics.gapsOver50Ms,1);assert.strictEqual(metrics.meanGapMs,48);
+metrics.frames=-1;assert.strictEqual(T.diagnostics().frames,4,'diagnostics is a snapshot');
+T.sync(.224,120,false);frame(10128);frame(60000);
+T.sync(.224,120,true);frame(60016);frame(60032);
+assert.strictEqual(T.diagnostics().maxGapMs,80,'idle time excluded from moving gaps');
+T.teardown();assert.strictEqual(T.diagnostics(),null);
+console.log('PASS: bounded local frame counters, slow callback, copied snapshot and pause/resume gap exclusion');
