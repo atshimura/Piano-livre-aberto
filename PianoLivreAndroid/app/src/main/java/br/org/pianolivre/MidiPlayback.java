@@ -20,7 +20,7 @@ public final class MidiPlayback {
  public MidiPlayback(Score score,int hand,Sink sink){
   this.sink=sink;
   for(Score.Event e:score.events){
-   if(e.midi<0||e.midi>127||e.length<=0)continue;
+   if(e.midi<0||e.midi>127||e.length<=0||e.velocity<=0)continue;
    if(hand==1&&e.staff!=1)continue;
    if(hand==2&&e.staff==1)continue;
    actions.add(new Action(e.beat,e.midi,e.velocity,true));

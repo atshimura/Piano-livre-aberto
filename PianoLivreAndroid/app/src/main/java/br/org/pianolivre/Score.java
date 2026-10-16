@@ -17,6 +17,12 @@ public class Score {
   public TempoChange(double beat,double bpm){this.beat=beat;this.bpm=bpm;}
  }
  public final ArrayList<TempoChange> tempoChanges=new ArrayList<>();
+ private static final class DynamicChange {
+  final double beat,percent;final int part,staff;final String voice;
+  DynamicChange(double b,double p,int part,int staff,String voice){beat=b;percent=p;this.part=part;this.staff=staff;this.voice=voice;}
+ }
+ private static int velocity(double percent){return (int)Math.round(Math.max(0,Math.min(127,percent*.9)));}
+
  /** Simple MusicXML forward/backward barline repeat, on written-score beats. */
  public static final class RepeatSection {
   public final double start,end;public final int times;
@@ -105,6 +111,7 @@ public class Score {
   public double beat, length;
   public int midi, staff, voice, measure, velocity=80;
   public String voiceId;
+  private int sourcePart;private boolean velocityOverride;
   public boolean tieStart, tieStop;
   public Event(double b,double l,int n,int s,int v,int m){beat=b;length=l;midi=n;staff=s;voice=v;voiceId=String.valueOf(v);measure=m;}
  }
@@ -175,6 +182,7 @@ public class Score {
   Element root=doc.getDocumentElement();score.title=text(root,"work-title",text(root,"movement-title",fileName));
   NodeList parts=root.getElementsByTagName("part");double base=0;
   ArrayList<TempoChange> reportedTempos=new ArrayList<>();
+  ArrayList<DynamicChange> reportedDynamics=new ArrayList<>();
   // Staff numbers are local to each MusicXML part, not global hands.
   if(parts.getLength()>2)throw new IOException("Mais de duas partes requerem atribuição manual das mãos");
   boolean splitHands=parts.getLength()==2;
@@ -260,16 +268,23 @@ public class Score {
        }
       }
       Element sound=tag.equals("sound")?el:first(el,"sound");
+      Element soundOffset=child(sound,"offset"),directionOffset=child(el,"offset");
+      Element effectiveOffset=soundOffset!=null?soundOffset:directionOffset;
+      double musicalOffset=decimal(effectiveOffset==null?"0":effectiveOffset.getTextContent(),0)/divisions;
+      if(sound!=null&&sound.hasAttribute("dynamics")){
+       double percent=decimal(sound.getAttribute("dynamics"),Double.NaN);
+       if(Double.isFinite(percent)&&percent>=0){
+        int dynamicStaff=splitHands?pi+1:number(text(el,"staff","0"),0);
+        reportedDynamics.add(new DynamicChange(Math.max(0,base+cursor+musicalOffset),percent,pi,dynamicStaff,text(el,"voice","")));
+       }
+      }
       Double bpm=null;
       if(sound!=null&&sound.hasAttribute("tempo")){
        try{bpm=Double.parseDouble(sound.getAttribute("tempo"));}catch(Exception ignored){}
       }
       if(bpm==null&&tag.equals("direction"))bpm=metronomeQuarterBpm(el);
       if(bpm!=null&&Double.isFinite(bpm)&&bpm>=10&&bpm<=600){
-       Element soundOffset=child(sound,"offset"),directionOffset=child(el,"offset");
-       Element effectiveOffset=soundOffset!=null?soundOffset:directionOffset;
-       double offset=decimal(effectiveOffset==null?"0":effectiveOffset.getTextContent(),0)/divisions;
-       reportedTempos.add(new TempoChange(Math.max(0,base+cursor+offset),bpm));
+       reportedTempos.add(new TempoChange(Math.max(0,base+cursor+musicalOffset),bpm));
       }
      }
      if(tag.equals("backup")){cursor-=decimal(text(el,"duration","0"),0)/divisions;}
@@ -283,7 +298,10 @@ public class Score {
        int offset=0;switch(step){case "D":offset=2;break;case "E":offset=4;break;case "F":offset=5;break;case "G":offset=7;break;case "A":offset=9;break;case "B":offset=11;break;}
        int n=12*(number(text(pitch,"octave","4"),4)+1)+offset+number(text(pitch,"alter","0"),0);lastMidi=n;
        int localStaff=number(text(el,"staff",pi==0?"1":"2"),1);int staff=splitHands?pi+1:localStaff;int voice=number(text(el,"voice","1"),1);
-       Event ev=new Event(base+onset,dur,n,staff,voice,mi+1);ev.voiceId=text(el,"voice","1");NodeList ties=el.getElementsByTagName("tie");for(int ti=0;ti<ties.getLength();ti++){Element tie=(Element)ties.item(ti);if("start".equals(tie.getAttribute("type")))ev.tieStart=true;if("stop".equals(tie.getAttribute("type")))ev.tieStop=true;}
+       Event ev=new Event(base+onset,dur,n,staff,voice,mi+1);ev.voiceId=text(el,"voice","1");ev.sourcePart=pi;
+       double noteDynamics=decimal(el.getAttribute("dynamics"),Double.NaN);
+       if(Double.isFinite(noteDynamics)&&noteDynamics>=0){ev.velocity=velocity(noteDynamics);ev.velocityOverride=true;}
+       NodeList ties=el.getElementsByTagName("tie");for(int ti=0;ti<ties.getLength();ti++){Element tie=(Element)ties.item(ti);if("start".equals(tie.getAttribute("type")))ev.tieStart=true;if("stop".equals(tie.getAttribute("type")))ev.tieStop=true;}
        if(!grace)score.events.add(ev);
      }}
      if(!chord&&!grace){cursor+=dur;max=Math.max(max,cursor);}
@@ -336,6 +354,14 @@ public class Score {
     base+=span;
    }
    if(pi==0)score.durationBeats=base;
+  }
+  reportedDynamics.sort(Comparator.comparingDouble(d->d.beat));
+  for(Event e:score.events)if(!e.velocityOverride){
+   for(DynamicChange change:reportedDynamics){
+    if(change.beat>e.beat+1e-8)break;
+    if(change.part==e.sourcePart&&(change.staff==0||change.staff==e.staff)
+       &&(change.voice.isEmpty()||change.voice.equals(e.voiceId)))e.velocity=velocity(change.percent);
+   }
   }
   score.events.sort(Comparator.<Event>comparingDouble(e->e.beat).thenComparingInt(e->e.staff));
   // MusicXML ties extend an existing key press, rather than attack the same

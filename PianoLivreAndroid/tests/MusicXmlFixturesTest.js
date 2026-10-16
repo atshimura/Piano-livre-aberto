@@ -9,6 +9,8 @@ const rows=cp.execFileSync('java',['-cp','build/score-tests','MusicXmlFixtureInv
 const step={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 function close(a,b,why){assert(Math.abs(a-b)<1e-7,why+': '+a+' vs '+b);}
 const expected={
+ 'two-part-dynamics.xml':{end:4,notes:[[0,60,1,4],[0,48,2,4]],velocity:[45,90],tempo:[]},
+ 'explicit-dynamics.xml':{end:4,notes:[[0,60,1,1],[0,55,2,1],[1,62,1,1],[1,57,2,3],[2,64,1,1],[3,65,1,1]],velocity:[45,45,113,90,0,127],tempo:[]},
  'tempo-sound-offset.xml':{end:8,notes:[[0,60,1,1],[1,62,1,1],[2,64,1,2],[4,65,1,4]],tempo:[[0,120],[1.5,60],[1.75,90],[3.5,80]]},
  'incomplete-ties.xml':{end:4,notes:[[0,60,1,1],[1,60,1,1],[3,60,1,1]],tempo:[]},
  'named-voices-ties.xml':{end:2,notes:[[0,60,1,2],[0,60,1,2]],tempo:[]},
@@ -22,17 +24,20 @@ for(const [file,want] of Object.entries(expected)){
  assert.strictEqual(java.filter(r=>r[0]==='WARNING').length,file==='incomplete-ties.xml'?1:0,'warnings deduplicated for '+file);
  const native=java.filter(r=>r[0]==='NOTE').map(r=>r.slice(2).map(Number));
  const attacks=java.filter(r=>r[0]==='ATTACK').map(r=>r.slice(2).map(Number));
- const visual=[],held=new Map();
+ const visual=[],visualVelocity=[],held=new Map();
  for(const n of plan.notes.filter(n=>!n.grace)){
   const midi=12*(n.oct+1)+step[n.step]+n.alter,key=n.staff+':'+n.voice+':'+midi;
   const prior=n.ties.includes('stop')?held.get(key):null;
   if(prior){prior[3]=Math.max(prior[3],n.at+n.dur-prior[0]);if(!n.ties.includes('start'))held.delete(key);}
-  else{const event=[n.at,midi,n.staff,n.dur];visual.push(event);if(n.ties.includes('start'))held.set(key,event);}
+  else{const event=[n.at,midi,n.staff,n.dur];visual.push(event);visualVelocity.push(n.velocity);if(n.ties.includes('start'))held.set(key,event);}
  }
  for(const [label,notes] of [['Java',native],['Java Wait attacks',attacks],['JS',visual]]){
   assert.strictEqual(notes.length,want.notes.length,label+' count '+file);
   notes.forEach((n,i)=>n.forEach((v,j)=>close(v,want.notes[i][j],label+' event '+i+'/'+j)));
  }
+ const wantVelocity=want.velocity||want.notes.map(()=>80);
+ assert.deepStrictEqual(java.filter(r=>r[0]==='VELOCITY').map(r=>+r[2]),wantVelocity,'Java dynamics '+file);
+ assert.deepStrictEqual(visualVelocity,wantVelocity,'JS dynamics '+file);
  close(+java.find(r=>r[0]==='END')[2],want.end,'Java end');close(plan.duration,want.end,'JS end');
  const tempos=java.filter(r=>r[0]==='TEMPO').map(r=>r.slice(2).map(Number));
  assert.strictEqual(tempos.length,want.tempo.length);
