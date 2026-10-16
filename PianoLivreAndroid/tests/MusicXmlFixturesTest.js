@@ -9,6 +9,7 @@ const rows=cp.execFileSync('java',['-cp','build/score-tests','MusicXmlFixtureInv
 const step={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 function close(a,b,why){assert(Math.abs(a-b)<1e-7,why+': '+a+' vs '+b);}
 const expected={
+ 'incomplete-ties.xml':{end:4,notes:[[0,60,1,1],[1,60,1,1],[3,60,1,1]],tempo:[]},
  'named-voices-ties.xml':{end:2,notes:[[0,60,1,2],[0,60,1,2]],tempo:[]},
  'ties-voices-grace.xml':{end:4,notes:[[0,60,1,3],[0,52,2,1],[3,64,1,1]],tempo:[]},
  'tuplet-pickup.xml':{end:11/3,notes:[[0,60,1,1/3],[1/3,62,1,1/3],[2/3,64,1,3]],tempo:[]},
@@ -17,7 +18,9 @@ const expected={
 expected['integer-equivalent.xml']=expected['decimal-divisions.xml'];
 for(const [file,want] of Object.entries(expected)){
  const java=rows.filter(r=>r[1]===file),plan=T.parse(fs.readFileSync('tests/fixtures/motor/'+file,'utf8'));
+ assert.strictEqual(java.filter(r=>r[0]==='WARNING').length,file==='incomplete-ties.xml'?1:0,'warnings deduplicated for '+file);
  const native=java.filter(r=>r[0]==='NOTE').map(r=>r.slice(2).map(Number));
+ const attacks=java.filter(r=>r[0]==='ATTACK').map(r=>r.slice(2).map(Number));
  const visual=[],held=new Map();
  for(const n of plan.notes.filter(n=>!n.grace)){
   const midi=12*(n.oct+1)+step[n.step]+n.alter,key=n.staff+':'+n.voice+':'+midi;
@@ -25,7 +28,7 @@ for(const [file,want] of Object.entries(expected)){
   if(prior){prior[3]=Math.max(prior[3],n.at+n.dur-prior[0]);if(!n.ties.includes('start'))held.delete(key);}
   else{const event=[n.at,midi,n.staff,n.dur];visual.push(event);if(n.ties.includes('start'))held.set(key,event);}
  }
- for(const [label,notes] of [['Java',native],['JS',visual]]){
+ for(const [label,notes] of [['Java',native],['Java Wait attacks',attacks],['JS',visual]]){
   assert.strictEqual(notes.length,want.notes.length,label+' count '+file);
   notes.forEach((n,i)=>n.forEach((v,j)=>close(v,want.notes[i][j],label+' event '+i+'/'+j)));
  }

@@ -63,3 +63,7 @@ Após comprovar CI e integrar esta entrega: reavaliar o fechamento técnico da E
 ## Etapa 2 iniciada — 0.9.17/code26
 
 Enquanto a CI de lifecycle da Etapa 1 é acompanhada, auditoria independente reproduziu duas falhas: durações decimais perdidas e colisão de vozes textuais em ligaduras. Corrigidas com cinco fixtures compartilhadas e resultados esperados; ver documento 30. Etapa 1 mantém aceite físico pendente e não se presume encerrada antes da CI do PR #14. Etapa 2 segue incremental.
+
+## Etapa 2 — 0.9.18/code27
+
+Corrige nota omitida no Espera quando há tie stop sem início no arquivo. Fixture verifica três ataques (antes, apenas um estava disponível), aviso de interpretação único e fonte intacta. Ligaduras completas preservadas e regressões existentes aprovadas localmente. Ver documento 30. Dependências: validar/integrar PR #14 e #15 antes desta entrega; conferir CI do próprio commit.

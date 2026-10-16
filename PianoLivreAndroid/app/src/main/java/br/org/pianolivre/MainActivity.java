@@ -127,6 +127,7 @@ public class MainActivity extends Activity {
   if(free){screens.showFree();}
   else{screens.showStudy();screens.displayScore(score,position);if(mode==0)prepareWaiting();}
   updateInfo();saveSession();
+  if(!score.importWarnings.isEmpty())message("Aviso de interpretação: "+String.join("; ",score.importWarnings));
   if(routeHasMarkers&&!route.supported())
    message("Atenção: não é possível determinar com segurança todos os retornos: "+
      String.join(", ",route.warnings)+". A reprodução desta partitura será linear.");

@@ -27,3 +27,11 @@ O compilador Java local não tem binário javac no PATH, mas o módulo jdk.compi
 ### Limitações e próxima tarefa
 
 Essa cobertura não certifica todo MusicXML. Transposição, microtons, notação complexa, métricas compostas/aditivas, entradas inválidas, tie stop sem início e partes com compassos de durações divergentes ainda precisam de auditoria explícita. A fidelidade editorial e temporização Yamaha permanecem sem validação física. Próxima tarefa: ampliar fixtures de ligaduras incompletas e ordem musical, com expectativas independentes e sem modificar XML original.
+
+## 0.9.18/code27 — ligação incompleta e contrato do Espera
+
+Fixture incomplete-ties reproduziu dois finais de ligadura sem início correspondente: havia três eventos no modelo, mas apenas um ataque disponível no Espera. O modelo derivado agora mantém essas notas como ataques e emite um aviso de interpretação único ao abrir o arquivo. XML original preservado. Não altera a interpretação histórica de ligaduras completas (inclusive a fixture existente que sustenta a nota entre compassos); não cria exigência de duração/pedal no Espera.
+
+O inventário das fixtures passa a verificar também Score.at em cada onset, avisos sem duplicação e igualdade byte/texto do XML sintético original. As seis fixtures com expectativas independentes passam localmente. Regressões JVM e comparação musical também passaram. CI Android/PR da própria entrega ainda precisam ser confirmados.
+
+Próxima tarefa: fixtures de percurso com expectativas de Note On/Off e revisão das limitações de transposição/microtons/métricas compostas; não declarar toda a Etapa 2 concluída pela correção desses casos.
