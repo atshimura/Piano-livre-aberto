@@ -1093,7 +1093,7 @@ function render(xml,container,viewport,startBeat){
  paintRail(state,initial);
  function animation(now){
   if(!state)return;
-  var st=state;
+  var st=state;st.raf=0;
   var current=st.moving?st.anchorBeat+(now-st.anchorMs)*st.bpm/60000:st.anchorBeat;
   current=Math.max(0,Math.min(st.layout.plan.duration,current));
   var offset=st.layout.pixelsPerBeat*current;
@@ -1110,14 +1110,19 @@ function render(xml,container,viewport,startBeat){
     offset:+offset.toFixed(3),bpm:st.bpm,cursor:st.layout.origin/(st.viewportWidth||1)}));
    st.sampleCount++;st.lastSampleMs=now;
   }
-  st.raf=requestAnimationFrame(animation);
+  // Pause and the end of the score sleep until another native sample.
+  if(st.moving&&current<st.layout.plan.duration)requestPaint(st);
  }
- state.raf=requestAnimationFrame(animation);
+ state.animation=animation;
+ requestPaint(state);
  console.log("TIMELINE_READY "+JSON.stringify({notes:plan.notes.length,bars:plan.bars.length,
   pxPerBeat:layout.pixelsPerBeat,origin:layout.origin,verticalScale:scale,viewportHeight:viewport.clientHeight,firstBeats:plan.notes.slice(0,12).map(function(n){return n.at;}),
   firstXs:plan.notes.slice(0,12).map(function(n){return Math.round(layout.x(n.at));}),
   cursorFraction:0.4,unsupported:plan.unsupported}));
  return layout;
+}
+function requestPaint(st){
+ if(!st.raf)st.raf=requestAnimationFrame(st.animation);
 }
 function sync(beat,bpm,playing){
  if(!state||!isFinite(beat))return;
@@ -1128,6 +1133,7 @@ function sync(beat,bpm,playing){
  var st=state;
  if(!playing){
   st.moving=false;st.anchorBeat=beat;st.anchorMs=now;st.bpm=rate;
+  if(st.beat!==Math.max(0,Math.min(st.layout.plan.duration,beat)))requestPaint(st);
   return;
  }
  var predicted=st.moving?st.anchorBeat+(now-st.anchorMs)*st.bpm/60000:st.anchorBeat;
@@ -1140,7 +1146,7 @@ function sync(beat,bpm,playing){
   // Gently slew phase, avoiding abrupt 2–10 px frame jumps.
   st.anchorBeat+=Math.max(-.003,Math.min(.003,error*0.035));
  }
- st.bpm=rate;st.moving=true;
+ st.bpm=rate;st.moving=true;requestPaint(st);
 }
 function resize(){
  if(!state)return;

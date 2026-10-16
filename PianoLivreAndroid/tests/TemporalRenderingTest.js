@@ -18,17 +18,17 @@ const ctx={document,DOMParser,performance:{now:()=>now},console:{log(){}},reques
 const T=ctx.TemporalNotation,container=new Node('div');let width=900,height=250;
 const viewport={get clientWidth(){dimensions++;return width;},get clientHeight(){dimensions++;return height;}};
 const xml=`<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type><staff>1</staff></note><note><pitch><step>D</step><octave>4</octave></pitch><duration>15</duration><type>whole</type><staff>1</staff></note></measure></part></score-partwise>`;
-function frame(ms){now=ms;const work=[...frames.values()];frames.clear();for(const fn of work)fn(now);assert.strictEqual(frames.size,1,'single animation loop');}
+function frame(ms){now=ms;const work=[...frames.values()];frames.clear();for(const fn of work)fn(now);assert(frames.size<=1,'at most one animation loop');}
 function track(){return container.children[0].children.find(n=>n.id==='timeline-track');}
 function offset(){return Number(track().children[0].style.transform.match(/translate3d\(([-\d.]+)/)[1]);}
-const layout=T.render(xml,container,viewport,0);frame(0);const original=track(),root=container.children[0];
+const layout=T.render(xml,container,viewport,0);frame(0);assert.strictEqual(frames.size,0,'initial paused render sleeps');const original=track(),root=container.children[0];
 const note=root.querySelectorAll('.musical-event')[0].querySelector('ellipse');assert.strictEqual(note.attrs.stroke,'#008E78');
 const reads=dimensions,searches=queries;T.sync(0,120,true);frame(250);frame(500);
 assert.strictEqual(dimensions,reads,'no geometry reads per frame');assert.strictEqual(queries,searches,'indexed highlighting');assert.strictEqual(note.attrs.stroke,'#1E3049');assert(Math.abs(offset()+layout.pixelsPerBeat)<.01);
 height=160;T.resize();assert.strictEqual(track(),original,'height retains tiles');assert.strictEqual(container.children[0],root);assert(original.style.transform.startsWith('scaleY('));T.resize();assert.strictEqual(track(),original);
 frame(750);assert(Math.abs(offset()+1.5*layout.pixelsPerBeat)<.01,'height retains running clock');
 width=1000;T.resize();assert.notStrictEqual(track(),original);frame(1000);assert(Math.abs(offset()+2*layout.pixelsPerBeat)<.01,'width preserves running clock');
-T.sync(3,120,false);frame(1200);const paused=offset();frame(1600);assert.strictEqual(offset(),paused);
+T.sync(3,120,false);frame(1200);const paused=offset();assert.strictEqual(frames.size,0,'pause drains scheduled frame');for(let i=0;i<240;i++)frame(1200+i);T.sync(3,120,false);assert.strictEqual(frames.size,0,'unchanged paused sample stays asleep');frame(1600);assert.strictEqual(offset(),paused);
 T.sync(0,120,false);frame(1700);assert.strictEqual(offset(),0);
 T.sync(10,120,true);frame(1800);T.sync(0,120,true);frame(1800);assert.strictEqual(offset(),0);
 // Native tempo multiplied by study speed must not be clamped visually.
@@ -37,5 +37,8 @@ for(const bpm of [6,600]){
  T.sync(0,bpm,true);frame(now+100);
  assert(Math.abs(offset()+layout.pixelsPerBeat*bpm/600)<.01,'exact effective BPM '+bpm);
 }
+T.sync(16,120,true);frame(now+1);assert.strictEqual(frames.size,0,'end of score sleeps');
+T.sync(0,120,true);assert.strictEqual(frames.size,1,'loop wakes from end');frame(now+10);
 T.teardown();assert.strictEqual(frames.size,0);
+T.render(xml,container,viewport,2);frame(now);assert.strictEqual(frames.size,0,'replacement score starts paused');T.teardown();
 console.log('PASS: indexed highlights, no frame geometry reads, resize, clock, pause, seek, loop and teardown');

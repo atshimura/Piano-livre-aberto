@@ -110,7 +110,10 @@ jobs:
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk | tee build/public-signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | tee build/public-apk-metadata.txt
-          grep -q "package: name='br.org.pianolivre.opensource' versionCode='22' versionName='0.9.13-open-beta'" build/public-apk-metadata.txt
+          version_code=$(sed -n 's/^pianolivre.beta.versionCode=//p' gradle.properties)
+          version_name=$(sed -n 's/^pianolivre.beta.versionName=//p' gradle.properties)
+          test -n "$version_code" && test -n "$version_name"
+          grep -Fq "package: name='br.org.pianolivre.opensource' versionCode='$version_code' versionName='$version_name'" build/public-apk-metadata.txt
           test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
           echo PUBLIC_DEBUG_APK_PASS
       - name: Upload isolated public debug APK
