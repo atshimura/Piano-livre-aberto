@@ -112,8 +112,8 @@ function xmlTimeMap(xml) {
       }else{unsupported.push("nota sem altura no compasso "+(mi+1));}
      }else{result.rests.push(mark);}
      if(!chord&&!grace){cursor+=dur;max=Math.max(max,cursor);}
-    }else if(tag==="direction"){
-     var sound=direct(node,"sound"),quarterBpm=NaN;
+    }else if(tag==="direction"||tag==="sound"){
+     var sound=tag==="sound"?node:direct(node,"sound"),quarterBpm=NaN;
      if(sound&&sound.hasAttribute("tempo"))quarterBpm=+sound.getAttribute("tempo");
      else{
       var printed=direct(direct(node,"direction-type"),"metronome");
@@ -127,8 +127,8 @@ function xmlTimeMap(xml) {
       }
      }
      if(isFinite(quarterBpm)&&quarterBpm>=10&&quarterBpm<=600){
-      var tempoOffset=num(node,"offset",0)/cfg.div;
-      tempo.push({part:pi,measure:mi,at:Math.max(0,cursor+tempoOffset),bpm:quarterBpm});
+      var tempoOffset=(direct(sound,"offset")?num(sound,"offset",0):num(node,"offset",0))/cfg.div;
+      tempo.push({part:pi,measure:mi,at:cursor+tempoOffset,bpm:quarterBpm});
      }
      var dt=direct(node,"direction-type");
      if(dt){
@@ -159,7 +159,7 @@ function xmlTimeMap(xml) {
  var starts=[0];
  for(var i=0;i<lengths.length;i++)starts.push(starts[i]+lengths[i]);
  // Tempo directions share the same absolute score-quarter-note clock as Java.
- tempo.forEach(function(entry){entry.beat=starts[entry.measure]+entry.at;});
+ tempo.forEach(function(entry){entry.beat=Math.max(0,starts[entry.measure]+entry.at);});
  tempo.sort(function(a,b){return a.beat-b.beat||a.part-b.part;});
  tempo=tempo.filter(function(entry,index){
   return index===0 || Math.abs(entry.beat-tempo[index-1].beat)>0.00000001;

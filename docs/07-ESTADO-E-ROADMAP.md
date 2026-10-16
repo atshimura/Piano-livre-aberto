@@ -17,6 +17,6 @@
 
 ## Roteiro vigente
 
-O desenvolvimento segue as **seis etapas aprovadas do Projeto**, detalhadas em [28 — Etapas até V1](28-ETAPAS-V1.md) e acompanhadas na [issue #4](https://github.com/atshimura/Piano-livre-aberto/issues/4). Etapa 1 em desenvolvimento; etapas 2–6 pendentes. A entrega inicial 0.9.13 reduz custo de animação e evita reconstrução de SVG ao abrir o teclado guia; resultados atuais e pendências estão no documento 28.
+O desenvolvimento segue as **seis etapas aprovadas do Projeto**, detalhadas em [28 — Etapas até V1](28-ETAPAS-V1.md) e acompanhadas na [issue #4](https://github.com/atshimura/Piano-livre-aberto/issues/4). Etapa 1 com escopo técnico automatizado concluído no PR #14; aceite físico permanece na Etapa 6. Etapa 2 em desenvolvimento; etapas 3–6 pendentes. A entrega inicial 0.9.13 reduz custo de animação e evita reconstrução de SVG ao abrir o teclado guia; resultados atuais e pendências estão no documento 28.
 
 **Estado legal/técnico:** GPL-3.0-only apenas para o código próprio; direitos das músicas descritos separadamente. Uma execução de CI verde comprova aquele commit e cenário automatizado, não conformidade jurídica integral nem qualidade certificada do produto.
