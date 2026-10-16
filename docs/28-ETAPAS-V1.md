@@ -87,3 +87,7 @@ Guia ganha marcas D/E, intensidade numérica representada no tom amarelo e barra
 Etapa 2 encerrada no escopo técnico (#8) após PRs #15–#18 e nove fixtures; limites remanescentes explicitados e vinculados à Etapa 5/#10 e aceite físico/#11. PR #19 do guia integrado em 5a98f2547b7435c2f1311e1f2c68cd33c262e205 após build 38945148110 e emulador 38945148122 aprovados.
 
 Correção preparada para rearmar Espera após reconexão, isolar mensagens antigas por geração e impedir avanço na biblioteca/background. Self-test debug usa Activity/Handler reais e preferências isoladas; resultado Android depende da CI da própria entrega. Documento 32 explica testes e limites. Próxima tarefa: controles de canal/desligamento e notas presas; depois Etapa 4.
+
+## Etapa 3 — 0.9.23/code32
+
+Tratamento de entrada CC120/121/123 com isolamento de canais, teclas e vozes retidas por pedal. Regressão JVM 12.672 asserções aprovada e self-test Android ampliado, pendente da própria CI. Documento 32 registra semântica, fonte e limites. Após validar/integrar a sequência MIDI, consolidar escopo técnico da Etapa 3 e seguir Etapa 4 (busca/organização, perfis estáveis, histórico local compatível com backup).

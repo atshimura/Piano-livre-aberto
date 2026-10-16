@@ -80,6 +80,24 @@ public final class MidiPerformance {
   }
   pedal[channel]=next;
  }
+ /** MIDI channel-mode input: CC123 releases keys with sustain; CC120 ends sound immediately.
+  * CC121 resets the controller state tracked here (CC64), not held keys. */
+ public boolean channelMode(int channel,int controller,long whenMs){
+  if(channel<0||channel>15||(controller!=120&&controller!=121&&controller!=123))return false;
+  if(controller==121){control64(channel,0,whenMs);return true;}
+  long when=time(whenMs);
+  for(Iterator<Map.Entry<Integer,Pending>> it=physicallyDown.entrySet().iterator();it.hasNext();){
+   Map.Entry<Integer,Pending> e=it.next();Pending p=e.getValue();
+   if(p.channel!=channel)continue;
+   p.keyReleased=when;it.remove();
+   if(controller==123&&pedal[channel])sustainedByPedal.put(e.getKey(),p);
+   else complete(p,when);
+  }
+  if(controller==120)for(Iterator<Map.Entry<Integer,Pending>> it=sustainedByPedal.entrySet().iterator();it.hasNext();){
+   Pending p=it.next().getValue();if(p.channel==channel){complete(p,when);it.remove();}
+  }
+  return true;
+ }
  /** Safe clear on USB unplug. Still-unreleased notes are discarded, not graded. */
  public void disconnect(){
   physicallyDown.clear();sustainedByPedal.clear();Arrays.fill(pedal,false);

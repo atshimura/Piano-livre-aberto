@@ -29,6 +29,13 @@ final class MidiSessionSelfTest {
    a.foreground=true;a.disconnectMidi();a.rearmWaitIfStudying();notes(a,expected);
    check(a.waitTraveling||a.position!=start,"fresh foreground attacks advance after reconnect");
    a.stopPlayback();a.screens.showHome();a.disconnectMidi();
+   a.onMidiMessage(0x90,60,80);a.onMidiMessage(0x91,60,90);a.onMidiMessage(0xB0,64,127);
+   a.onMidiMessage(0xB0,123,0);
+   check(a.downKeys.contains(60)&&a.performance.physicalKeysDown()==1,"CC123 isolates channel, same pitch still held elsewhere");
+   a.onMidiMessage(0xB1,120,0);
+   check(!a.downKeys.contains(60)&&a.performance.soundingVoices()==1&&a.sustainDown,"CC120 clears pressed keys without discarding other-channel sustain");
+   a.onMidiMessage(0xB0,121,0);
+   check(a.performance.soundingVoices()==0&&!a.sustainDown,"CC121 releases retained pedal voices");
    int before=a.receivedMessages;
    MidiReceiver old=a.createReceiver(a.midiGeneration);old.send(new byte[]{(byte)0x90,30,80},0,3);
    a.disconnectMidi();

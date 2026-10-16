@@ -52,6 +52,8 @@ jobs:
           java -cp build/score-tests ChordCalibrationTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiPerformance.java tests/MidiPerformanceTest.java
           java -cp build/score-tests MidiPerformanceTest
+          javac -cp build/score-tests -d build/score-tests tests/MidiChannelModeTest.java
+          java -cp build/score-tests MidiChannelModeTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/KeyboardGuide.java tests/KeyboardGuideTest.java
           java -cp build/score-tests KeyboardGuideTest
           javac -cp build/score-tests -d build/score-tests tests/MusicTimelineConsistencyTest.java
