@@ -43,3 +43,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [30 — Fixtures compartilhadas do motor musical](30-FIXTURES-MOTOR-MUSICAL.md).
 
 - [31 — Guia visual expressivo](31-GUIA-EXPRESSIVO.md).
+
+- [32 — Continuidade da sessão MIDI](32-SESSAO-MIDI.md).

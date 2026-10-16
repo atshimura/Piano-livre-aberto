@@ -38,7 +38,8 @@ public class MainActivity extends Activity {
   writtenRepeats.reset();
   if(routeCursor!=null){routeCursor.reset();routeCursor.align(position);}
  }
- final MidiProtocol midiDecoder=new MidiProtocol();
+ volatile long midiGeneration=0;
+ boolean foreground=false;
  int openingMidiId=-1, receivedMessages=0, sentMessages=0, lastMidiChannel=0;
  int lastMidiNote=-1, lastMidiVelocity=0;
  boolean sustainDown=false;
@@ -47,11 +48,21 @@ public class MainActivity extends Activity {
 
  Handler handler=new Handler(Looper.getMainLooper());long previousTick;int user=0;JSONArray catalog;
  android.content.SharedPreferences prefs;
- private final MidiReceiver receiver=new MidiReceiver(){
-  @Override public void onSend(byte[] data,int offset,int count,long timestamp){
-   midiDecoder.feed(data,offset,count,(st,d1,d2)->handler.post(()->onMidiMessage(st,d1,d2)));
-  }
- };
+ MidiReceiver receiver;
+ MidiReceiver createReceiver(final long generation){
+  final MidiProtocol decoder=new MidiProtocol();
+  return new MidiReceiver(){
+   @Override public void onSend(byte[] data,int offset,int count,long timestamp){
+    if(generation!=midiGeneration)return;
+    decoder.feed(data,offset,count,(st,d1,d2)->handler.post(()->{
+     if(generation==midiGeneration)onMidiMessage(st,d1,d2);
+    }));
+   }
+  };
+ }
+ void rearmWaitIfStudying(){
+  if(foreground&&score!=null&&mode==0&&screens!=null&&screens.isStudyOpen())prepareWaiting();
+ }
  @Override public void onCreate(Bundle state){super.onCreate(state);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
   // Keep screen awake only while the app is visible (no persistent wakelock).
   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -74,9 +85,16 @@ public class MainActivity extends Activity {
     .setPositiveButton("Fechar",(d,w)->finish()).setCancelable(false).show();
    return;
   }
+  // Device-side MIDI tests use separate preferences, never the user's session.
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("midi_selftest",false)){
+   prefs=getSharedPreferences("piano_midi_selftest",MODE_PRIVATE);prefs.edit().clear().commit();
+  }
   midiManager=(MidiManager)getSystemService(MIDI_SERVICE);try{catalog=new JSONArray(readAsset("catalog.json"));}catch(Exception e){catalog=new JSONArray();}
   buildUi();loadProfiles();setupMidi();String previous=prefs.getString("user_"+user+"_file","");if(!previous.isEmpty())loadScore(previous,false);
   handler.post(ticker);
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("midi_selftest",false))handler.post(()->MidiSessionSelfTest.run(this));
  }
  private String readAsset(String asset)throws IOException{try(InputStream in=getAssets().open(asset)){return new String(all(in),StandardCharsets.UTF_8);}}
  private byte[] all(InputStream in)throws IOException{ByteArrayOutputStream o=new ByteArrayOutputStream();byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)o.write(b,0,n);return o.toByteArray();}
@@ -246,19 +264,20 @@ public class MainActivity extends Activity {
   if(openingMidiId==info.getId())return;
   stopPlayback();disconnectMidi();
   activeInfo=info;openingMidiId=info.getId();
+  final long generation=midiGeneration;
   setMidiStatus("Abrindo "+midiName(info)+"…");
   midiManager.openDevice(info,opened->{
-   openingMidiId=-1;
-   if(activeInfo==null||activeInfo.getId()!=info.getId()){
+   if(generation!=midiGeneration||activeInfo==null||activeInfo.getId()!=info.getId()){
     if(opened!=null)try{opened.close();}catch(Exception ignored){}
     return;
    }
+   openingMidiId=-1;
    if(opened==null){setMidiStatus("Não foi possível abrir "+midiName(info));return;}
    device=opened;
    try{
     if(info.getOutputPortCount()>0){
      inputPort=opened.openOutputPort(0); // Instrument -> Android
-     if(inputPort!=null)inputPort.connect(receiver);
+     if(inputPort!=null){receiver=createReceiver(generation);inputPort.connect(receiver);}
     }
     if(info.getInputPortCount()>0){
      outputPort=opened.openInputPort(0); // Android -> Instrument
@@ -269,16 +288,18 @@ public class MainActivity extends Activity {
    String connections="Entrada "+(inputPort==null?"INDISPONÍVEL":"OK")
                       +" / Saída "+(outputPort==null?"INDISPONÍVEL":"OK");
    setMidiStatus(midiName(info)+": "+connections);
+   if(inputPort!=null)rearmWaitIfStudying();
   },handler);
  }
  void disconnectMidi(){
+  midiGeneration++;
   try{
-   if(inputPort!=null){inputPort.disconnect(receiver);inputPort.close();}
+   if(inputPort!=null){if(receiver!=null)inputPort.disconnect(receiver);inputPort.close();}
    if(outputPort!=null)outputPort.close();
    if(device!=null)device.close();
   }catch(Exception error){android.util.Log.w("PianoLivreMIDI","Desconexão",error);}
   inputPort=null;outputPort=null;device=null;activeInfo=null;openingMidiId=-1;
-  midiDecoder.reset();downKeys.clear();midiSources.clear();waitRecognizer.clear();performance.disconnect();chordCalibration.stop();activeNotes.clear();sustainDown=false;
+  receiver=null;downKeys.clear();midiSources.clear();waitRecognizer.clear();performance.disconnect();chordCalibration.stop();activeNotes.clear();sustainDown=false;
   if(scoreView!=null){scoreView.pressed.clear();scoreView.invalidate();}
   if(screens!=null)screens.updatePressed(downKeys);
  }
@@ -381,7 +402,7 @@ public class MainActivity extends Activity {
   long now=SystemClock.uptimeMillis();
   if(pressed){
    if(midiSources.add(source))newAttack=downKeys.add(pitch);
-   if(newAttack&&chordCalibration.recording())chordCalibration.noteOn(pitch,now);
+   if(newAttack&&foreground&&chordCalibration.recording())chordCalibration.noteOn(pitch,now);
   }else{
    midiSources.remove(source);
    boolean stillPressed=false;
@@ -393,8 +414,8 @@ public class MainActivity extends Activity {
   }
   scoreView.pressed.clear();scoreView.pressed.addAll(downKeys);scoreView.invalidate();
   if(screens!=null)screens.updatePressed(downKeys);
-  if(chordCalibration.recording()||score==null||mode!=0||!pressed||waitTraveling||
-      (screens!=null&&screens.isFreeOpen()))return;
+  if(!foreground||chordCalibration.recording()||score==null||mode!=0||!pressed||waitTraveling||
+      (screens!=null&&!screens.isStudyOpen()))return;
   WaitRecognizer.Result result=waitRecognizer.noteOnTimed(pitch,newAttack,downKeys,now);
   if(screens!=null&&screens.isStudyOpen()){
    if(result.extra){
@@ -702,14 +723,16 @@ public class MainActivity extends Activity {
   super.onBackPressed();
  }
  @Override protected void onResume(){
-  super.onResume();
+  super.onResume();foreground=true;
   // Exactly one ticker chain, including after repeated background/foreground.
   handler.removeCallbacks(ticker);previousTick=SystemClock.uptimeMillis();handler.post(ticker);
   if(screens!=null)screens.resumeNotation();
+  rearmWaitIfStudying();
   android.util.Log.i("PianoLivreUI","LIFECYCLE_RESUMED");
  }
  @Override protected void onPause(){
-  super.onPause();stopPlayback();saveSession();handler.removeCallbacks(ticker);
+  foreground=false;super.onPause();stopPlayback();saveSession();handler.removeCallbacks(ticker);
+  chordCalibration.stop();
   if(screens!=null)screens.pauseNotation();
   android.util.Log.i("PianoLivreUI","LIFECYCLE_PAUSED");
  }
