@@ -73,3 +73,7 @@ Corrige nota omitida no Espera quando há tie stop sem início no arquivo. Fixtu
 PR #14 integrado em e4f4f511dc8ebb39941e3afa8febbb14ef36c28b após build 38943065678 e emulador 38943065686 aprovados no commit 36bb35f. Teste Android confirma pausa em background, posição conservada e retomada manual com avanço real. Corrigida leitura de XML antigo pelo harness UIAutomator antes do aceite. Issue #6 encerrada no escopo técnico; validação física/microtravadas permanece em #11, sem alegar eliminação no Realme/Lenovo.
 
 0.9.19/code28 amplia a Etapa 2 com andamento sound direto, precedência de offset e offsets globais negativos. Ver fixture e limites no documento 30. Dependências de integração/CI dos PRs musicais continuam obrigatórias.
+
+## Etapa 2 — 0.9.20/code29
+
+Dinâmica numérica explícita no motor/JS e demonstração MIDI, com escopos cronológicos e velocity zero silenciosa sem ocultar a nota escrita do Espera. Nove fixtures e teste integrado MIDI/guia; fonte preservada. Ver documento 30. Depois de validar/integrar a sequência musical e confirmar critérios técnicos, avançar ao guia visual da Etapa 3. Não aguardar hardware para tarefas independentes.

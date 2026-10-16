@@ -32,7 +32,7 @@ function xmlTimeMap(xml) {
    if(+n.textContent>1)throw Error("Parte com múltiplas pautas requer atribuição de mãos");
   });
  });
- var parsed=[],lengths=[],tempo=[],changed=[],unsupported=[];
+ var parsed=[],lengths=[],tempo=[],dynamics=[],changed=[],unsupported=[];
  parts.forEach(function(part,pi){
   var cfg={div:1,beats:4,unit:4,fifths:0,clefs:{1:"G",2:"F"}}, measures=[];
   children(part,"measure").forEach(function(m,mi){
@@ -64,7 +64,8 @@ function xmlTimeMap(xml) {
      if(!chord)last=cursor;
      var staff=splitHands?pi+1:num(node,"staff",pi===0?1:2);
      var voice=value(node,"voice","1");
-     var mark={at:beat,dur:dur,staff:staff,voice:voice,measure:mi,xmlOrder:ci,grace:grace,
+     var mark={at:beat,dur:dur,staff:staff,voice:voice,measure:mi,sourcePart:pi,xmlOrder:ci,grace:grace,
+       velocity:80,dynamicsOverride:+att(node,"dynamics","NaN"),
        graceSlash:grace&&att(direct(node,"grace"),"slash","no")==="yes",
        rest:rest,beam:children(node,"beam").map(function(b){return {level:+att(b,"number","1"),v:b.textContent.trim()};}),
        dot:children(node,"dot").length,stem:value(node,"stem",""),
@@ -114,6 +115,10 @@ function xmlTimeMap(xml) {
      if(!chord&&!grace){cursor+=dur;max=Math.max(max,cursor);}
     }else if(tag==="direction"||tag==="sound"){
      var sound=tag==="sound"?node:direct(node,"sound"),quarterBpm=NaN;
+     var soundOffset=(direct(sound,"offset")?num(sound,"offset",0):num(node,"offset",0))/cfg.div;
+     var percent=sound?+att(sound,"dynamics","NaN"):NaN;
+     if(Number.isFinite(percent)&&percent>=0)dynamics.push({part:pi,measure:mi,at:cursor+soundOffset,
+      staff:splitHands?pi+1:num(node,"staff",0),voice:value(node,"voice",""),percent:percent});
      if(sound&&sound.hasAttribute("tempo"))quarterBpm=+sound.getAttribute("tempo");
      else{
       var printed=direct(direct(node,"direction-type"),"metronome");
@@ -127,14 +132,14 @@ function xmlTimeMap(xml) {
       }
      }
      if(isFinite(quarterBpm)&&quarterBpm>=10&&quarterBpm<=600){
-      var tempoOffset=(direct(sound,"offset")?num(sound,"offset",0):num(node,"offset",0))/cfg.div;
+      var tempoOffset=soundOffset;
       tempo.push({part:pi,measure:mi,at:cursor+tempoOffset,bpm:quarterBpm});
      }
      var dt=direct(node,"direction-type");
      if(dt){
       var words=value(dt,"words","");
-      var dynamics=direct(dt,"dynamics");
-      if(dynamics&&dynamics.children.length)words=dynamics.children[0].tagName;
+      var printedDynamics=direct(dt,"dynamics");
+      if(printedDynamics&&printedDynamics.children.length)words=printedDynamics.children[0].tagName;
       if(direct(dt,"pedal"))words="Ped.";
       if(direct(dt,"segno")&&!words)words="Segno";
       if(direct(dt,"coda")&&!words)words="Coda";
@@ -164,6 +169,8 @@ function xmlTimeMap(xml) {
  tempo=tempo.filter(function(entry,index){
   return index===0 || Math.abs(entry.beat-tempo[index-1].beat)>0.00000001;
  });
+ dynamics.forEach(function(e){e.beat=Math.max(0,starts[e.measure]+e.at);});
+ dynamics.sort(function(a,b){return a.beat-b.beat;});
  // Ending brackets remain on their ORIGINAL measures; musical playback may
  // revisit/skip them, but the score rendering must never duplicate notes.
  var endings=[],openEnding=null;
@@ -195,6 +202,12 @@ function xmlTimeMap(xml) {
    }
   });
  });
+ notes.forEach(function(n){
+  var percent=null;
+  dynamics.forEach(function(d){if(d.beat<=n.at+1e-8&&d.part===n.sourcePart&&(!d.staff||d.staff===n.staff)&&(!d.voice||d.voice===n.voice))percent=d.percent;});
+  if(Number.isFinite(n.dynamicsOverride)&&n.dynamicsOverride>=0)percent=n.dynamicsOverride;
+  if(percent!==null)n.velocity=Math.round(Math.max(0,Math.min(127,percent*.9)));
+ });
  notes.sort(function(a,b){return a.at-b.at || a.staff-b.staff;});
  // Notes are engraved against the clef active at their own musical timestamp.
  // Otherwise a mid-score clef change would silently draw pitches incorrectly.
@@ -210,7 +223,7 @@ function xmlTimeMap(xml) {
  var partStaves=new Set(notes.map(function(n){return n.staff;}));
  if(partStaves.size>2)throw Error("Partitura com mais de duas pautas: modo de estudo temporal ainda não compatível.");
  return {notes:notes,rests:rests,bars:bars,marks:marks,times:times,keys:keys,clefs:clefs,
-  duration:starts[starts.length-1],tempo:tempo,endings:endings,
+  duration:starts[starts.length-1],tempo:tempo,dynamics:dynamics,endings:endings,
   unsupported:unsupported};
 }
 function computeX(beat,pxPerBeat,origin){return origin+beat*pxPerBeat;}

@@ -77,6 +77,8 @@ jobs:
           node tests/TemporalRenderingTest.js
           javac -cp build/score-tests -d build/score-tests tests/MusicXmlFixtureInventory.java
           node tests/MusicXmlFixturesTest.js
+          javac -cp build/score-tests -d build/score-tests tests/MusicXmlDynamicsTest.java
+          java -cp build/score-tests MusicXmlDynamicsTest
       - name: Audit MIDI recognition over the public MusicXML corpus
         run: |
           mkdir -p build/recognition-tests

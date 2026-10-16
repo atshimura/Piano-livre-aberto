@@ -41,3 +41,13 @@ Próxima tarefa: fixtures de percurso com expectativas de Note On/Off e revisão
 Fixture tempo-sound-offset reproduziu somente uma mudança de tempo no Java, em vez das quatro esperadas: sound diretamente em measure era ignorado e o offset de sound não prevalecia sobre o da direction. Ambos os leitores agora interpretam sound direto e a precedência oficial do [offset de sound](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/sound/). O JS aplica o limite inicial zero após converter o offset para beat global, permitindo offset negativo relativo ao compasso.
 
 Expectativa independente: tempos 120/60/90/80 nos beats 0/1.5/1.75/3.5, quatro notas e fim 8. Sete fixtures passam localmente. Esta entrega trata de andamento; demais atributos sound (dinâmica, pedal, saltos diretos, instrumento) não passam a ser suportados por esta correção. Próxima tarefa musical: auditar parâmetros de expressão explícitos e limitações antes de fechar o escopo técnico da Etapa 2.
+
+## 0.9.20/code29 — dinâmica numérica explícita
+
+Score e renderer passam a conservar dinâmica numérica de sound e do atributo dynamics da nota. A [especificação de sound](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/sound/) define percentual de forte MIDI 90: por exemplo, 50 vira velocity 45, 125 vira 113 e valores altos são limitados a 127. A nota explícita prevalece sobre a direção; escopos de parte, pauta e voz são respeitados em ordem musical, inclusive com backup. Sem indicação numérica conserva-se velocity 80 histórica; não se inventa conversão universal de p/mf/f.
+
+Velocity zero significa silêncio na demonstração, portanto não gera Note On zero (que MIDI interpreta como Note Off), mas a nota escrita continua no Espera e no teclado visual. Ligadura conserva o ataque inicial. Não adiciona sintetizador, pedal automático nem avaliação de intensidade.
+
+Fixtures explicit-dynamics e two-part-dynamics verificam escopos, override por nota, zero, limite 127 e independência entre partes. O teste novo falhou contra a base (velocity fixa 80) e passou após a correção. MusicXmlDynamicsTest verifica Note On/Off, silêncio e manutenção das notas no Espera/guia. Nove fixtures compartilham expectativas independentes Java/JS.
+
+Próxima etapa técnica: aproveitar esses metadados para tornar o guia de duas mãos mais informativo (Etapa 3), sem transformar intensidade/duração em bloqueio. Pedal automatizado, crescendos sem valores explícitos e humanização continuam fora desta entrega.
