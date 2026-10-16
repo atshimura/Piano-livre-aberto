@@ -4,8 +4,8 @@ Plano aprovado nas instruções do Projeto em 16/10/2026. Acompanhamento: [issue
 
 | Etapa | Escopo | Critério de passagem | Situação |
 |---|---|---|---|
-| 1 | Estabilização, desempenho e fluidez da partitura | Regressões de movimento, pausa, seek, loop e resize; custo por frame reduzido e diagnóstico reproduzível | Em desenvolvimento |
-| 2 | Aprimoramento do motor musical e da fidelidade MusicXML | Fixtures musicais, comparação Java/JS e limitações explícitas | Pendente |
+| 1 | Estabilização, desempenho e fluidez da partitura | Regressões de movimento, pausa, seek, loop e resize; custo por frame reduzido e diagnóstico reproduzível | Escopo técnico concluído; aceite físico em #11 |
+| 2 | Aprimoramento do motor musical e da fidelidade MusicXML | Fixtures musicais, comparação Java/JS e limitações explícitas | Em desenvolvimento |
 | 3 | Aperfeiçoamento dos modos de aprendizagem, reconhecimento MIDI e teclado guia | Regressões dos modos, novos ataques, extras, calibração, pedal e duas mãos | Pendente |
 | 4 | Biblioteca, perfis, histórico e progresso de estudos | Busca/organização e progresso local compatíveis com retomada e backup | Pendente |
 | 5 | Importação MIDI, compatibilidade musical e preservação de dados | Importação documentada, entradas adversariais e recuperação sem perda | Pendente |
@@ -67,3 +67,9 @@ Enquanto a CI de lifecycle da Etapa 1 é acompanhada, auditoria independente rep
 ## Etapa 2 — 0.9.18/code27
 
 Corrige nota omitida no Espera quando há tie stop sem início no arquivo. Fixture verifica três ataques (antes, apenas um estava disponível), aviso de interpretação único e fonte intacta. Ligaduras completas preservadas e regressões existentes aprovadas localmente. Ver documento 30. Dependências: validar/integrar PR #14 e #15 antes desta entrega; conferir CI do próprio commit.
+
+## Fechamento técnico da Etapa 1 e continuação 0.9.19
+
+PR #14 integrado em e4f4f511dc8ebb39941e3afa8febbb14ef36c28b após build 38943065678 e emulador 38943065686 aprovados no commit 36bb35f. Teste Android confirma pausa em background, posição conservada e retomada manual com avanço real. Corrigida leitura de XML antigo pelo harness UIAutomator antes do aceite. Issue #6 encerrada no escopo técnico; validação física/microtravadas permanece em #11, sem alegar eliminação no Realme/Lenovo.
+
+0.9.19/code28 amplia a Etapa 2 com andamento sound direto, precedência de offset e offsets globais negativos. Ver fixture e limites no documento 30. Dependências de integração/CI dos PRs musicais continuam obrigatórias.

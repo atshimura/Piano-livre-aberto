@@ -9,6 +9,7 @@ const rows=cp.execFileSync('java',['-cp','build/score-tests','MusicXmlFixtureInv
 const step={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 function close(a,b,why){assert(Math.abs(a-b)<1e-7,why+': '+a+' vs '+b);}
 const expected={
+ 'tempo-sound-offset.xml':{end:8,notes:[[0,60,1,1],[1,62,1,1],[2,64,1,2],[4,65,1,4]],tempo:[[0,120],[1.5,60],[1.75,90],[3.5,80]]},
  'incomplete-ties.xml':{end:4,notes:[[0,60,1,1],[1,60,1,1],[3,60,1,1]],tempo:[]},
  'named-voices-ties.xml':{end:2,notes:[[0,60,1,2],[0,60,1,2]],tempo:[]},
  'ties-voices-grace.xml':{end:4,notes:[[0,60,1,3],[0,52,2,1],[3,64,1,1]],tempo:[]},

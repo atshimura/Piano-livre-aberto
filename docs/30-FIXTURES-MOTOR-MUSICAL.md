@@ -35,3 +35,9 @@ Fixture incomplete-ties reproduziu dois finais de ligadura sem início correspon
 O inventário das fixtures passa a verificar também Score.at em cada onset, avisos sem duplicação e igualdade byte/texto do XML sintético original. As seis fixtures com expectativas independentes passam localmente. Regressões JVM e comparação musical também passaram. CI Android/PR da própria entrega ainda precisam ser confirmados.
 
 Próxima tarefa: fixtures de percurso com expectativas de Note On/Off e revisão das limitações de transposição/microtons/métricas compostas; não declarar toda a Etapa 2 concluída pela correção desses casos.
+
+## 0.9.19/code28 — sound e offsets de andamento
+
+Fixture tempo-sound-offset reproduziu somente uma mudança de tempo no Java, em vez das quatro esperadas: sound diretamente em measure era ignorado e o offset de sound não prevalecia sobre o da direction. Ambos os leitores agora interpretam sound direto e a precedência oficial do [offset de sound](https://www.w3.org/2021/06/musicxml40/musicxml-reference/elements/sound/). O JS aplica o limite inicial zero após converter o offset para beat global, permitindo offset negativo relativo ao compasso.
+
+Expectativa independente: tempos 120/60/90/80 nos beats 0/1.5/1.75/3.5, quatro notas e fim 8. Sete fixtures passam localmente. Esta entrega trata de andamento; demais atributos sound (dinâmica, pedal, saltos diretos, instrumento) não passam a ser suportados por esta correção. Próxima tarefa musical: auditar parâmetros de expressão explícitos e limitações antes de fechar o escopo técnico da Etapa 2.

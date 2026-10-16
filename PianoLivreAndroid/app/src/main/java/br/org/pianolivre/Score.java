@@ -114,6 +114,11 @@ public class Score {
   try{double value=Double.parseDouble(s.trim());return Double.isFinite(value)?value:fallback;}
   catch(Exception e){return fallback;}
  }
+ private static Element child(Element e,String tag){
+  if(e==null)return null;NodeList nodes=e.getChildNodes();
+  for(int i=0;i<nodes.getLength();i++)if(nodes.item(i) instanceof Element&&((Element)nodes.item(i)).getTagName().equals(tag))return (Element)nodes.item(i);
+  return null;
+ }
  private static Element first(Element e,String tag){NodeList n=e.getElementsByTagName(tag);return n.getLength()>0?(Element)n.item(0):null;}
  /** Convert a printed beat-unit mark to quarter-notes per minute. */
  private static Double metronomeQuarterBpm(Element direction){
@@ -226,8 +231,8 @@ public class Score {
     for(int ci=0;ci<children.getLength();ci++){
      Node node=children.item(ci);if(!(node instanceof Element))continue;Element el=(Element)node;String tag=el.getTagName();
      if(tag.equals("attributes")){double newDivisions=decimal(text(el,"divisions",""+divisions),divisions);if(newDivisions>0)divisions=newDivisions;Element time=first(el,"time");if(time!=null){beatsPerMeasure=number(text(time,"beats","4"),4);beatType=number(text(time,"beat-type","4"),4);}}
-     if(tag.equals("direction")){
-      if(pi==0){
+     if(tag.equals("direction")||tag.equals("sound")){
+      if(pi==0&&tag.equals("direction")){
        Element directionType=first(el,"direction-type");
        String words=directionType==null?"":text(directionType,"words","").toLowerCase(Locale.ROOT);
        Element playbackSound=first(el,"sound");
@@ -254,14 +259,16 @@ public class Score {
          score.playbackWarnings.add("D.C./D.S./Coda/Fine");
        }
       }
-      Element sound=first(el,"sound");
+      Element sound=tag.equals("sound")?el:first(el,"sound");
       Double bpm=null;
       if(sound!=null&&sound.hasAttribute("tempo")){
        try{bpm=Double.parseDouble(sound.getAttribute("tempo"));}catch(Exception ignored){}
       }
-      if(bpm==null)bpm=metronomeQuarterBpm(el);
+      if(bpm==null&&tag.equals("direction"))bpm=metronomeQuarterBpm(el);
       if(bpm!=null&&Double.isFinite(bpm)&&bpm>=10&&bpm<=600){
-       double offset=decimal(text(el,"offset","0"),0)/divisions;
+       Element soundOffset=child(sound,"offset"),directionOffset=child(el,"offset");
+       Element effectiveOffset=soundOffset!=null?soundOffset:directionOffset;
+       double offset=decimal(effectiveOffset==null?"0":effectiveOffset.getTextContent(),0)/divisions;
        reportedTempos.add(new TempoChange(Math.max(0,base+cursor+offset),bpm));
       }
      }
