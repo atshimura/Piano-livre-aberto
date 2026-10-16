@@ -97,3 +97,7 @@ Tratamento de entrada CC120/121/123 com isolamento de canais, teclas e vozes ret
 Etapa 3 encerrada tecnicamente (#7) após PR #21 integrado em a5592f0395f619a5ee8789463d03f527fa236990; build 38946323401 e emulador 38946323387 aprovados. Hardware segue pendente em #11.
 
 Perfis com IDs estáveis, renomear/avatar/excluir sem renumerar dados de outros perfis e validação nova do backup preparados. Documento 33 descreve compatibilidade, testes isolados e limites. Confirmar CI desta entrega antes do merge; depois implementar busca/organização e histórico por perfil.
+
+## Etapa 4 — 0.9.25/code34
+
+Busca sem distinção de acentos/caixa, filtros, favoritos e coleções por perfil implementados. Chaves portáteis de partituras, metadados limitados/validados e backup v2 compatível. Documento 34 registra UI, testes e próxima tarefa. LibrarySearchTest passou localmente; Android exige LIBRARY_SELFTEST_PASS e UI no commit da entrega. Depois seguir histórico/progresso, antes de fechar Etapa 4.

@@ -61,3 +61,7 @@ Controles MIDI de canal implementados e testados em JVM. Confirmar PR de sessão
 ## Continuação 0.9.24
 
 Perfis estáveis preparados; confirmar PROFILES_SELFTEST_PASS, UI e backup nos Actions do commit. Etapas 1–3 encerradas apenas tecnicamente; aceite físico em #11. Próxima implementação: busca/favoritos/coleções e histórico/progresso por perfil, preservando IDs e backup. Não encerrar porque uma versão ficou pronta.
+
+## Continuação 0.9.25
+
+Busca/favoritos/coleções preparados; documento 34. Confirmar CI dos perfis (#22) e da biblioteca, incluindo PROFILES_SELFTEST_PASS/LIBRARY_SELFTEST_PASS e UI. Próxima implementação: histórico/progresso por ID, depois Etapa 5 com importação não destrutiva/compatibilidade/MIDI. Continuar após cada entrega enquanto o ambiente permitir.

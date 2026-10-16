@@ -126,6 +126,10 @@ public final class BackupArchive {
    for(int i=0;i<profiles.length();i++)
     if(profiles.getString(i).trim().isEmpty())throw new IOException("Nome de perfil vazio");
   }
+  for(Map.Entry<String,Object> item:result.entrySet())if(item.getKey().matches("user_\\d+_library")){
+   if(!(item.getValue() instanceof String))throw new IOException("Biblioteca inválida");
+   try{LibraryStore.decode((String)item.getValue());}catch(IllegalArgumentException ex){throw new IOException("Biblioteca inválida",ex);}
+  }
   Object profileRecords=result.get("profiles_v2");
   if(profileRecords!=null){
    if(!(profileRecords instanceof String))throw new IOException("Perfis v2 inválidos");
