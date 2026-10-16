@@ -39,3 +39,15 @@ Regressão determinística: o teste novo falha contra o renderer da 0.9.13 (`ini
 Etapa 1 continua aberta. Próxima tarefa concreta: reduzir formatação/aplicação redundante do texto em MainActivity.updateInfo, com regressões; depois diagnóstico reproduzível de frames/carga longa e lifecycle. Hardware Realme/Lenovo/P-45 permanece pendente, sem bloquear essas tarefas. Evidências de integração e CI desta entrega devem ser registradas na issue #6 e no PR.
 
 A primeira CI desta entrega compilou corretamente code23 e passou JVM/JS/MIDI, mas revelou verificação de metadados fixada em code22/0.9.13 no workflow. Corrigida para ler a fonte de versão gradle.properties e comparar o APK efetivo, mantendo a verificação de pacote e versão obrigatória. Aguardar nova CI; a execução anterior não aprova o novo commit.
+
+## Terceira entrega da Etapa 1 — 0.9.15/code24
+
+MainActivity mantém o transporte em ~25 ms, mas a apresentação textual usa StudyInfoText para formatar no máximo a cada 100 ms durante movimento estável. Mudanças de andamento/velocidade/música, comandos explícitos e término do movimento atualizam imediatamente. TextView.setText só é aplicado quando o conteúdo difere. Esse cache não participa do relógio musical, MIDI, reconhecimento ou pintura da partitura/teclado.
+
+StudyInfoTextTest exercita 40 ticks em um segundo (dez formatações), seek imediato, mudança de andamento e velocidade, remoção da música, locale e reinício do relógio. Auditoria pública local aprovada; JDK ausente, portanto o teste JVM novo e a compilação precisam de comprovação na CI do commit. Não atribuir os resultados da 0.9.14 a esta versão.
+
+Próxima tarefa concreta após CI/integração: diagnóstico reproduzível de frames e carga longa, incluindo lifecycle da WebView e passagem biblioteca/estudo/leitura livre. Testes físicos ainda pendentes. A Etapa 1 não está encerrada.
+
+Evidências 0.9.14: [PR #12](https://github.com/atshimura/Piano-livre-aberto/pull/12) integrado em `04ee7fb70d2006922776f824d991bafa7557568b`, após [build 38939921990](https://github.com/atshimura/Piano-livre-aberto/actions/runs/38939921990) e [emulador 38939921996](https://github.com/atshimura/Piano-livre-aberto/actions/runs/38939921996) aprovados no commit `309397d1f992f62506aaf11b47c4c7b6eb4f739c`. A assinatura do push da main deve ser conferida separadamente.
+
+Na 0.9.15, TemporalRenderingTest acrescenta partitura sintética de 64 compassos, mais de 50 tiles: busca adiante/atrás conserva no máximo três tiles visíveis e não realiza leitura de dimensões ou busca DOM por frame no cenário determinístico. Teste passou localmente. Não mede carga inicial real, FPS ou rasterização da WebView.

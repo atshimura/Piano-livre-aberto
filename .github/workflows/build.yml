@@ -56,6 +56,10 @@ jobs:
           java -cp build/score-tests KeyboardGuideTest
           javac -cp build/score-tests -d build/score-tests tests/MusicTimelineConsistencyTest.java
           java -cp build/score-tests MusicTimelineConsistencyTest
+      - name: Test study information display cadence (JVM)
+        run: |
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/StudyInfoText.java tests/StudyInfoTextTest.java
+          java -cp build/score-tests StudyInfoTextTest
       - name: Test proportional score layout (JavaScript)
         run: |
           node --check app/src/main/assets/temporal-notation.js
