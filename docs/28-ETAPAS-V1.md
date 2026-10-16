@@ -21,6 +21,7 @@ Base: main `3ba5368` (0.9.12/code21). Branch: `perf/etapa-1-partitura`.
 - Usa largura capturada no render para mover tiles e emitir amostras, removendo leituras de geometria da animação.
 - Resize sem mudança de dimensões não reconstrói a partitura. Mudança apenas de altura (teclado guia) atualiza escala vertical da pauta e do rail, conservando notas, controles, trecho e relógio.
 - Mudança de largura reconstrói a geometria preservando posição projetada, BPM, execução e seleção. Antes, reconstruir pausava o relógio visual até outra amostra nativa.
+- Corrige limite visual indevido de 10–300 BPM: o andamento efetivo enviado pelo Android já inclui a velocidade de estudo e passa a ser seguido integralmente. Regressão nova falhou antes da correção em 6 BPM e passa em 6/600 BPM após ela.
 - Mantém regras pedagógicas, parser, eventos MIDI, dados e assinatura. O teste novo executa render/sync/resize reais em DOM e relógio determinísticos; não mede FPS nem substitui WebView/emulador.
 
 Verificação local: auditoria pública, sintaxe JavaScript e seis suítes JS passaram, incluindo TemporalRenderingTest (sem leituras de viewport ou buscas DOM durante os frames, destaques, resize, pausa, retorno, loop e teardown). A tentativa local das suítes JVM encontrou ambiente sem `javac`; Gradle/Android SDK também não estão instalados. JVM, comparação Java/JS, auditoria MIDI, compilação e emulador deverão ser comprovados pelo Actions do commit desta entrega.

@@ -31,5 +31,11 @@ width=1000;T.resize();assert.notStrictEqual(track(),original);frame(1000);assert
 T.sync(3,120,false);frame(1200);const paused=offset();frame(1600);assert.strictEqual(offset(),paused);
 T.sync(0,120,false);frame(1700);assert.strictEqual(offset(),0);
 T.sync(10,120,true);frame(1800);T.sync(0,120,true);frame(1800);assert.strictEqual(offset(),0);
+// Native tempo multiplied by study speed must not be clamped visually.
+for(const bpm of [6,600]){
+ T.sync(0,bpm,false);frame(now);
+ T.sync(0,bpm,true);frame(now+100);
+ assert(Math.abs(offset()+layout.pixelsPerBeat*bpm/600)<.01,'exact effective BPM '+bpm);
+}
 T.teardown();assert.strictEqual(frames.size,0);
 console.log('PASS: indexed highlights, no frame geometry reads, resize, clock, pause, seek, loop and teardown');

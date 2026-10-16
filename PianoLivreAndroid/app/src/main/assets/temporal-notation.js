@@ -1121,7 +1121,10 @@ function render(xml,container,viewport,startBeat){
 }
 function sync(beat,bpm,playing){
  if(!state||!isFinite(beat))return;
- var now=performance.now(),rate=Math.max(10,Math.min(300,Number(bpm)||100));
+ var now=performance.now(),rate=Number(bpm);
+ // Native BPM already includes the study-speed factor. Clamping it here
+ // creates a second, incorrect tempo and recurring corrective jumps.
+ if(!Number.isFinite(rate)||rate<=0)rate=100;
  var st=state;
  if(!playing){
   st.moving=false;st.anchorBeat=beat;st.anchorMs=now;st.bpm=rate;
