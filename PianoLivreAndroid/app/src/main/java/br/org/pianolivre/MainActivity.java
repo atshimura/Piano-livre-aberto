@@ -324,6 +324,9 @@ public class MainActivity extends Activity {
    outputPort.send(new byte[]{(byte)0xB0,123,0},0,3);
   }catch(Exception error){android.util.Log.w("PianoLivreMIDI","All notes off",error);}
  }
+ void updateSustainState(){
+  sustainDown=false;for(int ch=0;ch<16;ch++)if(performance.pedalDown(ch)){sustainDown=true;break;}
+ }
  void onMidiMessage(int statusCode,int data1,int data2){
   int command=statusCode&0xF0;
   receivedMessages++;lastMidiChannel=(statusCode&0x0f)+1;
@@ -338,12 +341,18 @@ public class MainActivity extends Activity {
    lastMidiMessage="Soltou "+midiNoteName(data1)+" ("+data1+") · canal "+lastMidiChannel;
    performance.noteOff(statusCode&15,data1,SystemClock.uptimeMillis());
    onKey(data1,false,statusCode&15);
+  }else if(command==0xB0&&(data1==120||data1==121||data1==123)){
+   int channel=statusCode&15;
+   performance.channelMode(channel,data1,SystemClock.uptimeMillis());
+   if(data1!=121)for(int source:new HashSet<>(midiSources))
+    if((source>>7)==channel)onKey(source&127,false,channel);
+   updateSustainState();
+   lastMidiMessage=(data1==120?"Som interrompido":data1==123?"Notas liberadas":"Controladores redefinidos")+" · canal "+(channel+1);
   }else if(command==0xB0&&data1==64){
    performance.control64(statusCode&15,data2,SystemClock.uptimeMillis());
    // CC64 belongs to a MIDI channel. Releasing one channel must not
    // report the pedal as up while another channel still holds sustain.
-   sustainDown=false;
-   for(int ch=0;ch<16;ch++)if(performance.pedalDown(ch)){sustainDown=true;break;}
+   updateSustainState();
    lastMidiMessage="Pedal sustain "+(sustainDown?"pressionado":"solto");
    if(mode==0&&screens!=null&&screens.isStudyOpen()&&!chordCalibration.recording())
     screens.showWaitFeedback("Pedal "+(sustainDown?"acionado":"liberado")+" · orientação, não bloqueia o Espera");
