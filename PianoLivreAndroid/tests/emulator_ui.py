@@ -36,6 +36,7 @@ def tap_text(targets):
                 print("Tapped",label,flush=True)
                 return label
     labels=[n.attrib.get("text","") for n in root.iter("node") if n.attrib.get("text")]
+    print(adb("logcat","-d","-s","PianoLivreUI:I","PianoLivreNotation:I","PianoLivreTimeline:I")[-18000:],flush=True)
     raise AssertionError("Not found: "+str(targets)+"; available: "+str(labels[:40]))
 
 def assert_running():
