@@ -17,7 +17,12 @@ public final class KeyboardGuide {
 
  public static final class Frame {
   public final Set<Integer> right, left, both;
-  Frame(Set<Integer> right,Set<Integer> left){
+  public final Map<Integer,Integer> rightVelocity,leftVelocity;
+  public final Map<Integer,Double> rightRemaining,leftRemaining;
+  Frame(Set<Integer> right,Set<Integer> left,Map<Integer,Integer> rv,Map<Integer,Integer> lv,
+    Map<Integer,Double> rr,Map<Integer,Double> lr){
+   rightVelocity=Collections.unmodifiableMap(rv);leftVelocity=Collections.unmodifiableMap(lv);
+   rightRemaining=Collections.unmodifiableMap(rr);leftRemaining=Collections.unmodifiableMap(lr);
    this.right=Collections.unmodifiableSet(right);
    this.left=Collections.unmodifiableSet(left);
    Set<Integer> union=new HashSet<>(right);
@@ -43,7 +48,9 @@ public final class KeyboardGuide {
  }
  public Frame at(double beat){
   Set<Integer> right=new HashSet<>(),left=new HashSet<>();
-  if(!Double.isFinite(beat))return new Frame(right,left);
+  Map<Integer,Integer> rv=new HashMap<>(),lv=new HashMap<>();
+  Map<Integer,Double> rr=new HashMap<>(),lr=new HashMap<>();
+  if(!Double.isFinite(beat))return new Frame(right,left,rv,lv,rr,lr);
   // Latest onset not later than the playhead. Sorting + prefix maxima avoids
   // redrawing/scanning whole long scores at every Android animation tick.
   int lo=0,hi=ordered.size();
@@ -55,11 +62,14 @@ public final class KeyboardGuide {
   for(int i=lo-1;i>=0&&prefixMaxEnd[i]>beat+1e-7;i--){
    Score.Event e=ordered.get(i);
    if(e.length>0&&e.beat<=beat+1e-7&&e.beat+e.length>beat+1e-7){
-    if(e.staff==1)right.add(e.midi);
-    else left.add(e.midi);
+    boolean upper=e.staff==1;
+    (upper?right:left).add(e.midi);
+    (upper?rv:lv).merge(e.midi,e.velocity,Math::max);
+    double remaining=Math.max(0,Math.min(1,(e.beat+e.length-beat)/e.length));
+    (upper?rr:lr).merge(e.midi,remaining,Math::max);
    }
   }
-  return new Frame(right,left);
+  return new Frame(right,left,rv,lv,rr,lr);
  }
  /**
   * Display ALL score-sounding and user-pressed P-45 keys, not just the next

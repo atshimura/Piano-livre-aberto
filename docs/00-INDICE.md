@@ -41,3 +41,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [29 — Diagnóstico local de desempenho e lifecycle](29-DESEMPENHO-LIFECYCLE.md).
 
 - [30 — Fixtures compartilhadas do motor musical](30-FIXTURES-MOTOR-MUSICAL.md).
+
+- [31 — Guia visual expressivo](31-GUIA-EXPRESSIVO.md).
