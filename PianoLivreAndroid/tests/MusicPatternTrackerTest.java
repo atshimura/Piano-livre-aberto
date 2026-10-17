@@ -24,6 +24,28 @@ public class MusicPatternTrackerTest{
   ok(tracker.attack(-1,true).isEmpty());ok(tracker.size()==0);
   tracker.attack(60,true);tracker.attack(62,true);
   ok(tracker.attack(64,false).isEmpty());ok(tracker.size()==0);
+  // Mixed USB-MIDI/virtual overlap must not be treated as a monophonic attack.
+  Set<Integer> midi=new HashSet<>(),virtual=new HashSet<>();
+  midi.add(60);
+  ok(MusicPatternTracker.isIsolated(60,midi,virtual));
+  virtual.add(64);
+  ok(!MusicPatternTracker.isIsolated(60,midi,virtual));
+  ok(!MusicPatternTracker.isIsolated(64,midi,virtual));
+  midi.clear();
+  ok(MusicPatternTracker.isIsolated(64,midi,virtual));
+  midi.add(64);
+  ok(!MusicPatternTracker.isIsolated(64,midi,virtual));
+  midi.clear();virtual.clear();
+  ok(!MusicPatternTracker.isIsolated(60,midi,virtual));
+  ok(!MusicPatternTracker.isIsolated(-1,midi,virtual));
+  ok(!MusicPatternTracker.isIsolated(60,null,virtual));
+  // Incomplete, extra and restarted passages cannot inherit the old result.
+  tracker.clear();for(int n:major)tracker.attack(n,true);
+  ok(tracker.attack(73,true).isEmpty());
+  tracker.clear();
+  for(int i=0;i<arpeggio.length-1;i++)ok(tracker.attack(arpeggio[i],true).isEmpty());
+  ok(tracker.attack(72,true).stream().anyMatch(f->f.category.equals("Arpejo")));
+  tracker.clear();ok(tracker.size()==0);
   System.out.println("MUSIC_PATTERN_TRACKER_PASS checks="+checks);
  }
 }

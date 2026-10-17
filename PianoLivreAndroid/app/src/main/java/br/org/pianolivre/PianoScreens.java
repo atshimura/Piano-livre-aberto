@@ -377,7 +377,9 @@ class PianoScreens {
   });
   freeRoot.addView(freeNotation,new LinearLayout.LayoutParams(-1,0,1));
  }
- void stopLabDemonstration(){if(lab!=null)lab.stopDemonstration();}
+ void stopLabDemonstration(){
+  if(lab!=null){lab.stopDemonstration();lab.cancelPractice();}
+ }
  void showFree(){
   if(a.score==null)return;
   stopLabDemonstration();
@@ -396,7 +398,7 @@ class PianoScreens {
   if(a.scoreView!=null&&a.scoreView.showKeyboard)setKeyboardOpen(false);
   header.setVisibility(View.VISIBLE);
   library.setVisibility(View.GONE);studio.setVisibility(View.GONE);freeRoot.setVisibility(View.GONE);
-  if(lab!=null){lab.onMidiPressed(a.downKeys);lab.setVisibility(View.VISIBLE);}
+  if(lab!=null){lab.beginObservation();lab.onMidiPressed(a.downKeys);lab.setVisibility(View.VISIBLE);}
  }
  void showHome(){
   stopLabDemonstration();
