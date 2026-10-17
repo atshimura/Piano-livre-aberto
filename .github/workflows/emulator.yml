@@ -87,6 +87,7 @@ jobs:
           path: |
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png
+            PianoLivreAndroid/piano-laboratorio.png
             PianoLivreAndroid/piano-midi-import.png
             PianoLivreAndroid/piano-release.png
             PianoLivreAndroid/piano-release.json
