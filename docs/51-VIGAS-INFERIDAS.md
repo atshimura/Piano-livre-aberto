@@ -9,3 +9,6 @@ A função `inferConventionalBeams` age apenas na memória do renderizador, ante
 
 ## Limitações e aceite
 Ainda faltam revisão editorial/visual das claves e hastes em partituras variadas, subdivisões irregulares, beaming editorial de síncopes e alternância de compasso dentro da mesma medida. Não deduzir que toda partitura visual foi validada. Verificar CI do PR e emulador no SHA correto; testes físicos Lenovo/Realme/Yamaha pendentes (#11). Escopo geral #34.
+
+## Validação das dependências
+A base do modo Espera (#40) foi integrada à main no commit `04f81d936e9bb34522c5b8d902143501e90f94a8`, depois de CI e emulador aprovados no head do PR. Esta alteração de vigas tem testes próprios a confirmar no head após a mudança de base.
