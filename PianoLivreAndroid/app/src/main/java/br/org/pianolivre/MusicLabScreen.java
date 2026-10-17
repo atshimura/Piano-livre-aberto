@@ -63,6 +63,12 @@ final class MusicLabScreen extends LinearLayout {
   discoverButton=button("Descobrir",()->setLearn(false));
   learnButton=button("Aprender / Praticar",()->setLearn(true));
   item(actions,discoverButton,130,36);item(actions,learnButton,170,36);
+  // Keep the virtual input mode visible even on short landscape displays.
+  LinearLayout touchModes=new LinearLayout(activity);touchModes.setGravity(Gravity.CENTER_VERTICAL);
+  item(body,touchModes,-1,38);
+  touchButton=button("Tocar",()->setAssembling(false));
+  assembleButton=button("Montar",()->setAssembling(true));
+  item(touchModes,touchButton,92,35);item(touchModes,assembleButton,92,35);
   heading=label("",18,true);item(body,heading,-1,-2);
   description=label("",12,false);item(body,description,-1,-2);
   readout=label("",19,true);readout.setPadding(0,dp(5),0,0);item(body,readout,-1,-2);
@@ -92,9 +98,6 @@ final class MusicLabScreen extends LinearLayout {
   item(body,keyboard,-1,210);
   LinearLayout keyboardOptions=new LinearLayout(activity);
   keyboardOptions.setGravity(Gravity.CENTER_VERTICAL);item(body,keyboardOptions,-1,45);
-  touchButton=button("Tocar",()->setAssembling(false));
-  assembleButton=button("Montar",()->setAssembling(true));
-  item(keyboardOptions,touchButton,80,36);item(keyboardOptions,assembleButton,85,36);
   item(keyboardOptions,button("◀ Oitava",()->shift(-12)),96,36);
   rangeLabel=label("",11,true);rangeLabel.setGravity(Gravity.CENTER);
   keyboardOptions.addView(rangeLabel,new LinearLayout.LayoutParams(0,-2,1));
