@@ -31,6 +31,7 @@ public final class NotationView extends WebView {
  private boolean lastMoving=false;
  private double lastBpm=Double.NaN;
  private boolean disposed=false;
+ private long pendingWaitDeadline=0L;
  private boolean freeLayout=false;
  public NotationView(Context c,Listener listener){
   super(c);
@@ -78,6 +79,7 @@ public final class NotationView extends WebView {
     scoreRendered=true;Log.i("PianoLivreNotation","RENDERED_CALLBACK");
     setVisibility(View.VISIBLE);
     callback.onRendered();
+    sendPendingWaitPreparation();
    });}
    @JavascriptInterface public void onError(String error){post(()->{
     if(disposed)return;
@@ -99,7 +101,7 @@ public final class NotationView extends WebView {
   getSettings().setSupportZoom(traditional);
   getSettings().setBuiltInZoomControls(traditional);
   getSettings().setDisplayZoomControls(false);
-  pendingScore=score;pendingBeat=position;lastBeat=Double.NaN;lastSeekAt=0L;lastMoving=false;lastBpm=Double.NaN;scoreRendered=false;
+  pendingWaitDeadline=0;pendingScore=score;pendingBeat=position;lastBeat=Double.NaN;lastSeekAt=0L;lastMoving=false;lastBpm=Double.NaN;scoreRendered=false;
   setVisibility(View.INVISIBLE);
   if(htmlReady)sendScore();
  }
@@ -123,6 +125,21 @@ public final class NotationView extends WebView {
   if(!Double.isNaN(lastBeat)&&Math.abs(beat-lastBeat)<0.0001&&!animate&&moving==lastMoving&&Math.abs(bpm-lastBpm)<0.001)return;
   lastBeat=beat;lastMoving=moving;lastBpm=bpm;lastSeekAt=now;
   evaluateJavascript("PianoNotation.seek("+beat+","+(animate?"true":"false")+","+bpm+","+(moving?"true":"false")+")",null);
+ }
+ private void sendPendingWaitPreparation(){
+  if(disposed||freeLayout||!htmlReady||!scoreRendered||pendingWaitDeadline<=0)return;
+  long remaining=pendingWaitDeadline-android.os.SystemClock.uptimeMillis();
+  if(remaining>0)evaluateJavascript("PianoNotation.waitPrepare("+remaining+")",null);
+  else pendingWaitDeadline=0;
+ }
+ public void startWaitPreparation(long durationMs){
+  if(disposed||durationMs<=0)return;
+  pendingWaitDeadline=android.os.SystemClock.uptimeMillis()+durationMs;
+  sendPendingWaitPreparation();
+ }
+ public void cancelWaitPreparation(){
+  pendingWaitDeadline=0;
+  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)evaluateJavascript("PianoNotation.waitCancel()",null);
  }
  public void resizeToFit(){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)

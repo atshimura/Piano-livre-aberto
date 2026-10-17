@@ -144,6 +144,12 @@
     if(freeLayout)return;seekBeat=beat;
     if(window.TemporalNotation)TemporalNotation.sync(beat,bpm,!!playing);
    },
+   waitPrepare:function(milliseconds){
+    if(!freeLayout&&loaded&&window.TemporalNotation)TemporalNotation.waitPrepare(milliseconds);
+   },
+   waitCancel:function(){
+    if(window.TemporalNotation)TemporalNotation.waitCancel();
+   },
    loopEdit:function(enabled){
     if(!freeLayout&&window.TemporalNotation)TemporalNotation.loopEdit(!!enabled);
    },

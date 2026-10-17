@@ -44,6 +44,17 @@ for(const bpm of [6,600]){
 T.sync(16,120,true);frame(now+1);assert.strictEqual(frames.size,0,'end of score sleeps');
 T.sync(0,120,true);assert.strictEqual(frames.size,1,'loop wakes from end');frame(now+10);
 T.teardown();assert.strictEqual(frames.size,0);
+T.render(xml,container,viewport,0);frame(now);
+T.waitPrepare(5000);frame(now);
+const entry=offset();assert(entry>250,'entry begins to the right of fixed guide');
+assert.strictEqual(frames.size,1,'preparation has one bounded requestAnimationFrame');
+frame(now+2500);assert(offset()>0&&offset()<entry,'preparation advances gradually');
+frame(now+5000);assert(Math.abs(offset())<.01,'preparation ends on the first written note');
+assert.strictEqual(frames.size,0,'preparation sleeps after completion without time limit');
+T.waitPrepare(5000);frame(now);T.waitCancel();frame(now);
+assert.strictEqual(frames.size,0,'cancel preparation drains RAF');
+assert(Math.abs(offset())<.01,'cancel returns to attack position');
+T.teardown();
 T.render(xml,container,viewport,2);frame(now);assert.strictEqual(frames.size,0,'replacement score starts paused');T.teardown();
 console.log('PASS: indexed highlights, no frame geometry reads, resize, clock, pause, seek, loop and teardown');
 

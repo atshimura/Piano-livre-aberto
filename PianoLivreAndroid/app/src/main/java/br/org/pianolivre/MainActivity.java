@@ -22,6 +22,9 @@ public class MainActivity extends Activity {
  MidiManager midiManager;MidiDevice device;MidiInputPort outputPort;MidiOutputPort inputPort;MidiDeviceInfo activeInfo;
  Set<Integer> activeNotes=new HashSet<>(); Set<Integer> downKeys=new HashSet<>();Set<Integer> midiSources=new HashSet<>();
  final WaitRecognizer waitRecognizer=new WaitRecognizer();
+ final WaitPreparation waitPreparation=new WaitPreparation();
+ boolean waitStarted=false,waitPreparing=false;
+ long waitPreparationSequence=0;
  final ChordCalibration chordCalibration=new ChordCalibration();
  TextView chordCalibrationStatus;
  final MidiPerformance performance=new MidiPerformance();
@@ -62,7 +65,7 @@ public class MainActivity extends Activity {
   };
  }
  void rearmWaitIfStudying(){
-  if(foreground&&score!=null&&mode==0&&screens!=null&&screens.isStudyOpen())prepareWaiting();
+  if(foreground&&waitStarted&&!waitPreparing&&score!=null&&mode==0&&screens!=null&&screens.isStudyOpen())prepareWaiting();
  }
  @Override public void onCreate(Bundle state){super.onCreate(state);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
   // Keep screen awake only while the app is visible (no persistent wakelock).
@@ -469,7 +472,7 @@ public class MainActivity extends Activity {
    screens.updatePressed(downKeys);
    if(newAttack&&foreground)screens.onLabMidiAttack(pitch);
   }
-  if(!foreground||chordCalibration.recording()||score==null||mode!=0||!pressed||waitTraveling||
+  if(!foreground||chordCalibration.recording()||score==null||mode!=0||!waitStarted||waitPreparing||!pressed||waitTraveling||
       (screens!=null&&!screens.isStudyOpen()))return;
   WaitRecognizer.Result result=waitRecognizer.noteOnTimed(pitch,newAttack,downKeys,now);
   if(screens!=null&&screens.isStudyOpen()){
@@ -595,6 +598,11 @@ public class MainActivity extends Activity {
  void prepareWaiting(){
   if(score==null||mode!=0)return;
   waitRecognizer.clear();
+  if(!waitStarted||waitPreparing){
+   waitTraveling=false;
+   if(screens!=null)screens.followScore(position,true);
+   return;
+  }
   double next=score.at(position,currentHand).isEmpty()?score.nextForHand(position,currentHand):position;
   if(next>position+.0001){waitTravelTarget=next;waitTraveling=true;previousTick=SystemClock.uptimeMillis();}
   else{waitTraveling=false;waitRecognizer.arm(score.at(position,currentHand));}
@@ -635,6 +643,8 @@ public class MainActivity extends Activity {
  void toggle(){
   if(score==null){chooseScore();return;}
   if(mode==0){
+   if(!waitStarted){beginWaitPreparation();return;}
+   if(waitPreparing)return;
    if(inputPort==null)showMidiDiagnostics();
    else message("Modo de espera ativo: toque as notas no Yamaha. O estudo avança quando as notas esperadas são reconhecidas.");
    return;
@@ -669,7 +679,39 @@ public class MainActivity extends Activity {
   android.util.Log.i("PianoLivreUI","play=true mode="+mode);
   updateInfo();if(screens!=null)screens.updateSelections();
  }
+ void beginWaitPreparation(){
+  if(score==null||mode!=0||waitPreparing)return;
+  waitStarted=true;waitPreparing=true;waitTraveling=false;waitRecognizer.clear();
+  int seconds=WaitPreparation.configuredSeconds(prefs.getInt("user_"+user+"_wait_prep_seconds",5));
+  long now=SystemClock.uptimeMillis();
+  waitPreparation.start(now,seconds);
+  final long run=++waitPreparationSequence;
+  if(screens!=null){screens.startWaitPreparation(waitPreparation.durationMs());screens.updateSelections();}
+  handler.postDelayed(()->{
+   if(run!=waitPreparationSequence||!waitPreparing||!waitPreparation.finish(SystemClock.uptimeMillis()))return;
+   waitPreparing=false;
+   if(mode==0&&waitStarted&&foreground&&score!=null&&screens!=null&&screens.isStudyOpen()){
+    prepareWaiting();screens.updateSelections();
+   }else{waitStarted=false;if(screens!=null)screens.updateSelections();}
+  },waitPreparation.durationMs());
+ }
+ void configureWaitPreparation(){
+  EditText seconds=new EditText(this);seconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+  seconds.setSingleLine(true);
+  seconds.setText(String.valueOf(WaitPreparation.configuredSeconds(prefs.getInt("user_"+user+"_wait_prep_seconds",5))));
+  new AlertDialog.Builder(this).setTitle("Preparação do modo Espera")
+   .setMessage("Duração da entrada visual antes de aguardar notas (1 a 30 segundos). Não haverá prazo para tocar após a preparação.")
+   .setView(seconds).setPositiveButton("Salvar",(d,w)->{
+    try{
+     int selected=Integer.parseInt(seconds.getText().toString().trim());
+     if(selected<1||selected>30)throw new NumberFormatException();
+     prefs.edit().putInt("user_"+user+"_wait_prep_seconds",selected).apply();
+    }catch(NumberFormatException ex){message("Informe entre 1 e 30 segundos.");}
+   }).setNegativeButton("Cancelar",null).show();
+ }
  void stopPlayback(){
+  waitStarted=false;waitPreparing=false;waitPreparationSequence++;waitPreparation.cancel();
+  if(screens!=null)screens.stopWaitPreparation();
   running=false;waitTraveling=false;allOff();saveSession();updateInfo();
   // A paused clock must stop the renderer's requestAnimationFrame extrapolation.
   if(screens!=null){screens.followScore(position,true);screens.updateSelections();}

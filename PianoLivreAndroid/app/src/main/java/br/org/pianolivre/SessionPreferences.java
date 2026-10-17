@@ -7,7 +7,9 @@ public final class SessionPreferences {
   for(Map.Entry<String,Object> item:values.entrySet()){
    String key=item.getKey();Object value=item.getValue();
    if(value instanceof Float&&!Float.isFinite((Float)value))throw new IllegalArgumentException("Preferência decimal inválida");
-   if(key.matches("user_\\d+_(mode|hand|route_visit)")){
+   if(key.matches("user_\\d+_wait_prep_seconds")){
+    if(!(value instanceof Integer)||(Integer)value<1||(Integer)value>30)throw new IllegalArgumentException("Preparação do Espera inválida");
+   }else if(key.matches("user_\\d+_(mode|hand|route_visit)")){
     if(!(value instanceof Integer))throw new IllegalArgumentException("Preferência inteira inválida");int n=(Integer)value;
     if(key.endsWith("route_visit")?n< -1:n<0||n>2)throw new IllegalArgumentException("Modo/mão/retorno inválido");
    }else if(key.matches("user_\\d+_(position|tempo|loop_start|loop_end)")){
