@@ -14,10 +14,13 @@ import java.util.*;
 final class MusicLabScreen extends LinearLayout {
  private final MainActivity activity;
  private final TextView heading,description,readout,detail,practiceResult,rangeLabel;
- private final LinearLayout learner;
- private final Button discoverButton,learnButton,touchButton,assembleButton,practiceButton;
+ private final LinearLayout learner,sequenceTools;
+ private final Button discoverButton,learnButton,touchButton,assembleButton,practiceButton,sequenceButton;
  private final MusicLabKeyboard keyboard;
  private final Set<Integer> midi=new HashSet<>(),virtual=new HashSet<>();
+ private final ArrayList<Integer> sequenceAttacks=new ArrayList<>();
+ private final TextView sequenceStatus;
+ private boolean recordingSequence=false;
  private boolean learn=false,assembling=false,practicing=false;
  private int presetIndex=0;
  private static final class Preset {
@@ -73,6 +76,13 @@ final class MusicLabScreen extends LinearLayout {
   description=label("",12,false);item(body,description,-1,-2);
   readout=label("",19,true);readout.setPadding(0,dp(5),0,0);item(body,readout,-1,-2);
   detail=label("",12,false);item(body,detail,-1,-2);
+  // Explicit sequence boundaries avoid guessing where an arpeggio starts/ends.
+  sequenceTools=new LinearLayout(activity);sequenceTools.setGravity(Gravity.CENTER_VERTICAL);
+  item(body,sequenceTools,-1,48);
+  sequenceButton=button("Iniciar sequência",()->toggleSequence());
+  item(sequenceTools,sequenceButton,145,38);
+  sequenceStatus=label("Sequência: toque para iniciar a análise",11,false);
+  sequenceTools.addView(sequenceStatus,new LinearLayout.LayoutParams(0,-2,1));
   learner=new LinearLayout(activity);learner.setOrientation(VERTICAL);
   item(body,learner,-1,-2);
   Spinner choices=new Spinner(activity);
@@ -93,6 +103,14 @@ final class MusicLabScreen extends LinearLayout {
   TextView keyboardHeading=label("Pauta e teclado · verde: tocado · dourado: referência",11,false);
   keyboardHeading.setPadding(0,dp(7),0,0);item(body,keyboardHeading,-1,-2);
   keyboard=new MusicLabKeyboard(activity,notes->{
+   if(recordingSequence&&!learn&&!assembling){
+    ArrayList<Integer> newAttacks=new ArrayList<>();
+    for(int note:notes)if(!virtual.contains(note))newAttacks.add(note);
+    // Simultaneous fingers have no unambiguous order: skip rather than
+    // manufacturing one from the HashSet iteration order.
+    if(newAttacks.size()==1)addSequenceAttack(newAttacks.get(0));
+    else if(newAttacks.size()>1)sequenceStatus.setText("Notas simultâneas: ordem indeterminada; toque uma de cada vez.");
+   }
    virtual.clear();virtual.addAll(notes);refresh();
   });
   item(body,keyboard,-1,210);
@@ -104,8 +122,8 @@ final class MusicLabScreen extends LinearLayout {
   item(keyboardOptions,button("Oitava ▶",()->shift(12)),96,36);
   item(keyboardOptions,button("Limpar",()->keyboard.clear()),75,36);
   TextView caveat=label("Entrada USB-MIDI ou teclado virtual. Sem som sintetizado pelo teclado virtual. " +
-   "Nesta primeira entrega: notas, intervalos, acordes completos e prática livre de acordes; " +
-   "escalas, arpejos, catálogo amplo, registro e ritmo estão previstos nas próximas entregas.",11,false);
+   "Escalas e arpejos exigem uma sequência completa de uma oitava, iniciada e concluída pelo usuário. " +
+   "Reconhecimento espontâneo contínuo, catálogo amplo, registro e ritmo permanecem em desenvolvimento.",11,false);
   caveat.setPadding(0,dp(8),0,0);item(body,caveat,-1,-2);
   setLearn(false);setAssembling(false);
  }
@@ -118,12 +136,44 @@ final class MusicLabScreen extends LinearLayout {
   refresh();
  }
  private void setLearn(boolean value){
-  learn=value;practicing=false;learner.setVisibility(learn?VISIBLE:GONE);
+  learn=value;practicing=false;recordingSequence=false;
+  learner.setVisibility(learn?VISIBLE:GONE);
+  sequenceTools.setVisibility(learn?GONE:VISIBLE);sequenceButton.setText("Iniciar sequência");
   discoverButton.setEnabled(learn);learnButton.setEnabled(!learn);
   heading.setText(learn?"Aprender · acordes":"Descobrir · o que estou tocando?");
   description.setText(learn?"Escolha um acorde, veja as notas e pratique livremente.":
    "Toque notas no piano MIDI ou no teclado virtual; acordes completos são identificados.");
   refresh();
+ }
+ /** MIDI attack arrives independently of the set of currently held notes. */
+ void onMidiAttack(int pitch){
+  if(getVisibility()==VISIBLE&&!learn&&recordingSequence)addSequenceAttack(pitch);
+ }
+ private void addSequenceAttack(int pitch){
+  if(sequenceAttacks.size()>=40){sequenceStatus.setText("Limite de 40 ataques. Toque Concluir análise.");return;}
+  sequenceAttacks.add(pitch);
+  sequenceStatus.setText("Sequência: "+sequenceAttacks.size()+" notas · última "+MusicTheory.noteName(pitch));
+ }
+ private void toggleSequence(){
+  if(!recordingSequence){
+   sequenceAttacks.clear();recordingSequence=true;
+   sequenceButton.setText("Concluir análise");
+   sequenceStatus.setText("Gravando ataques… Toque uma escala ou arpejo completo.");
+   return;
+  }
+  recordingSequence=false;sequenceButton.setText("Iniciar sequência");
+  List<MusicSequenceAnalyzer.Finding> findings=MusicSequenceAnalyzer.analyze(sequenceAttacks);
+  if(sequenceAttacks.isEmpty())sequenceStatus.setText("Nenhuma nota registrada. Tente novamente.");
+  else if(findings.isEmpty())sequenceStatus.setText("Sequência de "+sequenceAttacks.size()+
+    " notas: sem correspondência exata neste catálogo; não é possível afirmar escala ou arpejo.");
+  else{
+   StringBuilder result=new StringBuilder("Padrão compatível com ");
+   for(MusicSequenceAnalyzer.Finding f:findings){
+    if(result.length()>"Padrão compatível com ".length())result.append(" | ");
+    result.append(f.display());
+   }
+   sequenceStatus.setText(result.toString());
+  }
  }
  void onMidiPressed(Set<Integer> notes){
   midi.clear();midi.addAll(notes);refresh();
