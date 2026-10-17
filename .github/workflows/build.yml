@@ -98,6 +98,10 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicLabPlaybackPlan.java tests/MusicLabPlaybackPlanTest.java
           java -cp build/score-tests MusicLabPlaybackPlanTest
+      - name: Test ordered Laboratory scale and arpeggio practice (JVM)
+        run: |
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicLabPracticeSequence.java tests/MusicLabPracticeSequenceTest.java
+          java -cp build/score-tests MusicLabPracticeSequenceTest
       - name: Test responsive compact library grid (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/LibraryGridLayout.java tests/LibraryGridLayoutTest.java

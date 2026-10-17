@@ -377,7 +377,9 @@ class PianoScreens {
   });
   freeRoot.addView(freeNotation,new LinearLayout.LayoutParams(-1,0,1));
  }
- void stopLabDemonstration(){if(lab!=null)lab.stopDemonstration();}
+ void stopLabDemonstration(){
+  if(lab!=null){lab.stopDemonstration();lab.cancelPractice();}
+ }
  void showFree(){
   if(a.score==null)return;
   stopLabDemonstration();

@@ -127,6 +127,31 @@ if __name__=="__main__":
     dismiss_keyboard()
     assert any("Lá menor" in n.attrib.get("text","") for n in dump().iter("node")), "Catalog reset lost five legacy exercises"
     print("PASS: Laboratory catalog filtering, empty state and practice reset",flush=True)
+    # Guided scale/arpeggio starts from zero and resets on filter/mode changes.
+    search_fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+    assert search_fields, "Laboratory search missing for guided practice"
+    coords=[int(x) for x in re.findall(r"\d+",search_fields[0].attrib["bounds"])]
+    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
+    adb("shell","input","text","escala")
+    dismiss_keyboard()
+    assert any("Escala ·" in n.attrib.get("text","") for n in dump().iter("node")), "Scale filter missing"
+    tap_text(["Praticar"],exact=True,scroll=True)
+    assert any("Próxima:" in n.attrib.get("text","") and "0/" in n.attrib.get("text","") and "mão (referência): Ambas" in n.attrib.get("text","") for n in dump().iter("node")), "Sequential practice or hand reference not shown"
+    search_fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+    coords=[int(x) for x in re.findall(r"\d+",search_fields[0].attrib["bounds"])]
+    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
+    adb("shell","input","keyevent","123")
+    for _ in range(6):adb("shell","input","keyevent","67")
+    adb("shell","input","text","arpejo")
+    dismiss_keyboard()
+    assert any("Arpejo ·" in n.attrib.get("text","") for n in dump().iter("node")), "Arpeggio filter missing"
+    assert any(n.attrib.get("text")=="Praticar" for n in dump().iter("node")), "Filter change retained previous practice"
+    tap_text(["Praticar"],exact=True,scroll=True)
+    assert any("Próxima:" in n.attrib.get("text","") for n in dump().iter("node")), "Arpeggio practice did not restart"
+    tap_text(["Descobrir"],exact=True,scroll=True)
+    tap_text(["Aprender / Praticar"],exact=True,scroll=True)
+    assert any(n.attrib.get("text")=="Praticar" for n in dump().iter("node")), "Mode switch retained old progress"
+    print("PASS: Laboratory ordered practice, hand reference, filter and mode reset",flush=True)
     tap_text(["Demonstrar"],scroll=True)
     assert any("Demonstração requer saída USB-MIDI" in n.attrib.get("text","") for n in dump().iter("node")), "Demo erroneously played without MIDI"
     tap_text(["OK"],exact=True)

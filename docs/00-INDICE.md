@@ -83,3 +83,4 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [52 — Reconhecimento livre de padrões](52-LAB-PADROES-LIVRES.md)
 - [53 — Catálogo pesquisável do Laboratório](53-LAB-CATALOGO.md)
 - [54 — Demonstração musical USB-MIDI](54-LAB-DEMONSTRACAO-MIDI.md)
+- [55 — Prática guiada sequencial no Laboratório](55-LAB-PRATICA-SEQUENCIAL.md)
