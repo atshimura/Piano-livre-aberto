@@ -8,6 +8,34 @@
 var NS="http://www.w3.org/2000/svg";
 var STEP={C:0,D:1,E:2,F:3,G:4,A:5,B:6};
 var SHARPS=["F","C","G","D","A","E","B"],FLATS=["B","E","A","D","G","C","F"];
+var NOTE_PT={C:"Dó",D:"Ré",E:"Mi",F:"Fá",G:"Sol",A:"Lá",B:"Si"};
+var HARMONY_KIND={
+ major:["","maior"],minor:["m","menor"],augmented:["aug","aumentado"],
+ diminished:["dim","diminuto"],dominant:["7","com sétima"],
+ "major-seventh":["maj7","maior com sétima maior"],
+ "minor-seventh":["m7","menor com sétima"],
+ "diminished-seventh":["dim7","diminuto com sétima diminuta"],
+ "half-diminished":["m7♭5","meio-diminuto"],
+ "suspended-fourth":["sus4","suspenso com quarta"],
+ "suspended-second":["sus2","suspenso com segunda"]
+};
+function accidentalSymbol(alter){
+ return {"-2":"𝄫","-1":"♭","0":"","1":"♯","2":"𝄪"}[alter]||"";
+}
+function noteIdentification(n){
+ if(!n||!Object.prototype.hasOwnProperty.call(NOTE_PT,n.step)||!Number.isInteger(n.oct)
+   ||!Number.isInteger(n.alter)||Math.abs(n.alter)>2)return null;
+ var altered=accidentalSymbol(n.alter),oct=n.oct;
+ return NOTE_PT[n.step]+altered+oct+" · "+n.step+altered+oct;
+}
+function parseHarmony(node){
+ var root=direct(node,"root"),step=value(root,"root-step","");
+ var alter=num(root,"root-alter",0),kind=value(node,"kind","");
+ if(!Object.prototype.hasOwnProperty.call(NOTE_PT,step)||!Number.isInteger(alter)
+   ||Math.abs(alter)>2||!Object.prototype.hasOwnProperty.call(HARMONY_KIND,kind))return null;
+ var quality=HARMONY_KIND[kind],symbol=step+accidentalSymbol(alter)+quality[0];
+ return {symbol:symbol,name:NOTE_PT[step]+accidentalSymbol(alter)+" "+quality[1]};
+}
 var state=null;
 
 function direct(n,tag){if(!n)return null;var c=n.children;for(var i=0;i<c.length;i++)if(c[i].tagName===tag)return c[i];return null;}
@@ -37,7 +65,7 @@ function xmlTimeMap(xml) {
   var cfg={div:1,beats:4,unit:4,fifths:0,clefs:{1:"G",2:"F"}}, measures=[];
   children(part,"measure").forEach(function(m,mi){
    var cursor=0,last=0,max=0,measureAcc={};
-   var result={notes:[],rests:[],marks:[],time:[],key:[],clef:[],bar:[],dur:0,index:mi};
+   var result={notes:[],rests:[],marks:[],harmony:[],time:[],key:[],clef:[],bar:[],dur:0,index:mi};
    for(var ci=0;ci<m.children.length;ci++){
     var node=m.children[ci],tag=node.tagName;
     if(tag==="attributes"){
@@ -56,6 +84,14 @@ function xmlTimeMap(xml) {
       cfg.clefs[staff]=value(c,"sign",staff===1?"G":"F");
       result.clef.push({at:cursor,staff:staff,sign:cfg.clefs[staff]});
      });
+    }else if(tag==="harmony"){
+     // Only documented MusicXML harmony is shown. Never guess missing chords.
+     var harmonic=parseHarmony(node);
+     if(harmonic){
+      harmonic.at=cursor+num(node,"offset",0)/cfg.div;
+      harmonic.staff=splitHands?pi+1:num(node,"staff",0);
+      result.harmony.push(harmonic);
+     }
     }else if(tag==="backup"){cursor-=num(node,"duration",0)/cfg.div;}
     else if(tag==="forward"){cursor+=num(node,"duration",0)/cfg.div;max=Math.max(max,cursor);}
     else if(tag==="note"){
@@ -193,6 +229,16 @@ function xmlTimeMap(xml) {
  parsed.forEach(function(measures,pi){
   measures.forEach(function(m,mi){
    var base=starts[mi],add=function(a,out){a.forEach(function(e){e.at+=base;out.push(e);});};
+   // Harmonic indication belongs only to its written measure and staff.
+   // It is not extrapolated into later measures or invented from pitches.
+   m.notes.forEach(function(n){
+    var nearest=null;
+    m.harmony.forEach(function(h){
+     if(h.at<=n.at+1e-8&&(!h.staff||h.staff===n.staff)
+        &&(!nearest||nearest.at<=h.at))nearest=h;
+    });
+    if(nearest)n.harmony={symbol:nearest.symbol,name:nearest.name};
+   });
    add(m.notes,notes);add(m.rests,rests);add(m.marks,marks);
    add(m.time,times);add(m.key,keys);add(m.clef,clefs);
    if(pi===0){
@@ -219,6 +265,7 @@ function xmlTimeMap(xml) {
  });
  rests.sort(function(a,b){return a.at-b.at || a.staff-b.staff;});
  arrangeVoices(notes,rests);
+ notes.forEach(function(n,i){n._noteIndex=i;});
  bars.sort(function(a,b){return a.at-b.at;});
  var partStaves=new Set(notes.map(function(n){return n.staff;}));
  if(partStaves.size>2)throw Error("Partitura com mais de duas pautas: modo de estudo temporal ainda não compatível.");
@@ -345,7 +392,7 @@ function drawNote(parent,n,x){
  // MusicXML quarter-note timestamp controls x regardless of printed note width.
  var g=svgEl("g",{"class":n.grace?"temporal-grace-note":"musical-event",
   "data-beat":n.at.toFixed(4),"data-staff":n.staff,"data-symbolic-type":n.type||"",
-  "data-tuplet-actual":n.tupletActual||0},parent);
+  "data-tuplet-actual":n.tupletActual||0,"data-note-index":n._noteIndex},parent);
  // Cue-size grace figures do not alter the MIDI performance timeline.
  if(n.grace)g.setAttribute("transform","translate("+x+" "+y+") scale(.67) translate("+(-x)+" "+(-y)+")");
  // Ledger lines are not stretched with the duration.
@@ -353,7 +400,10 @@ function drawNote(parent,n,x){
  if(y<top-2)for(var ly=top-13.2;ly>=y-0.1;ly-=13.2)line(g,x-10.5,ly,x+10.5,ly,"#8B9BAC",1);
  if(y>bottom+2)for(var ly2=bottom+13.2;ly2<=y+0.1;ly2+=13.2)line(g,x-10.5,ly2,x+10.5,ly2,"#8B9BAC",1);
  var head=svgEl("ellipse",{cx:x,cy:y,rx:whole?9.8:8.8,ry:whole?6:5.7,fill:hollow?"white":col,
-  stroke:col,"stroke-width":hollow?1.9:1,transform:"rotate(-16 "+x+" "+y+")"},g);
+  stroke:col,"stroke-width":hollow?1.9:1,transform:"rotate(-16 "+x+" "+y+")",
+  "aria-label":noteIdentification(n)||""},g);
+ head.style.pointerEvents="all";
+ head.style.cursor="pointer";
  if(!whole){
   var direction=n._engraveMultiVoice?n._visualStem:(n.stem||n._visualStem||"");
    var up=direction==="up"||(direction!=="down"&&y>=top+26);
@@ -967,9 +1017,44 @@ function setupLoopControls(st){
  var stop=function(){dragging="";};
  root.addEventListener("pointerup",stop);root.addEventListener("pointercancel",stop);
 }
+/**
+ * Delegate events instead of installing one listener per SVG notehead/tile.
+ * Clickable hit target is the notehead only; unaffected by the study clock.
+ */
+function setupNoteIdentification(st){
+ var popup=document.createElement("div");
+ popup.id="temporal-note-identification";
+ popup.setAttribute("role","status");
+ popup.style.cssText="position:absolute;display:none;z-index:10;pointer-events:none;"+
+  "background:#17324e;color:#fff;border-radius:8px;padding:7px 10px;"+
+  "font:600 14px system-ui,sans-serif;max-width:60%;line-height:1.4;"+
+  "box-shadow:0 2px 9px #55718c66;";
+ st.root.appendChild(popup);st.popup=popup;st.popupTimer=null;
+ st.root.addEventListener("click",function(e){
+  if(st.editingLoop||!e.target||!e.target.tagName
+     ||String(e.target.tagName).toLowerCase()!=="ellipse")return;
+  var group=e.target.closest?e.target.closest(".musical-event"):null;
+  if(!group)return;
+  var index=Number(group.getAttribute("data-note-index"));
+  if(!Number.isInteger(index)||index<0)return;
+  var note=st.layout.plan.notes[index],identity=noteIdentification(note);
+  if(!identity)return;
+  var text=identity+(note.harmony?"\\nAcorde: "+note.harmony.symbol+" — "+note.harmony.name:"");
+  popup.textContent=text;
+  popup.style.whiteSpace="pre-line";
+  popup.style.display="block";
+  var rootRect=st.root.getBoundingClientRect(),headRect=e.target.getBoundingClientRect();
+  var preferredX=headRect.left-rootRect.left-18;
+  popup.style.left=Math.max(st.layout.railWidth+5,Math.min(st.viewportWidth-180,preferredX))+"px";
+  popup.style.top=Math.max(4,headRect.top-rootRect.top-57)+"px";
+  if(st.popupTimer)clearTimeout(st.popupTimer);
+  st.popupTimer=setTimeout(function(){popup.style.display="none";st.popupTimer=null;},2000);
+ });
+}
 function setLoopEditing(enabled){
  if(!state)return;
  var st=state;st.editingLoop=!!enabled;st.root.style.touchAction=enabled?"none":"auto";
+ if(enabled&&st.popup)st.popup.style.display="none";
  if(enabled&&!st.loop){
   var bars=st.layout.plan.bars.filter(function(e){return e.start;}).map(function(e){return e.at;});
   var start=0,end=Math.min(st.layout.plan.duration,4);
@@ -1001,7 +1086,7 @@ function render(xml,container,viewport,startBeat){
  root.style.cssText="position:relative;width:100%;height:100%;overflow:hidden;background:white;";
  var sheet=document.createElement("div");sheet.id="timeline-track";
  // Tiles move independently: WebView never composites one huge score texture.
- sheet.style.cssText="position:absolute;top:0;left:0;height:100%;width:100%;pointer-events:none;"+
+ sheet.style.cssText="position:absolute;top:0;left:0;height:100%;width:100%;pointer-events:auto;"+
   "transform-origin:top left;transform:scaleY("+scale+");";
  // Android WebView/GPU cannot always rasterize a 10,000+ px-wide SVG.
  // Small consecutive SVG tiles keep the entire piece continuous without
@@ -1107,6 +1192,7 @@ function render(xml,container,viewport,startBeat){
    movingFrames:0,intervals:0,gapTotalMs:0,maxGapMs:0,gapsOver50Ms:0,maxDrawMs:0,peakVisibleTiles:0}};
  if(plan.unsupported.length){status.textContent="Partitura temporal parcial: "+plan.unsupported.length+" elementos não interpretados"; }
  setupLoopControls(state);
+ setupNoteIdentification(state);
  paintRail(state,initial);
  function animation(now){
   if(!state)return;
@@ -1212,14 +1298,14 @@ function resize(){
  render(st.xml,st.container,viewport,saved);
  if(state){state.loop=existing;setLoopEditing(editing);sync(saved,bpm,moving);}
 }
-function teardown(){if(!state)return;reportDiagnostics("teardown");cancelAnimationFrame(state.raf);state=null;}
+function teardown(){if(!state)return;reportDiagnostics("teardown");if(state.popupTimer)clearTimeout(state.popupTimer);cancelAnimationFrame(state.raf);state=null;}
 var exported={parse:xmlTimeMap,buildLayout:buildLayout,render:render,sync:sync,resize:resize,teardown:teardown,
  loopEdit:setLoopEditing,clearLoop:clearLoop,diagnostics:diagnostics,
  _test:{computeX:computeX,cursorPx:cursorPx,msPerBeat:msPerBeat,
   staffY:staffY,staffLineY:staffLineY,clefAnchor:clefAnchor,
   pitchY:pitchY,drawClef:drawClef,
   keyDefaultAlter:keyDefaultAlter,accidentalFromAlter:accidentalFromAlter,
-  writtenDuration:writtenDuration,
+  writtenDuration:writtenDuration,noteIdentification:noteIdentification,parseHarmony:parseHarmony,
   keySignatureNotes:keySignatureNotes,drawKey:drawKey,
   drawSlurs:drawSlurs,drawNote:drawNote,drawRest:drawRest,
   arrangeVoices:arrangeVoices,collectSpanners:collectSpanners,
