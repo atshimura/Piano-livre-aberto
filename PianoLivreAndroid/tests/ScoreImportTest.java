@@ -13,6 +13,7 @@ public class ScoreImportTest {
   try{
    File first=ScoreImport.save(dir,"Teste.XML",new ByteArrayInputStream(xml));File second=ScoreImport.save(dir,"Teste.XML",new ByteArrayInputStream(xml));
    check(!first.equals(second)&&Arrays.equals(Files.readAllBytes(first.toPath()),xml),"same name preserves original bytes");
+   File normalized=ScoreImport.save(dir,"é..XML",new ByteArrayInputStream(xml));check(normalized.getName().matches("[A-Za-z0-9][A-Za-z0-9._-]*")&&!normalized.getName().contains(".."),"import filename remains backup-compatible");
    int count=dir.list().length;boolean bad=false;try{ScoreImport.save(dir,"Teste.XML",new ByteArrayInputStream("<bad/>".getBytes()));}catch(Exception ex){bad=true;}
    check(bad&&dir.list().length==count,"invalid import creates no file");
    String container="<container><rootfiles><rootfile full-path='score.musicxml' media-type='application/vnd.recordare.musicxml+xml'/></rootfiles></container>";

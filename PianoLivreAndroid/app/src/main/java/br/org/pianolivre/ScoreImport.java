@@ -10,6 +10,7 @@ public final class ScoreImport {
   if(parsed.events.isEmpty())throw new IOException("A partitura não contém notas suportadas");
   if(!directory.isDirectory()&&!directory.mkdirs())throw new IOException("Não foi possível abrir a biblioteca importada");
   String name=new File(display.replace('\\','/')).getName().replaceAll("[^a-zA-Z0-9._-]","_");
+  name=name.replace("..","_");if(!name.matches("^[A-Za-z0-9].*"))name="Importada_"+name;
   if(name.length()>100)name="Importada"+lower.substring(lower.lastIndexOf('.'));
   int dot=name.lastIndexOf('.');String base=name.substring(0,dot),extension=name.substring(dot);File target=null;
   for(int n=0;n<10000;n++){File candidate=new File(directory,base+(n==0?"":"_"+n)+extension);if(candidate.createNewFile()){target=candidate;break;}}
