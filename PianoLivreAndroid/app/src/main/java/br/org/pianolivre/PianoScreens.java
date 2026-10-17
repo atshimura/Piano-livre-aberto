@@ -377,8 +377,10 @@ class PianoScreens {
   });
   freeRoot.addView(freeNotation,new LinearLayout.LayoutParams(-1,0,1));
  }
+ void stopLabDemonstration(){if(lab!=null)lab.stopDemonstration();}
  void showFree(){
   if(a.score==null)return;
+  stopLabDemonstration();
   a.stopPlayback();a.finishStudyWindow();
   if(a.scoreView!=null&&a.scoreView.showKeyboard)setKeyboardOpen(false);
   header.setVisibility(View.GONE);library.setVisibility(View.GONE);studio.setVisibility(View.GONE);
@@ -397,6 +399,7 @@ class PianoScreens {
   if(lab!=null){lab.onMidiPressed(a.downKeys);lab.setVisibility(View.VISIBLE);}
  }
  void showHome(){
+  stopLabDemonstration();
   a.stopPlayback();a.finishStudyWindow();
   if(a.scoreView!=null&&a.scoreView.showKeyboard)setKeyboardOpen(false);
   header.setVisibility(View.VISIBLE);
@@ -406,6 +409,7 @@ class PianoScreens {
  }
  void showStudy(){
   if(a.score==null)return;
+  stopLabDemonstration();
   header.setVisibility(View.VISIBLE);
   freeRoot.setVisibility(View.GONE);
   library.setVisibility(View.GONE);if(lab!=null)lab.setVisibility(View.GONE);

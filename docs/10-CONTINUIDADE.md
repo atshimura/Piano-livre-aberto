@@ -151,3 +151,7 @@ Função `inferConventionalBeams` introduz agrupamento conservador por compasso/
 ## Retomada 0.9.44 — catálogo do Laboratório
 
 Busca e referência offline das categorias musicais de `MusicLabCatalog` na branch `feat/laboratorio-catalogo-consulta`, documento 53. Integrar apenas após PRs-base e respectivos checks e emulador. Próximas tarefas: demonstração MIDI offline sincronizada, prática sequencial, metrônomo e progresso local. Não declarar dedilhado/ritmo implementados ainda.
+
+## Retomada 0.9.45 — demonstração MIDI local
+
+Branch `feat/laboratorio-demonstracao-midi` acrescenta geração de eventos pela saída MIDI local, velocidade/repetição, destaque de teclas e cancelamento seguro (doc 54). Não há sintetizador embutido; sem Yamaha conectado nenhum som é produzido. Exigir CI e emulador próprios depois de integrar PRs antecedentes; próximo desenvolvimento: prática guiada sequencial/ritmo e histórico por perfil, mais claves/hastes.

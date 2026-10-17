@@ -338,6 +338,7 @@ public class MainActivity extends Activity {
   },handler);
  }
  void disconnectMidi(){
+  if(screens!=null)screens.stopLabDemonstration();
   midiGeneration++;
   try{
    if(inputPort!=null){if(receiver!=null)inputPort.disconnect(receiver);inputPort.close();}
@@ -904,7 +905,7 @@ public class MainActivity extends Activity {
   android.util.Log.i("PianoLivreUI","LIFECYCLE_RESUMED");
  }
  @Override protected void onPause(){
-  foreground=false;super.onPause();stopPlayback();finishStudyWindow();saveSession();handler.removeCallbacks(ticker);
+  foreground=false;super.onPause();if(screens!=null)screens.stopLabDemonstration();stopPlayback();finishStudyWindow();saveSession();handler.removeCallbacks(ticker);
   chordCalibration.stop();
   if(screens!=null)screens.pauseNotation();
   android.util.Log.i("PianoLivreUI","LIFECYCLE_PAUSED");
