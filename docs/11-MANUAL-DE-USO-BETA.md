@@ -1,6 +1,6 @@
 # 11 — Manual da beta pública
 
-Para obter um APK público, abra a página GitHub Actions → **Open Piano Livre - tests and APK** → execução da `main` com status success → artefato `PianoLivre-open-debug-apk`. O link expira após poucos dias.
+Para obter um APK público, abra a página GitHub Actions → **Open Piano Livre - tests and APK** → execução da `main` com status success → artefato `PianoLivre-open-release-apk` (desde 0.9.35; versões anteriores usavam `PianoLivre-open-debug-apk`). O link expira após poucos dias.
 
 O aplicativo aberto tem identificador `br.org.pianolivre.opensource`: pode coexistir com o antigo pacote privado, mas **não compartilha dados nem o substitui automaticamente**. Não desinstale a edição antiga sem conferir backup e restauração.
 

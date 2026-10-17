@@ -5,7 +5,7 @@ from unittest.mock import patch
 SCRIPT=pathlib.Path(__file__).resolve().parents[1]/'scripts/publish_public_beta.py'
 CERT='7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290'
 class PublishBetaTest(unittest.TestCase):
- def scenario(self,*,change=1,conclusion='success',certificate=CERT,existing=None):
+ def scenario(self,*,change=1,conclusion='success',certificate=CERT,existing=None,debuggable=False):
   calls=[]
   def command(args,**kw):
    calls.append(args)
@@ -19,8 +19,8 @@ class PublishBetaTest(unittest.TestCase):
    previous=pathlib.Path.cwd();os.chdir(tmp)
    try:
     pathlib.Path('PianoLivreAndroid').mkdir();pathlib.Path('PianoLivreAndroid/gradle.properties').write_text('pianolivre.beta.versionName=0.9.31-open-beta\npianolivre.beta.versionCode=40\n')
-    apk=pathlib.Path('dist/app/build/outputs/apk/debug/app-debug.apk');apk.parent.mkdir(parents=True);apk.write_bytes(b'synthetic apk')
-    pathlib.Path('dist/build').mkdir();pathlib.Path('dist/build/public-signature.txt').write_text(certificate);pathlib.Path('dist/build/public-apk-metadata.txt').write_text("versionCode='40' versionName='0.9.31-open-beta'")
+    apk=pathlib.Path('dist/app/build/outputs/apk/release/app-release.apk');apk.parent.mkdir(parents=True);apk.write_bytes(b'synthetic apk')
+    pathlib.Path('dist/build').mkdir();pathlib.Path('dist/build/public-signature.txt').write_text(certificate);pathlib.Path('dist/build/public-apk-metadata.txt').write_text("versionCode='40' versionName='0.9.31-open-beta'"+("\napplication-debuggable" if debuggable else ""))
     error=None
     with patch.dict(os.environ,{'GITHUB_REPOSITORY':'example/public','GITHUB_SHA':'abc','BEFORE_SHA':'previous'}),patch('subprocess.run',side_effect=command),contextlib.redirect_stdout(io.StringIO()):
      try:runpy.run_path(str(SCRIPT),run_name='__main__')
@@ -35,6 +35,8 @@ class PublishBetaTest(unittest.TestCase):
   calls,error=self.scenario(conclusion='failure');self.assertIsNotNone(error);self.assertFalse(any(c[:3]==['gh','release','create'] for c in calls))
  def test_wrong_certificate_blocks(self):
   calls,error=self.scenario(certificate='different');self.assertIsNotNone(error);self.assertFalse(any(c[:3]==['gh','release','create'] for c in calls))
+ def test_debuggable_artifact_blocks(self):
+  calls,error=self.scenario(debuggable=True);self.assertIsNotNone(error);self.assertFalse(any(c[:3]==['gh','release','create'] for c in calls))
  def test_docs_without_version_skip(self):
   calls,error=self.scenario(change=0);self.assertIsNone(error);self.assertEqual(len(calls),1)
  def test_existing_same_commit_preserved(self):

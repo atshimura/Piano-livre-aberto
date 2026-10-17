@@ -51,7 +51,7 @@ jobs:
           working-directory: PianoLivreAndroid
           script: |
             test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
-            gradle --no-daemon :app:assembleDebug
+            gradle --no-daemon :app:assembleDebug :app:assembleRelease
             "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -q "package: name='br.org.pianolivre.opensource'"
             adb shell svc wifi disable
             adb shell svc data disable
@@ -75,6 +75,7 @@ jobs:
             adb logcat -d -v brief | grep 'XML_INPUT_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'HISTORY_ACTIVITY_SELFTEST_PASS'
             python3 tests/emulator_ui.py
+            python3 tests/emulator_release.py
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
       - name: Store Android UI evidence
         if: always()
@@ -87,6 +88,8 @@ jobs:
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png
             PianoLivreAndroid/piano-midi-import.png
+            PianoLivreAndroid/piano-release.png
+            PianoLivreAndroid/piano-release.json
             PianoLivreAndroid/piano-song.png
             PianoLivreAndroid/piano-engraved.png
             PianoLivreAndroid/piano-free-reading.png

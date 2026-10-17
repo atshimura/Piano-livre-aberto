@@ -24,14 +24,15 @@ for attempt in range(40):
     if any(r and r['status']=='completed' and r['conclusion']!='success' for r in selected):raise RuntimeError('Required check failed; prerelease blocked')
     print('Waiting for build/emulator on this exact commit',flush=True);time.sleep(20)
 else:raise RuntimeError('Required checks not completed; prerelease blocked')
-dist=pathlib.Path('dist');apk=dist/'app/build/outputs/apk/debug/app-debug.apk';signature=dist/'build/public-signature.txt';metadata=dist/'build/public-apk-metadata.txt'
+dist=pathlib.Path('dist');apk=dist/'app/build/outputs/apk/release/app-release.apk';signature=dist/'build/public-signature.txt';metadata=dist/'build/public-apk-metadata.txt'
 if '7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290' not in signature.read_text():raise RuntimeError('Permanent certificate missing')
 if f"versionCode='{code}' versionName='{version}'" not in metadata.read_text():raise RuntimeError('APK metadata mismatch')
+if 'application-debuggable' in metadata.read_text():raise RuntimeError('Distribution APK must not be debuggable')
 output=dist/f'PianoLivre-{version}.apk';output.write_bytes(apk.read_bytes())
 checksum=dist/'SHA256SUMS';checksum.write_text(hashlib.sha256(output.read_bytes()).hexdigest()+'  '+output.name+'\n')
 notes=dist/'notes.md';notes.write_text(f'''Beta pública {version} (versionCode {code}). Commit: {sha}.
 
-APK offline do pacote br.org.pianolivre.opensource, com assinatura permanente. Build e emulador deste commit aprovados; isso não representa teste físico.
+APK offline do pacote br.org.pianolivre.opensource, com depuração desativada e assinatura permanente. Build e emulador deste commit aprovados; isso não representa teste físico.
 
 MIDI importado gera notação aproximada, com escolha explícita de mão por trilha e original preservado. Recursos MusicXML incompatíveis são informados. Faça backup antes de atualizar; a edição histórica não é substituída automaticamente.
 

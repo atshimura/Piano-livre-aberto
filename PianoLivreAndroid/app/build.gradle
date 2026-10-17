@@ -23,6 +23,14 @@ android {
     }
   }
   buildTypes {
+    release {
+      applicationIdSuffix '.opensource'
+      debuggable false
+      minifyEnabled false
+      // PR/emulator builds use only the runner's disposable debug certificate.
+      // Trusted main configures publicBeta exclusively from Actions Secrets.
+      signingConfig = hasPublicSigning ? signingConfigs.publicBeta : signingConfigs.debug
+    }
     debug {
       applicationIdSuffix '.opensource'
       if (hasPublicSigning) signingConfig signingConfigs.publicBeta
