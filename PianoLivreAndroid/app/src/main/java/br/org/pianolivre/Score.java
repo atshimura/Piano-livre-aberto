@@ -152,10 +152,30 @@ public class Score {
  }
  private static boolean direct(Element e,String tag){NodeList n=e.getChildNodes();for(int i=0;i<n.getLength();i++)if(n.item(i) instanceof Element && ((Element)n.item(i)).getTagName().equals(tag))return true;return false;}
  public static Score read(InputStream input,String fileName)throws Exception{
-  byte[] bytes=readAll(input); if(fileName.toLowerCase(Locale.ROOT).endsWith(".mxl")|| (bytes.length>3 && bytes[0]=='P'&&bytes[1]=='K')){
-   ZipInputStream z=new ZipInputStream(new ByteArrayInputStream(bytes));ZipEntry entry;byte[] found=null;
-   while((entry=z.getNextEntry())!=null){String n=entry.getName();if(n.endsWith(".xml")&&!n.startsWith("META-INF/")){found=readAll(z);break;}}
-   if(found==null)throw new IOException("MXL sem MusicXML válido");bytes=found;
+  byte[] bytes=readLimited(input,16*1024*1024); if(fileName.toLowerCase(Locale.ROOT).endsWith(".mxl")|| (bytes.length>3 && bytes[0]=='P'&&bytes[1]=='K')){
+   Map<String,byte[]> entries=new LinkedHashMap<>();int total=0,count=0;
+   try(ZipInputStream z=new ZipInputStream(new ByteArrayInputStream(bytes))){ZipEntry entry;
+    while((entry=z.getNextEntry())!=null){
+     if(++count>256)throw new IOException("MXL com entradas demais");
+     String n=entry.getName();if(n.startsWith("/")||n.contains("\\")||Arrays.asList(n.split("/")).contains("..")||entries.containsKey(n))throw new IOException("Caminho MXL inválido ou duplicado");
+     byte[] value=readLimited(z,16*1024*1024-total);total+=value.length;entries.put(n,value);
+    }
+   }
+   String target=null;byte[] container=entries.get("META-INF/container.xml");
+   if(container!=null){
+    DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();factory.setExpandEntityReferences(false);
+    String description=new String(container,java.nio.charset.StandardCharsets.UTF_8);
+    if(description.contains("<!DOCTYPE")||description.contains("<!ENTITY"))throw new IOException("Container MXL com DTD não permitido");
+    NodeList roots=factory.newDocumentBuilder().parse(new ByteArrayInputStream(container)).getElementsByTagName("rootfile");
+    for(int i=0;i<roots.getLength();i++){Element r=(Element)roots.item(i);if(r.getAttribute("media-type").equals("application/vnd.recordare.musicxml+xml")){target=r.getAttribute("full-path");break;}}
+    if(target==null&&roots.getLength()==1)target=((Element)roots.item(0)).getAttribute("full-path");
+    if(target==null||!entries.containsKey(target))throw new IOException("Rootfile MXL ausente ou incompatível");
+   }else{
+    for(String n:entries.keySet())if(!n.startsWith("META-INF/")&&(n.toLowerCase(Locale.ROOT).endsWith(".xml")||n.toLowerCase(Locale.ROOT).endsWith(".musicxml"))){
+     if(target!=null)throw new IOException("MXL ambíguo sem container.xml");target=n;
+    }
+   }
+   if(target==null)throw new IOException("MXL sem MusicXML válido");bytes=entries.get(target);
   }
   // MusicXML often declares a standard PUBLIC DTD. Strip only the known,
   // single-line external declaration; never resolve or expand external DTDs.
@@ -178,8 +198,19 @@ public class Score {
   try{f.setFeature("http://xml.org/sax/features/external-general-entities",false);}catch(javax.xml.parsers.ParserConfigurationException ignored){}
   try{f.setFeature("http://xml.org/sax/features/external-parameter-entities",false);}catch(javax.xml.parsers.ParserConfigurationException ignored){}
   f.setExpandEntityReferences(false);
+  // Bound nesting and node count before constructing a DOM (including on Android).
+  javax.xml.parsers.SAXParserFactory sax=javax.xml.parsers.SAXParserFactory.newInstance();
+  sax.setNamespaceAware(false);
+  sax.newSAXParser().parse(new ByteArrayInputStream(bytes),new org.xml.sax.helpers.DefaultHandler(){
+   int depth=0,nodes=0;
+   @Override public void startElement(String uri,String local,String name,org.xml.sax.Attributes attrs)throws org.xml.sax.SAXException{
+    if(++depth>128||++nodes>200000)throw new org.xml.sax.SAXException("MusicXML complexo demais");
+   }
+   @Override public void endElement(String uri,String local,String name){depth--;}
+   @Override public org.xml.sax.InputSource resolveEntity(String publicId,String systemId)throws org.xml.sax.SAXException{throw new org.xml.sax.SAXException("Entidades externas não permitidas");}
+  });
   Document doc=f.newDocumentBuilder().parse(new ByteArrayInputStream(bytes)); Score score=new Score();score.sourceXml=xml;
-  Element root=doc.getDocumentElement();score.title=text(root,"work-title",text(root,"movement-title",fileName));
+  Element root=doc.getDocumentElement();if(!root.getTagName().equals("score-partwise"))throw new IOException("Formato MusicXML não suportado: esperado score-partwise");score.title=text(root,"work-title",text(root,"movement-title",fileName));
   NodeList parts=root.getElementsByTagName("part");double base=0;
   ArrayList<TempoChange> reportedTempos=new ArrayList<>();
   ArrayList<DynamicChange> reportedDynamics=new ArrayList<>();
@@ -401,7 +432,10 @@ public class Score {
   if(!score.playbackWarnings.isEmpty())score.repeatSections.clear();
   return score;
  }
- private static byte[] readAll(InputStream i)throws IOException{ByteArrayOutputStream o=new ByteArrayOutputStream();byte[] b=new byte[8192];int n;while((n=i.read(b))!=-1)o.write(b,0,n);return o.toByteArray();}
+ public static byte[] readLimited(InputStream in,int limit)throws IOException{
+  if(in==null)throw new IOException("Arquivo indisponível");ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;
+  while((n=in.read(buffer))!=-1){if(n>limit-out.size())throw new IOException("Partitura excede limite de 16 MiB");out.write(buffer,0,n);}return out.toByteArray();
+ }
  public ArrayList<Event> at(double position,int selectedHand){ArrayList<Event> out=new ArrayList<>();for(Event e:events)if(Math.abs(e.beat-position)<0.01 && (selectedHand==0||(selectedHand==1&&e.staff==1)||(selectedHand==2&&e.staff!=1))&&!e.tieStop)out.add(e);return out;}
  public double firstOnset(int hand){double m=Double.POSITIVE_INFINITY;for(Event e:events)if(matches(e,hand)&&!e.tieStop)m=Math.min(m,e.beat);return Double.isFinite(m)?m:0;}
  private boolean matches(Event e,int hand){return hand==0||(hand==1&&e.staff==1)||(hand==2&&e.staff!=1);}

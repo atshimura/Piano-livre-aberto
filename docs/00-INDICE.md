@@ -51,3 +51,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [34 — Biblioteca local, busca e organização](34-BIBLIOTECA-LOCAL.md).
 
 - [35 — Histórico e metas locais](35-HISTORICO-E-METAS.md)
+
+- [36 — Importação não destrutiva](36-IMPORTACAO-SEGURA.md)
