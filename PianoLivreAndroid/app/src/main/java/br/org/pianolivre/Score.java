@@ -164,10 +164,10 @@ public class Score {
    String target=null;byte[] container=entries.get("META-INF/container.xml");
    if(container!=null){
     DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();factory.setExpandEntityReferences(false);
-    String description=new String(container,java.nio.charset.StandardCharsets.UTF_8);
+    String description=decodeXml(container);
     if(description.contains("<!DOCTYPE")||description.contains("<!ENTITY"))throw new IOException("Container MXL com DTD não permitido");
-    preflight(container);
-    NodeList roots=factory.newDocumentBuilder().parse(new ByteArrayInputStream(container)).getElementsByTagName("rootfile");
+    preflight(description);
+    NodeList roots=factory.newDocumentBuilder().parse(new org.xml.sax.InputSource(new StringReader(description))).getElementsByTagName("rootfile");
     for(int i=0;i<roots.getLength();i++){Element r=(Element)roots.item(i);if(r.getAttribute("media-type").equals("application/vnd.recordare.musicxml+xml")){target=r.getAttribute("full-path");break;}}
     if(target==null&&roots.getLength()==1)target=((Element)roots.item(0)).getAttribute("full-path");
     if(target==null||!entries.containsKey(target))throw new IOException("Rootfile MXL ausente ou incompatível");
@@ -180,7 +180,7 @@ public class Score {
   }
   // MusicXML often declares a standard PUBLIC DTD. Strip only the known,
   // single-line external declaration; never resolve or expand external DTDs.
-  String xml=new String(bytes,java.nio.charset.StandardCharsets.UTF_8);
+  String xml=decodeXml(bytes);
   int dtdAt=xml.indexOf("<!DOCTYPE");
   if(dtdAt>=0){
    int close=xml.indexOf('>',dtdAt);
@@ -190,7 +190,6 @@ public class Score {
    xml=xml.substring(0,dtdAt)+xml.substring(close+1);
   }
   if(xml.contains("<!DOCTYPE"))throw new IOException("Declaração DTD não permitida");
-  bytes=xml.getBytes(java.nio.charset.StandardCharsets.UTF_8);
   DocumentBuilderFactory f=DocumentBuilderFactory.newInstance();
   // Not every Android XML provider implements these SAX features.
   // The XML above has already had the standard external DOCTYPE removed;
@@ -199,8 +198,8 @@ public class Score {
   try{f.setFeature("http://xml.org/sax/features/external-general-entities",false);}catch(javax.xml.parsers.ParserConfigurationException ignored){}
   try{f.setFeature("http://xml.org/sax/features/external-parameter-entities",false);}catch(javax.xml.parsers.ParserConfigurationException ignored){}
   f.setExpandEntityReferences(false);
-  preflight(bytes);
-  Document doc=f.newDocumentBuilder().parse(new ByteArrayInputStream(bytes)); Score score=new Score();score.sourceXml=xml;
+  preflight(xml);
+  Document doc=f.newDocumentBuilder().parse(new org.xml.sax.InputSource(new StringReader(xml))); Score score=new Score();score.sourceXml=xml;
   Element root=doc.getDocumentElement();if(!root.getTagName().equals("score-partwise"))throw new IOException("Formato MusicXML não suportado: esperado score-partwise");score.title=text(root,"work-title",text(root,"movement-title",fileName));
   NodeList alterations=root.getElementsByTagName("alter");
   for(int i=0;i<alterations.getLength();i++){
@@ -441,10 +440,32 @@ public class Score {
   if(!score.playbackWarnings.isEmpty())score.repeatSections.clear();
   return score;
  }
- private static void preflight(byte[] bytes)throws Exception{
+ private static String decodeXml(byte[] bytes)throws IOException{
+  java.nio.charset.Charset charset=java.nio.charset.StandardCharsets.UTF_8;boolean detected=false;
+  if(bytes.length>=2&&((bytes[0]&255)==255&&(bytes[1]&255)==254||(bytes[0]&255)==254&&(bytes[1]&255)==255)){
+   charset=(bytes[0]&255)==255?java.nio.charset.StandardCharsets.UTF_16LE:java.nio.charset.StandardCharsets.UTF_16BE;detected=true;
+  }else if(bytes.length>=4&&bytes[0]==0&&bytes[1]=='<'&&bytes[2]==0&&bytes[3]=='?'){
+   charset=java.nio.charset.StandardCharsets.UTF_16BE;detected=true;
+  }else if(bytes.length>=4&&bytes[0]=='<'&&bytes[1]==0&&bytes[2]=='?'&&bytes[3]==0){
+   charset=java.nio.charset.StandardCharsets.UTF_16LE;detected=true;
+  }else if(bytes.length>=3&&(bytes[0]&255)==239&&(bytes[1]&255)==187&&(bytes[2]&255)==191)detected=true;
+  if(!detected){
+   String header=new String(bytes,0,Math.min(bytes.length,512),java.nio.charset.StandardCharsets.ISO_8859_1);
+   java.util.regex.Matcher declaration=java.util.regex.Pattern.compile("(?is)^\\s*<\\?xml\\b[^?]*\\bencoding\\s*=\\s*['\"]([^'\"]+)['\"]").matcher(header);
+   if(declaration.find()){
+    try{charset=java.nio.charset.Charset.forName(declaration.group(1));}catch(IllegalArgumentException ex){throw new IOException("Codificação XML não suportada",ex);}
+   }
+  }
+  if(!Arrays.asList("UTF-8","UTF-16","UTF-16LE","UTF-16BE","ISO-8859-1","US-ASCII").contains(charset.name()))throw new IOException("Codificação XML não suportada: "+charset.name());
+  String xml;
+  try{xml=charset.newDecoder().onMalformedInput(java.nio.charset.CodingErrorAction.REPORT).onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT).decode(java.nio.ByteBuffer.wrap(bytes)).toString();}
+  catch(java.nio.charset.CharacterCodingException ex){throw new IOException("Bytes inválidos para codificação XML",ex);}
+  return xml.startsWith("\ufeff")?xml.substring(1):xml;
+ }
+ private static void preflight(String xml)throws Exception{
   javax.xml.parsers.SAXParserFactory sax=javax.xml.parsers.SAXParserFactory.newInstance();
   sax.setNamespaceAware(false);
-  sax.newSAXParser().parse(new ByteArrayInputStream(bytes),new org.xml.sax.helpers.DefaultHandler(){
+  sax.newSAXParser().parse(new org.xml.sax.InputSource(new StringReader(xml)),new org.xml.sax.helpers.DefaultHandler(){
    int depth=0,nodes=0;
    @Override public void startElement(String uri,String local,String name,org.xml.sax.Attributes attrs)throws org.xml.sax.SAXException{
     if(++depth>128||++nodes>200000)throw new org.xml.sax.SAXException("MusicXML complexo demais");

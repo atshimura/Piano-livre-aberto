@@ -29,6 +29,19 @@ public class ScoreImportTest {
    reject(new String(xml).replace("<octave>4</octave>","<alter>0.5</alter><octave>4</octave>").getBytes(),"microtone.xml");
    reject(new String(xml).replace("<divisions>1</divisions>","<divisions>1</divisions><time><beats>3+2</beats><beat-type>8</beat-type></time>").getBytes(),"additive.xml");
    Score decimalAlter=Score.read(new ByteArrayInputStream(new String(xml).replace("<octave>4</octave>","<alter>-1.0</alter><octave>4</octave>").getBytes()),"integer-alter.xml");check(decimalAlter.events.get(0).midi==59,"integral decimal alteration retained");
+   String encoded="<?xml version='1.0' encoding='ISO-8859-1'?>"+new String(xml,"UTF-8").replace("<part-list/>","<work><work-title>Canção</work-title></work><part-list/>");
+   check(Score.read(new ByteArrayInputStream(encoded.getBytes("ISO-8859-1")),"latin.xml").title.equals("Canção"),"declared Latin-1 title preserved");
+   String utf16=encoded.replace("ISO-8859-1","UTF-16");
+   check(Score.read(new ByteArrayInputStream(utf16.getBytes("UTF-16")),"utf16.xml").title.equals("Canção"),"UTF16 BOM decoded without reinterpretation");
+   for(String charset:new String[]{"UTF-16LE","UTF-16BE"}){
+    String text=encoded.replace("ISO-8859-1",charset);check(Score.read(new ByteArrayInputStream(text.getBytes(charset)),"utf16.xml").title.equals("Canção"),"UTF16 without BOM "+charset);
+   }
+   byte[] badUtf8=Arrays.copyOf(xml,xml.length+1);badUtf8[xml.length]=(byte)0xc3;reject(badUtf8,"malformed-utf8.xml");
+   ByteArrayOutputStream encodedZip=new ByteArrayOutputStream();try(ZipOutputStream z=new ZipOutputStream(encodedZip)){
+    z.putNextEntry(new ZipEntry("META-INF/container.xml"));z.write(("<?xml version='1.0' encoding='UTF-16'?><!DOCTYPE container [<!ENTITY x 'bad'>]><container/>").getBytes("UTF-16"));z.closeEntry();
+    z.putNextEntry(new ZipEntry("score.xml"));z.write(xml);z.closeEntry();
+   }
+   reject(encodedZip.toByteArray(),"utf16-dtd-container.mxl");
    byte[] large=new byte[16*1024*1024+1];boolean limited=false;try{Score.readLimited(new ByteArrayInputStream(large),16*1024*1024);}catch(IOException ex){limited=true;}check(limited,"input bounded");
    reject(zip("score.xml"," ".repeat(16*1024*1024+1)),"bomb.mxl");
    System.out.println("PASS ScoreImportTest: non-overwrite, original bytes, invalid input, container, ambiguity, traversal, DTD, size and expansion limits");

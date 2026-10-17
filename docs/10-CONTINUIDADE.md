@@ -93,3 +93,7 @@ PR #27 integrado em 36eedce5dc3be9d4b664312eb8f0600222844993 após build 3898555
 ## Continuação 0.9.32
 
 Correção adicional de desempenho do guia: árvore de intervalos evita varrer notas encerradas quando há baixo muito longo. Documento 41. Teste de 65.537 eventos passou 618 verificações e limite de trabalho <140 nós/consulta; regressões do guia/expressão/timeline passaram. Confirmar CI desta entrega e PR #29, integrar sequência sob proteção e validar assinatura/pré-release; hardware segue em #11, sem V1 concluída.
+
+## Continuação 0.9.33
+
+Codificação XML corrigida e aplicada ao container antes da validação: UTF-8/UTF-16/Latin-1 sem substituição silenciosa; fonte original preservada. Documento 42, ScoreImportTest local passou; exigir XML_INPUT_SELFTEST_PASS Android e CI própria antes de integrar. Confirmar sequência #29/#30 e assinatura/pré-releases. Próxima ação concreta: resolver qualquer falha da atualização no emulador e concluir consolidação técnica, mantendo aceite físico pendente em #11.
