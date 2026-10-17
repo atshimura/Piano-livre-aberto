@@ -10,9 +10,9 @@
 
 ## Ainda pendente na aplicação (não confundir com migração GitHub)
 - Validação em Yamaha P-45 e celulares/tablets reais; latência, rolagem, conexão MIDI e notas presas.
-- Importação MIDI como partitura, biblioteca aprimorada (busca/favoritos/coleções), metas/histórico e perfis completos.
+- Confirmar os PRs de compatibilidade/importação em curso. Busca/favoritos/coleções, perfis estáveis e histórico/metas locais foram implementados; importação MIDI aproximada integrada no PR #26.
 - Cobertura de notação complexa, robustez de MusicXML externo e critérios musicais testados editorialmente.
-- Migração assistida de dados entre o pacote histórico `br.org.pianolivre` e a edição pública `br.org.pianolivre.opensource`.
+- Migração entre pacotes apenas por backup manual validado, com caminhos portáteis; ensaio físico ainda pendente. Nenhum acesso direto ao pacote/repositório privado.
 - Assinatura persistente confirmada na 0.9.13/code22 pelo build público 38938312341; validar o certificado em cada entrega. Atualização com preservação de dados ainda requer ensaio físico.
 
 ## Roteiro vigente

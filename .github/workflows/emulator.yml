@@ -53,15 +53,17 @@ jobs:
             test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
             gradle --no-daemon :app:assembleDebug
             "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -q "package: name='br.org.pianolivre.opensource'"
+            python3 tests/emulator_upgrade.py
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity
             sleep 5
             adb shell pidof br.org.pianolivre.opensource
             adb logcat -c || echo 'WARNING: logcat clear unavailable on this emulator'
             adb shell am force-stop br.org.pianolivre.opensource
-            adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity --ez backup_selftest true --ez midi_selftest true --ez profiles_selftest true --ez library_selftest true --ez history_selftest true --ez midifile_selftest true --ez midi_import_ui_selftest true
+            adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity --ez upgrade_selftest true --ez backup_selftest true --ez midi_selftest true --ez profiles_selftest true --ez library_selftest true --ez history_selftest true --ez midifile_selftest true --ez midi_import_ui_selftest true
             for attempt in $(seq 1 20); do adb logcat -d -v brief | grep -q 'HISTORY_ACTIVITY_SELFTEST_PASS' && break; sleep 1; done
             adb logcat -d -v brief > piano-selftests.log
+            adb logcat -d -v brief | grep 'UPGRADE_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'BACKUP_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'MIDI_SESSION_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'PROFILES_SELFTEST_PASS'
@@ -88,5 +90,6 @@ jobs:
             PianoLivreAndroid/piano-with-keyboard.png
             PianoLivreAndroid/piano-motion.mp4
             PianoLivreAndroid/piano-performance.json
+            PianoLivreAndroid/piano-upgrade.json
             PianoLivreAndroid/window.xml
             PianoLivreAndroid/piano-selftests.log

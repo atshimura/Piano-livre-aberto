@@ -106,6 +106,11 @@ public class MainActivity extends Activity {
     .setPositiveButton("Fechar",(d,w)->finish()).setCancelable(false).show();
    return;
   }
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("upgrade_selftest",false)){
+   try{android.util.Log.i("PianoLivreUpgrade","UPGRADE_SELFTEST_PASS assertions="+UpgradeSelfTest.run(this,prefs));}
+   catch(Exception ex){throw new IllegalStateException("Upgrade self-test failed",ex);}
+  }
   // Device-side MIDI tests use separate preferences, never the user's session.
   if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("midi_selftest",false)){

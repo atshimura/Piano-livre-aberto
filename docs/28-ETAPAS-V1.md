@@ -121,3 +121,7 @@ PR #24 integrado após build/emulador aprovados; Etapa 4 encerrada tecnicamente 
 ## Continuação 0.9.30
 
 Limites musicais passam a ser explícitos; -1.0 preservado como semitom integral. Preflight também protege container MXL. Documento 39. Regressões locais JVM/JS passaram; confirmar CI da sequência #25–#27 e desta entrega antes de integrar. Próxima tarefa: resolver emuladores pendentes e consolidar Etapa 5/Etapa 6; sem aceite físico em #11 e sem declarar V1 pronta.
+
+## Continuação 0.9.31
+
+PR #27 integrado em 36eedce5dc3be9d4b664312eb8f0600222844993 após build 38985550165/emulador 38985550170 aprovados. UI MIDI e histórico passaram; backup Android 28 verificações. Preparados ensaio de atualização desde a 0.9.25 e publicação durável da beta com checks do mesmo commit/assinatura permanente obrigatória. Documento 40. Confirmar CI própria, integrar sequência e verificar assinatura/pré-release; não declarar V1 sem aceite físico (#11).

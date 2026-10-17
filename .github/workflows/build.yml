@@ -62,6 +62,8 @@ jobs:
           java -cp build/score-tests KeyboardGuideTest
           javac -cp build/score-tests -d build/score-tests tests/MusicTimelineConsistencyTest.java
           java -cp build/score-tests MusicTimelineConsistencyTest
+      - name: Test trusted beta publication gates (Python)
+        run: python3 tests/PublishBetaTest.py
       - name: Test study information display cadence (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/StudyInfoText.java tests/StudyInfoTextTest.java
@@ -107,7 +109,7 @@ jobs:
           java -cp build/recognition-tests RecognitionAudit
           python3 tests/recognition_corpus_audit.py
       - name: Configure stable public-beta signing (trusted pushes only)
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
           PUBLIC_KEYSTORE_B64: ${{ secrets.PIANOLIVRE_PUBLIC_KEYSTORE_BASE64 }}
           PUBLIC_STORE_PASSWORD: ${{ secrets.PIANOLIVRE_PUBLIC_STORE_PASSWORD }}
@@ -130,7 +132,8 @@ jobs:
             echo "::error::Incomplete public-beta signing secrets" >&2
             exit 1
           else
-            echo "::warning::No stable signing secrets: artifact debug key may change every run; not upgrade-safe"
+            echo "::error::Stable public signing is required on main; no APK will be distributed with an ephemeral key" >&2
+            exit 1
           fi
       - name: Compile versioned debug APK directly from Gradle properties
         run: gradle --no-daemon :app:assembleDebug --stacktrace
@@ -144,12 +147,41 @@ jobs:
           test -n "$version_code" && test -n "$version_name"
           grep -Fq "package: name='br.org.pianolivre.opensource' versionCode='$version_code' versionName='$version_name'" build/public-apk-metadata.txt
           test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
+          if [ "$GITHUB_EVENT_NAME" != 'pull_request' ] && [ "$GITHUB_REF" = 'refs/heads/main' ]; then
+            grep -Fq 'Signer #1 certificate SHA-256 digest: 7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290' build/public-signature.txt
+          fi
           echo PUBLIC_DEBUG_APK_PASS
       - name: Upload isolated public debug APK
-        if: github.event_name != 'pull_request' && success()
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && success()
         uses: actions/upload-artifact@v4
         with:
           name: PianoLivre-open-debug-apk
-          path: PianoLivreAndroid/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            PianoLivreAndroid/app/build/outputs/apk/debug/app-debug.apk
+            PianoLivreAndroid/build/public-signature.txt
+            PianoLivreAndroid/build/public-apk-metadata.txt
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 30
+
+  public-beta:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      actions: read
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/download-artifact@v4
+        with:
+          name: PianoLivre-open-debug-apk
+          path: dist
+      - name: Publish durable beta after exact-commit checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: python3 PianoLivreAndroid/scripts/publish_public_beta.py

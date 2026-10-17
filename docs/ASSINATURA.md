@@ -18,3 +18,7 @@ Mantenha arquivo, senhas e cópias de recuperação fora da árvore Git e nunca 
 Depois de configurar todos os segredos, rode **Open Piano Livre - tests and APK** na `main`. Confira indicação de assinatura estável no log e a fingerprint do certificado emitida pelo apksigner. Para testar atualizações, instale dois APKs públicos sucessivos, com versões crescentes e mesma fingerprint, e confirme preservação dos dados por `adb install -r`.
 
 O build produz um APK de desenvolvimento. Uma Release estável requer preparação e validação próprias. **Não desinstale o aplicativo histórico sem backup e restauração verificados.**
+
+## Consolidação 0.9.31
+
+Build da main exige os Secrets permanentes e o certificado SHA-256 7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290; falha antes de distribuir se faltar/divergir. Publicação de pré-release depende de build/emulador aprovados no mesmo commit. O ensaio de atualização do emulador usa chave debug descartável própria, separada dos Secrets. Não equivale a aceite físico. Detalhes no documento 40.
