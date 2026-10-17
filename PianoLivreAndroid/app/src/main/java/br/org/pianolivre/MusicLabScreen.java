@@ -35,9 +35,10 @@ final class MusicLabScreen extends LinearLayout {
   ArrayList<String> names=new ArrayList<>();for(MusicLabCatalog.Entry e:visibleCatalog)names.add(e.kind+" · "+e.title);
   if(names.isEmpty())names.add("Nenhum item encontrado");
   choices.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,names));
-  presetIndex=prior!=null?visibleCatalog.indexOf(prior):-1;
-  if(presetIndex<0)presetIndex=0;
-  choices.setSelection(presetIndex);practicing=false;refresh();
+  presetIndex=MusicLabCatalog.selectionIndex(visibleCatalog,prior);
+  choices.setSelection(Math.max(0,presetIndex));practicing=false;
+  if(practiceButton!=null)practiceButton.setEnabled(!visibleCatalog.isEmpty());
+  refresh();
  }
  private int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
  private TextView label(String str,int size,boolean bold){
@@ -90,8 +91,10 @@ final class MusicLabScreen extends LinearLayout {
   item(body,learner,-1,-2);
   EditText search=new EditText(activity);search.setSingleLine(true);
   search.setTextSize(12);search.setHint("Buscar nota, intervalo, acorde, escala ou arpejo");
+  search.setContentDescription("Pesquisar no catálogo musical");
   item(learner,search,-1,40);
   choices=new Spinner(activity);
+  choices.setContentDescription("Exercícios do catálogo musical");
   item(learner,choices,-1,39);
   search.addTextChangedListener(new android.text.TextWatcher(){
    public void beforeTextChanged(CharSequence s,int start,int count,int after){}
@@ -140,7 +143,7 @@ final class MusicLabScreen extends LinearLayout {
   item(keyboardOptions,button("Limpar",()->keyboard.clear()),75,36);
   TextView caveat=label("Entrada USB-MIDI ou teclado virtual. Sem som sintetizado pelo teclado virtual. " +
    "Escalas e arpejos exigem uma sequência completa de uma oitava; Iniciar/Concluir é opcional. " +
-   "Catálogo pesquisável offline disponível; prática de escalas e arpejos confere alturas, não sequência temporal. Ritmo, registro e dedilhado ainda pendentes.",11,false);
+   "Catálogo pesquisável offline; prática compara classes de altura, não sequência, ritmo, oitava ou dedilhado. Histórico do Lab pendente.",11,false);
   caveat.setPadding(0,dp(8),0,0);item(body,caveat,-1,-2);
   setLearn(false);setAssembling(false);
  }
@@ -232,8 +235,10 @@ final class MusicLabScreen extends LinearLayout {
   if(learn){
    if(chosen==null){
     readout.setText("Nenhum item encontrado");detail.setText("Altere a busca para selecionar um exercício.");
+    practiceButton.setText("Praticar");practiceButton.setEnabled(false);
     practiceResult.setText("");return;
    }
+   practiceButton.setEnabled(true);
    readout.setText(chosen.title);
    StringBuilder sb=new StringBuilder(chosen.description).append(" · Notas: ");
    for(int i=0;i<chosen.notes.length;i++){
@@ -247,8 +252,8 @@ final class MusicLabScreen extends LinearLayout {
     for(int n:chosen.notes)desired.add(n%12);for(int n:held)actual.add(n%12);
     Set<Integer> missing=new HashSet<>(desired),extra=new HashSet<>(actual);
     missing.removeAll(actual);extra.removeAll(desired);
-    practiceResult.setText(missing.isEmpty()&&extra.isEmpty()?" ✓ Alturas correspondentes!":
-     missing.size()+" notas faltando · "+extra.size()+" extras");
+    practiceResult.setText(missing.isEmpty()&&extra.isEmpty()?" ✓ Classes de altura correspondentes (sem ritmo/ordem/oitava)!":
+     missing.size()+" classes de altura faltando · "+extra.size()+" extras · sem ritmo/ordem/oitava");
    }else practiceResult.setText("Escolha Praticar para conferir suas notas");
   }else{
    if(held.isEmpty()){readout.setText("Toque uma nota ou acorde");detail.setText("Aguardando notas…");return;}
