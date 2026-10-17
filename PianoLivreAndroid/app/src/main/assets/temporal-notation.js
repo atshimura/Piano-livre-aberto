@@ -601,7 +601,7 @@ function collectBeamGroups(notes,absoluteX){
    return direction==="up"||(direction!=="down"&&pitchY(n)>=staffY(n.staff)+26);
   }
   var grace=!!a.grace,scale=grace?.67:1,upward=up(a),
-      stemDelta=grace?(upward?7.5:-7.5)*scale:0,
+      stemDelta=(upward?7.5:-7.5)*scale,
       x0=firstX+stemDelta,x1=lastX+stemDelta,
       baseA=pitchY(a)+(upward?-38:38)*scale,
       baseB=pitchY(b)+(upward?-38:38)*scale;
@@ -625,7 +625,7 @@ function collectBeamGroups(notes,absoluteX){
       grace=!!a.grace,scale=grace?.67:1,
       up=a._engraveMultiVoice?a._visualStem!=="down":
        a._visualStem==="up"||(a._visualStem!=="down"&&pitchY(a)>=staffY(a.staff)+26),
-      stemDelta=grace?(up?7.5:-7.5)*scale:0,
+      stemDelta=(up?7.5:-7.5)*scale,
       x0=absoluteX(a.at)+(a._headShift||0)+(a._graceShift||0)+stemDelta,
       x1=absoluteX(b.at)+(b._headShift||0)+(b._graceShift||0)+stemDelta;
   function visibleTip(n){
