@@ -446,6 +446,9 @@ class PianoScreens {
    a.score==null?100:a.score.tempoAt(beat)*a.tempoFactor,
    a.mode==0?a.waitTraveling:a.running);
  }
+ void onLabMidiAttack(int pitch){
+  if(lab!=null&&lab.getVisibility()==View.VISIBLE)lab.onMidiAttack(pitch);
+ }
  void updatePressed(java.util.Set<Integer> notes){
   if(lab!=null)lab.onMidiPressed(notes);
   if(virtualKeys==null)return;
