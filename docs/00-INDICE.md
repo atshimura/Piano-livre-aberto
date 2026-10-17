@@ -80,3 +80,4 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [50 — Modo Espera: iniciar e preparação visual](50-ESPERA-PREPARACAO.md)
 
 - [51 — Vigas inferidas por métrica](51-VIGAS-INFERIDAS.md)
+- [52 — Reconhecimento livre de padrões](52-LAB-PADROES-LIVRES.md)
