@@ -1,6 +1,6 @@
 # Piano Livre — Android, código aberto
 
-Aplicativo experimental de estudo de piano com leitura MusicXML, USB-MIDI, modo Espera, demonstração MIDI e teclado-guia visual. Desenvolvido em Java/Android e JavaScript. **O código aberto não é uma versão V1 concluída.**
+Aplicativo experimental de estudo de piano com leitura MusicXML, importação MIDI aproximada, USB-MIDI, modo Espera, demonstração MIDI e teclado-guia visual. Desenvolvido em Java/Android e JavaScript. **O código aberto não é uma versão V1 concluída.**
 
 ## Onde o desenvolvimento acontece
 Este **é o repositório principal do desenvolvimento**. Correções, propostas, versões, testes e APKs futuros devem ser feitos aqui, em branches com pull requests. A base histórica privada permanece separada e **não** é necessária para compilar o aplicativo aberto. Veja [AGENTS.md](AGENTS.md) e o [índice técnico](docs/00-INDICE.md).
@@ -14,13 +14,15 @@ gradle --no-daemon :app:assembleDebug
 ```
 APK: `PianoLivreAndroid/app/build/outputs/apk/debug/app-debug.apk`. O pacote de notação OSMD é baixado e convertido **durante a compilação** e embutido no APK; o app instalado funciona offline. O GitHub Actions executa [testes e APK](https://github.com/atshimura/Piano-livre-aberto/actions/workflows/build.yml) e [emulador](https://github.com/atshimura/Piano-livre-aberto/actions/workflows/emulator.yml). A primeira validação pública com os dez exercícios sintéticos passou em 15/10/2026; novas versões devem ser verificadas pelo resultado do seu próprio workflow.
 
-O APK debug público tem identificador `br.org.pianolivre.opensource`. Pode coexistir com a versão privada, mas não a substitui, não compartilha dados automaticamente e só atualiza instalações públicas anteriores assinadas pelo **mesmo certificado**. Sem configuração da chave persistente, os artefatos têm assinatura de debug temporária. Consulte [assinatura e atualização](docs/ASSINATURA.md).
+O APK debug público tem identificador `br.org.pianolivre.opensource`. Pode coexistir com a versão privada, mas não a substitui, não compartilha dados automaticamente e só atualiza instalações públicas anteriores assinadas pelo **mesmo certificado**. A distribuição pela main exige a assinatura permanente configurada; builds locais e PRs usam chave debug de desenvolvimento. Consulte [assinatura e atualização](docs/ASSINATURA.md).
+
+Pré-releases aprovadas ficam em [Releases](https://github.com/atshimura/Piano-livre-aberto/releases), com APK, certificado e SHA256SUMS. Quando ainda não houver release da versão, use o artefato do Actions da main e confira o commit.
 
 ## Música e direitos
 A biblioteca publicada combina exercícios independentes e, quando liberadas, transcrições próprias de composições em domínio público. O inventário e a política estão em [licenças das partituras](docs/LICENCAS-PARTITURAS.md) e no manifesto `score-rights.json`. **A GPL-3.0-only se aplica ao código próprio**, não automaticamente a composições/arranjos externos. *Asa Branca* e *Aquarela* não são distribuídas; *Bella Ciao* permanece em revisão de versão/arranjo. O usuário pode importar localmente seus próprios arquivos, respeitada a legislação.
 
 ## Limites e segurança
-Os testes automatizados **não substituem** uso real com Yamaha P-45, Realme 7 5G e Lenovo Tab M9. O app não exige rede para funcionar; a importação de MXL/XML externo merece validações de segurança adicionais. Não use dados privados de alunos em issues nem envie chaves ou backups ao GitHub.
+Os testes automatizados **não substituem** uso real com Yamaha P-45, Realme 7 5G e Lenovo Tab M9. O app funciona offline. A importação possui limites e validações explícitos; consulte os documentos 36–40 sobre formatos, aproximações e aceite. Não use dados privados de alunos em issues nem envie chaves ou backups ao GitHub.
 
 - [Manual da beta pública](docs/11-MANUAL-DE-USO-BETA.md)
 - [Estado e roadmap](docs/07-ESTADO-E-ROADMAP.md)

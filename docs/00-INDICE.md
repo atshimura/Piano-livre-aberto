@@ -59,3 +59,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [38 — Compatibilidade de dados](38-COMPATIBILIDADE-DE-DADOS.md)
 
 - [39 — Limites MusicXML](39-LIMITES-MUSICXML.md)
+
+- [40 — Aceite e atualização](40-ACEITE-E-ATUALIZACAO.md)

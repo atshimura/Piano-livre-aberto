@@ -78,7 +78,7 @@ if __name__=="__main__":
     assert source.startswith(b"MThd") and len(source)==35, "Original synthetic MIDI source not preserved"
     tap_text(["Biblioteca"])
     # Remove only these known synthetic files in this fresh emulator installation.
-    adb("shell","run-as","br.org.pianolivre.opensource","rm","files/imported/Synthetic.musicxml","files/imported/Synthetic.musicxml.source.mid")
+    adb("shell","run-as","br.org.pianolivre.opensource","rm","files/imported/Synthetic.musicxml","files/imported/Synthetic.musicxml.source.mid","files/imported/upgrade.mxl")
     tap_text([DEFAULT_SCORE_TITLE]);tap_text(["Biblioteca"])
     print("PASS: explicit native MIDI hand selector, generated left staff and preserved source",flush=True)
     screenshot("piano-screen.png")

@@ -42,3 +42,9 @@ Não criar contas online, telemetria ou sincronização automática sem autoriza
 ## Atualização da linha aberta — 0.9.24
 
 Perfis passam a IDs estáveis com nome/avatar e exclusão confirmada, conservando IDs/keys antigos; ver documento 33. profiles_v2/next_id entram nas preferências do backup v2 com validação antes da escrita. O texto anterior sobre índices e ausência de operações completas descreve apenas o histórico. Busca/organização e histórico ainda seguem como próximas entregas da Etapa 4.
+
+## Estado consolidado da linha aberta
+
+Biblioteca organizada, IDs de perfil estáveis, histórico/metas, MIDI original e XML derivado integram o backup v2. Novos caminhos de sessão são portáteis; a restauração remapeia referências antigas à biblioteca imported local, sem acessar outro pacote. Tipos/valores conhecidos e profundidade JSON são pré-validados antes da troca. Rejeições preservam dados anteriores; journal permite rollback. Documentos 33–40 substituem as antigas listas de pendências sobre esses recursos.
+
+O novo ensaio no emulador usa somente a base pública 0.9.25 e dados sintéticos, com chave debug comum no runner. Não é evidência de migração do pacote privado nem de instalação física; essa evidência continua pendente. A fonte original importada permanece byte a byte no arquivo e no backup.
