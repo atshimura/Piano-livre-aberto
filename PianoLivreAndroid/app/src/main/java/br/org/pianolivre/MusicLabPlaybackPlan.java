@@ -15,9 +15,12 @@ public final class MusicLabPlaybackPlan {
   long gate=Math.max(1L,beat*9/10);
   ArrayList<Event> events=new ArrayList<>();
   boolean chord="Acorde".equals(category)||"Intervalo".equals(category);
+  Set<Integer> simultaneous=new HashSet<>();
   for(int i=0;i<pitches.length;i++){
    int note=pitches[i];
    if(note<0||note>127)throw new IllegalArgumentException("Nota fora do MIDI");
+   // Unison intervals must not send duplicate simultaneous Note Ons on one MIDI channel.
+   if(chord&&!simultaneous.add(note))continue;
    long at=chord?0:i*beat;
    events.add(new Event(at,note,true));
    events.add(new Event(at+(chord?beat:gate),note,false));
