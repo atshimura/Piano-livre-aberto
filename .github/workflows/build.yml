@@ -86,6 +86,10 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicSequenceAnalyzer.java tests/MusicSequenceAnalyzerTest.java
           java -cp build/score-tests MusicSequenceAnalyzerTest
+      - name: Test spontaneous Laboratory pattern tracking (JVM)
+        run: |
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicSequenceAnalyzer.java app/src/main/java/br/org/pianolivre/MusicPatternTracker.java tests/MusicPatternTrackerTest.java
+          java -cp build/score-tests MusicPatternTrackerTest
       - name: Test responsive compact library grid (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/LibraryGridLayout.java tests/LibraryGridLayoutTest.java

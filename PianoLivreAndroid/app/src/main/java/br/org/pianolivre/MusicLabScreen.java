@@ -19,6 +19,7 @@ final class MusicLabScreen extends LinearLayout {
  private final MusicLabKeyboard keyboard;
  private final Set<Integer> midi=new HashSet<>(),virtual=new HashSet<>();
  private final ArrayList<Integer> sequenceAttacks=new ArrayList<>();
+ private final MusicPatternTracker rollingPatterns=new MusicPatternTracker();
  private final TextView sequenceStatus;
  private boolean recordingSequence=false;
  private boolean learn=false,assembling=false,practicing=false;
@@ -103,13 +104,18 @@ final class MusicLabScreen extends LinearLayout {
   TextView keyboardHeading=label("Pauta e teclado · verde: tocado · dourado: referência",11,false);
   keyboardHeading.setPadding(0,dp(7),0,0);item(body,keyboardHeading,-1,-2);
   keyboard=new MusicLabKeyboard(activity,notes->{
-   if(recordingSequence&&!learn&&!assembling){
+   if(!learn&&!assembling){
     ArrayList<Integer> newAttacks=new ArrayList<>();
     for(int note:notes)if(!virtual.contains(note))newAttacks.add(note);
     // Simultaneous fingers have no unambiguous order: skip rather than
-    // manufacturing one from the HashSet iteration order.
-    if(newAttacks.size()==1)addSequenceAttack(newAttacks.get(0));
-    else if(newAttacks.size()>1)sequenceStatus.setText("Notas simultâneas: ordem indeterminada; toque uma de cada vez.");
+    // manufacturing one from HashSet iteration order.
+    if(newAttacks.size()==1){
+     if(recordingSequence)addSequenceAttack(newAttacks.get(0));
+     else observeSpontaneous(newAttacks.get(0),notes.size()==1);
+    }else if(newAttacks.size()>1){
+     rollingPatterns.clear();
+     if(recordingSequence)sequenceStatus.setText("Notas simultâneas: ordem indeterminada; toque uma de cada vez.");
+    }
    }
    virtual.clear();virtual.addAll(notes);refresh();
   });
@@ -123,7 +129,7 @@ final class MusicLabScreen extends LinearLayout {
   item(keyboardOptions,button("Limpar",()->keyboard.clear()),75,36);
   TextView caveat=label("Entrada USB-MIDI ou teclado virtual. Sem som sintetizado pelo teclado virtual. " +
    "Escalas e arpejos exigem uma sequência completa de uma oitava, iniciada e concluída pelo usuário. " +
-   "Reconhecimento espontâneo contínuo, catálogo amplo, registro e ritmo permanecem em desenvolvimento.",11,false);
+   "Reconhecimento livre de sequências monofônicas completas disponível; catálogo amplo, registro e ritmo permanecem em desenvolvimento.",11,false);
   caveat.setPadding(0,dp(8),0,0);item(body,caveat,-1,-2);
   setLearn(false);setAssembling(false);
  }
@@ -136,7 +142,7 @@ final class MusicLabScreen extends LinearLayout {
   refresh();
  }
  private void setLearn(boolean value){
-  learn=value;practicing=false;recordingSequence=false;
+  learn=value;practicing=false;recordingSequence=false;rollingPatterns.clear();
   learner.setVisibility(learn?VISIBLE:GONE);
   sequenceTools.setVisibility(learn?GONE:VISIBLE);sequenceButton.setText("Iniciar sequência");
   discoverButton.setEnabled(learn);learnButton.setEnabled(!learn);
@@ -147,7 +153,22 @@ final class MusicLabScreen extends LinearLayout {
  }
  /** MIDI attack arrives independently of the set of currently held notes. */
  void onMidiAttack(int pitch){
-  if(getVisibility()==VISIBLE&&!learn&&recordingSequence)addSequenceAttack(pitch);
+  if(getVisibility()!=VISIBLE||learn)return;
+  if(recordingSequence)addSequenceAttack(pitch);
+  else observeSpontaneous(pitch,midi.size()==1&&midi.contains(pitch));
+ }
+ private void observeSpontaneous(int pitch,boolean isolated){
+  List<MusicSequenceAnalyzer.Finding> findings=rollingPatterns.attack(pitch,isolated);
+  if(!findings.isEmpty()){
+   StringBuilder sb=new StringBuilder("Reconhecimento livre: ");
+   for(MusicSequenceAnalyzer.Finding f:findings){
+    if(sb.length()>"Reconhecimento livre: ".length())sb.append(" | ");
+    sb.append(f.display());
+   }
+   sequenceStatus.setText(sb.toString());
+  }else if(!isolated){
+   sequenceStatus.setText("Notas sobrepostas: sequência indeterminada. Para reconhecer automaticamente, toque notas isoladas.");
+  }
  }
  private void addSequenceAttack(int pitch){
   if(sequenceAttacks.size()>=40){sequenceStatus.setText("Limite de 40 ataques. Toque Concluir análise.");return;}
@@ -156,7 +177,7 @@ final class MusicLabScreen extends LinearLayout {
  }
  private void toggleSequence(){
   if(!recordingSequence){
-   sequenceAttacks.clear();recordingSequence=true;
+   sequenceAttacks.clear();rollingPatterns.clear();recordingSequence=true;
    sequenceButton.setText("Concluir análise");
    sequenceStatus.setText("Gravando ataques… Toque uma escala ou arpejo completo.");
    return;

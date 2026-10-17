@@ -143,3 +143,7 @@ Implementação proposta na branch `feat/espera-iniciar-preparacao` sobre o curs
 ## Retomada 0.9.42 — vigas MusicXML ausentes
 
 Função `inferConventionalBeams` introduz agrupamento conservador por compasso/voz/pulso quando faltam marcas de vigas explícitas. Documento 51, testes JS. Confirmar CI/Android da branch `feat/notacao-vigas-inferidas` e dos PRs anteriores; depois aprimorar claves/hastes e seguir Laboratório (catálogo, análise espontânea, demonstração, prática, histórico) da issue #34.
+
+## Retomada 0.9.43 — reconhecimento livre
+
+`MusicPatternTracker` analisa sufixos monofônicos completos sem início/fim manual. Documento 52, PR empilhado `feat/laboratorio-reconhecimento-livre`. Validar Actions na HEAD correta após integrar PRs dependentes. Próximos passos: catálogo pesquisável de notas, acordes, escalas e arpejos, demonstração/ritmo offline e histórico por perfil. Hardware pendente #11.
