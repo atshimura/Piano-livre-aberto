@@ -26,6 +26,8 @@ final class MusicLabScreen extends LinearLayout {
  private final TextView sequenceStatus;
  private boolean recordingSequence=false;
  private boolean learn=false,assembling=false,practicing=false;
+ private MusicLabPracticeSequence guidedPractice;
+ private int practiceHand=0; // user choice; never inferred from MIDI pitch
  private int presetIndex=0;
  private final List<MusicLabCatalog.Entry> fullCatalog=MusicLabCatalog.all();
  private final List<MusicLabCatalog.Entry> visibleCatalog=new ArrayList<>();
@@ -105,16 +107,34 @@ final class MusicLabScreen extends LinearLayout {
   choices.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
    public void onNothingSelected(AdapterView<?> parent){}
    public void onItemSelected(AdapterView<?> parent,View view,int index,long id){
-    presetIndex=index;practicing=false;stopDemonstration();refresh();
+    presetIndex=index;practicing=false;guidedPractice=null;stopDemonstration();refresh();
    }
   });
   LinearLayout commands=new LinearLayout(activity);commands.setGravity(Gravity.CENTER_VERTICAL);
   item(learner,commands,-1,41);
-  practiceButton=button("Praticar",()->{practicing=!practicing;refresh();});
+  practiceButton=button("Praticar",()->{
+   practicing=!practicing;
+   MusicLabCatalog.Entry exercise=currentEntry();
+   guidedPractice=practicing&&exercise!=null&&isOrdered(exercise)?
+    new MusicLabPracticeSequence(exercise.notes):null;
+   refresh();
+  });
   item(commands,practiceButton,115,37);
   demoButton=button("▶ Demonstrar",()->toggleDemo());
   item(commands,demoButton,125,37);
   practiceResult=label("",12,true);commands.addView(practiceResult,new LinearLayout.LayoutParams(0,-2,1));
+  LinearLayout hands=new LinearLayout(activity);hands.setGravity(Gravity.CENTER_VERTICAL);
+  item(learner,hands,-1,39);item(hands,label("Mão:",11,false),60,-2);
+  Spinner handChoice=new Spinner(activity);
+  handChoice.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,
+   new String[]{"Ambas (referência)","Direita (referência)","Esquerda (referência)"}));
+  item(hands,handChoice,175,38);
+  handChoice.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+   public void onNothingSelected(AdapterView<?> parent){}
+   public void onItemSelected(AdapterView<?> parent,View view,int which,long id){
+    practiceHand=which;refresh();
+   }
+  });
   LinearLayout demonstration=new LinearLayout(activity);demonstration.setGravity(Gravity.CENTER_VERTICAL);
   item(learner,demonstration,-1,40);
   TextView speedLabel=label("Velocidade:",11,false);item(demonstration,speedLabel,80,-2);
@@ -134,6 +154,12 @@ final class MusicLabScreen extends LinearLayout {
   TextView keyboardHeading=label("Pauta e teclado · verde: tocado · dourado: referência",11,false);
   keyboardHeading.setPadding(0,dp(7),0,0);item(body,keyboardHeading,-1,-2);
   keyboard=new MusicLabKeyboard(activity,notes->{
+   if(learn&&practicing&&!assembling&&guidedPractice!=null){
+    ArrayList<Integer> attacks=new ArrayList<>();
+    for(int note:notes)if(!virtual.contains(note))attacks.add(note);
+    if(attacks.size()==1)guidedPractice.attack(attacks.get(0));
+    else if(attacks.size()>1)practiceResult.setText("Toque uma nota de cada vez para estudo sequencial.");
+   }
    if(!learn&&!assembling){
     ArrayList<Integer> newAttacks=new ArrayList<>();
     for(int note:notes)if(!virtual.contains(note))newAttacks.add(note);
@@ -159,7 +185,7 @@ final class MusicLabScreen extends LinearLayout {
   item(keyboardOptions,button("Limpar",()->keyboard.clear()),75,36);
   TextView caveat=label("Entrada USB-MIDI ou teclado virtual. Sem som sintetizado pelo teclado virtual. " +
    "Escalas e arpejos exigem uma sequência completa de uma oitava, iniciada e concluída pelo usuário. " +
-   "Demonstração sonora opcional pelo Yamaha USB-MIDI (sem sintetizador). A prática atual confere alturas, não ritmo nem dedilhado.",11,false);
+   "Prática de escalas/arpejos confere a ordem exata, sem prazo. Seleção de mão é referência visual, não detecção de mão física.",11,false);
   caveat.setPadding(0,dp(8),0,0);item(body,caveat,-1,-2);
   setLearn(false);setAssembling(false);
  }
@@ -172,7 +198,7 @@ final class MusicLabScreen extends LinearLayout {
   refresh();
  }
  private void setLearn(boolean value){
-  learn=value;practicing=false;recordingSequence=false;rollingPatterns.clear();stopDemonstration();
+  learn=value;practicing=false;guidedPractice=null;recordingSequence=false;rollingPatterns.clear();stopDemonstration();
   learner.setVisibility(learn?VISIBLE:GONE);
   sequenceTools.setVisibility(learn?GONE:VISIBLE);sequenceButton.setText("Iniciar sequência");
   discoverButton.setEnabled(learn);learnButton.setEnabled(!learn);
@@ -183,7 +209,11 @@ final class MusicLabScreen extends LinearLayout {
  }
  /** MIDI attack arrives independently of the set of currently held notes. */
  void onMidiAttack(int pitch){
-  if(getVisibility()!=VISIBLE||learn)return;
+  if(getVisibility()!=VISIBLE)return;
+  if(learn){
+   if(practicing&&guidedPractice!=null)guidedPractice.attack(pitch);
+   refresh();return;
+  }
   if(recordingSequence)addSequenceAttack(pitch);
   else observeSpontaneous(pitch,midi.size()==1&&midi.contains(pitch));
  }
@@ -229,6 +259,9 @@ final class MusicLabScreen extends LinearLayout {
  void onMidiPressed(Set<Integer> notes){
   midi.clear();midi.addAll(notes);refresh();
  }
+ private static boolean isOrdered(MusicLabCatalog.Entry entry){
+  return "Escala".equals(entry.kind)||"Arpejo".equals(entry.kind);
+ }
  private void refresh(){
   if(keyboard==null)return;
   Set<Integer> held=new HashSet<>(midi);held.addAll(virtual);
@@ -250,7 +283,13 @@ final class MusicLabScreen extends LinearLayout {
    }
    detail.setText(sb.toString());
    practiceButton.setText(practicing?"Encerrar prática":"Praticar");
-   if(practicing){
+   if(practicing&&guidedPractice!=null){
+    String progress=guidedPractice.correct()+"/"+guidedPractice.total()+" notas";
+    practiceResult.setText(guidedPractice.complete()?
+      "✓ Sequência completa na ordem correta · extras: "+guidedPractice.extras():
+      "Próxima: "+MusicTheory.noteName(guidedPractice.next())+" · "+progress+
+      " · extras: "+guidedPractice.extras()+" · sem prazo/penalidade");
+   }else if(practicing){
     Set<Integer> desired=new HashSet<>(),actual=new HashSet<>();
     for(int n:chosen.notes)desired.add(n%12);for(int n:held)actual.add(n%12);
     Set<Integer> missing=new HashSet<>(desired),extra=new HashSet<>(actual);
