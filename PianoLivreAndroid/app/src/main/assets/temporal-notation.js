@@ -275,6 +275,7 @@ function xmlTimeMap(xml) {
 }
 function computeX(beat,pxPerBeat,origin){return origin+beat*pxPerBeat;}
 function cursorPx(width){return width*.4;}
+function cursorLeadPx(width){return Math.max(45,Math.min(70,width*.08));}
 function msPerBeat(bpm){return 60000/Math.max(1,bpm);}
 function svgEl(type,props,parent){
  var e=document.createElementNS(NS,type);for(var key in props)if(props.hasOwnProperty(key))e.setAttribute(key,props[key]);
@@ -868,8 +869,11 @@ function buildLayout(xml,viewportWidth){
  for(var i=1;i<distinct.length;i++)if(distinct[i]-distinct[i-1]>.001)minDelta=Math.min(minDelta,distinct[i]-distinct[i-1]);
  var pixelsPerBeat=Math.max(104,Math.min(360,20/Math.max(.0625,minDelta)));
  var railWidth=fixedRailWidth(plan);
- var origin=Math.max(cursorPx(viewportWidth),railWidth+32),totalWidth=Math.ceil(origin+plan.duration*pixelsPerBeat+viewportWidth*.65);
- return {plan:plan,pixelsPerBeat:pixelsPerBeat,origin:origin,railWidth:railWidth,width:totalWidth,
+ // Separate the fixed guide and the actual note attack coordinate.
+ var cursorX=Math.max(cursorPx(viewportWidth),railWidth+16);
+ var origin=cursorX+cursorLeadPx(viewportWidth);
+ var totalWidth=Math.ceil(origin+plan.duration*pixelsPerBeat+viewportWidth*.65);
+ return {plan:plan,pixelsPerBeat:pixelsPerBeat,origin:origin,cursorX:cursorX,railWidth:railWidth,width:totalWidth,
   x:function(t){return computeX(t,pixelsPerBeat,origin);}};
 }
 
@@ -1157,7 +1161,7 @@ function render(xml,container,viewport,startBeat){
  console.log("TEMPORAL_TILES",tiles,"total-width",layout.width);
  // The indicator is a separate overlay; never move it or use OSMD's note cursor.
  var cursor=document.createElement("div");cursor.id="fixed-temporal-cursor";
- cursor.style.cssText="position:absolute;left:"+layout.origin+"px;top:1%;height:98%;width:3px;background:#009D82;"+
+ cursor.style.cssText="position:absolute;left:"+layout.cursorX+"px;top:1%;height:98%;width:3px;background:#009D82;"+
   "pointer-events:none;z-index:3;box-shadow:0 0 2px #00826C;";
  var dot=document.createElement("div");dot.style.cssText="position:absolute;left:-4px;top:0;width:11px;height:11px;border-radius:50%;background:#009D82;";
  cursor.appendChild(dot);root.appendChild(sheet);
@@ -1221,7 +1225,7 @@ function render(xml,container,viewport,startBeat){
   }
   if(st.moving&&st.sampleCount<7&&now-st.lastSampleMs>=350){
    console.log("TEMPORAL_SAMPLE "+JSON.stringify({beat:+current.toFixed(5),
-    offset:+offset.toFixed(3),bpm:st.bpm,cursor:st.layout.origin/(st.viewportWidth||1)}));
+    offset:+offset.toFixed(3),bpm:st.bpm,cursor:st.layout.cursorX/(st.viewportWidth||1)}));
    st.sampleCount++;st.lastSampleMs=now;
   }
   m.peakVisibleTiles=Math.max(m.peakVisibleTiles,(st.visibleTiles||[]).length);
@@ -1234,7 +1238,7 @@ function render(xml,container,viewport,startBeat){
  console.log("TIMELINE_READY "+JSON.stringify({notes:plan.notes.length,bars:plan.bars.length,
   pxPerBeat:layout.pixelsPerBeat,origin:layout.origin,verticalScale:scale,viewportHeight:viewport.clientHeight,firstBeats:plan.notes.slice(0,12).map(function(n){return n.at;}),
   firstXs:plan.notes.slice(0,12).map(function(n){return Math.round(layout.x(n.at));}),
-  cursorFraction:0.4,unsupported:plan.unsupported}));
+  cursorFraction:layout.cursorX/width,cursorLeadPx:layout.origin-layout.cursorX,unsupported:plan.unsupported}));
  return layout;
 }
 // Fixed-size, local-only counters. Callback spacing is not GPU/raster FPS.
@@ -1300,7 +1304,7 @@ function resize(){
 function teardown(){if(!state)return;reportDiagnostics("teardown");if(state.popupTimer)clearTimeout(state.popupTimer);cancelAnimationFrame(state.raf);state=null;}
 var exported={parse:xmlTimeMap,buildLayout:buildLayout,render:render,sync:sync,resize:resize,teardown:teardown,
  loopEdit:setLoopEditing,clearLoop:clearLoop,diagnostics:diagnostics,
- _test:{computeX:computeX,cursorPx:cursorPx,msPerBeat:msPerBeat,
+ _test:{computeX:computeX,cursorPx:cursorPx,cursorLeadPx:cursorLeadPx,msPerBeat:msPerBeat,
   staffY:staffY,staffLineY:staffLineY,clefAnchor:clefAnchor,
   pitchY:pitchY,drawClef:drawClef,
   keyDefaultAlter:keyDefaultAlter,accidentalFromAlter:accidentalFromAlter,

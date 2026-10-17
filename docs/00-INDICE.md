@@ -74,3 +74,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [46 — Biblioteca em grade compacta](46-BIBLIOTECA-GRADE-COMPACTA.md)
 - [47 — Nome da nota ao tocar na partitura](47-NOME-DA-NOTA-TOQUE.md)
 - [48 — Laboratório: escalas e arpejos por sequência](48-LAB-SEQUENCIAS.md)
+
+- [49 — Cursor fixo antes das notas no estudo](49-CURSOR-ANTES-NOTAS.md)

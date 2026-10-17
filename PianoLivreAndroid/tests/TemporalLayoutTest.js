@@ -2,6 +2,10 @@
 const assert=require("assert");
 const T=require("../app/src/main/assets/temporal-notation.js")._test;
 assert.strictEqual(T.cursorPx(1000),400);
+assert.strictEqual(T.cursorLeadPx(300),45);
+assert.strictEqual(T.cursorLeadPx(900),70);
+assert.strictEqual(T.cursorLeadPx(600),48);
+assert(T.cursorLeadPx(600)>0,"noteheads must be ahead of cursor");
 assert.strictEqual(T.msPerBeat(100),600);
 assert.strictEqual(T.msPerBeat(80),750);
 const K=112,origin=400;
