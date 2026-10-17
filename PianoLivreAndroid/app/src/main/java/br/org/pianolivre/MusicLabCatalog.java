@@ -19,11 +19,12 @@ public final class MusicLabCatalog {
  };
  private static final String[] CHORD_NAMES={
    "maior", "menor", "diminuto", "aumentado", "sus2", "sus4",
-   "sétima dominante", "maior com sétima maior", "menor com sétima", "meio-diminuto"
+   "sétima dominante", "maior com sétima maior", "menor com sétima",
+   "menor com sétima maior", "meio-diminuto", "diminuto com sétima diminuta"
  };
  private static final int[][] CHORDS={
   {0,4,7},{0,3,7},{0,3,6},{0,4,8},{0,2,7},{0,5,7},
-  {0,4,7,10},{0,4,7,11},{0,3,7,10},{0,3,6,10}
+  {0,4,7,10},{0,4,7,11},{0,3,7,10},{0,3,7,11},{0,3,6,10},{0,3,6,9}
  };
  private static final String[] SCALE_NAMES={
   "maior","menor natural","menor harmônica","menor melódica ascendente",
@@ -62,7 +63,7 @@ public final class MusicLabCatalog {
   for(int root=60;root<=71;root++){
    String name=MusicTheory.noteName(root)+" · "+MusicTheory.internationalName(root);
    result.add(new Entry("Nota",name,"Altura escrita e oitava, sem impor dedilhado",root));
-   for(int i=1;i<INTERVAL_NAMES.length;i++)
+   for(int i=0;i<INTERVAL_NAMES.length;i++)
     result.add(new Entry("Intervalo",name+" · "+INTERVAL_NAMES[i],"Distância cromática de "+i+" semitons",root,root+i));
    for(int q=0;q<CHORDS.length;q++){
     int[] notes=fromIntervals(root,CHORDS[q]);
@@ -73,7 +74,7 @@ public final class MusicLabCatalog {
     }
    }
    for(int q=0;q<SCALE_STEPS.length;q++)result.add(new Entry("Escala",name+" · "+SCALE_NAMES[q],
-     "Padrão ascendente de uma oitava; tonalidade funcional não inferida",scale(root,SCALE_STEPS[q])));
+     "Padrão ascendente de uma oitava; tonalidade funcional e grafia enarmônica não inferidas",scale(root,SCALE_STEPS[q])));
    for(int q=0;q<CHORDS.length;q++){
     int[] chord=fromIntervals(root,CHORDS[q]);
     int[] notes=Arrays.copyOf(chord,chord.length+1);notes[notes.length-1]=root+12;
@@ -83,12 +84,25 @@ public final class MusicLabCatalog {
   }
   return Collections.unmodifiableList(result);
  }
+ /** Case- and accent-insensitive search, accepting C# and C♯ without assuming a key. */
+ private static String normalize(String value){
+  if(value==null)return "";
+  String folded=java.text.Normalizer.normalize(value.trim(),java.text.Normalizer.Form.NFD)
+   .replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT);
+  return folded.replace("♯","#");
+ }
+ /** Preserve an existing selection when it is still visible. */
+ public static int selectionIndex(List<Entry> entries,Entry prior){
+  if(entries.isEmpty())return -1;
+  int index=entries.indexOf(prior);
+  return index<0?0:index;
+ }
  public static List<Entry> filter(List<Entry> all,String text){
-  String needle=text==null?"":text.trim().toLowerCase(Locale.ROOT);
+  String needle=normalize(text);
   if(needle.isEmpty())return new ArrayList<>(all);
   ArrayList<Entry> out=new ArrayList<>();
-  for(Entry e:all)if(e.title.toLowerCase(Locale.ROOT).contains(needle)
-   ||e.kind.toLowerCase(Locale.ROOT).contains(needle))out.add(e);
+  for(Entry e:all)if(normalize(e.title).contains(needle)
+   ||normalize(e.kind).contains(needle))out.add(e);
   return out;
  }
 }
