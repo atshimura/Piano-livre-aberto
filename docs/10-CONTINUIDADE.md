@@ -139,3 +139,7 @@ A alteração inicial da branch `fix/espera-cursor-antes-notas` foi reaproveitad
 ## Retomada 0.9.41 — Iniciar e preparação do Espera
 
 Implementação proposta na branch `feat/espera-iniciar-preparacao` sobre o cursor do PR #39. Ver documento 50: cinco segundos iniciais configuráveis por perfil, bloqueio de reconhecimento apenas durante a entrada, animação desacoplada do tempo musical, cancelamento seguro. Exigir CI (JVM/JS/APK) e emulador no mesmo head antes de integrar. Seguir para claves/hastes/vigas na notação temporal, depois catálogo/demonstração/prática/histórico do Laboratório (#34). Hardware físico em #11.
+
+## Retomada 0.9.42 — vigas MusicXML ausentes
+
+Função `inferConventionalBeams` introduz agrupamento conservador por compasso/voz/pulso quando faltam marcas de vigas explícitas. Documento 51, testes JS. Confirmar CI/Android da branch `feat/notacao-vigas-inferidas` e dos PRs anteriores; depois aprimorar claves/hastes e seguir Laboratório (catálogo, análise espontânea, demonstração, prática, histórico) da issue #34.
