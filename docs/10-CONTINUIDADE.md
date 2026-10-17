@@ -147,3 +147,7 @@ Função `inferConventionalBeams` introduz agrupamento conservador por compasso/
 ## Retomada 0.9.43 — reconhecimento livre
 
 `MusicPatternTracker` analisa sufixos monofônicos completos sem início/fim manual. Documento 52, PR empilhado `feat/laboratorio-reconhecimento-livre`. Validar Actions na HEAD correta após integrar PRs dependentes. Próximos passos: catálogo pesquisável de notas, acordes, escalas e arpejos, demonstração/ritmo offline e histórico por perfil. Hardware pendente #11.
+
+### Revisão corretiva do PR #42 (0.9.43)
+
+Conferir a revisão de `MusicPatternTracker` e `MusicLabScreen` na branch `feat/laboratorio-reconhecimento-livre`: a verificação de monofonia considera MIDI e teclado virtual em conjunto; status sem correspondência não deve preservar resultado anterior; reentrar no Laboratório ou alternar Tocar/Montar reinicia o rastreio. `MusicPatternTrackerTest` cobre esses casos. Exigir CI de build, MusicXML/JS/MIDI, compilação Android e emulador do **último SHA** após as correções; merge protegido e assinatura/release só após sucesso dos checks. Atualizar a issue #34 com evidências. Não integrar o PR #43 nesta tarefa: sua branch é empilhada e deverá ser rebaseada/retargeteada para `main` após o #42. Nenhum ensaio físico foi feito nesta revisão (#11).
