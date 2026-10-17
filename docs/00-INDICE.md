@@ -69,3 +69,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [43 — Nomes legados](43-NOMES-LEGADOS.md)
 
 - [44 — APK de distribuição](44-APK-DISTRIBUICAO.md)
+
+- [45 — Laboratório Musical: escopo aprovado, primeira entrega e continuidade](45-LABORATORIO-ESCOPO-E-CONTINUIDADE.md)
