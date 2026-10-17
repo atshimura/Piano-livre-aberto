@@ -101,3 +101,7 @@ Perfis com IDs estáveis, renomear/avatar/excluir sem renumerar dados de outros 
 ## Etapa 4 — 0.9.25/code34
 
 Busca sem distinção de acentos/caixa, filtros, favoritos e coleções por perfil implementados. Chaves portáteis de partituras, metadados limitados/validados e backup v2 compatível. Documento 34 registra UI, testes e próxima tarefa. LibrarySearchTest passou localmente; Android exige LIBRARY_SELFTEST_PASS e UI no commit da entrega. Depois seguir histórico/progresso, antes de fechar Etapa 4.
+
+## Continuação 0.9.26
+
+Histórico e metas por perfil implementados; detalhes e limites no documento 35. Confirmar StudyClockTest, HISTORY_SELFTEST_PASS e HISTORY_ACTIVITY_SELFTEST_PASS no commit do PR antes de integrar. Próxima ação independente: auditoria e correções de importação não destrutiva da Etapa 5; não encerrar ao concluir uma versão.

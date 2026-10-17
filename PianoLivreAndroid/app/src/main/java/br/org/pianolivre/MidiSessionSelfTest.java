@@ -47,6 +47,7 @@ final class MidiSessionSelfTest {
       check(a.receivedMessages==before+1&&a.downKeys.contains(30),"current-session decoder reaches Activity");
       a.disconnectMidi();a.position=start;a.stopPlayback();a.screens.showHome();a.setMidiStatus(previousDescription);
       Log.i("PianoLivreMIDI","MIDI_SESSION_SELFTEST_PASS assertions="+checks);
+      if(a.getIntent().getBooleanExtra("history_selftest",false))HistorySelfTest.activity(a);
      });
     }catch(Exception ex){throw new IllegalStateException(ex);}
    });

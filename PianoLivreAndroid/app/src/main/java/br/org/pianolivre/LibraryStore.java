@@ -16,7 +16,7 @@ final class LibraryStore {
  }
  private final SharedPreferences prefs;private final String key;
  LibraryStore(SharedPreferences prefs,int user){this.prefs=prefs;key="user_"+user+"_library";}
- private static void scoreKey(String key){
+ static void validateScoreKey(String key){
   if(key==null||key.length()>160||key.indexOf('\u0000')>=0||!(key.startsWith("scores/")||key.startsWith("imported/")))throw new IllegalArgumentException("Partitura inválida");
   String name=key.substring(key.indexOf('/')+1);
   if(name.isEmpty()||name.equals(".")||name.equals("..")||name.indexOf('/')>=0||name.indexOf('\\')>=0)throw new IllegalArgumentException("Partitura inválida");
@@ -24,7 +24,7 @@ final class LibraryStore {
  private static Set<String> keys(JSONArray array)throws JSONException{
   if(array.length()>256)throw new IllegalArgumentException("Muitas partituras na organização");
   Set<String> out=new LinkedHashSet<>();
-  for(int i=0;i<array.length();i++){String key=array.getString(i);scoreKey(key);if(!out.add(key))throw new IllegalArgumentException("Partitura duplicada");}return out;
+  for(int i=0;i<array.length();i++){String key=array.getString(i);validateScoreKey(key);if(!out.add(key))throw new IllegalArgumentException("Partitura duplicada");}return out;
  }
  static Snapshot decode(String text){
   try{
@@ -55,7 +55,7 @@ final class LibraryStore {
   }
  }
  private static JSONArray toggled(JSONArray array,String score)throws JSONException{
-  scoreKey(score);JSONArray out=new JSONArray();boolean found=false;
+  validateScoreKey(score);JSONArray out=new JSONArray();boolean found=false;
   for(int i=0;i<array.length();i++){String item=array.getString(i);if(item.equals(score))found=true;else out.put(item);}
   if(!found)out.put(score);return out;
  }

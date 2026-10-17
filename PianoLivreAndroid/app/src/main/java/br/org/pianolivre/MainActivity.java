@@ -26,6 +26,7 @@ public class MainActivity extends Activity {
  TextView chordCalibrationStatus;
  final MidiPerformance performance=new MidiPerformance();
  MidiPlayback midiPlayback;
+ final StudyClock studyClock=new StudyClock();String pendingHistoryError=null;
  final RepeatNavigator writtenRepeats=new RepeatNavigator();
  PerformanceRoute.Result route;
  PerformanceRoute.Cursor routeCursor;
@@ -87,6 +88,11 @@ public class MainActivity extends Activity {
    try{android.util.Log.i("PianoLivreLibrary","LIBRARY_SELFTEST_PASS assertions="+LibrarySelfTest.run(this));}
    catch(Exception ex){throw new IllegalStateException("Library self-test failed",ex);}
   }
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("history_selftest",false)){
+   try{android.util.Log.i("PianoLivreHistory","HISTORY_SELFTEST_PASS assertions="+HistorySelfTest.run(this));}
+   catch(Exception ex){throw new IllegalStateException("History self-test failed",ex);}
+  }
   try{BackupArchive.recover(prefs,getFilesDir());}
   catch(Exception recovery){
    android.util.Log.e("PianoLivreBackup","Não foi possível recuperar restauração anterior",recovery);
@@ -115,7 +121,7 @@ public class MainActivity extends Activity {
  void chooseScore(){screens.showHome();}
  void loadScore(String path,boolean reset){loadScore(path,reset,false);}
  void openFreeScore(String path){loadScore(path,true,true);}
- void loadScore(String path,boolean reset,boolean free){stopPlayback();writtenRepeats.reset();try(InputStream input=path.startsWith("scores/")?getAssets().open(path):new FileInputStream(path)){score=Score.read(input,path);currentFile=path;currentName=score.title;
+ void loadScore(String path,boolean reset,boolean free){stopPlayback();finishStudyWindow();writtenRepeats.reset();try(InputStream input=path.startsWith("scores/")?getAssets().open(path):new FileInputStream(path)){score=Score.read(input,path);currentFile=path;currentName=score.title;
   route=PerformanceRoute.build(score);
   routeCursor=route.supported()?new PerformanceRoute.Cursor(route):null;
   routeHasMarkers=false;
@@ -529,13 +535,13 @@ public class MainActivity extends Activity {
  }
  void selectHand(int selected){
   if(selected<0||selected>2)return;
-  stopPlayback();
+  stopPlayback();finishStudyWindow();
   currentHand=selected;scoreView.hand=selected;
   if(score!=null)position=HandNavigation.nextPosition(score,position,selected,loopStart,loopEnd);
   if(routeCursor!=null)routeCursor.align(position);
   scoreView.playhead=position;scoreView.invalidate();
   if(mode==0)prepareWaiting();else if(screens!=null)screens.followScore(position,true);
-  saveSession();updateInfo();
+  saveSession();updateInfo();beginStudyWindow();
  }
  void nextWait(){
   if(score==null||waitTraveling)return;
@@ -714,7 +720,7 @@ public class MainActivity extends Activity {
    profiles.setOnItemSelectedListener(new Listener(index->{if(index>=0&&index<list.size()&&user!=list.get(index).id)activateProfile(list.get(index).id);}));
   }catch(RuntimeException ex){message("Não foi possível ler os perfis: "+ex.getMessage());}
  }
- void activateProfile(int id){if(user==id)return;stopPlayback();applyProfile(id);}
+ void activateProfile(int id){if(user==id)return;stopPlayback();finishStudyWindow();applyProfile(id);}
  void applyProfile(int id){
   user=id;prefs.edit().putInt("active_profile",id).apply();refreshChordWindow();
   score=null;scoreView.score=null;scoreView.pressed.clear();currentFile="";currentName="";
@@ -741,11 +747,58 @@ public class MainActivity extends Activity {
     }else new AlertDialog.Builder(this).setTitle("Excluir perfil?")
      .setMessage("Excluir este perfil e seus registros de estudo? As partituras compartilhadas serão mantidas.")
      .setPositiveButton("Excluir",(d,w)->{
-      try{stopPlayback();int active=profileStore().delete(selected.id);score=null;applyProfile(active);loadProfiles();}
+      try{stopPlayback();finishStudyWindow();int active=profileStore().delete(selected.id);score=null;applyProfile(active);loadProfiles();}
       catch(RuntimeException ex){message(ex.getMessage());}
      }).setNegativeButton("Cancelar",null).show();
    }).show();
   }catch(RuntimeException ex){message(ex.getMessage());}
+ }
+ void beginStudyWindow(){
+  if(!foreground||score==null||currentFile.isEmpty()||screens==null||(!screens.isStudyOpen()&&!screens.isFreeOpen()))return;
+  studyClock.start(SystemClock.uptimeMillis(),System.currentTimeMillis(),user,LibrarySearch.key(currentFile),
+   currentName.isEmpty()?score.title:currentName,screens.isFreeOpen()?3:mode,currentHand,position,tempoFactor);
+ }
+ void finishStudyWindow(){
+  StudyClock.Window window=studyClock.finish(SystemClock.uptimeMillis(),position,tempoFactor);
+  if(window==null||prefs==null)return;
+  try{new StudyHistory(prefs,window.user).record(window);}
+  catch(RuntimeException ex){pendingHistoryError=ex.getMessage();android.util.Log.w("PianoLivreHistory","Período não registrado; dados anteriores mantidos");}
+ }
+ void showHistory(){
+  if(pendingHistoryError!=null){String error=pendingHistoryError;pendingHistoryError=null;message(error);return;}
+  try{
+   StudyHistory store=new StudyHistory(prefs,user);JSONObject data=store.snapshot(),pieces=data.getJSONObject("pieces");
+   List<String> keys=new ArrayList<>();Iterator<String> iterator=pieces.keys();long total=0,periods=0;
+   while(iterator.hasNext()){String key=iterator.next();keys.add(key);total=Math.addExact(total,pieces.getJSONObject(key).getLong("timeMs"));periods=Math.addExact(periods,pieces.getJSONObject(key).getLong("periods"));}
+   keys.sort((left,right)->Long.compare(pieces.optJSONObject(right).optLong("lastAt"),pieces.optJSONObject(left).optLong("lastAt")));
+   if(keys.isEmpty()){message("Ainda não há registros. O tempo é registrado quando uma partitura fica aberta em primeiro plano.");return;}
+   String[] items=new String[keys.size()+1];items[0]="Tempo na tela de estudo: "+StudyHistory.duration(total)+" · "+periods+" períodos";
+   for(int i=0;i<keys.size();i++){
+    JSONObject piece=pieces.getJSONObject(keys.get(i));long goal=piece.getLong("goalMinutes"),time=piece.getLong("timeMs");
+    items[i+1]=piece.getString("title")+"\n"+StudyHistory.duration(time)+(goal>0?" · meta: "+goal+" min"+(time>=goal*60000L?" ✓":""):"");
+   }
+   new AlertDialog.Builder(this).setTitle("Histórico deste perfil").setItems(items,(d,index)->{
+    if(index==0){message("Tempo em partitura aberta, incluindo pausas para leitura. Não representa avaliação de notas, ritmo ou esforço.");return;}
+    String key=keys.get(index-1);JSONObject piece=pieces.optJSONObject(key);EditText minutes=new EditText(this);
+    minutes.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);minutes.setHint("Minutos escolhidos por você");
+    if(piece.optInt("goalMinutes")>0)minutes.setText(String.valueOf(piece.optInt("goalMinutes")));
+    new AlertDialog.Builder(this).setTitle("Meta de tempo · "+piece.optString("title")).setView(minutes)
+     .setPositiveButton("Salvar",(dd,w)->{try{int value=Integer.parseInt(minutes.getText().toString().trim());if(value<=0)throw new NumberFormatException();store.goal(key,value);}catch(NumberFormatException ex){message("Informe um número inteiro positivo de minutos.");}catch(RuntimeException ex){message(ex.getMessage());}})
+     .setNeutralButton("Remover meta",(dd,w)->{try{store.goal(key,0);}catch(RuntimeException ex){message(ex.getMessage());}}).setNegativeButton("Cancelar",null).show();
+   }).setNeutralButton("Períodos",(d,w)->showHistoryPeriods(data.optJSONArray("records")))
+    .setNegativeButton("Apagar histórico e metas",(d,w)->new AlertDialog.Builder(this).setTitle("Apagar histórico deste perfil?")
+     .setMessage("Os períodos, o tempo acumulado e as metas serão removidos. Faça backup se quiser conservá-los. As partituras e os favoritos serão mantidos.")
+     .setPositiveButton("Apagar",(dd,ww)->{try{store.clear();}catch(RuntimeException ex){message(ex.getMessage());}}).setNegativeButton("Cancelar",null).show())
+    .setPositiveButton("Fechar",null).show();
+  }catch(Exception ex){message("Não foi possível ler o histórico: "+ex.getMessage());}
+ }
+ void showHistoryPeriods(JSONArray records){
+  try{
+   List<String> labels=new ArrayList<>();String[] modes={"Espera","Contínuo","Demonstração","Leitura livre"};
+   java.text.DateFormat date=java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT,java.text.DateFormat.SHORT);
+   for(int i=records.length()-1;i>=0;i--){JSONObject r=records.getJSONObject(i);labels.add(date.format(new Date(r.getLong("at")))+" · "+r.getString("title")+"\n"+modes[r.getInt("mode")]+" · "+StudyHistory.duration(r.getLong("elapsedMs")));}
+   new AlertDialog.Builder(this).setTitle("Períodos registrados").setItems(labels.toArray(new String[0]),(d,index)->{}).setPositiveButton("Fechar",null).show();
+  }catch(Exception ex){message("Não foi possível ler os períodos");}
  }
  void saveSession(){
   if(prefs==null||score==null)return;
@@ -775,16 +828,17 @@ public class MainActivity extends Activity {
   // Exactly one ticker chain, including after repeated background/foreground.
   handler.removeCallbacks(ticker);previousTick=SystemClock.uptimeMillis();handler.post(ticker);
   if(screens!=null)screens.resumeNotation();
-  rearmWaitIfStudying();
+  rearmWaitIfStudying();beginStudyWindow();
   android.util.Log.i("PianoLivreUI","LIFECYCLE_RESUMED");
  }
  @Override protected void onPause(){
-  foreground=false;super.onPause();stopPlayback();saveSession();handler.removeCallbacks(ticker);
+  foreground=false;super.onPause();stopPlayback();finishStudyWindow();saveSession();handler.removeCallbacks(ticker);
   chordCalibration.stop();
   if(screens!=null)screens.pauseNotation();
   android.util.Log.i("PianoLivreUI","LIFECYCLE_PAUSED");
  }
  @Override protected void onDestroy(){
+  finishStudyWindow();
   handler.removeCallbacks(ticker);disconnectMidi();
   if(screens!=null)screens.destroyNotation();
   super.onDestroy();

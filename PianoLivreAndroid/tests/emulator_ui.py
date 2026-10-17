@@ -129,6 +129,7 @@ if __name__=="__main__":
     dismiss_keyboard()
     assert any("10 de 10 partituras" in n.attrib.get("text","") for n in dump().iter("node")), "Clearing search did not restore library"
     print("PASS: native library search ignores accents and clearing restores results",flush=True)
+    render_baseline=adb("logcat","-d","-v","brief").count("NOTATION_RENDERED")
     tap_text([DEFAULT_SCORE_TITLE])
     time.sleep(3)
     assert_running()
@@ -142,7 +143,7 @@ if __name__=="__main__":
     notation_ready=False
     for attempt in range(16):
         logs=adb("logcat","-d","-v","brief")
-        if re.search(r"PianoLivreNotation.*NOTATION_RENDERED",logs):
+        if logs.count("NOTATION_RENDERED")>render_baseline:
             notation_ready=True
             break
         time.sleep(2)
@@ -187,13 +188,14 @@ if __name__=="__main__":
     print("PASS: selection mode toggles from the Trecho button",flush=True)
     assert any("Início" in t for t in labels), "Return-to-start control missing"
     # Traditional score is a separate no-MIDI, no-training reading surface.
+    free_baseline=adb("logcat","-d","-v","brief").count("FREE_RENDERED")
     tap_text(["Partitura Livre"])
     time.sleep(3)
     assert_running()
     free_ready=False
     for attempt in range(12):
         logs=adb("logcat","-d","-v","brief")
-        if "FREE_RENDERED" in logs:
+        if logs.count("FREE_RENDERED")>free_baseline:
             free_ready=True
             break
         time.sleep(2)
