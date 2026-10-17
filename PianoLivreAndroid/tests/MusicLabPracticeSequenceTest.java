@@ -45,6 +45,17 @@ public class MusicLabPracticeSequenceTest{
   ok(repeat.next()==60&&repeat.extras()==1);
   ok(repeat.observe(Collections.singleton(60),Collections.singleton(60),empty,false)==MusicLabPracticeSequence.Observation.CORRECT);
   ok(repeat.next()==60&&repeat.extras()==1); // Wrong note never blocks correct retry.
+  // A new exercise must not inherit progress or extras from the previous one.
+  MusicLabPracticeSequence switched=new MusicLabPracticeSequence(new int[]{69,71});
+  ok(switched.correct()==0&&switched.extras()==0&&switched.next()==69);
+  ok(switched.observe(Collections.singleton(69),Collections.singleton(69),empty,false)==MusicLabPracticeSequence.Observation.CORRECT);
+  ok(switched.next()==71&&switched.correct()==1);
+  ok(switched.observe(Collections.singleton(71),Collections.singleton(71),empty,true)==MusicLabPracticeSequence.Observation.IGNORED);
+  ok(switched.correct()==1); // Playback during student session never advances it.
+  ok(switched.observe(Collections.singleton(71),Collections.singleton(71),empty,false)==MusicLabPracticeSequence.Observation.CORRECT);
+  ok(switched.complete());
+  MusicLabPracticeSequence another=new MusicLabPracticeSequence(new int[]{60,62});
+  ok(another.correct()==0&&another.next()==60&&!another.complete());
   try{repeat.observe(null,one,empty,false);throw new AssertionError();}catch(IllegalArgumentException ex){c++;}
   try{repeat.observe(one,null,empty,false);throw new AssertionError();}catch(IllegalArgumentException ex){c++;}
   try{new MusicLabPracticeSequence(new int[]{});throw new AssertionError();}catch(IllegalArgumentException ex){c++;}
