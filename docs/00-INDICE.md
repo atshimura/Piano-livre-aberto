@@ -71,3 +71,4 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [44 — APK de distribuição](44-APK-DISTRIBUICAO.md)
 
 - [45 — Laboratório Musical: escopo aprovado, primeira entrega e continuidade](45-LABORATORIO-ESCOPO-E-CONTINUIDADE.md)
+- [46 — Biblioteca em grade compacta](46-BIBLIOTECA-GRADE-COMPACTA.md)
