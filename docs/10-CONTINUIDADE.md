@@ -155,3 +155,7 @@ Busca e referência offline das categorias musicais de `MusicLabCatalog` na bran
 ## Retomada 0.9.45 — demonstração MIDI local
 
 Branch `feat/laboratorio-demonstracao-midi` acrescenta geração de eventos pela saída MIDI local, velocidade/repetição, destaque de teclas e cancelamento seguro (doc 54). Não há sintetizador embutido; sem Yamaha conectado nenhum som é produzido. Exigir CI e emulador próprios depois de integrar PRs antecedentes; próximo desenvolvimento: prática guiada sequencial/ritmo e histórico por perfil, mais claves/hastes.
+
+## Retomada 0.9.46 — prática sequencial
+
+A branch `feat/laboratorio-pratica-sequencial` amplia Praticar com `MusicLabPracticeSequence` para escalas/arpejos, mantendo andamento livre e indicações de notas extras. Documento 55. Validar CI/emulador após dependências. Faltam histórico do Laboratório, metrônomo visual opcional e testes físicos (#11).
