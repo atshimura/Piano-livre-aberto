@@ -53,6 +53,8 @@ jobs:
             test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
             gradle --no-daemon :app:assembleDebug
             "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -q "package: name='br.org.pianolivre.opensource'"
+            adb shell svc wifi disable
+            adb shell svc data disable
             python3 tests/emulator_upgrade.py
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity

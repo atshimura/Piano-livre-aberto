@@ -13,7 +13,7 @@ A V1 ainda não está concluída. Esta entrega prepara atualização em emulador
 
 ## Novo ensaio de atualização
 
-O emulador compila a base pública fixa f50b2b266a95b253faaa7ce5c9e7548ec9ec0c0f (0.9.25/code34), instala-a e prepara dados exclusivamente sintéticos: perfis IDs 0/7, avatar, favorito, mão, modo, velocidade, posição, teclado e um MXL do catálogo. Abre a base, instala o novo APK com adb install -r e verifica os dados sem alterá-los no self-test. O teste de UI remove apenas os arquivos sintéticos conhecidos na instalação nova do emulador.
+O emulador desliga Wi-Fi e dados móveis para exercitar os fluxos locais sem rede. O host ainda baixa dependências de compilação. O emulador compila a base pública fixa f50b2b266a95b253faaa7ce5c9e7548ec9ec0c0f (0.9.25/code34), instala-a e prepara dados exclusivamente sintéticos: perfis IDs 0/7, avatar, favorito, mão, modo, velocidade, posição, teclado e um MXL do catálogo. Abre a base, instala o novo APK com adb install -r e verifica os dados sem alterá-los no self-test. O teste de UI remove apenas os arquivos sintéticos conhecidos na instalação nova do emulador.
 
 Ambos APKs usam a mesma chave debug descartável do runner. Isso testa o mecanismo Android de atualização e compatibilidade de dados, não uma instalação física com a assinatura permanente. A assinatura permanente é verificada separadamente no build da main.
 

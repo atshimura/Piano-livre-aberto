@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Exercise prerelease gates without network, credentials, APK signing or publish."""
-import json,os,pathlib,runpy,subprocess,tempfile,unittest
+import json,os,pathlib,runpy,subprocess,tempfile,unittest,contextlib,io
 from unittest.mock import patch
 SCRIPT=pathlib.Path(__file__).resolve().parents[1]/'scripts/publish_public_beta.py'
 CERT='7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290'
@@ -22,7 +22,7 @@ class PublishBetaTest(unittest.TestCase):
     apk=pathlib.Path('dist/app/build/outputs/apk/debug/app-debug.apk');apk.parent.mkdir(parents=True);apk.write_bytes(b'synthetic apk')
     pathlib.Path('dist/build').mkdir();pathlib.Path('dist/build/public-signature.txt').write_text(certificate);pathlib.Path('dist/build/public-apk-metadata.txt').write_text("versionCode='40' versionName='0.9.31-open-beta'")
     error=None
-    with patch.dict(os.environ,{'GITHUB_REPOSITORY':'example/public','GITHUB_SHA':'abc','BEFORE_SHA':'previous'}),patch('subprocess.run',side_effect=command):
+    with patch.dict(os.environ,{'GITHUB_REPOSITORY':'example/public','GITHUB_SHA':'abc','BEFORE_SHA':'previous'}),patch('subprocess.run',side_effect=command),contextlib.redirect_stdout(io.StringIO()):
      try:runpy.run_path(str(SCRIPT),run_name='__main__')
      except SystemExit as ex:
       if ex.code!=0:error=ex
