@@ -29,7 +29,7 @@ final class LibraryStore {
  static Snapshot decode(String text){
   try{
    if(text.length()>256*1024)throw new IllegalArgumentException("Organização da biblioteca grande demais");
-   JSONObject root=new JSONObject(text);Object version=root.get("version");
+   JsonLimits.check(text,256*1024,16);JSONObject root=new JSONObject(text);Object version=root.get("version");
    if(!(version instanceof Number)||((Number)version).doubleValue()!=1)throw new IllegalArgumentException("Versão de biblioteca incompatível");
    Set<String> favorites=keys(root.getJSONArray("favorites"));JSONArray array=root.getJSONArray("collections");
    if(array.length()>40)throw new IllegalArgumentException("Limite de 40 coleções");

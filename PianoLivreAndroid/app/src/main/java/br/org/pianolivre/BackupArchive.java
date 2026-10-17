@@ -95,7 +95,7 @@ public final class BackupArchive {
      case "int":v=Integer.parseInt(String.valueOf(encoded));break;
      case "long":v=Long.parseLong(String.valueOf(encoded));break;
      case "float":v=Float.parseFloat(String.valueOf(encoded));break;
-     case "string":v=record.getString("value");break;
+     case "string":if(!(encoded instanceof String))throw new IOException("Texto inválido");v=encoded;break;
      case "strings":{
       JSONArray values=record.getJSONArray("value");
       if(values.length()>10000)throw new IOException("Conjunto de valores grande demais");
@@ -108,7 +108,7 @@ public final class BackupArchive {
    }else{
     // Legacy v1 serialized primitive prefs as untyped JSON.
     // Session position is the raw IEEE-754 long bits, not a JSON decimal.
-    if(k.matches("user_\\d+_position"))v=Long.parseLong(String.valueOf(raw));
+    if(k.matches("user_\\d+_(position|tempo|loop_start|loop_end)"))v=Long.parseLong(String.valueOf(raw));
     else if(raw instanceof Boolean||raw instanceof String)v=raw;
     else if(raw instanceof Number){
      long n=Long.parseLong(String.valueOf(raw));
@@ -121,7 +121,7 @@ public final class BackupArchive {
   Object p=result.get("profiles");
   if(p!=null){
    if(!(p instanceof String))throw new IOException("Perfis inválidos");
-   JSONArray profiles=new JSONArray((String)p);
+   JsonLimits.check((String)p,64*1024,16);JSONArray profiles=new JSONArray((String)p);
    if(profiles.length()<1||profiles.length()>20)throw new IOException("Quantidade inválida de perfis");
    for(int i=0;i<profiles.length();i++)
     if(profiles.getString(i).trim().isEmpty())throw new IOException("Nome de perfil vazio");
@@ -196,6 +196,7 @@ public final class BackupArchive {
   int version=backup.getInt("version");
   if(version!=1&&version!=VERSION)throw new IOException("Versão do backup não suportada: "+version);
   Map<String,Object> p=decodePrefs(backup.getJSONObject("prefs"),version==VERSION);
+  SessionPreferences.validate(p);
   JSONArray imported=backup.optJSONArray("imported");
   if(imported==null)throw new IOException("Lista de arquivos ausente");
   if(imported.length()>MAX_ITEMS)throw new IOException("Muitos arquivos no backup");
@@ -251,7 +252,7 @@ public final class BackupArchive {
   File old=new File(root,ROLLBACK);
   File dest=new File(root,FILES);
   if(marker.isFile()){
-   JSONObject journal=new JSONObject(new String(readFile(marker,MAX_JSON),StandardCharsets.UTF_8));
+   String text=new String(readFile(marker,MAX_JSON),StandardCharsets.UTF_8);JsonLimits.check(text,MAX_JSON,64);JSONObject journal=new JSONObject(text);
    Map<String,Object> before=decodePrefs(journal.getJSONObject("previousPrefs"),true);
    boolean had=journal.getBoolean("hadImported");
    if(old.exists()){
