@@ -1,22 +1,26 @@
 # 07 — Estado atual e prioridades da linha aberta
 
-## Implementado no código-base público
-- Android em paisagem, funcionamento offline, importação local MusicXML/XML/MXL.
-- Partitura temporal SVG em tiles, claves Sol/Fá ancoradas, leitura livre via OSMD, teclado guia **visual** para ambas as pautas.
-- Modos Espera/Contínuo/Demonstração, rotas de repetição, partes por mão, entrada/saída MIDI USB e diagnóstico.
-- Espera com indicação não bloqueante de notas extras; janela de acordes calibrável; duração e pedal orientativos.
-- Perfis locais, retomada básica de sessão e backup v2 com pré-validação e rollback.
-- CI com testes JVM, JavaScript, inventário de partituras, MIDI, compilação e emulador.
+## Implementado no código público
 
-## Ainda pendente na aplicação (não confundir com migração GitHub)
-- Validação em Yamaha P-45 e celulares/tablets reais; latência, rolagem, conexão MIDI e notas presas.
-- Confirmar os PRs de compatibilidade/importação em curso. Busca/favoritos/coleções, perfis estáveis e histórico/metas locais foram implementados; importação MIDI aproximada integrada no PR #26.
-- Cobertura de notação complexa, robustez de MusicXML externo e critérios musicais testados editorialmente.
-- Migração entre pacotes apenas por backup manual validado, com caminhos portáteis; ensaio físico ainda pendente. Nenhum acesso direto ao pacote/repositório privado.
-- Assinatura persistente confirmada na 0.9.13/code22 pelo build público 38938312341; validar o certificado em cada entrega. Atualização com preservação de dados ainda requer ensaio físico.
+- Android em paisagem, local/offline, sem permissão INTERNET. MusicXML/XML/MXL e MIDI SMF 0/1 PPQN com notação aproximada, escolha explícita de mão por trilha e fonte original preservada.
+- Partitura temporal SVG em tiles, claves Sol/Fá fixas, leitura livre via OSMD. Teclado guia visual de ambas as mãos com intensidade/duração; índice evita varrer notas encerradas sob baixo longo.
+- Modos Espera/Contínuo/Demonstração e rotas musicais. Sessões MIDI isoladas por conexão, retomada em foreground e CC120/121/123; USB real ainda requer aceite.
+- Extras não bloqueiam Espera; acordes dependem de calibração medida; duração/pedal são orientação.
+- Perfis com IDs estáveis, nome/avatar/exclusão confirmada, busca/favoritos/coleções, histórico de tempo de tela e metas voluntárias, sem nota global.
+- Backup v2 pré-validado com rollback/journal, caminhos portáteis e nomes legados; preparação antes de abrir destino externo. Importações novas preservam capacidade do backup. Limites no documento 43.
+- CI JVM/JS/Android, corpus musical, interface offline, atualização desde APK público 0.9.25 e ensaio debug→release. Conferir sempre os resultados do próprio SHA.
+- Distribuição release sem depuração, pacote aberto e certificado permanente; publicação de beta aguarda checks do merge. PRs/emuladores usam somente chave descartável. Documento 44.
 
-## Roteiro vigente
+## O que ainda impede declarar 1.0
 
-O desenvolvimento segue as **seis etapas aprovadas do Projeto**, detalhadas em [28 — Etapas até V1](28-ETAPAS-V1.md) e acompanhadas na [issue #4](https://github.com/atshimura/Piano-livre-aberto/issues/4). Etapa 1 com escopo técnico automatizado concluído no PR #14; aceite físico permanece na Etapa 6. Etapa 2 com escopo técnico concluído e limites MusicXML explícitos; Etapa 3 com escopo técnico automatizado concluído; Etapa 4 com escopo técnico concluído no PR #24; Etapa 5 com escopo técnico concluído nos PRs #25–#28; Etapa 6 em desenvolvimento no PR #29, sem aceite físico. A entrega inicial 0.9.13 reduz custo de animação e evita reconstrução de SVG ao abrir o teclado guia; resultados atuais e pendências estão no documento 28.
+Aceite físico na issue #11: Yamaha P-45 (USB, reconexão, calibração, pedal, Demonstração/notas presas), Realme 7 5G e Lenovo Tab M9 (fluidez, resize, background, instalação/atualização e backup reais). Na 0.9.12 houve pequenas travadas no Realme; não há confirmação física de eliminação nas versões posteriores.
 
-**Estado legal/técnico:** GPL-3.0-only apenas para o código próprio; direitos das músicas descritos separadamente. Uma execução de CI verde comprova aquele commit e cenário automatizado, não conformidade jurídica integral nem qualidade certificada do produto.
+Escopo musical continua limitado: MIDI não reconstrói a escrita original nem pedal/programas/controladores; mãos são escolhidas por trilha inteira. Microtons/transposição/compassos MusicXML incompatíveis são rejeitados explicitamente. Codificações suportadas e limites estão nos documentos 36–44. Validação automatizada não representa fidelidade universal nem revisão editorial de toda partitura externa.
+
+Migração entre pacotes é manual por backup validado; não há leitura do pacote/repositório privado nem atualização automática da edição histórica. A assinatura permanente da linha aberta tem fingerprint registrada no documento ASSINATURA; conferir em cada build distribuído.
+
+## Roteiro e retomada
+
+Etapas 1–5 encerradas no escopo técnico automatizado (#6/#8/#7/#9/#10), com limites explícitos. Etapa 6 em consolidação (#11), incluindo PRs #29–#33 e aceite físico pendente. Fonte de versão: gradle.properties. Estado atual de merges/Actions/Releases: issues #4/#11 e GitHub; não repetir entregas já integradas.
+
+GPL-3.0-only para o código próprio; direitos das músicas e de terceiros separados em seus manifestos. Sem login, servidor, telemetria ou serviços pagos. Continuar correções independentes quando houver evidência, mantendo dados offline e decisões pedagógicas.
