@@ -61,3 +61,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [39 — Limites MusicXML](39-LIMITES-MUSICXML.md)
 
 - [40 — Aceite e atualização](40-ACEITE-E-ATUALIZACAO.md)
+
+- [41 — Desempenho do guia com notas longas](41-DESEMPENHO-GUIA-SUSTENTADO.md)

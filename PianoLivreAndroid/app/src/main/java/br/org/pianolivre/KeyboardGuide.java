@@ -13,7 +13,10 @@ import java.util.*;
 public final class KeyboardGuide {
  private static final int P45_LOW=21, P45_HIGH=108;
  private final ArrayList<Score.Event> ordered;
- private final double[] prefixMaxEnd;
+ private final double[] maximumEnd;
+ private final int leaves;private int visitedNodes;
+ /** Local diagnostic: tree nodes inspected by the last query, excluding onset binary search. */
+ public int visitedNodesLastQuery(){return visitedNodes;}
 
  public static final class Frame {
   public final Set<Integer> right, left, both;
@@ -38,38 +41,44 @@ public final class KeyboardGuide {
  public KeyboardGuide(Score score){
   ordered=new ArrayList<>(score==null?Collections.emptyList():score.events);
   ordered.sort(Comparator.comparingDouble(e->e.beat));
-  prefixMaxEnd=new double[ordered.size()];
-  double max=Double.NEGATIVE_INFINITY;
-  for(int i=0;i<ordered.size();i++){
-   Score.Event e=ordered.get(i);
-   max=Math.max(max,e.beat+e.length);
-   prefixMaxEnd[i]=max;
-  }
+  int size=1;while(size<ordered.size())size*=2;leaves=size;
+  maximumEnd=new double[size*2];Arrays.fill(maximumEnd,Double.NEGATIVE_INFINITY);
+  for(int i=0;i<ordered.size();i++){Score.Event e=ordered.get(i);maximumEnd[size+i]=e.beat+e.length;}
+  for(int i=size-1;i>0;i--)maximumEnd[i]=Math.max(maximumEnd[i*2],maximumEnd[i*2+1]);
  }
  public Frame at(double beat){
   Set<Integer> right=new HashSet<>(),left=new HashSet<>();
   Map<Integer,Integer> rv=new HashMap<>(),lv=new HashMap<>();
   Map<Integer,Double> rr=new HashMap<>(),lr=new HashMap<>();
+  visitedNodes=0;
   if(!Double.isFinite(beat))return new Frame(right,left,rv,lv,rr,lr);
-  // Latest onset not later than the playhead. Sorting + prefix maxima avoids
-  // redrawing/scanning whole long scores at every Android animation tick.
+  // Limit to onsets at/before playhead, then prune expired subtrees. A single
+  // very long bass note no longer keeps every intervening short note in the scan.
   int lo=0,hi=ordered.size();
   while(lo<hi){
    int m=(lo+hi)>>>1;
    if(ordered.get(m).beat<=beat+1e-7)lo=m+1;
    else hi=m;
   }
-  for(int i=lo-1;i>=0&&prefixMaxEnd[i]>beat+1e-7;i--){
-   Score.Event e=ordered.get(i);
+  collect(1,0,leaves,lo,beat,right,left,rv,lv,rr,lr);
+  return new Frame(right,left,rv,lv,rr,lr);
+ }
+ private void collect(int node,int start,int end,int limit,double beat,Set<Integer> right,Set<Integer> left,
+   Map<Integer,Integer> rv,Map<Integer,Integer> lv,Map<Integer,Double> rr,Map<Integer,Double> lr){
+  visitedNodes++;
+  if(start>=limit||maximumEnd[node]<=beat+1e-7)return;
+  if(end-start==1){
+   Score.Event e=ordered.get(start);
    if(e.length>0&&e.beat<=beat+1e-7&&e.beat+e.length>beat+1e-7){
-    boolean upper=e.staff==1;
-    (upper?right:left).add(e.midi);
-    (upper?rv:lv).merge(e.midi,e.velocity,Math::max);
+    boolean upper=e.staff==1;(upper?right:left).add(e.midi);(upper?rv:lv).merge(e.midi,e.velocity,Math::max);
     double remaining=Math.max(0,Math.min(1,(e.beat+e.length-beat)/e.length));
     (upper?rr:lr).merge(e.midi,remaining,Math::max);
    }
+   return;
   }
-  return new Frame(right,left,rv,lv,rr,lr);
+  int middle=(start+end)>>>1;
+  collect(node*2,start,middle,limit,beat,right,left,rv,lv,rr,lr);
+  collect(node*2+1,middle,end,limit,beat,right,left,rv,lv,rr,lr);
  }
  /**
   * Display ALL score-sounding and user-pressed P-45 keys, not just the next
