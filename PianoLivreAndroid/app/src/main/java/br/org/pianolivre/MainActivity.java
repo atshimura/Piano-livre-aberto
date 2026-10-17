@@ -98,6 +98,11 @@ public class MainActivity extends Activity {
    try{android.util.Log.i("PianoLivreMidiFile","MIDIFILE_SELFTEST_PASS assertions="+MidiFileSelfTest.run(this));}
    catch(Exception ex){throw new IllegalStateException("MIDI file self-test failed",ex);}
   }
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("xml_input_selftest",false)){
+   try{android.util.Log.i("PianoLivreXmlInput","XML_INPUT_SELFTEST_PASS assertions="+XmlInputSelfTest.run());}
+   catch(Exception ex){throw new IllegalStateException("XML input self-test failed",ex);}
+  }
   try{BackupArchive.recover(prefs,getFilesDir());}
   catch(Exception recovery){
    android.util.Log.e("PianoLivreBackup","Não foi possível recuperar restauração anterior",recovery);

@@ -63,3 +63,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [40 — Aceite e atualização](40-ACEITE-E-ATUALIZACAO.md)
 
 - [41 — Desempenho do guia com notas longas](41-DESEMPENHO-GUIA-SUSTENTADO.md)
+
+- [42 — Codificação MusicXML](42-CODIFICACAO-MUSICXML.md)
