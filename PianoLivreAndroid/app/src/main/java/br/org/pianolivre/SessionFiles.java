@@ -10,7 +10,7 @@ public final class SessionFiles {
   else if(path.startsWith("imported/")){prefix="imported/";name=path.substring(9);}
   else if(path.startsWith("/")&&path.contains("/imported/")){prefix="imported/";name=path.substring(path.lastIndexOf("/imported/")+10);}
   else throw new IllegalArgumentException("Caminho externo de partitura não suportado");
-  if(name.isEmpty()||name.length()>120||name.contains("..")||!name.matches("[A-Za-z0-9][A-Za-z0-9._-]*"))throw new IllegalArgumentException("Nome de partitura inválido");
+  if(name.isEmpty()||name.length()>255||name.equals(".")||name.equals("..")||!name.matches("[A-Za-z0-9._-]+"))throw new IllegalArgumentException("Nome de partitura inválido");
   return prefix+name;
  }
  public static String resolve(File root,String path){String key=portable(path);return key.startsWith("imported/")?new File(root,key).getAbsolutePath():key;}

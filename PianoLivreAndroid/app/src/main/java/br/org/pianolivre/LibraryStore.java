@@ -17,7 +17,7 @@ final class LibraryStore {
  private final SharedPreferences prefs;private final String key;
  LibraryStore(SharedPreferences prefs,int user){this.prefs=prefs;key="user_"+user+"_library";}
  static void validateScoreKey(String key){
-  if(key==null||key.length()>160||key.indexOf('\u0000')>=0||!(key.startsWith("scores/")||key.startsWith("imported/")))throw new IllegalArgumentException("Partitura inválida");
+  if(key==null||key.length()>264||key.indexOf('\u0000')>=0||!(key.startsWith("scores/")||key.startsWith("imported/")))throw new IllegalArgumentException("Partitura inválida");
   String name=key.substring(key.indexOf('/')+1);
   if(name.isEmpty()||name.equals(".")||name.equals("..")||name.indexOf('/')>=0||name.indexOf('\\')>=0)throw new IllegalArgumentException("Partitura inválida");
  }

@@ -47,10 +47,9 @@ public final class BackupArchive {
   return out.toString();
  }
  private static boolean safeName(String name){
-  return name!=null&&name.length()>0&&name.length()<=120&&
+  return name!=null&&name.length()>0&&name.length()<=255&&
     !name.equals(".")&&!name.equals("..")&&
-    name.matches("[A-Za-z0-9][A-Za-z0-9._-]*")&&
-    !name.contains("..");
+    name.matches("[A-Za-z0-9._-]+");
  }
  private static void validPrefsKey(String key)throws IOException{
   if(key==null||key.isEmpty()||key.length()>180||key.indexOf('\u0000')>=0)
