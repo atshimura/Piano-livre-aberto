@@ -118,7 +118,7 @@ class PianoScreens {
   try{metadata=new LibraryStore(a.prefs,a.user).snapshot();refreshLibraryFilters(metadata);}
   catch(RuntimeException ex){grid.addView(text("Não foi possível ler a organização da biblioteca. Os dados não foram alterados.",13,ink,false),lp(-1,-2));return;}
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
-  int columns=widthDp>=1160?5:widthDp>=870?4:widthDp>=600?3:2;
+  int columns=LibraryGridLayout.columnsForWidthDp(widthDp);
   java.util.ArrayList<String[]> entries=new java.util.ArrayList<>();
   for(int i=0;i<a.catalog.length();i++){
    JSONObject j=a.catalog.optJSONObject(i);if(j!=null)entries.add(new String[]{j.optString("name"),"scores/"+j.optString("file")});
