@@ -209,10 +209,11 @@ class PianoScreens {
  }
  void options(){
   new AlertDialog.Builder(a).setTitle("Ferramentas")
-   .setItems(new String[]{"Fazer backup","Restaurar backup","Importar MusicXML","Calibrar acordes MIDI","Sobre esta versão","Gerenciar perfil"},(dialog,i)->{
+   .setItems(new String[]{"Fazer backup","Restaurar backup","Importar MusicXML","Calibrar acordes MIDI","Preparação do Espera","Sobre esta versão","Gerenciar perfil"},(dialog,i)->{
     if(i==0)a.exportBackup();else if(i==1)a.restoreBackup();else if(i==2)a.importScore();
     else if(i==3)a.showChordSettings();
-    else if(i==5)a.manageProfile();
+    else if(i==4)a.configureWaitPreparation();
+    else if(i==6)a.manageProfile();
     else {
      String version="beta";
      try{version=a.getPackageManager().getPackageInfo(a.getPackageName(),0).versionName;}
@@ -286,6 +287,7 @@ class PianoScreens {
   studio.addView(bottom,lp(-1,46));
   bottom.addView(compact("|◀ Início",false,()->a.seekPrevious()),lp(85,37));addGap(bottom,6);
   playback=compact("▶  Iniciar",true,()->{a.toggle();updateSelections();});
+  playback.setOnLongClickListener(v->{if(a.mode==0){a.configureWaitPreparation();return true;}return false;});
   bottom.addView(playback,lp(114,37));addGap(bottom,6);
   bottom.addView(compact("■ Parar",false,()->{a.stopPlayback();updateSelections();}),lp(77,37));addGap(bottom,10);
   TextView speed=text("VELOCIDADE",10,muted,true);bottom.addView(speed,lp(77,-1));
@@ -357,7 +359,7 @@ class PianoScreens {
    if(modeButtons[i]!=null){boolean on=a.mode==i;modeButtons[i].setBackground(bg(on?blue:Color.WHITE,12,on?0:0xffCCD9E8));modeButtons[i].setTextColor(on?Color.WHITE:ink);}
    if(handButtons[i]!=null){boolean on=a.currentHand==i;handButtons[i].setBackground(bg(on?teal:Color.WHITE,12,on?0:0xffCCD9E8));handButtons[i].setTextColor(on?Color.WHITE:ink);}
   }
-  if(playback!=null)playback.setText(a.mode==0?"♪  Esperar notas":a.running?"❚❚  Pausar":"▶  Iniciar");
+  if(playback!=null)playback.setText(a.mode==0?(a.waitPreparing?"Preparando…":a.waitStarted?"♪ Esperando":"▶ Iniciar"):a.running?"❚❚  Pausar":"▶  Iniciar");
   if(keyboardToggle!=null&&a.scoreView!=null)keyboardToggle.setText(a.scoreView.showKeyboard?"Ocultar teclado":"Teclado guia");
   if(loopButton!=null)loopButton.setText(editingLoop?"Selecionando…":"Trecho ↻");
  }
@@ -435,6 +437,8 @@ class PianoScreens {
   if(notation!=null){notation.setLoopEdit(false);notation.clearLoop();}
   updateSelections();
  }
+ void startWaitPreparation(long durationMs){if(notation!=null)notation.startWaitPreparation(durationMs);}
+ void stopWaitPreparation(){if(notation!=null)notation.cancelWaitPreparation();}
  void followScore(double beat,boolean smooth){
   if(virtualKeys!=null){
    double previous=virtualKeys.playhead;

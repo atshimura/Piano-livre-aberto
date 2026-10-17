@@ -1215,6 +1215,11 @@ function render(xml,container,viewport,startBeat){
   var current=st.moving?st.anchorBeat+(now-st.anchorMs)*st.bpm/60000:st.anchorBeat;
   current=Math.max(0,Math.min(st.layout.plan.duration,current));
   var offset=st.layout.pixelsPerBeat*current;
+  if(st.waitPrelude){
+   var fraction=Math.max(0,Math.min(1,(now-st.waitPrelude.at)/st.waitPrelude.duration));
+   offset-=(1-fraction)*st.viewportWidth*.58;
+   if(fraction>=1)st.waitPrelude=null;
+  }
   st.beat=current;
   if(!isFinite(st.lastPosition)||Math.abs(st.lastPosition-offset)>0.001){
    moveTiles(st,offset);
@@ -1231,7 +1236,7 @@ function render(xml,container,viewport,startBeat){
   m.peakVisibleTiles=Math.max(m.peakVisibleTiles,(st.visibleTiles||[]).length);
   m.maxDrawMs=Math.max(m.maxDrawMs,performance.now()-started);
   // Pause and the end of the score sleep until another native sample.
-  if(st.moving&&current<st.layout.plan.duration)requestPaint(st);
+  if((st.moving&&current<st.layout.plan.duration)||st.waitPrelude)requestPaint(st);
  }
  state.animation=animation;
  requestPaint(state);
@@ -1281,6 +1286,15 @@ function sync(beat,bpm,playing){
  if(!st.moving||!st.raf)st.lastFrameTime=null;
  st.bpm=rate;st.moving=true;requestPaint(st);
 }
+function waitPrepare(ms){
+ if(!state||!isFinite(ms)||ms<=0)return;
+ state.waitPrelude={at:performance.now(),duration:Math.max(1,ms)};
+ state.lastPosition=NaN;requestPaint(state);
+}
+function waitCancel(){
+ if(!state)return;
+ state.waitPrelude=null;state.lastPosition=NaN;requestPaint(state);
+}
 function resize(){
  if(!state)return;
  var st=state,viewport=st.viewport;
@@ -1303,7 +1317,7 @@ function resize(){
 }
 function teardown(){if(!state)return;reportDiagnostics("teardown");if(state.popupTimer)clearTimeout(state.popupTimer);cancelAnimationFrame(state.raf);state=null;}
 var exported={parse:xmlTimeMap,buildLayout:buildLayout,render:render,sync:sync,resize:resize,teardown:teardown,
- loopEdit:setLoopEditing,clearLoop:clearLoop,diagnostics:diagnostics,
+ loopEdit:setLoopEditing,clearLoop:clearLoop,waitPrepare:waitPrepare,waitCancel:waitCancel,diagnostics:diagnostics,
  _test:{computeX:computeX,cursorPx:cursorPx,cursorLeadPx:cursorLeadPx,msPerBeat:msPerBeat,
   staffY:staffY,staffLineY:staffLineY,clefAnchor:clefAnchor,
   pitchY:pitchY,drawClef:drawClef,

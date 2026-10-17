@@ -76,3 +76,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [48 — Laboratório: escalas e arpejos por sequência](48-LAB-SEQUENCIAS.md)
 
 - [49 — Cursor fixo antes das notas no estudo](49-CURSOR-ANTES-NOTAS.md)
+
+- [50 — Modo Espera: iniciar e preparação visual](50-ESPERA-PREPARACAO.md)

@@ -135,3 +135,7 @@ Branch `feat/lab-analise-sequencias`, construída da entrega de tooltip (#37). C
 ## Retomada 0.9.40 — cursor visual
 
 A alteração inicial da branch `fix/espera-cursor-antes-notas` foi reaproveitada sobre a `main` no PR seguinte (verificar CI antes de integrar). O cursor fixo precede as notas por distância limitada, sem alterar o tempo musical. Documento 49. Próxima tarefa: preparação visual gradual do Espera comandada por Iniciar com duração configurável e sem penalidade; depois notação e funcionalidades do Laboratório da issue #34.
+
+## Retomada 0.9.41 — Iniciar e preparação do Espera
+
+Implementação proposta na branch `feat/espera-iniciar-preparacao` sobre o cursor do PR #39. Ver documento 50: cinco segundos iniciais configuráveis por perfil, bloqueio de reconhecimento apenas durante a entrada, animação desacoplada do tempo musical, cancelamento seguro. Exigir CI (JVM/JS/APK) e emulador no mesmo head antes de integrar. Seguir para claves/hastes/vigas na notação temporal, depois catálogo/demonstração/prática/histórico do Laboratório (#34). Hardware físico em #11.
