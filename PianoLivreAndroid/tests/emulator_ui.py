@@ -135,9 +135,8 @@ if __name__=="__main__":
     adb("shell","input","text","escala")
     dismiss_keyboard()
     assert any("Escala ·" in n.attrib.get("text","") for n in dump().iter("node")), "Scale filter missing"
-    assert any("Ambas (referência)" in n.attrib.get("text","") for n in dump().iter("node")), "Hand reference selector missing"
     tap_text(["Praticar"],exact=True,scroll=True)
-    assert any("Próxima:" in n.attrib.get("text","") and "0/" in n.attrib.get("text","") for n in dump().iter("node")), "Sequence did not start at first note"
+    assert any("Próxima:" in n.attrib.get("text","") and "0/" in n.attrib.get("text","") and "mão (referência): Ambas" in n.attrib.get("text","") for n in dump().iter("node")), "Sequential practice or hand reference not shown"
     search_fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
     coords=[int(x) for x in re.findall(r"\d+",search_fields[0].attrib["bounds"])]
     adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
