@@ -15,7 +15,10 @@ final class MusicLabScreen extends LinearLayout {
  private final MainActivity activity;
  private final TextView heading,description,readout,detail,practiceResult,rangeLabel;
  private final LinearLayout learner,sequenceTools;
- private final Button discoverButton,learnButton,touchButton,assembleButton,practiceButton,sequenceButton;
+ private final Button discoverButton,learnButton,touchButton,assembleButton,practiceButton,sequenceButton,demoButton;
+ private final CheckBox demoRepeat;
+ private int demoSpeed=100,demoGeneration=0;
+ private final Set<Integer> demoHeld=new HashSet<>();
  private final MusicLabKeyboard keyboard;
  private final Set<Integer> midi=new HashSet<>(),virtual=new HashSet<>();
  private final ArrayList<Integer> sequenceAttacks=new ArrayList<>();
@@ -102,14 +105,32 @@ final class MusicLabScreen extends LinearLayout {
   choices.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
    public void onNothingSelected(AdapterView<?> parent){}
    public void onItemSelected(AdapterView<?> parent,View view,int index,long id){
-    presetIndex=index;practicing=false;refresh();
+    presetIndex=index;practicing=false;stopDemonstration();refresh();
    }
   });
   LinearLayout commands=new LinearLayout(activity);commands.setGravity(Gravity.CENTER_VERTICAL);
   item(learner,commands,-1,41);
   practiceButton=button("Praticar",()->{practicing=!practicing;refresh();});
   item(commands,practiceButton,115,37);
+  demoButton=button("▶ Demonstrar",()->toggleDemo());
+  item(commands,demoButton,125,37);
   practiceResult=label("",12,true);commands.addView(practiceResult,new LinearLayout.LayoutParams(0,-2,1));
+  LinearLayout demonstration=new LinearLayout(activity);demonstration.setGravity(Gravity.CENTER_VERTICAL);
+  item(learner,demonstration,-1,40);
+  TextView speedLabel=label("Velocidade:",11,false);item(demonstration,speedLabel,80,-2);
+  Spinner speeds=new Spinner(activity);
+  String[] speedNames={"50%","75%","100%","125%","150%"};
+  speeds.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,speedNames));
+  item(demonstration,speeds,97,39);speeds.setSelection(2);
+  speeds.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+   public void onNothingSelected(AdapterView<?> parent){}
+   public void onItemSelected(AdapterView<?> parent,View view,int index,long id){
+    demoSpeed=50+index*25;
+    stopDemonstration();
+   }
+  });
+  demoRepeat=new CheckBox(activity);demoRepeat.setText("Repetir");
+  demoRepeat.setTextSize(12);item(demonstration,demoRepeat,-2,-2);
   TextView keyboardHeading=label("Pauta e teclado · verde: tocado · dourado: referência",11,false);
   keyboardHeading.setPadding(0,dp(7),0,0);item(body,keyboardHeading,-1,-2);
   keyboard=new MusicLabKeyboard(activity,notes->{
@@ -138,7 +159,7 @@ final class MusicLabScreen extends LinearLayout {
   item(keyboardOptions,button("Limpar",()->keyboard.clear()),75,36);
   TextView caveat=label("Entrada USB-MIDI ou teclado virtual. Sem som sintetizado pelo teclado virtual. " +
    "Escalas e arpejos exigem uma sequência completa de uma oitava, iniciada e concluída pelo usuário. " +
-   "Catálogo pesquisável offline disponível; prática de escalas e arpejos confere alturas, não sequência temporal. Ritmo, registro e dedilhado ainda pendentes.",11,false);
+   "Demonstração sonora opcional pelo Yamaha USB-MIDI (sem sintetizador). A prática atual confere alturas, não ritmo nem dedilhado.",11,false);
   caveat.setPadding(0,dp(8),0,0);item(body,caveat,-1,-2);
   setLearn(false);setAssembling(false);
  }
@@ -151,7 +172,7 @@ final class MusicLabScreen extends LinearLayout {
   refresh();
  }
  private void setLearn(boolean value){
-  learn=value;practicing=false;recordingSequence=false;rollingPatterns.clear();
+  learn=value;practicing=false;recordingSequence=false;rollingPatterns.clear();stopDemonstration();
   learner.setVisibility(learn?VISIBLE:GONE);
   sequenceTools.setVisibility(learn?GONE:VISIBLE);sequenceButton.setText("Iniciar sequência");
   discoverButton.setEnabled(learn);learnButton.setEnabled(!learn);
@@ -211,9 +232,10 @@ final class MusicLabScreen extends LinearLayout {
  private void refresh(){
   if(keyboard==null)return;
   Set<Integer> held=new HashSet<>(midi);held.addAll(virtual);
+  Set<Integer> shown=new HashSet<>(held);shown.addAll(demoHeld);
   MusicLabCatalog.Entry chosen=currentEntry();
   int[] expected=learn&&chosen!=null?chosen.notes:new int[0];
-  keyboard.setNotes(held,expected);
+  keyboard.setNotes(shown,expected);
   rangeLabel.setText(keyboard.rangeLabel());
   if(learn){
    if(chosen==null){
@@ -255,6 +277,42 @@ final class MusicLabScreen extends LinearLayout {
     }
    }
   }
+ }
+ private void toggleDemo(){
+  if(!demoHeld.isEmpty()){stopDemonstration();return;}
+  MusicLabCatalog.Entry item=currentEntry();
+  if(item==null)return;
+  if(activity.outputPort==null){
+   activity.message("Demonstração sonora requer saída USB-MIDI ligada ao Yamaha P-45. O app não contém sintetizador local.");
+   return;
+  }
+  final List<MusicLabPlaybackPlan.Event> schedule;
+  try{schedule=MusicLabPlaybackPlan.build(item.notes,item.kind,demoSpeed);}
+  catch(IllegalArgumentException ex){activity.message(ex.getMessage());return;}
+  int generation=++demoGeneration;
+  demoButton.setText("■ Parar demo");
+  scheduleDemo(schedule,generation);
+ }
+ private void scheduleDemo(List<MusicLabPlaybackPlan.Event> events,int generation){
+  for(MusicLabPlaybackPlan.Event e:events)activity.handler.postDelayed(()->{
+   if(generation!=demoGeneration||getVisibility()!=VISIBLE||activity.outputPort==null)return;
+   activity.send(e.note,e.on);
+   if(e.on)demoHeld.add(e.note);else demoHeld.remove(e.note);
+   refresh();
+  },e.atMillis);
+  activity.handler.postDelayed(()->{
+   if(generation!=demoGeneration)return;
+   if(demoRepeat.isChecked()&&getVisibility()==VISIBLE&&activity.outputPort!=null){
+    scheduleDemo(events,generation);
+   }else stopDemonstration();
+  },MusicLabPlaybackPlan.endMillis(events)+250);
+ }
+ void stopDemonstration(){
+  demoGeneration++;
+  for(int pitch:new HashSet<>(demoHeld))activity.send(pitch,false);
+  demoHeld.clear();
+  if(demoButton!=null)demoButton.setText("▶ Demonstrar");
+  refresh();
  }
  private static String alternatives(List<MusicTheory.Chord> found){
   StringBuilder b=new StringBuilder();
