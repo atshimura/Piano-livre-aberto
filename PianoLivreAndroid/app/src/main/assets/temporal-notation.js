@@ -402,8 +402,7 @@ function drawNote(parent,n,x){
  var head=svgEl("ellipse",{cx:x,cy:y,rx:whole?9.8:8.8,ry:whole?6:5.7,fill:hollow?"white":col,
   stroke:col,"stroke-width":hollow?1.9:1,transform:"rotate(-16 "+x+" "+y+")",
   "aria-label":noteIdentification(n)||""},g);
- head.style.pointerEvents="all";
- head.style.cursor="pointer";
+ head.setAttribute("style","pointer-events:all;cursor:pointer;");
  if(!whole){
   var direction=n._engraveMultiVoice?n._visualStem:(n.stem||n._visualStem||"");
    var up=direction==="up"||(direction!=="down"&&y>=top+26);
@@ -1039,7 +1038,7 @@ function setupNoteIdentification(st){
   if(!Number.isInteger(index)||index<0)return;
   var note=st.layout.plan.notes[index],identity=noteIdentification(note);
   if(!identity)return;
-  var text=identity+(note.harmony?"\\nAcorde: "+note.harmony.symbol+" — "+note.harmony.name:"");
+  var text=identity+(note.harmony?"\nAcorde: "+note.harmony.symbol+" — "+note.harmony.name:"");
   popup.textContent=text;
   popup.style.whiteSpace="pre-line";
   popup.style.display="block";
