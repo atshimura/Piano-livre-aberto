@@ -121,7 +121,7 @@ class PianoScreens {
    JSONObject j=a.catalog.optJSONObject(i);if(j!=null)entries.add(new String[]{j.optString("name"),"scores/"+j.optString("file")});
   }
   File dir=new File(a.getFilesDir(),"imported");File[] imports=dir.listFiles();
-  if(imports!=null)for(File f:imports)if(f.isFile())entries.add(new String[]{f.getName(),f.getAbsolutePath()});
+  if(imports!=null)for(File f:imports)if(f.isFile()&&!f.getName().endsWith(".source.mid"))entries.add(new String[]{f.getName(),f.getAbsolutePath()});
   int total=entries.size();
   entries.removeIf(entry->{
    String key=LibrarySearch.key(entry[1]);
