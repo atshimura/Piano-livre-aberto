@@ -91,6 +91,7 @@ class PianoScreens {
   LinearLayout section=row();section.setPadding(0,d(19),0,d(11));
   section.addView(text("BIBLIOTECA MUSICAL",15,ink,true),new LinearLayout.LayoutParams(0,d(28),1));
   section.addView(btn("Importar partitura",false,()->a.importScore()),lp(165,44));addGap(section,8);
+  section.addView(btn("Histórico",false,()->a.showHistory()),lp(105,44));addGap(section,8);
   section.addView(btn("Opções",false,()->options()),lp(88,44));
   libraryInner.addView(section,lp(-1,-2));
   LinearLayout search=row();
@@ -231,8 +232,8 @@ class PianoScreens {
   controls.addView(text("MODO",10,muted,true),lp(40,-1));
   String[] modes={"Espera","Contínuo","Demonstração"};
   for(int i=0;i<3;i++){final int idx=i;modeButtons[i]=compact(modes[i],false,()->{
-    a.stopPlayback();a.mode=idx;android.util.Log.i("PianoLivreUI","mode="+idx);
-    if(idx==0)a.prepareWaiting();updateSelections();a.saveSession();
+    a.stopPlayback();a.finishStudyWindow();a.mode=idx;android.util.Log.i("PianoLivreUI","mode="+idx);
+    if(idx==0)a.prepareWaiting();updateSelections();a.saveSession();a.beginStudyWindow();
   });LinearLayout.LayoutParams p=lp(i==2?112:82,34);p.rightMargin=d(4);controls.addView(modeButtons[i],p);}
   modeButtons[0].setOnLongClickListener(v->{a.showChordSettings();return true;});
   addGap(controls,13);controls.addView(text("MÃOS",10,muted,true),lp(40,-1));
@@ -373,16 +374,17 @@ class PianoScreens {
  }
  void showFree(){
   if(a.score==null)return;
-  a.stopPlayback();
+  a.stopPlayback();a.finishStudyWindow();
   if(a.scoreView!=null&&a.scoreView.showKeyboard)setKeyboardOpen(false);
   header.setVisibility(View.GONE);library.setVisibility(View.GONE);studio.setVisibility(View.GONE);
   freeRoot.setVisibility(View.VISIBLE);
   freeTitle.setText((a.currentName==null?a.score.title:a.currentName)+" · Partitura Livre");
   freeNotation.loadScore(a.score,0,true);
+  a.beginStudyWindow();
   android.util.Log.i("PianoLivreUI","free_open");
  }
  void showHome(){
-  a.stopPlayback();
+  a.stopPlayback();a.finishStudyWindow();
   if(a.scoreView!=null&&a.scoreView.showKeyboard)setKeyboardOpen(false);
   header.setVisibility(View.VISIBLE);
   freeRoot.setVisibility(View.GONE);
@@ -404,7 +406,7 @@ class PianoScreens {
    virtualKeys.invalidate();
   }
   if(notation!=null)notation.postDelayed(()->notation.resizeToFit(),180);
-  modeNote=null;updateSelections();
+  modeNote=null;updateSelections();a.beginStudyWindow();
  }
  void displayScore(Score score,double beat){
   editingLoop=false;updateSelections();

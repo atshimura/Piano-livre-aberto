@@ -49,3 +49,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [33 — Perfis com identidade estável](33-PERFIS-ESTAVEIS.md).
 
 - [34 — Biblioteca local, busca e organização](34-BIBLIOTECA-LOCAL.md).
+
+- [35 — Histórico e metas locais](35-HISTORICO-E-METAS.md)

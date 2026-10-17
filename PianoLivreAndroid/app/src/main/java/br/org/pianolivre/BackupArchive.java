@@ -130,6 +130,10 @@ public final class BackupArchive {
    if(!(item.getValue() instanceof String))throw new IOException("Biblioteca inválida");
    try{LibraryStore.decode((String)item.getValue());}catch(IllegalArgumentException ex){throw new IOException("Biblioteca inválida",ex);}
   }
+  for(Map.Entry<String,Object> item:result.entrySet())if(item.getKey().matches("user_\\d+_history")){
+   if(!(item.getValue() instanceof String))throw new IOException("Histórico inválido");
+   try{StudyHistory.decode((String)item.getValue());}catch(IllegalArgumentException ex){throw new IOException("Histórico inválido",ex);}
+  }
   Object profileRecords=result.get("profiles_v2");
   if(profileRecords!=null){
    if(!(profileRecords instanceof String))throw new IOException("Perfis v2 inválidos");
