@@ -82,6 +82,8 @@ ok(runs.filter(b=>b.level===2).length===2,
  "secondary grouped beam and backward hook coexist");
 ok(beams.every(n=>Number.isFinite(n._beamTip)),
  "each beamed note stem has an exact beam attachment");
+close(runs.find(g=>g.level===1)._x0, bx(beams[0].at)+7.5,
+ "beam begins at the physical stem, not the center of the notehead");
 const tile1=new Node("svg"),tile2=new Node("svg");
 ok(T.drawScoreBeams(tile1,runs,0,1160)>=2,
  "left tile must render primary and secondary beams");
