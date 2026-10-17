@@ -17,3 +17,9 @@ Para obter um APK: abra Actions → **Open Piano Livre - tests and APK** → exe
 **Evidência inicial verificada em 15/10/2026:** [build público 38801580110](https://github.com/atshimura/Piano-livre-aberto/actions/runs/38801580110) e [emulador 38801580087](https://github.com/atshimura/Piano-livre-aberto/actions/runs/38801580087), ambos success na versão com dez exercícios sintéticos. Essa evidência **não aprova automaticamente alterações posteriores**. Consulte o run do commit efetivo.
 
 Nenhum workflow público depende de checkout, artefato, chave, runner pessoal ou Actions do repositório privado. A CI não testa diretamente o Yamaha P-45 nem instalação física no Realme/Lenovo. Atualização da antiga 0.9.9 privada é outra linha de compatibilidade e não deve ser reivindicada para o pacote público com appId distinto.
+
+## Consolidação da beta 0.9.31
+
+Main exige Secrets de assinatura permanente e o certificado público registrado; uma chave faltante/divergente impede distribuição. PRs não recebem esses Secrets. Artefatos incluem APK/metadados/certificado por 30 dias. Após mudança de versão na main, publicação de pré-release durável aguarda build e emulador aprovados no mesmo commit. Seis testes sem rede exercitam as barreiras dessa publicação.
+
+Emulador desliga Wi-Fi/dados, compila a base pública fixa 0.9.25, instala-a com dados sintéticos e atualiza para o APK atual. UPGRADE_SELFTEST_PASS verifica persistência. A chave desse ensaio é debug descartável do runner; assinatura permanente é verificada no build confiável separado. Confira o run atual, sem presumir sucesso a partir desta descrição.

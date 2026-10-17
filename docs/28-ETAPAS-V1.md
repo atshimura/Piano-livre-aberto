@@ -8,8 +8,8 @@ Plano aprovado nas instruções do Projeto em 16/10/2026. Acompanhamento: [issue
 | 2 | Aprimoramento do motor musical e da fidelidade MusicXML | Fixtures musicais, comparação Java/JS e limitações explícitas | Escopo técnico concluído; limites no documento 30 |
 | 3 | Aperfeiçoamento dos modos de aprendizagem, reconhecimento MIDI e teclado guia | Regressões dos modos, novos ataques, extras, calibração, pedal e duas mãos | Escopo técnico concluído; aceite físico em #11 |
 | 4 | Biblioteca, perfis, histórico e progresso de estudos | Busca/organização e progresso local compatíveis com retomada e backup | Escopo técnico concluído no PR #24; aceite físico em #11 |
-| 5 | Importação MIDI, compatibilidade musical e preservação de dados | Importação documentada, entradas adversariais e recuperação sem perda | Em desenvolvimento |
-| 6 | Consolidação, testes e preparação da versão 1.0 | Matriz de aceite, APKs assinados, instalação/atualização/backup e testes reais | Pendente |
+| 5 | Importação MIDI, compatibilidade musical e preservação de dados | Importação documentada, entradas adversariais e recuperação sem perda | Escopo técnico concluído nos PRs #25–#28; limitações explícitas |
+| 6 | Consolidação, testes e preparação da versão 1.0 | Matriz de aceite, APKs assinados, instalação/atualização/backup e testes reais | Em desenvolvimento; PR #29 e hardware pendente |
 
 Cada etapa terá entregas incrementais em branches e PRs; não representa promessa de conclusão em uma única sessão. Avançar nas tarefas independentes enquanto aguardam testes físicos, sem transformar pendência de hardware em aprovação. Nunca alterar o histórico privado, expor segredos ou introduzir servidores, telemetria ou serviços pagos.
 
