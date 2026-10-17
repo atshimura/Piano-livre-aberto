@@ -72,3 +72,4 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 
 - [45 — Laboratório Musical: escopo aprovado, primeira entrega e continuidade](45-LABORATORIO-ESCOPO-E-CONTINUIDADE.md)
 - [46 — Biblioteca em grade compacta](46-BIBLIOTECA-GRADE-COMPACTA.md)
+- [47 — Nome da nota ao tocar na partitura](47-NOME-DA-NOTA-TOQUE.md)
