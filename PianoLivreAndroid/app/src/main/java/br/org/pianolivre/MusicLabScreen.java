@@ -24,19 +24,21 @@ final class MusicLabScreen extends LinearLayout {
  private boolean recordingSequence=false;
  private boolean learn=false,assembling=false,practicing=false;
  private int presetIndex=0;
- private static final class Preset {
-  final String name,explanation;final int[] notes;
-  Preset(String name,String explanation,int... notes){
-   this.name=name;this.explanation=explanation;this.notes=notes;
-  }
+ private final List<MusicLabCatalog.Entry> fullCatalog=MusicLabCatalog.all();
+ private final List<MusicLabCatalog.Entry> visibleCatalog=new ArrayList<>();
+ private Spinner choices;
+ private MusicLabCatalog.Entry currentEntry(){return visibleCatalog.isEmpty()?null:
+   visibleCatalog.get(Math.max(0,Math.min(presetIndex,visibleCatalog.size()-1)));}
+ private void filterCatalog(String text){
+  MusicLabCatalog.Entry prior=currentEntry();
+  visibleCatalog.clear();visibleCatalog.addAll(MusicLabCatalog.filter(fullCatalog,text));
+  ArrayList<String> names=new ArrayList<>();for(MusicLabCatalog.Entry e:visibleCatalog)names.add(e.kind+" · "+e.title);
+  if(names.isEmpty())names.add("Nenhum item encontrado");
+  choices.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,names));
+  presetIndex=prior!=null?visibleCatalog.indexOf(prior):-1;
+  if(presetIndex<0)presetIndex=0;
+  choices.setSelection(presetIndex);practicing=false;refresh();
  }
- private static final Preset[] PRESETS={
-  new Preset("Lá menor · Am","Tríade menor · fundamental, terça menor e quinta justa",57,60,64),
-  new Preset("Dó maior · C","Tríade maior · fundamental, terça maior e quinta justa",60,64,67),
-  new Preset("Fá maior · F","Tríade maior · fundamental, terça maior e quinta justa",53,57,60),
-  new Preset("Sol com sétima · G7","Acorde dominante com sétima menor",55,59,62,65),
-  new Preset("Ré menor · Dm","Tríade menor",50,53,57)
- };
  private int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
  private TextView label(String str,int size,boolean bold){
   TextView t=new TextView(activity);t.setText(str);t.setTextSize(size);t.setTextColor(0xff1B304D);
@@ -86,10 +88,17 @@ final class MusicLabScreen extends LinearLayout {
   sequenceTools.addView(sequenceStatus,new LinearLayout.LayoutParams(0,-2,1));
   learner=new LinearLayout(activity);learner.setOrientation(VERTICAL);
   item(body,learner,-1,-2);
-  Spinner choices=new Spinner(activity);
-  ArrayList<String> entries=new ArrayList<>();for(Preset p:PRESETS)entries.add(p.name);
-  choices.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,entries));
+  EditText search=new EditText(activity);search.setSingleLine(true);
+  search.setTextSize(12);search.setHint("Buscar nota, intervalo, acorde, escala ou arpejo");
+  item(learner,search,-1,40);
+  choices=new Spinner(activity);
   item(learner,choices,-1,39);
+  search.addTextChangedListener(new android.text.TextWatcher(){
+   public void beforeTextChanged(CharSequence s,int start,int count,int after){}
+   public void onTextChanged(CharSequence s,int start,int before,int count){filterCatalog(s.toString());}
+   public void afterTextChanged(android.text.Editable e){}
+  });
+  filterCatalog("");
   choices.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
    public void onNothingSelected(AdapterView<?> parent){}
    public void onItemSelected(AdapterView<?> parent,View view,int index,long id){
@@ -129,7 +138,7 @@ final class MusicLabScreen extends LinearLayout {
   item(keyboardOptions,button("Limpar",()->keyboard.clear()),75,36);
   TextView caveat=label("Entrada USB-MIDI ou teclado virtual. Sem som sintetizado pelo teclado virtual. " +
    "Escalas e arpejos exigem uma sequência completa de uma oitava, iniciada e concluída pelo usuário. " +
-   "Reconhecimento livre de sequências monofônicas completas disponível; catálogo amplo, registro e ritmo permanecem em desenvolvimento.",11,false);
+   "Catálogo pesquisável offline disponível; prática de escalas e arpejos confere alturas, não sequência temporal. Ritmo, registro e dedilhado ainda pendentes.",11,false);
   caveat.setPadding(0,dp(8),0,0);item(body,caveat,-1,-2);
   setLearn(false);setAssembling(false);
  }
@@ -146,8 +155,8 @@ final class MusicLabScreen extends LinearLayout {
   learner.setVisibility(learn?VISIBLE:GONE);
   sequenceTools.setVisibility(learn?GONE:VISIBLE);sequenceButton.setText("Iniciar sequência");
   discoverButton.setEnabled(learn);learnButton.setEnabled(!learn);
-  heading.setText(learn?"Aprender · acordes":"Descobrir · o que estou tocando?");
-  description.setText(learn?"Escolha um acorde, veja as notas e pratique livremente.":
+  heading.setText(learn?"Aprender · catálogo musical":"Descobrir · o que estou tocando?");
+  description.setText(learn?"Busque notas, intervalos, acordes, escalas e arpejos. Veja as notas e pratique livremente.":
    "Toque notas no piano MIDI ou no teclado virtual; acordes completos são identificados.");
   refresh();
  }
@@ -202,25 +211,29 @@ final class MusicLabScreen extends LinearLayout {
  private void refresh(){
   if(keyboard==null)return;
   Set<Integer> held=new HashSet<>(midi);held.addAll(virtual);
-  int[] expected=learn?PRESETS[presetIndex].notes:new int[0];
+  MusicLabCatalog.Entry chosen=currentEntry();
+  int[] expected=learn&&chosen!=null?chosen.notes:new int[0];
   keyboard.setNotes(held,expected);
   rangeLabel.setText(keyboard.rangeLabel());
   if(learn){
-   Preset p=PRESETS[presetIndex];
-   readout.setText(p.name);
-   StringBuilder sb=new StringBuilder(p.explanation).append(" · Notas: ");
-   for(int i=0;i<p.notes.length;i++){
+   if(chosen==null){
+    readout.setText("Nenhum item encontrado");detail.setText("Altere a busca para selecionar um exercício.");
+    practiceResult.setText("");return;
+   }
+   readout.setText(chosen.title);
+   StringBuilder sb=new StringBuilder(chosen.description).append(" · Notas: ");
+   for(int i=0;i<chosen.notes.length;i++){
     if(i>0)sb.append(", ");
-    sb.append(MusicTheory.noteName(p.notes[i])).append(" (").append(MusicTheory.internationalName(p.notes[i])).append(")");
+    sb.append(MusicTheory.noteName(chosen.notes[i])).append(" (").append(MusicTheory.internationalName(chosen.notes[i])).append(")");
    }
    detail.setText(sb.toString());
    practiceButton.setText(practicing?"Encerrar prática":"Praticar");
    if(practicing){
     Set<Integer> desired=new HashSet<>(),actual=new HashSet<>();
-    for(int n:p.notes)desired.add(n%12);for(int n:held)actual.add(n%12);
+    for(int n:chosen.notes)desired.add(n%12);for(int n:held)actual.add(n%12);
     Set<Integer> missing=new HashSet<>(desired),extra=new HashSet<>(actual);
     missing.removeAll(actual);extra.removeAll(desired);
-    practiceResult.setText(missing.isEmpty()&&extra.isEmpty()?" ✓ Acorde completo!":
+    practiceResult.setText(missing.isEmpty()&&extra.isEmpty()?" ✓ Alturas correspondentes!":
      missing.size()+" notas faltando · "+extra.size()+" extras");
    }else practiceResult.setText("Escolha Praticar para conferir suas notas");
   }else{

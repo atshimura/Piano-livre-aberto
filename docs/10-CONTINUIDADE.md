@@ -147,3 +147,7 @@ Função `inferConventionalBeams` introduz agrupamento conservador por compasso/
 ## Retomada 0.9.43 — reconhecimento livre
 
 `MusicPatternTracker` analisa sufixos monofônicos completos sem início/fim manual. Documento 52, PR empilhado `feat/laboratorio-reconhecimento-livre`. Validar Actions na HEAD correta após integrar PRs dependentes. Próximos passos: catálogo pesquisável de notas, acordes, escalas e arpejos, demonstração/ritmo offline e histórico por perfil. Hardware pendente #11.
+
+## Retomada 0.9.44 — catálogo do Laboratório
+
+Busca e referência offline das categorias musicais de `MusicLabCatalog` na branch `feat/laboratorio-catalogo-consulta`, documento 53. Integrar apenas após PRs-base e respectivos checks e emulador. Próximas tarefas: demonstração MIDI offline sincronizada, prática sequencial, metrônomo e progresso local. Não declarar dedilhado/ritmo implementados ainda.
