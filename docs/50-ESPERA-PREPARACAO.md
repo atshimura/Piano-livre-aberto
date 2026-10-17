@@ -14,3 +14,6 @@ O botão inferior mostra **Iniciar** quando o modo Espera ainda não está armad
 
 ## Limites
 Preparação é efeito visual local; não reproduz áudio e não conta tempo como avaliação. Se alterar a tela durante a preparação, a sessão exige novo Iniciar ao retornar. O limite de 1 a 30 segundos é de configuração da interface, não tolerância de notas, acordes ou pedal.
+
+## Dependência resolvida
+O PR #39 do cursor passou pela CI de build e emulador e foi integrado à `main` em `d37fafafca71ecf40e148a6280c37269d30e0201`. Esta entrega deve ser validada novamente em PR contra `main` antes de integração própria. A preparação não altera a semântica de reconhecimento nem a janela temporal dos acordes.
