@@ -111,5 +111,41 @@ const stem=descendants(head,n=>n.tag==="line").find(x=>+x.attrs.x1===+x.attrs.x2
 ok(!!stem,"beamed head must retain its stem");
 close(+stem.attrs.y2,copy._beamTip,
  "drawn stem must actually meet interpolated global primary beam");
+
+// Inference runs only where the MusicXML omitted beams; it must respect
+// meter, gaps, chord simultaneity and independent voices.
+function written(at,dur,voice="1",options={}){
+ return n(at,voice,"C",Object.assign({type:"eighth",dur,_localBeat:at,_meterBeats:4,_meterUnit:4,sourcePart:0},options));
+}
+const eightNotes=Array.from({length:8},(_,i)=>written(i*.5,.5));
+T.inferConventionalBeams(eightNotes);
+ok(eightNotes.filter(x=>x.beam.some(b=>b.level===1&&b.v==="begin")).length===4,"4/4 has four beat groups, never a beam across a quarter");
+ok(eightNotes.filter(x=>x.beam.some(b=>b.level===1&&b.v==="end")).length===4,"every inferred 4/4 beam closes within beat");
+const compound=Array.from({length:6},(_,i)=>written(i*.5,.5,"1",{_meterBeats:6,_meterUnit:8}));
+T.inferConventionalBeams(compound);
+ok(compound.filter(x=>x.beam.some(b=>b.level===1&&b.v==="begin")).length===2,"6/8 beamed as two groups of three eighths");
+const voiceA=[written(0,.5,"1"),written(.5,.5,"1")],
+ voiceB=[written(0,.5,"2"),written(.5,.5,"2")];
+T.inferConventionalBeams(voiceA.concat(voiceB));
+ok(voiceA[0].beam[0].v==="begin"&&voiceB[0].beam[0].v==="begin","voices never combined");
+const gap=[written(0,.5),written(.75,.25)];
+T.inferConventionalBeams(gap);
+ok(gap.every(e=>e.beam.length===0),"a rest or rhythmic gap breaks inference");
+const explicit=[written(0,.5,"1",{beam:[{level:1,v:"begin"}]}),written(.5,.5,"1",{beam:[{level:1,v:"end"}]})];
+T.inferConventionalBeams(explicit);
+ok(explicit[0].beam.length===1&&explicit[1].beam.length===1,"explicit MusicXML beam marks preserved verbatim");
+const sixteen=[written(0,.25,"1",{type:"16th"}),written(.25,.25,"1",{type:"16th"}),written(.5,.5)];
+T.inferConventionalBeams(sixteen);
+ok(sixteen[0].beam.length===2&&sixteen[1].beam.length===2&&sixteen[2].beam.length===1,"two 16ths get secondary level");
+const simultaneous=[written(0,.5),written(0,.5),written(.5,.5)];
+T.inferConventionalBeams(simultaneous);
+ok(simultaneous[1]._inferredChordBeamed===true,"chord noteheads must not gain independent beams");
+ok(simultaneous[0].beam.length===1&&simultaneous[2].beam.length===1,"chord count does not double rhythmic onsets");
+const crossing=[written(.75,.5),written(1.25,.5)];
+T.inferConventionalBeams(crossing);
+ok(crossing.every(x=>x.beam.length===0),"cross-beat sustained notes cannot be connected");
+// Performance order and durations are never modified by engraving.
+ok(eightNotes.every((n,i)=>n.at===i*.5&&n.dur===.5),"inference preserves the musical clock");
+
 console.log("PASS NotationAdvancedTest "+checks+
  " assertions: nested 3:5 tuplets, four-voice collisions and multi-level beams across tiles");

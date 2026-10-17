@@ -100,7 +100,7 @@ function xmlTimeMap(xml) {
      if(!chord)last=cursor;
      var staff=splitHands?pi+1:num(node,"staff",pi===0?1:2);
      var voice=value(node,"voice","1");
-     var mark={at:beat,dur:dur,staff:staff,voice:voice,measure:mi,sourcePart:pi,xmlOrder:ci,grace:grace,
+     var mark={at:beat,dur:dur,_localBeat:beat,_meterBeats:cfg.beats,_meterUnit:cfg.unit,staff:staff,voice:voice,measure:mi,sourcePart:pi,xmlOrder:ci,grace:grace,
        velocity:80,dynamicsOverride:+att(node,"dynamics","NaN"),
        graceSlash:grace&&att(direct(node,"grace"),"slash","no")==="yes",
        rest:rest,beam:children(node,"beam").map(function(b){return {level:+att(b,"number","1"),v:b.textContent.trim()};}),
@@ -411,7 +411,7 @@ function drawNote(parent,n,x){
        stemTop=Number.isFinite(n._beamTip)?n._beamTip:y+(up?-38:38);
   line(g,stemX,y,stemX,stemTop,col,1.7);
   n._stemX=stemX;n._stemY=stemTop;n._stemUp=up;
-  var beamAttached=n.grace?!!n._graceBeamed:n.beam.some(function(b){return b.level===1&&(b.v==="begin"||b.v==="continue"||b.v==="end");});
+  var beamAttached=n.grace?!!n._graceBeamed:(!!n._inferredChordBeamed||n.beam.some(function(b){return b.level===1&&(b.v==="begin"||b.v==="continue"||b.v==="end");}));
   // Unbeamed eighth/sixteenth grace notes still need printed flags.
   if(!beamAttached&&duration<0.75){
    var path=up?("M"+stemX+" "+stemTop+" q 18 8 9 24"):("M"+stemX+" "+stemTop+" q -18 -8 -9 -24");
@@ -484,7 +484,73 @@ function drawBeamGroups(parent,notes,xp){
   commit();
  });
 }
-/** Assemble MusicXML beaming once for the complete timeline, not per tile.
+/** Conservative conventional beams for MusicXML without <beam>. Never touch
+ * explicit marks, cross a rest/gap/voice/measure or ignore compound meter.
+ * This changes only the view model: imported source and performed beats stay intact.
+ */
+function inferConventionalBeams(notes){
+ var byVoice={};
+ notes.forEach(function(n){
+  if(n.grace)return; // Engraved grace groups have their own explicit logic.
+  var k=(n.sourcePart||0)+":"+n.staff+":"+n.voice+":"+n.measure;
+  (byVoice[k]||(byVoice[k]=[])).push(n);
+ });
+ Object.keys(byVoice).forEach(function(k){
+  var ordered=byVoice[k].sort(function(a,b){return a.at-b.at||(a.xmlOrder||0)-(b.xmlOrder||0);});
+  var events=[];
+  ordered.forEach(function(n){
+   var previous=events[events.length-1];
+   if(previous&&Math.abs(previous.at-n.at)<1e-8){
+    previous.chord.push(n);
+   }else events.push({at:n.at,n:n,chord:[n]});
+  });
+  var run=[];
+  function complete(){
+   if(run.length>=2){
+    run.forEach(function(e,i){
+     e.n.beam.push({level:1,v:i===0?"begin":i===run.length-1?"end":"continue"});
+     e.chord.slice(1).forEach(function(n){n._inferredChordBeamed=true;});
+    });
+    // Level 2 for sixteenths; isolated subdivisions receive a hooked beam.
+    var secondary=[];
+    function secondaryCommit(){
+     if(!secondary.length)return;
+     if(secondary.length>=2){
+      secondary.forEach(function(e,i){e.n.beam.push({level:2,v:i===0?"begin":i===secondary.length-1?"end":"continue"});});
+     }else{
+      var e=secondary[0],idx=run.indexOf(e);
+      e.n.beam.push({level:2,v:idx===0?"forward hook":"backward hook"});
+     }
+     secondary=[];
+    }
+    run.forEach(function(e){
+     if(writtenDuration(e.n)<=.25+1e-8)secondary.push(e);
+     else secondaryCommit();
+    });
+    secondaryCommit();
+   }
+   run=[];
+  }
+  var previous=null,prevGroup=-1;
+  events.forEach(function(e){
+   var n=e.n,den=+n._meterUnit||4,num=+n._meterBeats||4;
+   // 6/8, 9/8, 12/8 group by dotted quarters, others by notated beats.
+   var length=den===8&&num>3&&num%3===0?1.5:4/den;
+   var local=Number.isFinite(n._localBeat)?n._localBeat:n.at;
+   var group=Math.floor((local+1e-8)/length);
+   var valid=e.chord.every(function(x){return !(x.beam||[]).length;}) &&
+    Number.isFinite(n.dur)&&n.dur>0&&writtenDuration(n)<.9999&&
+    local+n.dur<= (group+1)*length+1e-7;
+   var adjacent=previous&&Math.abs(previous.n.at+previous.n.dur-n.at)<1e-7
+     &&group===prevGroup;
+   if(!valid||(!adjacent&&run.length))complete();
+   if(valid)run.push(e);
+   previous=valid?e:null;prevGroup=valid?group:-1;
+  });
+  complete();
+ });
+}
+\n/** Assemble MusicXML beaming once for the complete timeline, not per tile.
  * Return continuous level-1 beams, additional levels and standalone hooks.
  * Data remain keyed by staff/voice so a lower-voice beam never joins upper.
  */
@@ -1095,6 +1161,7 @@ function render(xml,container,viewport,startBeat){
  // Small consecutive SVG tiles keep the entire piece continuous without
  // oversized textures and preserve the shared exact musical-time coordinate.
  var allSpanners=collectSpanners(plan.notes);
+ inferConventionalBeams(plan.notes);
  var allBeams=collectBeamGroups(plan.notes,layout.x);
  var tileWidth=1160,tiles=Math.ceil(layout.width/tileWidth),tileNodes=[];
  for(var tile=0;tile<tiles;tile++){
@@ -1327,7 +1394,7 @@ var exported={parse:xmlTimeMap,buildLayout:buildLayout,render:render,sync:sync,r
   drawSlurs:drawSlurs,drawNote:drawNote,drawRest:drawRest,
   arrangeVoices:arrangeVoices,collectSpanners:collectSpanners,
   bezierPiece:bezierPiece,drawScoreSpanners:drawScoreSpanners,
-  collectBeamGroups:collectBeamGroups,drawScoreBeams:drawScoreBeams}};
+  inferConventionalBeams:inferConventionalBeams,collectBeamGroups:collectBeamGroups,drawScoreBeams:drawScoreBeams}};
 global.TemporalNotation=exported;
 if(typeof module!=="undefined"&&module.exports)module.exports=exported;
 })(typeof window!=="undefined"?window:this);
