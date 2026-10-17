@@ -78,6 +78,17 @@ public final class BackupArchiveSelfTest {
    try{BackupArchive.summary(unsafe);}catch(Exception ex){rejected=true;}
    ok(rejected,"path traversal rejected");
 
+   for(String key:new String[]{"user_0_mode","user_0_keyboard","user_0_position"}){
+    JSONObject wrong=new JSONObject(original.toString());wrong.getJSONObject("prefs").put(key,new JSONObject().put("type","string").put("value","errado"));
+    rejected=false;try{BackupArchive.restore(prefs,root,wrong);}catch(Exception ex){rejected=true;}
+    ok(rejected&&prefs.getInt("user_0_mode",-1)==2&&Arrays.equals(read(note),bytes("<music>teste</music>")),"wrong session type rejected before mutation: "+key);
+   }
+   JSONObject nan=new JSONObject(original.toString());nan.getJSONObject("prefs").put("user_0_tempo",new JSONObject().put("type","long").put("value",String.valueOf(Double.doubleToLongBits(Double.NaN))));
+   rejected=false;try{BackupArchive.restore(prefs,root,nan);}catch(Exception ex){rejected=true;}
+   ok(rejected&&prefs.getInt("user_0_mode",-1)==2,"nonfinite tempo rejected before mutation");
+   JSONObject paths=new JSONObject(original.toString());paths.getJSONObject("prefs").put("user_0_file",new JSONObject().put("type","string").put("value","/data/user/0/br.org.pianolivre/files/imported/partitura.xml"));
+   BackupArchive.restore(prefs,root,paths);
+   ok(prefs.getString("user_0_file","").equals("imported/partitura.xml")&&SessionFiles.resolve(root,prefs.getString("user_0_file","")).equals(note.getAbsolutePath()),"portable path restored into current package, original package untouched");
    JSONObject v1=new JSONObject().put("version",1);
    v1.put("prefs",new JSONObject().put("profiles","[\"Usuário 1\"]")
     .put("user_0_mode",2).put("user_0_position",position));

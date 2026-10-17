@@ -7,8 +7,8 @@ Plano aprovado nas instruções do Projeto em 16/10/2026. Acompanhamento: [issue
 | 1 | Estabilização, desempenho e fluidez da partitura | Regressões de movimento, pausa, seek, loop e resize; custo por frame reduzido e diagnóstico reproduzível | Escopo técnico concluído; aceite físico em #11 |
 | 2 | Aprimoramento do motor musical e da fidelidade MusicXML | Fixtures musicais, comparação Java/JS e limitações explícitas | Escopo técnico concluído; limites no documento 30 |
 | 3 | Aperfeiçoamento dos modos de aprendizagem, reconhecimento MIDI e teclado guia | Regressões dos modos, novos ataques, extras, calibração, pedal e duas mãos | Escopo técnico concluído; aceite físico em #11 |
-| 4 | Biblioteca, perfis, histórico e progresso de estudos | Busca/organização e progresso local compatíveis com retomada e backup | Em desenvolvimento |
-| 5 | Importação MIDI, compatibilidade musical e preservação de dados | Importação documentada, entradas adversariais e recuperação sem perda | Pendente |
+| 4 | Biblioteca, perfis, histórico e progresso de estudos | Busca/organização e progresso local compatíveis com retomada e backup | Escopo técnico concluído no PR #24; aceite físico em #11 |
+| 5 | Importação MIDI, compatibilidade musical e preservação de dados | Importação documentada, entradas adversariais e recuperação sem perda | Em desenvolvimento |
 | 6 | Consolidação, testes e preparação da versão 1.0 | Matriz de aceite, APKs assinados, instalação/atualização/backup e testes reais | Pendente |
 
 Cada etapa terá entregas incrementais em branches e PRs; não representa promessa de conclusão em uma única sessão. Avançar nas tarefas independentes enquanto aguardam testes físicos, sem transformar pendência de hardware em aprovação. Nunca alterar o histórico privado, expor segredos ou introduzir servidores, telemetria ou serviços pagos.
@@ -113,3 +113,7 @@ Importação não destrutiva e limites XML/MXL preparados; documento 36. Teste l
 ## Continuação 0.9.28
 
 Importação SMF 0/1 preparada com mãos explícitas por trilha, fonte original preservada e notação aproximada documentada em 37. Testes JVM locais passaram. Confirmar CI própria, MIDIFILE_SELFTEST_PASS e PRs #24/#25 antes de integrar em sequência. Próximas tarefas: seletor no emulador, remapeamento de caminhos restaurados e compatibilidade/adversariais de backup; ainda não concluir Etapa 5 nem V1.
+
+## Continuação 0.9.29
+
+PR #24 integrado após build/emulador aprovados; Etapa 4 encerrada tecnicamente na issue #9. PRs #25/#26 em validação. Caminhos portáteis e pré-validação de tipos/profundidade JSON preparados; documento 38. Teste JVM de compatibilidade passou; confirmar CI própria e UI do seletor MIDI/histórico. Próxima tarefa: integrar sequência aprovada, tratar MusicXML incompatível explicitamente e avançar consolidação da Etapa 6 sem declarar aceite físico.

@@ -66,6 +66,21 @@ def assert_running():
 
 if __name__=="__main__":
     assert_running()
+    midi_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Trilha 1" in t for t in midi_labels) and "Mão esquerda" in midi_labels and "Ignorar esta trilha" in midi_labels, "Explicit MIDI track hand selector missing"
+    screenshot("piano-midi-import.png")
+    tap_text(["Mão esquerda"],exact=True)
+    time.sleep(1)
+    tap_text(["OK"],exact=True)
+    generated=adb("shell","run-as","br.org.pianolivre.opensource","cat","files/imported/Synthetic.musicxml")
+    assert ET.fromstring(generated).find(".//note/staff").text=="2", "Chosen MIDI hand did not reach notation"
+    source=subprocess.run(["adb","exec-out","run-as","br.org.pianolivre.opensource","cat","files/imported/Synthetic.musicxml.source.mid"],check=True,stdout=subprocess.PIPE).stdout
+    assert source.startswith(b"MThd") and len(source)==35, "Original synthetic MIDI source not preserved"
+    tap_text(["Biblioteca"])
+    # Remove only these known synthetic files in this fresh emulator installation.
+    adb("shell","run-as","br.org.pianolivre.opensource","rm","files/imported/Synthetic.musicxml","files/imported/Synthetic.musicxml.source.mid")
+    tap_text([DEFAULT_SCORE_TITLE]);tap_text(["Biblioteca"])
+    print("PASS: explicit native MIDI hand selector, generated left staff and preserved source",flush=True)
     screenshot("piano-screen.png")
     home=dump()
     names=[n.attrib.get("text","") for n in home.iter("node")]
@@ -95,6 +110,14 @@ if __name__=="__main__":
     assert any("Conecte primeiro" in text for text in options), "Calibration must require actual MIDI input"
     tap_text(["OK"])
     print("PASS: calibration is discoverable, uncalibrated by default, physical MIDI required",flush=True)
+    tap_text(["Histórico"],exact=True)
+    history_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Tempo na tela de estudo" in t for t in history_labels), "Native history totals missing"
+    tap_text(["Períodos"],exact=True)
+    history_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Leitura livre" in t for t in history_labels), "Free-reading period missing"
+    tap_text(["Fechar"],exact=True)
+    print("PASS: native history totals and free-reading periods",flush=True)
     # Native profile UI: create, avatar and confirmed deletion, with stable identity.
     tap_text(["+"],exact=True)
     fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]

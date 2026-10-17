@@ -15,7 +15,7 @@ final class LocalProfiles {
  LocalProfiles(SharedPreferences prefs){this.prefs=prefs;}
  static List<Profile> decode(String json){
   try{
-   JSONArray array=new JSONArray(json);List<Profile> out=new ArrayList<>();Set<Integer> ids=new HashSet<>();
+   JsonLimits.check(json,64*1024,16);JSONArray array=new JSONArray(json);List<Profile> out=new ArrayList<>();Set<Integer> ids=new HashSet<>();
    if(array.length()<1||array.length()>20)throw new IllegalArgumentException("Quantidade inválida de perfis");
    for(int i=0;i<array.length();i++){
     JSONObject item=array.getJSONObject(i);Object raw=item.get("id");

@@ -51,7 +51,11 @@ final class HistorySelfTest {
      for(int i=0;i<rows.length();i++){int mode=rows.getJSONObject(i).getInt("mode");if(mode==3)free=true;else study=true;}
      check(study&&free&&!a.studyClock.active(),"Activity boundaries record study/free and close on library");
      Log.i("PianoLivreHistory","HISTORY_ACTIVITY_SELFTEST_PASS assertions="+checks);
-    }catch(JSONException ex){throw new IllegalStateException(ex);}
+     if(a.getIntent().getBooleanExtra("midi_import_ui_selftest",false)){
+      MidiFileImport.Result midi=MidiFileImport.read(new ByteArrayInputStream(MidiFileSelfTest.sample()));
+      a.chooseMidiHands(midi,"Synthetic.MID",midi.noteTracks(),0,new HashMap<>());
+     }
+    }catch(Exception ex){throw new IllegalStateException(ex);}
    },30);
   },30);
  }

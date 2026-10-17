@@ -126,7 +126,7 @@ public class MainActivity extends Activity {
  void chooseScore(){screens.showHome();}
  void loadScore(String path,boolean reset){loadScore(path,reset,false);}
  void openFreeScore(String path){loadScore(path,true,true);}
- void loadScore(String path,boolean reset,boolean free){stopPlayback();finishStudyWindow();writtenRepeats.reset();try(InputStream input=path.startsWith("scores/")?getAssets().open(path):new FileInputStream(path)){score=Score.read(input,path);currentFile=path;currentName=score.title;
+ void loadScore(String path,boolean reset,boolean free){stopPlayback();finishStudyWindow();writtenRepeats.reset();try{path=SessionFiles.resolve(getFilesDir(),path);}catch(IllegalArgumentException ex){message(ex.getMessage());return;}try(InputStream input=path.startsWith("scores/")?getAssets().open(path):new FileInputStream(path)){score=Score.read(input,path);currentFile=path;currentName=score.title;
   route=PerformanceRoute.build(score);
   routeCursor=route.supported()?new PerformanceRoute.Cursor(route):null;
   routeHasMarkers=false;
@@ -220,7 +220,7 @@ public class MainActivity extends Activity {
    }else if(request==RESTORE){
     JSONObject backup;
     try(InputStream in=getContentResolver().openInputStream(uri)){
-     backup=new JSONObject(new String(BackupArchive.readLimited(in,95*1024*1024),StandardCharsets.UTF_8));
+     String text=new String(BackupArchive.readLimited(in,95*1024*1024),StandardCharsets.UTF_8);JsonLimits.check(text,95*1024*1024,64);backup=new JSONObject(text);
     }
     String summary=BackupArchive.summary(backup);
     new AlertDialog.Builder(this).setTitle("Substituir dados locais?")
@@ -824,7 +824,7 @@ public class MainActivity extends Activity {
  void saveSession(){
   if(prefs==null||score==null)return;
   String key="user_"+user+"_";
-  prefs.edit().putString(key+"file",currentFile)
+  prefs.edit().putString(key+"file",SessionFiles.portable(currentFile))
    .putLong(key+"position",Double.doubleToLongBits(position))
    .putInt(key+"hand",currentHand).putInt(key+"mode",mode)
    .putLong(key+"tempo",Double.doubleToLongBits(tempoFactor))

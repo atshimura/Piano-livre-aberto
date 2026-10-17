@@ -19,7 +19,7 @@ final class StudyHistory {
  static JSONObject decode(String text){
   try{
    if(text.length()>128*1024)throw new IllegalArgumentException("O histórico está cheio. Faça backup antes de limpá-lo para continuar registrando.");
-   JSONObject root=new JSONObject(text);if(integer(root,"version",1)!=1)throw new IllegalArgumentException("Versão de histórico incompatível");
+   JsonLimits.check(text,128*1024,16);JSONObject root=new JSONObject(text);if(integer(root,"version",1)!=1)throw new IllegalArgumentException("Versão de histórico incompatível");
    JSONArray records=root.getJSONArray("records");JSONObject pieces=root.getJSONObject("pieces");
    if(records.length()>2000||pieces.length()>2000)throw new IllegalArgumentException("Histórico grande demais");
    for(int i=0;i<records.length();i++){

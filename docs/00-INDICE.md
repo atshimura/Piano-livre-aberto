@@ -55,3 +55,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [36 — Importação não destrutiva](36-IMPORTACAO-SEGURA.md)
 
 - [37 — Importação MIDI](37-IMPORTACAO-MIDI.md)
+
+- [38 — Compatibilidade de dados](38-COMPATIBILIDADE-DE-DADOS.md)
