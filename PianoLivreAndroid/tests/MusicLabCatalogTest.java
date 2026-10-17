@@ -38,6 +38,9 @@ public class MusicLabCatalogTest{
    ok(all.stream().filter(e->e.kind.equals("Acorde")&&e.title.startsWith(rootLabel+" · ")&&e.description.contains("Estrutura cromática")).count()==42);
    ok(all.stream().anyMatch(e->e.kind.equals("Arpejo")&&e.title.contains("diminuto com sétima diminuta")&&contains(e.notes,tonic,tonic+3,tonic+6,tonic+9,tonic+12)));
    ok(all.stream().anyMatch(e->e.kind.equals("Acorde")&&e.title.startsWith(rootLabel+" · ")&&e.title.contains("menor com sétima maior")&&contains(e.notes,tonic,tonic+3,tonic+7,tonic+11)));
+   ok(all.stream().anyMatch(e->e.kind.equals("Escala")&&e.title.startsWith(rootLabel+" · ")&&e.title.contains("maior")&&contains(e.notes,tonic,tonic+2,tonic+4,tonic+5,tonic+7,tonic+9,tonic+11,tonic+12)));
+   ok(all.stream().anyMatch(e->e.kind.equals("Escala")&&e.title.startsWith(rootLabel+" · ")&&e.title.contains("cromática")&&e.notes.length==13&&e.notes[12]==tonic+12));
+   ok(all.stream().anyMatch(e->e.kind.equals("Acorde")&&e.title.startsWith(rootLabel+" · ")&&e.title.contains("maior · 1ª inversão")&&contains(e.notes,tonic+4,tonic+7,tonic+12)));
   }
   ok(MusicLabCatalog.filter(all,"DO4").stream().anyMatch(e->e.kind.equals("Nota")&&e.notes[0]==60));
   ok(MusicLabCatalog.filter(all,"C#4").stream().anyMatch(e->e.kind.equals("Nota")&&e.notes[0]==61));
