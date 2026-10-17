@@ -9,6 +9,10 @@ public class MusicLabPlaybackPlanTest{
   ok(melody.get(1).atMillis==540&&!melody.get(1).on);
   ok(melody.get(2).atMillis==600&&melody.get(2).on);
   ok(MusicLabPlaybackPlan.endMillis(melody)==1740);
+  List<MusicLabPlaybackPlan.Event> unison=MusicLabPlaybackPlan.build(new int[]{60,60},"Intervalo",100);
+  ok(unison.size()==2);
+  ok(unison.get(0).on&&unison.get(0).note==60);
+  ok(!unison.get(1).on&&unison.get(1).note==60);
   List<MusicLabPlaybackPlan.Event> chord=MusicLabPlaybackPlan.build(new int[]{60,64,67},"Acorde",100);
   ok(chord.size()==6);ok(chord.stream().filter(e->e.on).allMatch(e->e.atMillis==0));
   ok(chord.stream().filter(e->!e.on).allMatch(e->e.atMillis==600));
