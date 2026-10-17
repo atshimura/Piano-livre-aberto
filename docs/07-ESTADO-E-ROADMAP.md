@@ -24,3 +24,7 @@ Migração entre pacotes é manual por backup validado; não há leitura do paco
 Etapas 1–5 encerradas no escopo técnico automatizado (#6/#8/#7/#9/#10), com limites explícitos. Etapa 6 em consolidação (#11), incluindo PRs #29–#33 e aceite físico pendente. Fonte de versão: gradle.properties. Estado atual de merges/Actions/Releases: issues #4/#11 e GitHub; não repetir entregas já integradas.
 
 GPL-3.0-only para o código próprio; direitos das músicas e de terceiros separados em seus manifestos. Sem login, servidor, telemetria ou serviços pagos. Continuar correções independentes quando houver evidência, mantendo dados offline e decisões pedagógicas.
+
+## Nova linha funcional: Laboratório Musical
+
+Produto aprovou nova área Descobrir/Aprender com teclado virtual+USB-MIDI, pauta sempre visível, catálogo amplo, práticas, demonstração, ritmo opcional e histórico por perfil, além de melhorias em Espera, biblioteca, notação e toque na cabeça da nota. A implementação ocorre incrementalmente na [issue #34](https://github.com/atshimura/Piano-livre-aberto/issues/34) e no [documento 45](45-LABORATORIO-ESCOPO-E-CONTINUIDADE.md). A primeira entrega inicia a análise offline de acordes e uma interface experimental, **sem equivaler ao Laboratório completo ou a aceite físico**. O texto anterior sobre V1 permanece válido e #11 continua pendente.
