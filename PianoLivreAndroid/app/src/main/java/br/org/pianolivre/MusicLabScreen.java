@@ -55,7 +55,7 @@ final class MusicLabScreen extends LinearLayout {
   TextView title=label("Laboratório Musical",17,true);title.setPadding(dp(12),0,0,0);
   top.addView(title,new LinearLayout.LayoutParams(0,-2,1));
   ScrollView scroll=new ScrollView(activity);scroll.setFillViewport(true);
-  item(this,scroll,-1,-1);
+  addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
   LinearLayout body=new LinearLayout(activity);body.setPadding(dp(14),dp(7),dp(14),dp(18));
   body.setOrientation(VERTICAL);scroll.addView(body);
   LinearLayout actions=new LinearLayout(activity);actions.setGravity(Gravity.CENTER_VERTICAL);
@@ -227,6 +227,7 @@ final class MusicLabKeyboard extends View {
  }
  @Override public boolean onTouchEvent(android.view.MotionEvent event){
   int action=event.getActionMasked(),idx=event.getActionIndex(),id=event.getPointerId(idx);
+  if(action==MotionEvent.ACTION_DOWN&&getParent()!=null)getParent().requestDisallowInterceptTouchEvent(true);
   if(action==MotionEvent.ACTION_DOWN||action==MotionEvent.ACTION_POINTER_DOWN){
    int note=noteAt(event.getX(idx),event.getY(idx));
    if(note>=0){
