@@ -130,7 +130,7 @@ if __name__=="__main__":
     # Guided scale/arpeggio starts from zero and resets on filter/mode changes.
     search_fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
     assert search_fields, "Laboratory search missing for guided practice"
-    coords=[int(x) for x in re.findall(r"\\d+",search_fields[0].attrib["bounds"])]
+    coords=[int(x) for x in re.findall(r"\d+",search_fields[0].attrib["bounds"])]
     adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
     adb("shell","input","text","escala")
     dismiss_keyboard()
@@ -139,7 +139,7 @@ if __name__=="__main__":
     tap_text(["Praticar"],exact=True,scroll=True)
     assert any("Próxima:" in n.attrib.get("text","") and "0/" in n.attrib.get("text","") for n in dump().iter("node")), "Sequence did not start at first note"
     search_fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    coords=[int(x) for x in re.findall(r"\\d+",search_fields[0].attrib["bounds"])]
+    coords=[int(x) for x in re.findall(r"\d+",search_fields[0].attrib["bounds"])]
     adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
     adb("shell","input","keyevent","123")
     for _ in range(6):adb("shell","input","keyevent","67")
