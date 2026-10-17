@@ -123,3 +123,7 @@ A issue [#34](https://github.com/atshimura/Piano-livre-aberto/issues/34) concent
 ## Entrega incremental: biblioteca compacta
 
 Branch de trabalho: `feat/biblioteca-grade-compacta`; documento [46](46-BIBLIOTECA-GRADE-COMPACTA.md). A branch foi iniciada da primeira entrega do Laboratório (`feat/laboratorio-musical-primeira-entrega`) e só deve entrar na `main` quando a base anterior (#35) estiver integrada com todos os checks aprovados. Alterações propostas: layout, responsividade e densidade da grade; dados, backups, MIDI e arquivos importados não se alteram. Confirmar o SHA exato do novo PR e seus Actions antes do merge; seguir com #34 e #11. Versão proposta 0.9.37-open-beta/code46.
+
+## Entrega incremental: etiqueta de notas sobre a partitura
+
+Branch `feat/partitura-nome-nota-ao-toque`; consultar [47](47-NOME-DA-NOTA-TOQUE.md). Branch criada a partir da segunda entrega, já integrada no PR #36; abrir PR para `main`, conferir no **mesmo SHA** todos os testes e o emulador antes de integrar. A funcionalidade é apenas do estudo temporal, lê a grafia real das notas e cifra explícita MusicXML quando disponível, não inventa acorde. Próximas tarefas seguem em #34 e #11. Versão proposta `0.9.38-open-beta` / code47.
