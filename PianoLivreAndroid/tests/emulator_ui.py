@@ -91,13 +91,13 @@ if __name__=="__main__":
     lab_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Descobrir" in t for t in lab_labels), "Discovery screen not shown"
     assert any("Toque uma nota ou acorde" in t for t in lab_labels), "MusicLab initial state missing"
-    tap_text(["Montar"],exact=True)
     tap_text(["Aprender / Praticar"],exact=True)
     learn_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Lá menor" in t for t in learn_labels), "Learn chord example missing"
     tap_text(["Praticar"],exact=True)
     practice_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("notas faltando" in t for t in practice_labels), "Free chord practice feedback missing"
+    tap_text(["Montar"],exact=True,scroll=True)
     screenshot("piano-laboratorio.png")
     tap_text(["Biblioteca"])
     assert_running()
