@@ -22,6 +22,10 @@ function frame(ms){now=ms;const work=[...frames.values()];frames.clear();for(con
 function track(){return container.children[0].children.find(n=>n.id==='timeline-track');}
 function offset(){return Number(track().children[0].style.transform.match(/translate3d\(([-\d.]+)/)[1]);}
 const layout=T.render(xml,container,viewport,0);frame(0);assert.strictEqual(frames.size,0,'initial paused render sleeps');const original=track(),root=container.children[0];
+const guide=root.children.find(n=>n.id==='fixed-temporal-cursor');
+assert(guide,'fixed guide must be created');
+assert.strictEqual(guide.style.cssText.includes('left:'+layout.cursorX+'px'),true,'guide uses separate cursor coordinate');
+assert(layout.origin>layout.cursorX,'first notehead must stay to the right of guide');
 const note=root.querySelectorAll('.musical-event')[0].querySelector('ellipse');assert.strictEqual(note.attrs.stroke,'#008E78');
 const reads=dimensions,searches=queries;T.sync(0,120,true);frame(250);frame(500);
 assert.strictEqual(dimensions,reads,'no geometry reads per frame');assert.strictEqual(queries,searches,'indexed highlighting');assert.strictEqual(note.attrs.stroke,'#1E3049');assert(Math.abs(offset()+layout.pixelsPerBeat)<.01);
