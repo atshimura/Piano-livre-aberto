@@ -105,3 +105,7 @@ Busca sem distinção de acentos/caixa, filtros, favoritos e coleções por perf
 ## Continuação 0.9.26
 
 Histórico e metas por perfil implementados; detalhes e limites no documento 35. Confirmar StudyClockTest, HISTORY_SELFTEST_PASS e HISTORY_ACTIVITY_SELFTEST_PASS no commit do PR antes de integrar. Próxima ação independente: auditoria e correções de importação não destrutiva da Etapa 5; não encerrar ao concluir uma versão.
+
+## Continuação 0.9.27
+
+Importação não destrutiva e limites XML/MXL preparados; documento 36. Teste local ScoreImportTest passou. Confirmar CI e emulador do próprio commit, integrar após PR #24. Próxima tarefa: importação MIDI limitada com fonte preservada e escolha explícita de mãos; não encerrar por concluir esta versão.

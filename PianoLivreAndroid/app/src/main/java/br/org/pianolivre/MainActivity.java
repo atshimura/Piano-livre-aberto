@@ -173,20 +173,16 @@ public class MainActivity extends Activity {
   Uri uri=data.getData();if(uri==null)return;
   try {
    if(request==IMPORT){
-    File dir=new File(getFilesDir(),"imported");dir.mkdirs();
-    String name="Importada_"+System.currentTimeMillis()+".mxl";
-    String display="";
+    String display="Importada.musicxml";
     try(android.database.Cursor cursor=getContentResolver().query(uri,null,null,null,null)){
      if(cursor!=null&&cursor.moveToFirst()){
       int idx=cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
-      if(idx>=0)display=cursor.getString(idx);
+      if(idx>=0&&cursor.getString(idx)!=null)display=cursor.getString(idx);
      }
     }
-    if(display.endsWith(".xml")||display.endsWith(".musicxml"))name=name.replace(".mxl",".xml");
-    else if(display.endsWith(".mxl"))name=display.replaceAll("[^a-zA-Z0-9._-]","_");
-    File dest=new File(dir,name);
-    try(InputStream in=getContentResolver().openInputStream(uri);FileOutputStream out=new FileOutputStream(dest)){
-     out.write(all(in));
+    File dest;
+    try(InputStream in=getContentResolver().openInputStream(uri)){
+     dest=ScoreImport.save(new File(getFilesDir(),"imported"),display,in);
     }
     loadScore(dest.getAbsolutePath(),true);
    }else if(request==EXPORT){
