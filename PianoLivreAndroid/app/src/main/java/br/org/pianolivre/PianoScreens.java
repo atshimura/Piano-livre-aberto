@@ -81,28 +81,28 @@ class PianoScreens {
  }
  void buildLibrary(){
   library=new ScrollView(a);library.setFillViewport(true);
-  libraryInner=column();libraryInner.setPadding(d(22),d(18),d(22),d(18));library.addView(libraryInner);
-  LinearLayout hero=row();hero.setPadding(d(23),d(16),d(23),d(16));hero.setBackground(bg(0xffE1ECFB,18,0xffC9DDF6));
+  libraryInner=column();libraryInner.setPadding(d(12),d(9),d(12),d(12));library.addView(libraryInner);
+  LinearLayout hero=row();hero.setPadding(d(13),d(8),d(13),d(8));hero.setBackground(bg(0xffE1ECFB,18,0xffC9DDF6));
   LinearLayout heroText=column();hero.addView(heroText,new LinearLayout.LayoutParams(0,-2,1));
-  TextView eyebrow=text("SEU ESPAÇO DE ESTUDO",11,teal,true);heroText.addView(eyebrow,lp(-1,22));
-  heroText.addView(text("Escolha uma música e comece a tocar",21,ink,true),lp(-1,-2));
+  TextView eyebrow=text("SEU ESPAÇO DE ESTUDO",11,teal,true);heroText.addView(eyebrow,lp(-1,18));
+  heroText.addView(text("Escolha uma música e comece a tocar",17,ink,true),lp(-1,-2));
   TextView sub=text("Biblioteca local · estudo individual · sem internet",12,muted,false);
-  sub.setPadding(0,d(5),0,0);heroText.addView(sub,lp(-1,-2));
-  hero.addView(btn("▶  Começar pela Ode à Alegria",true,()->a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true)),lp(245,50));
+  sub.setPadding(0,d(2),0,0);heroText.addView(sub,lp(-1,-2));
+  hero.addView(btn("▶  Começar pela Ode à Alegria",true,()->a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true)),lp(212,39));
   libraryInner.addView(hero,lp(-1,-2));
-  LinearLayout section=row();section.setPadding(0,d(19),0,d(11));
-  section.addView(text("BIBLIOTECA MUSICAL",15,ink,true),new LinearLayout.LayoutParams(0,d(28),1));
-  section.addView(btn("Importar partitura",false,()->a.importScore()),lp(165,44));addGap(section,8);
-  section.addView(btn("Laboratório",true,()->showLab()),lp(134,44));addGap(section,8);
-  section.addView(btn("Histórico",false,()->a.showHistory()),lp(105,44));addGap(section,8);
-  section.addView(btn("Opções",false,()->options()),lp(88,44));
+  LinearLayout section=row();section.setPadding(0,d(8),0,d(5));
+  section.addView(text("BIBLIOTECA MUSICAL",14,ink,true),new LinearLayout.LayoutParams(0,d(28),1));
+  section.addView(btn("Importar partitura",false,()->a.importScore()),lp(147,36));addGap(section,8);
+  section.addView(btn("Laboratório",true,()->showLab()),lp(118,36));addGap(section,8);
+  section.addView(btn("Histórico",false,()->a.showHistory()),lp(87,36));addGap(section,8);
+  section.addView(btn("Opções",false,()->options()),lp(73,36));
   libraryInner.addView(section,lp(-1,-2));
   LinearLayout search=row();
   librarySearch=new EditText(a);librarySearch.setSingleLine(true);librarySearch.setTextSize(14);librarySearch.setHint("Buscar título ou arquivo");
-  search.addView(librarySearch,new LinearLayout.LayoutParams(0,d(44),1));addGap(search,8);
-  libraryFilter=new Spinner(a);search.addView(libraryFilter,lp(180,44));addGap(search,8);
-  search.addView(btn("Coleções",false,()->manageCollections()),lp(105,44));libraryInner.addView(search,lp(-1,48));
-  libraryResult=text("",11,muted,false);libraryInner.addView(libraryResult,lp(-1,25));
+  search.addView(librarySearch,new LinearLayout.LayoutParams(0,d(36),1));addGap(search,8);
+  libraryFilter=new Spinner(a);search.addView(libraryFilter,lp(145,36));addGap(search,8);
+  search.addView(btn("Coleções",false,()->manageCollections()),lp(97,36));libraryInner.addView(search,lp(-1,40));
+  libraryResult=text("",11,muted,false);libraryInner.addView(libraryResult,lp(-1,20));
   librarySearch.addTextChangedListener(new android.text.TextWatcher(){
    public void beforeTextChanged(CharSequence t,int start,int count,int after){}
    public void onTextChanged(CharSequence t,int start,int before,int count){}
@@ -110,7 +110,7 @@ class PianoScreens {
   });
   grid=column();libraryInner.addView(grid,lp(-1,-2));
   TextView footer=text("DICA  ·  Em um emulador, teste a biblioteca e o modo contínuo. Para reconhecer suas teclas, conecte o Yamaha P-45 a um Android compatível com USB-MIDI.",12,muted,false);
-  footer.setPadding(d(6),d(15),0,d(4));libraryInner.addView(footer,lp(-1,-2));
+  footer.setPadding(d(6),d(9),0,d(4));libraryInner.addView(footer,lp(-1,-2));
  }
  void refreshLibrary(){
   if(grid==null)return;grid.removeAllViews();
@@ -118,7 +118,7 @@ class PianoScreens {
   try{metadata=new LibraryStore(a.prefs,a.user).snapshot();refreshLibraryFilters(metadata);}
   catch(RuntimeException ex){grid.addView(text("Não foi possível ler a organização da biblioteca. Os dados não foram alterados.",13,ink,false),lp(-1,-2));return;}
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
-  int columns=widthDp>=1020?4:widthDp>=670?3:2;
+  int columns=widthDp>=1160?5:widthDp>=870?4:widthDp>=600?3:2;
   java.util.ArrayList<String[]> entries=new java.util.ArrayList<>();
   for(int i=0;i<a.catalog.length();i++){
    JSONObject j=a.catalog.optJSONObject(i);if(j!=null)entries.add(new String[]{j.optString("name"),"scores/"+j.optString("file")});
@@ -136,24 +136,24 @@ class PianoScreens {
   libraryResult.setText(entries.size()+" de "+total+" partituras");
   if(entries.isEmpty())grid.addView(text("Nenhuma partitura neste filtro. Ajuste a busca ou escolha Todas.",13,muted,false),lp(-1,44));
   for(int i=0;i<entries.size();i+=columns){
-   LinearLayout row=row();grid.addView(row,lp(-1,120));
+   LinearLayout row=row();grid.addView(row,lp(-1,99));
    for(int k=0;k<columns;k++){
-    if(i+k>=entries.size()){View spacer=new View(a);row.addView(spacer,new LinearLayout.LayoutParams(0,d(101),1));continue;}
+    if(i+k>=entries.size()){View spacer=new View(a);row.addView(spacer,new LinearLayout.LayoutParams(0,d(92),1));continue;}
     String[] entry=entries.get(i+k);
-    LinearLayout card=column();card.setGravity(Gravity.CENTER_VERTICAL);card.setPadding(d(16),d(7),d(12),d(7));
+    LinearLayout card=column();card.setGravity(Gravity.CENTER_VERTICAL);card.setPadding(d(9),d(4),d(8),d(4));
     card.setBackground(bg(Color.WHITE,16,0xffDBE5F0));card.setElevation(d(2));
-    LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,d(115),1);p.setMargins(d(3),d(2),d(10),d(4));row.addView(card,p);
-    TextView name=text("♫  "+entry[0],14,ink,true);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);
+    LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,d(92),1);p.setMargins(d(3),d(2),d(7),d(3));row.addView(card,p);
+    TextView name=text("♫  "+entry[0],13,ink,true);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);
     LinearLayout title=row();title.addView(name,new LinearLayout.LayoutParams(0,-2,1));
     final String scoreKey=LibrarySearch.key(entry[1]);
     Button favorite=compact(metadata.favorites.contains(scoreKey)?"★":"☆",false,()->libraryAction(()->new LibraryStore(a.prefs,a.user).toggleFavorite(scoreKey)));
     favorite.setContentDescription((metadata.favorites.contains(scoreKey)?"Remover favorito ":"Favoritar ")+entry[0]);
-    title.addView(favorite,lp(34,30));card.addView(title,lp(-1,34));
+    title.addView(favorite,lp(32,29));card.addView(title,lp(-1,31));
     LinearLayout actions=row();
-    TextView study=text("Estudar  ›",12,blue,true);actions.addView(study,new LinearLayout.LayoutParams(0,d(38),1));
-    TextView free=text("Partitura livre  ↗",11,teal,true);free.setGravity(Gravity.CENTER_VERTICAL);
+    TextView study=text("Estudar  ›",11,blue,true);actions.addView(study,new LinearLayout.LayoutParams(0,d(34),1));
+    TextView free=text("Partitura livre  ↗",10,teal,true);free.setGravity(Gravity.CENTER_VERTICAL);
     free.setContentDescription("Partitura Livre "+entry[0]);
-    actions.addView(free,lp(119,38));
+    actions.addView(free,lp(102,34));
     free.setOnClickListener(v->a.openFreeScore(entry[1]));
     card.addView(actions,lp(-1,-2));
     card.setContentDescription("Estudar "+entry[0]);card.setClickable(true);card.setFocusable(true);
