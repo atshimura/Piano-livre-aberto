@@ -106,6 +106,7 @@ jobs:
           npm install --prefix build/musicxml-audit --no-save --silent '@xmldom/xmldom@0.9.8'
           node tests/musicxml_visual_crosscheck.js
           node tests/TemporalRenderingTest.js
+          node tests/NoteIdentificationTest.js
           javac -cp build/score-tests -d build/score-tests tests/MusicXmlFixtureInventory.java
           node tests/MusicXmlFixturesTest.js
           javac -cp build/score-tests -d build/score-tests tests/MusicXmlDynamicsTest.java
