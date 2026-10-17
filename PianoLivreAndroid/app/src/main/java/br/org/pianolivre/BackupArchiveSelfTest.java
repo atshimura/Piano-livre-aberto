@@ -117,6 +117,23 @@ public final class BackupArchiveSelfTest {
    ok(new File(imported,"legacy.xml").exists(),"crash restored files");
    ok(!new File(imported,"incorrect.xml").exists(),"crash removed partial files");
    ok(!new File(root,"restore-pending.json").exists(),"crash removed marker");
+   String[] legacyNames={"_etude..mxl","-file.mxl",".hidden.mxl",new String(new char[240]).replace('\0','_')+".mxl"};
+   for(String name:legacyNames)write(new File(imported,name),bytes("synthetic legacy filename"));
+   prefs.edit().putString("user_0_file","/data/data/previous.package/files/imported/"+legacyNames[0]).commit();
+   JSONObject named=BackupArchive.create(prefs,root);BackupArchive.restore(prefs,root,named);
+   for(String name:legacyNames)ok(Arrays.equals(read(new File(imported,name)),bytes("synthetic legacy filename")),"legacy flat filename backed up byte-for-byte");
+   ok(prefs.getString("user_0_file","").equals("imported/"+legacyNames[0]),"legacy filename session remapped without renaming source");
+   LibraryStore metadata=new LibraryStore(prefs,0);metadata.toggleFavorite("imported/"+legacyNames[3]);
+   ok(metadata.snapshot().favorites.contains("imported/"+legacyNames[3]),"long legacy filename favorite preserved");
+   File invalidName=new File(imported,"unsafe name.xml");write(invalidName,bytes("synthetic invalid name"));
+   final int[] opened={0};rejected=false;
+   try{BackupArchive.export(prefs,root,()->{opened[0]++;return new ByteArrayOutputStream();});}catch(Exception ex){rejected=true;}
+   finally{invalidName.delete();}
+   ok(rejected&&opened[0]==0,"archive preparation failure never opens/truncates external backup destination");
+   final boolean[] closed={false};ByteArrayOutputStream destination=new ByteArrayOutputStream(){@Override public void close()throws IOException{closed[0]=true;super.close();}};
+   BackupArchive.export(prefs,root,()->destination);
+   JSONObject exported=new JSONObject(new String(destination.toByteArray(),StandardCharsets.UTF_8));
+   ok(closed[0]&&exported.getInt("version")==2&&exported.getJSONArray("imported").length()==5,"prepared archive written completely and destination closed");
    return count;
   }finally{
    rm(root);prefs.edit().clear().commit();

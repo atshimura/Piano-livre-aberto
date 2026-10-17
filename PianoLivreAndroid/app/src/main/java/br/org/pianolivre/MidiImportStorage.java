@@ -6,6 +6,7 @@ public final class MidiImportStorage {
  public static File save(File directory,String name,MidiFileImport.Result midi,Map<Integer,Integer> hands)throws Exception{
   String title=name.replaceFirst("(?i)\\.midi?$","");
   byte[] xml=MidiFileImport.musicXml(midi,hands,title);
+  ScoreImport.capacity(directory,2,(long)xml.length+midi.original.length);
   File score=ScoreImport.save(directory,title+".musicxml",new ByteArrayInputStream(xml));
   File source=new File(directory,score.getName()+".source.mid");boolean reserved=false,complete=false;
   try{

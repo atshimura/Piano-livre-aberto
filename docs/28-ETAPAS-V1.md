@@ -133,3 +133,7 @@ Correção adicional de desempenho do guia: árvore de intervalos evita varrer n
 ## Continuação 0.9.33
 
 Codificação XML corrigida e aplicada ao container antes da validação: UTF-8/UTF-16/Latin-1 sem substituição silenciosa; fonte original preservada. Documento 42, ScoreImportTest local passou; exigir XML_INPUT_SELFTEST_PASS Android e CI própria antes de integrar. Confirmar sequência #29/#30 e assinatura/pré-releases. Próxima ação concreta: resolver qualquer falha da atualização no emulador e concluir consolidação técnica, mantendo aceite físico pendente em #11.
+
+## Continuação 0.9.34
+
+Compatibilidade de nomes de importações antigas corrigida sem renomear arquivos. Documento 43; SessionCompatibilityTest local passou 20 verificações; exigir backup Android ampliado. Pré-release durável 0.9.31 confirmada, atualização offline no emulador aprovada; PR #30 integrado e #31 aprovado. Próxima ação: integrar sequência aprovada, verificar APK/assinatura/pré-release do merge e registrar em #11/#4; hardware permanece pendente e V1 não concluída.

@@ -35,6 +35,12 @@ public class MidiFileImportTest {
    File first=MidiImportStorage.save(dir.toFile(),"Arquivo.MID",r,hands),second=MidiImportStorage.save(dir.toFile(),"Arquivo.MID",r,hands);
    check(!first.equals(second)&&Arrays.equals(java.nio.file.Files.readAllBytes(new File(dir.toFile(),first.getName()+".source.mid").toPath()),bytes),"stored sources preserved with duplicate names");
   }finally{for(File f:dir.toFile().listFiles())f.delete();java.nio.file.Files.delete(dir);}
+  java.nio.file.Path capacityDir=java.nio.file.Files.createTempDirectory("midi-capacity-");
+  try{
+   for(int i=0;i<199;i++)java.nio.file.Files.write(capacityDir.resolve("old_"+i+".xml"),new byte[]{1});
+   boolean full=false;try{MidiImportStorage.save(capacityDir.toFile(),"Arquivo.MID",r,hands);}catch(IOException ex){full=true;}
+   check(full&&capacityDir.toFile().list().length==199,"MIDI reserves backup capacity for both source and notation before writing either");
+  }finally{for(File f:capacityDir.toFile().listFiles())f.delete();java.nio.file.Files.delete(capacityDir);}
   System.out.println("PASS MidiFileImportTest "+checks+" assertions: explicit hands, ticks, velocities, ties, tempo, source and malformed inputs");
  }
 }

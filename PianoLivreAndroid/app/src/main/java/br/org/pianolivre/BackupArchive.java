@@ -18,9 +18,9 @@ import java.util.*;
 public final class BackupArchive {
  private BackupArchive(){}
  public static final int VERSION=2;
- private static final int MAX_ITEMS=200;
+ private static final int MAX_ITEMS=ScoreImport.MAX_FILES;
  private static final int MAX_FILE=16*1024*1024;
- private static final int MAX_TOTAL=64*1024*1024;
+ private static final int MAX_TOTAL=ScoreImport.MAX_TOTAL;
  private static final int MAX_JSON=95*1024*1024;
  private static final String STAGE="imported.restore-stage";
  private static final String ROLLBACK="imported.restore-rollback";
@@ -47,10 +47,9 @@ public final class BackupArchive {
   return out.toString();
  }
  private static boolean safeName(String name){
-  return name!=null&&name.length()>0&&name.length()<=120&&
+  return name!=null&&name.length()>0&&name.length()<=255&&
     !name.equals(".")&&!name.equals("..")&&
-    name.matches("[A-Za-z0-9][A-Za-z0-9._-]*")&&
-    !name.contains("..");
+    name.matches("[A-Za-z0-9._-]+");
  }
  private static void validPrefsKey(String key)throws IOException{
   if(key==null||key.isEmpty()||key.length()>180||key.indexOf('\u0000')>=0)
@@ -185,6 +184,15 @@ public final class BackupArchive {
   if(backup.toString().getBytes(StandardCharsets.UTF_8).length>MAX_JSON)
    throw new IOException("Backup excede limite de exportação");
   return backup;
+ }
+ /** Open the external destination only after the whole archive is prepared. */
+ public interface Destination {OutputStream open()throws IOException;}
+ public static void export(SharedPreferences prefs,File root,Destination destination)throws Exception{
+  byte[] payload=create(prefs,root).toString().getBytes(StandardCharsets.UTF_8);
+  try(OutputStream out=destination.open()){
+   if(out==null)throw new IOException("Não foi possível abrir o arquivo de backup");
+   out.write(payload);out.flush();
+  }
  }
  private static final class Validated {
   final Map<String,Object> prefs;

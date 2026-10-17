@@ -65,3 +65,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [41 — Desempenho do guia com notas longas](41-DESEMPENHO-GUIA-SUSTENTADO.md)
 
 - [42 — Codificação MusicXML](42-CODIFICACAO-MUSICXML.md)
+
+- [43 — Nomes legados](43-NOMES-LEGADOS.md)

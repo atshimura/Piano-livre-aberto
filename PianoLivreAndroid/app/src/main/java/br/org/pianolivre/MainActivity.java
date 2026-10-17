@@ -221,11 +221,7 @@ public class MainActivity extends Activity {
      loadScore(dest.getAbsolutePath(),true);
     }
    }else if(request==EXPORT){
-    try(OutputStream out=getContentResolver().openOutputStream(uri)){
-     if(out==null)throw new IOException("Não foi possível abrir o arquivo de backup");
-     byte[] backup=makeBackup().toString().getBytes(StandardCharsets.UTF_8);
-     out.write(backup);out.flush();
-    }
+    BackupArchive.export(prefs,getFilesDir(),()->getContentResolver().openOutputStream(uri));
     message("Backup exportado com verificação de integridade");
    }else if(request==RESTORE){
     JSONObject backup;
