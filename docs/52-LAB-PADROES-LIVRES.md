@@ -7,3 +7,6 @@ O analisador `MusicPatternTracker` limita armazenamento às 13 últimas alturas 
 
 ## Testes e limites
 `MusicPatternTrackerTest` valida escalas, arpejos, direção, limites de memória, entradas incorretas e rejeição de simultaneidade. Conferir regressões Android/emulador do SHA do PR. Instrumentos reais continuam sem teste #11. Reconhecimento livre continua conservador: legato com dedos sobrepostos, sequências incompletas, mudanças de direção, modos inferidos sem contexto, improvisação e ritmos não são classificados automaticamente. Nunca inventar tonalidade.
+
+## Dependência concluída
+O agrupamento de vigas (#41) foi integrado à `main` em `f62586b61e1a77690812b4e438d85dc84c954062` com CI e emulador aprovados. Revalidar este PR no próprio head após retarget para `main`.
