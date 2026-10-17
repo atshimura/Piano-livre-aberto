@@ -138,12 +138,21 @@ jobs:
             exit 1
           fi
       - name: Compile versioned debug APK directly from Gradle properties
-        run: gradle --no-daemon :app:assembleDebug --stacktrace
+        run: gradle --no-daemon :app:assembleDebug :app:assembleRelease --stacktrace
 
-      - name: Verify independent public debug APK
+      - name: Verify isolated non-debuggable distribution APK
         run: |
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk | tee build/public-signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | tee build/public-apk-metadata.txt
+          for variant in debug release; do
+            "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "app/build/outputs/apk/$variant/app-$variant.apk" | tee "build/public-$variant-signature.txt"
+            "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "app/build/outputs/apk/$variant/app-$variant.apk" | tee "build/public-$variant-apk-metadata.txt"
+          done
+          cp build/public-release-signature.txt build/public-signature.txt
+          cp build/public-release-apk-metadata.txt build/public-apk-metadata.txt
+          grep 'Signer #1 certificate SHA-256 digest:' build/public-debug-signature.txt > build/debug-cert.txt
+          grep 'Signer #1 certificate SHA-256 digest:' build/public-release-signature.txt > build/release-cert.txt
+          cmp build/debug-cert.txt build/release-cert.txt
+          if grep -q '^application-debuggable' build/public-apk-metadata.txt; then echo '::error::Distribution APK must not be debuggable'; exit 1; fi
+          if grep -q 'android.permission.INTERNET' build/public-apk-metadata.txt; then echo '::error::Offline app must not request INTERNET'; exit 1; fi
           version_code=$(sed -n 's/^pianolivre.beta.versionCode=//p' gradle.properties)
           version_name=$(sed -n 's/^pianolivre.beta.versionName=//p' gradle.properties)
           test -n "$version_code" && test -n "$version_name"
@@ -152,14 +161,14 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" != 'pull_request' ] && [ "$GITHUB_REF" = 'refs/heads/main' ]; then
             grep -Fq 'Signer #1 certificate SHA-256 digest: 7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290' build/public-signature.txt
           fi
-          echo PUBLIC_DEBUG_APK_PASS
-      - name: Upload isolated public debug APK
+          echo PUBLIC_DISTRIBUTION_APK_PASS
+      - name: Upload signed public distribution APK
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && success()
         uses: actions/upload-artifact@v4
         with:
-          name: PianoLivre-open-debug-apk
+          name: PianoLivre-open-release-apk
           path: |
-            PianoLivreAndroid/app/build/outputs/apk/debug/app-debug.apk
+            PianoLivreAndroid/app/build/outputs/apk/release/app-release.apk
             PianoLivreAndroid/build/public-signature.txt
             PianoLivreAndroid/build/public-apk-metadata.txt
           if-no-files-found: error
@@ -180,7 +189,7 @@ jobs:
           fetch-depth: 2
       - uses: actions/download-artifact@v4
         with:
-          name: PianoLivre-open-debug-apk
+          name: PianoLivre-open-release-apk
           path: dist
       - name: Publish durable beta after exact-commit checks
         env:

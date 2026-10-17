@@ -22,3 +22,7 @@ O build produz um APK de desenvolvimento. Uma Release estável requer preparaç�
 ## Consolidação 0.9.31
 
 Build da main exige os Secrets permanentes e o certificado SHA-256 7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290; falha antes de distribuir se faltar/divergir. Publicação de pré-release depende de build/emulador aprovados no mesmo commit. O ensaio de atualização do emulador usa chave debug descartável própria, separada dos Secrets. Não equivale a aceite físico. Detalhes no documento 40.
+
+## APK de distribuição desde 0.9.35
+
+Main compila e compara certificados de debug/release, exige a fingerprint permanente e distribui a variante release sem depuração, pacote br.org.pianolivre.opensource. O artefato é PianoLivre-open-release-apk. PR/emulador usam chave descartável; ensaio debug→release preserva dados sintéticos e bloqueia run-as. Ver documento 44 e CI efetiva, sem extrapolar para hardware.

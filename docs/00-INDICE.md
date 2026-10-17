@@ -67,3 +67,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [42 — Codificação MusicXML](42-CODIFICACAO-MUSICXML.md)
 
 - [43 — Nomes legados](43-NOMES-LEGADOS.md)
+
+- [44 — APK de distribuição](44-APK-DISTRIBUICAO.md)
