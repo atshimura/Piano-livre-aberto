@@ -127,6 +127,11 @@ if __name__=="__main__":
     dismiss_keyboard()
     assert any("Lá menor" in n.attrib.get("text","") for n in dump().iter("node")), "Catalog reset lost five legacy exercises"
     print("PASS: Laboratory catalog filtering, empty state and practice reset",flush=True)
+    tap_text(["Demonstrar"],scroll=True)
+    assert any("Demonstração requer saída USB-MIDI" in n.attrib.get("text","") for n in dump().iter("node")), "Demo erroneously played without MIDI"
+    tap_text(["OK"],exact=True)
+    assert any("Demonstrar" in n.attrib.get("text","") for n in dump().iter("node")), "Failed demo did not remain stopped"
+    print("PASS: Laboratory demonstration unavailable without MIDI output",flush=True)
     tap_text(["Montar"],exact=True,scroll=True)
     screenshot("piano-laboratorio.png")
     tap_text(["Biblioteca"])

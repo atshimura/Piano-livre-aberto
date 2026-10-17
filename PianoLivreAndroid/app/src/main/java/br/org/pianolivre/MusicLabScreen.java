@@ -15,7 +15,10 @@ final class MusicLabScreen extends LinearLayout {
  private final MainActivity activity;
  private final TextView heading,description,readout,detail,practiceResult,rangeLabel;
  private final LinearLayout learner,sequenceTools;
- private final Button discoverButton,learnButton,touchButton,assembleButton,practiceButton,sequenceButton;
+ private final Button discoverButton,learnButton,touchButton,assembleButton,practiceButton,sequenceButton,demoButton;
+ private final CheckBox demoRepeat;
+ private final MusicLabPlaybackPlan.Session demoSession=new MusicLabPlaybackPlan.Session();
+ private int demoSpeed=100;
  private final MusicLabKeyboard keyboard;
  private final Set<Integer> midi=new HashSet<>(),virtual=new HashSet<>();
  private final ArrayList<Integer> sequenceAttacks=new ArrayList<>();
@@ -30,6 +33,7 @@ final class MusicLabScreen extends LinearLayout {
  private MusicLabCatalog.Entry currentEntry(){return visibleCatalog.isEmpty()?null:
    visibleCatalog.get(Math.max(0,Math.min(presetIndex,visibleCatalog.size()-1)));}
  private void filterCatalog(String text){
+  stopDemonstration(); // Cancels even in the silent interval between notes.
   MusicLabCatalog.Entry prior=currentEntry();
   visibleCatalog.clear();visibleCatalog.addAll(MusicLabCatalog.filter(fullCatalog,text));
   ArrayList<String> names=new ArrayList<>();for(MusicLabCatalog.Entry e:visibleCatalog)names.add(e.kind+" · "+e.title);
@@ -105,14 +109,32 @@ final class MusicLabScreen extends LinearLayout {
   choices.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
    public void onNothingSelected(AdapterView<?> parent){}
    public void onItemSelected(AdapterView<?> parent,View view,int index,long id){
-    presetIndex=index;practicing=false;refresh();
+    stopDemonstration();presetIndex=index;practicing=false;refresh();
    }
   });
   LinearLayout commands=new LinearLayout(activity);commands.setGravity(Gravity.CENTER_VERTICAL);
   item(learner,commands,-1,41);
   practiceButton=button("Praticar",()->{practicing=!practicing;refresh();});
   item(commands,practiceButton,115,37);
+  demoButton=button("▶ Demonstrar",()->toggleDemo());
+  item(commands,demoButton,125,37);
   practiceResult=label("",12,true);commands.addView(practiceResult,new LinearLayout.LayoutParams(0,-2,1));
+  LinearLayout demonstration=new LinearLayout(activity);demonstration.setGravity(Gravity.CENTER_VERTICAL);
+  item(learner,demonstration,-1,40);
+  item(demonstration,label("Velocidade:",11,false),80,-2);
+  Spinner speeds=new Spinner(activity);
+  speeds.setContentDescription("Velocidade de demonstração");
+  String[] speedNames={"50%","75%","100%","125%","150%"};
+  speeds.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,speedNames));
+  item(demonstration,speeds,97,39);speeds.setSelection(2);
+  speeds.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+   public void onNothingSelected(AdapterView<?> parent){}
+   public void onItemSelected(AdapterView<?> parent,View view,int index,long id){
+    demoSpeed=50+index*25;stopDemonstration();
+   }
+  });
+  demoRepeat=new CheckBox(activity);demoRepeat.setText("Repetir");demoRepeat.setTextSize(12);
+  item(demonstration,demoRepeat,-2,-2);
   TextView keyboardHeading=label("Pauta e teclado · verde: tocado · dourado: referência",11,false);
   keyboardHeading.setPadding(0,dp(7),0,0);item(body,keyboardHeading,-1,-2);
   keyboard=new MusicLabKeyboard(activity,notes->{
@@ -143,7 +165,8 @@ final class MusicLabScreen extends LinearLayout {
   item(keyboardOptions,button("Limpar",()->keyboard.clear()),75,36);
   TextView caveat=label("Entrada USB-MIDI ou teclado virtual. Sem som sintetizado pelo teclado virtual. " +
    "Escalas e arpejos exigem uma sequência completa de uma oitava; Iniciar/Concluir é opcional. " +
-   "Catálogo pesquisável offline; prática compara classes de altura, não sequência, ritmo, oitava ou dedilhado. Histórico do Lab pendente.",11,false);
+   "Demonstração opcional pela saída USB-MIDI, sem sintetizador no Android. Padrões de catálogo, não durações de partituras. " +
+   "Prática só compara classes de altura, sem ritmo, ordem, oitava ou dedilhado.",11,false);
   caveat.setPadding(0,dp(8),0,0);item(body,caveat,-1,-2);
   setLearn(false);setAssembling(false);
  }
@@ -151,6 +174,7 @@ final class MusicLabScreen extends LinearLayout {
   keyboard.shift(amount);rangeLabel.setText(keyboard.rangeLabel());keyboard.clear();
  }
  private void setAssembling(boolean value){
+  if(assembling!=value)stopDemonstration();
   if(assembling!=value){
    rollingPatterns.clear();
    if(!recordingSequence&&!learn)sequenceStatus.setText("Reconhecimento livre: aguardando sequência completa.");
@@ -160,6 +184,7 @@ final class MusicLabScreen extends LinearLayout {
   refresh();
  }
  private void setLearn(boolean value){
+  stopDemonstration();
   learn=value;practicing=false;recordingSequence=false;rollingPatterns.clear();
   learner.setVisibility(learn?VISIBLE:GONE);
   sequenceTools.setVisibility(learn?GONE:VISIBLE);sequenceButton.setText("Iniciar sequência");
@@ -228,9 +253,10 @@ final class MusicLabScreen extends LinearLayout {
  private void refresh(){
   if(keyboard==null)return;
   Set<Integer> held=new HashSet<>(midi);held.addAll(virtual);
+  Set<Integer> shown=new HashSet<>(held);shown.addAll(demoSession.heldNotes());
   MusicLabCatalog.Entry chosen=currentEntry();
   int[] expected=learn&&chosen!=null?chosen.notes:new int[0];
-  keyboard.setNotes(held,expected);
+  keyboard.setNotes(shown,expected);
   rangeLabel.setText(keyboard.rangeLabel());
   if(learn){
    if(chosen==null){
@@ -274,6 +300,43 @@ final class MusicLabScreen extends LinearLayout {
     }
    }
   }
+ }
+ /** Running remains true between attacks and across repeated iterations. */
+ private void toggleDemo(){
+  if(demoSession.isPlaying()){stopDemonstration();return;}
+  MusicLabCatalog.Entry item=currentEntry();
+  if(!learn||item==null)return;
+  if(activity.outputPort==null){
+   activity.message("Demonstração requer saída USB-MIDI no piano conectado; o Android não sintetiza áudio.");
+   return;
+  }
+  final List<MusicLabPlaybackPlan.Event> events;
+  try{events=MusicLabPlaybackPlan.build(item.notes,item.kind,demoSpeed);}
+  catch(IllegalArgumentException ex){activity.message(ex.getMessage());return;}
+  int generation=demoSession.start();
+  demoButton.setText("■ Parar demo");
+  scheduleDemo(events,generation);
+ }
+ private void scheduleDemo(List<MusicLabPlaybackPlan.Event> events,int generation){
+  for(MusicLabPlaybackPlan.Event event:events)activity.handler.postDelayed(()->{
+   if(!demoSession.isCurrent(generation))return;
+   if(getVisibility()!=VISIBLE||!activity.foreground||activity.outputPort==null){stopDemonstration();return;}
+   if(!demoSession.apply(generation,event))return;
+   activity.send(event.note,event.on);
+   refresh();
+  },event.atMillis);
+  activity.handler.postDelayed(()->{
+   if(!demoSession.isCurrent(generation))return;
+   if(getVisibility()!=VISIBLE||!activity.foreground||activity.outputPort==null){stopDemonstration();return;}
+   if(demoSession.shouldRepeat(generation,demoRepeat.isChecked()))scheduleDemo(events,generation);
+   else stopDemonstration();
+  },MusicLabPlaybackPlan.endMillis(events)+250);
+ }
+ void stopDemonstration(){
+  Set<Integer> held=demoSession.cancel();
+  for(int pitch:held)activity.send(pitch,false);
+  if(demoButton!=null)demoButton.setText("▶ Demonstrar");
+  refresh();
  }
  private static String alternatives(List<MusicTheory.Chord> found){
   StringBuilder b=new StringBuilder();
