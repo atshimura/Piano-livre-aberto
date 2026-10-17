@@ -166,6 +166,7 @@ public class Score {
     DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();factory.setExpandEntityReferences(false);
     String description=new String(container,java.nio.charset.StandardCharsets.UTF_8);
     if(description.contains("<!DOCTYPE")||description.contains("<!ENTITY"))throw new IOException("Container MXL com DTD não permitido");
+    preflight(container);
     NodeList roots=factory.newDocumentBuilder().parse(new ByteArrayInputStream(container)).getElementsByTagName("rootfile");
     for(int i=0;i<roots.getLength();i++){Element r=(Element)roots.item(i);if(r.getAttribute("media-type").equals("application/vnd.recordare.musicxml+xml")){target=r.getAttribute("full-path");break;}}
     if(target==null&&roots.getLength()==1)target=((Element)roots.item(0)).getAttribute("full-path");
@@ -198,19 +199,27 @@ public class Score {
   try{f.setFeature("http://xml.org/sax/features/external-general-entities",false);}catch(javax.xml.parsers.ParserConfigurationException ignored){}
   try{f.setFeature("http://xml.org/sax/features/external-parameter-entities",false);}catch(javax.xml.parsers.ParserConfigurationException ignored){}
   f.setExpandEntityReferences(false);
-  // Bound nesting and node count before constructing a DOM (including on Android).
-  javax.xml.parsers.SAXParserFactory sax=javax.xml.parsers.SAXParserFactory.newInstance();
-  sax.setNamespaceAware(false);
-  sax.newSAXParser().parse(new ByteArrayInputStream(bytes),new org.xml.sax.helpers.DefaultHandler(){
-   int depth=0,nodes=0;
-   @Override public void startElement(String uri,String local,String name,org.xml.sax.Attributes attrs)throws org.xml.sax.SAXException{
-    if(++depth>128||++nodes>200000)throw new org.xml.sax.SAXException("MusicXML complexo demais");
-   }
-   @Override public void endElement(String uri,String local,String name){depth--;}
-   @Override public org.xml.sax.InputSource resolveEntity(String publicId,String systemId)throws org.xml.sax.SAXException{throw new org.xml.sax.SAXException("Entidades externas não permitidas");}
-  });
+  preflight(bytes);
   Document doc=f.newDocumentBuilder().parse(new ByteArrayInputStream(bytes)); Score score=new Score();score.sourceXml=xml;
   Element root=doc.getDocumentElement();if(!root.getTagName().equals("score-partwise"))throw new IOException("Formato MusicXML não suportado: esperado score-partwise");score.title=text(root,"work-title",text(root,"movement-title",fileName));
+  NodeList alterations=root.getElementsByTagName("alter");
+  for(int i=0;i<alterations.getLength();i++){
+   double alteration=decimal(alterations.item(i).getTextContent(),Double.NaN);
+   if(!Double.isFinite(alteration)||alteration!=Math.rint(alteration)||Math.abs(alteration)>2)throw new IOException("Alteração microtonal ou fora de duplo acidente não suportada; fonte preservada");
+  }
+  NodeList transposes=root.getElementsByTagName("transpose");
+  for(int i=0;i<transposes.getLength();i++){
+   Element transpose=(Element)transposes.item(i);
+   for(String tag:new String[]{"chromatic","diatonic","octave-change"})if(decimal(text(transpose,tag,"0"),Double.NaN)!=0)throw new IOException("Instrumento transpositor não suportado; importe versão em som real para piano");
+   if(first(transpose,"double")!=null)throw new IOException("Transposição dobrada não suportada");
+  }
+  NodeList signatures=root.getElementsByTagName("time");
+  for(int i=0;i<signatures.getLength();i++){
+   Element time=(Element)signatures.item(i);
+   if(time.getElementsByTagName("beats").getLength()!=1||time.getElementsByTagName("beat-type").getLength()!=1
+     ||!text(time,"beats","").trim().matches("[1-9][0-9]?")||!Arrays.asList("1","2","4","8","16","32","64").contains(text(time,"beat-type","").trim()))
+    throw new IOException("Compasso aditivo, misto ou sem métrica não suportado; fonte preservada");
+  }
   NodeList parts=root.getElementsByTagName("part");double base=0;
   ArrayList<TempoChange> reportedTempos=new ArrayList<>();
   ArrayList<DynamicChange> reportedDynamics=new ArrayList<>();
@@ -327,7 +336,7 @@ public class Score {
      if(!rest){Element pitch=first(el,"pitch");if(pitch!=null){
        String step=text(pitch,"step","C");// Map note spelling to MIDI semitone offset.
        int offset=0;switch(step){case "D":offset=2;break;case "E":offset=4;break;case "F":offset=5;break;case "G":offset=7;break;case "A":offset=9;break;case "B":offset=11;break;}
-       int n=12*(number(text(pitch,"octave","4"),4)+1)+offset+number(text(pitch,"alter","0"),0);lastMidi=n;
+       int n=12*(number(text(pitch,"octave","4"),4)+1)+offset+(int)Math.rint(decimal(text(pitch,"alter","0"),0));lastMidi=n;
        int localStaff=number(text(el,"staff",pi==0?"1":"2"),1);int staff=splitHands?pi+1:localStaff;int voice=number(text(el,"voice","1"),1);
        Event ev=new Event(base+onset,dur,n,staff,voice,mi+1);ev.voiceId=text(el,"voice","1");ev.sourcePart=pi;
        double noteDynamics=decimal(el.getAttribute("dynamics"),Double.NaN);
@@ -431,6 +440,18 @@ public class Score {
   score.tempo=(int)Math.round(score.tempoAt(0));
   if(!score.playbackWarnings.isEmpty())score.repeatSections.clear();
   return score;
+ }
+ private static void preflight(byte[] bytes)throws Exception{
+  javax.xml.parsers.SAXParserFactory sax=javax.xml.parsers.SAXParserFactory.newInstance();
+  sax.setNamespaceAware(false);
+  sax.newSAXParser().parse(new ByteArrayInputStream(bytes),new org.xml.sax.helpers.DefaultHandler(){
+   int depth=0,nodes=0;
+   @Override public void startElement(String uri,String local,String name,org.xml.sax.Attributes attrs)throws org.xml.sax.SAXException{
+    if(++depth>128||++nodes>200000)throw new org.xml.sax.SAXException("MusicXML complexo demais");
+   }
+   @Override public void endElement(String uri,String local,String name){depth--;}
+   @Override public org.xml.sax.InputSource resolveEntity(String publicId,String systemId)throws org.xml.sax.SAXException{throw new org.xml.sax.SAXException("Entidades externas não permitidas");}
+  });
  }
  public static byte[] readLimited(InputStream in,int limit)throws IOException{
   if(in==null)throw new IOException("Arquivo indisponível");ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;
