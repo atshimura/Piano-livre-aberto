@@ -6,7 +6,9 @@ Validação passa a aceitar componentes ASCII simples de até 255 caracteres, in
 
 A exportação também prepara o arquivo completo antes de abrir o destino externo: falha na preparação deixa de poder truncar um backup existente. Falha durante a escrita do provedor ainda pode deixar arquivo incompleto; use destino novo e preserve outra cópia.
 
-SessionCompatibilityTest passou 20 verificações locais. BackupArchiveSelfTest acrescenta backup/restauração byte a byte de quatro nomes legados (incluindo um de 244 caracteres), retomada sem renomear e favorito longo. Testes também exigem que erro de preparação não abra o destino e que exportação válida escreva/feche o arquivo. Exigir BACKUP_SELFTEST_PASS ampliado no Android e regressões/CI da própria entrega antes de integrar. Nenhum teste físico declarado.
+Importações novas também respeitam os mesmos limites do backup (200 arquivos/64 MiB); MIDI conta o par original + notação antes de escrever qualquer arquivo. Atingir o limite rejeita somente a nova importação, sem apagar arquivos. Isso evita aceitar mais dados do que o backup consegue preservar.
+
+SessionCompatibilityTest passou 20 verificações locais. BackupArchiveSelfTest acrescenta backup/restauração byte a byte de quatro nomes legados (incluindo um de 244 caracteres), retomada sem renomear e favorito longo. ScoreImportTest e MidiFileImportTest cobrem limites e preservação do acervo ao rejeitar adições. Testes também exigem que erro de preparação não abra o destino e que exportação válida escreva/feche o arquivo. Exigir BACKUP_SELFTEST_PASS ampliado no Android e regressões/CI da própria entrega antes de integrar. Nenhum teste físico declarado.
 
 Estado confirmado: PR #29 integrado em 5bc251e4fa9ea53c5c325a25a5d6cd9617ecc36a, atualização no emulador aprovada; pré-release v0.9.31-open-beta existe com APK, certificado, metadados e SHA256SUMS. PR #30 integrado em edc504c6829e6230174276bcfad7e4e034c7032d após build 38986443966/emulador 38986444139. PR #31 passou build 38986656222/emulador 38986656236; integrar antes desta entrega.
 

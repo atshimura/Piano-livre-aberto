@@ -18,9 +18,9 @@ import java.util.*;
 public final class BackupArchive {
  private BackupArchive(){}
  public static final int VERSION=2;
- private static final int MAX_ITEMS=200;
+ private static final int MAX_ITEMS=ScoreImport.MAX_FILES;
  private static final int MAX_FILE=16*1024*1024;
- private static final int MAX_TOTAL=64*1024*1024;
+ private static final int MAX_TOTAL=ScoreImport.MAX_TOTAL;
  private static final int MAX_JSON=95*1024*1024;
  private static final String STAGE="imported.restore-stage";
  private static final String ROLLBACK="imported.restore-rollback";

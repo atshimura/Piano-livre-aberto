@@ -44,6 +44,17 @@ public class ScoreImportTest {
    reject(encodedZip.toByteArray(),"utf16-dtd-container.mxl");
    byte[] large=new byte[16*1024*1024+1];boolean limited=false;try{Score.readLimited(new ByteArrayInputStream(large),16*1024*1024);}catch(IOException ex){limited=true;}check(limited,"input bounded");
    reject(zip("score.xml"," ".repeat(16*1024*1024+1)),"bomb.mxl");
+   File capacityDir=Files.createTempDirectory("score-capacity-").toFile();
+   try{
+    for(int i=0;i<199;i++)Files.write(new File(capacityDir,"old_"+i+".xml").toPath(),new byte[]{1});
+    ScoreImport.save(capacityDir,"last.xml",new ByteArrayInputStream(xml));
+    bad=false;try{ScoreImport.save(capacityDir,"extra.xml",new ByteArrayInputStream(xml));}catch(IOException ex){bad=true;}
+    check(bad&&capacityDir.list().length==200,"accepted library remains within backup file-count capacity");
+    for(File f:capacityDir.listFiles())f.delete();
+    File largeFile=new File(capacityDir,"old.mxl");try(RandomAccessFile f=new RandomAccessFile(largeFile,"rw")){f.setLength(ScoreImport.MAX_TOTAL);}
+    bad=false;try{ScoreImport.save(capacityDir,"extra.xml",new ByteArrayInputStream(xml));}catch(IOException ex){bad=true;}
+    check(bad&&largeFile.length()==ScoreImport.MAX_TOTAL&&capacityDir.list().length==1,"capacity rejection preserves large existing source");
+   }finally{for(File f:capacityDir.listFiles())f.delete();capacityDir.delete();}
    System.out.println("PASS ScoreImportTest: non-overwrite, original bytes, invalid input, container, ambiguity, traversal, DTD, size and expansion limits");
   }finally{for(File f:dir.listFiles())f.delete();dir.delete();}
  }
