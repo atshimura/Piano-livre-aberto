@@ -24,6 +24,11 @@ public class ScoreImportTest {
    reject("<score-timewise/>".getBytes(),"timewise.xml");
    reject(zip("META-INF/container.xml","<!DOCTYPE container [<!ENTITY x 'bad'>]><container/>","score.xml",new String(xml)),"dtd.mxl");
    reject(("<score-partwise>"+"<a>".repeat(130)+"</a>".repeat(130)+"</score-partwise>").getBytes(),"deep.xml");
+   reject(zip("META-INF/container.xml","<container>"+"<a>".repeat(130)+"</a>".repeat(130)+"</container>","score.xml",new String(xml)),"deep-container.mxl");
+   reject(new String(xml).replace("<divisions>1</divisions>","<divisions>1</divisions><transpose><chromatic>2</chromatic></transpose>").getBytes(),"transpose.xml");
+   reject(new String(xml).replace("<octave>4</octave>","<alter>0.5</alter><octave>4</octave>").getBytes(),"microtone.xml");
+   reject(new String(xml).replace("<divisions>1</divisions>","<divisions>1</divisions><time><beats>3+2</beats><beat-type>8</beat-type></time>").getBytes(),"additive.xml");
+   Score decimalAlter=Score.read(new ByteArrayInputStream(new String(xml).replace("<octave>4</octave>","<alter>-1.0</alter><octave>4</octave>").getBytes()),"integer-alter.xml");check(decimalAlter.events.get(0).midi==59,"integral decimal alteration retained");
    byte[] large=new byte[16*1024*1024+1];boolean limited=false;try{Score.readLimited(new ByteArrayInputStream(large),16*1024*1024);}catch(IOException ex){limited=true;}check(limited,"input bounded");
    reject(zip("score.xml"," ".repeat(16*1024*1024+1)),"bomb.mxl");
    System.out.println("PASS ScoreImportTest: non-overwrite, original bytes, invalid input, container, ambiguity, traversal, DTD, size and expansion limits");

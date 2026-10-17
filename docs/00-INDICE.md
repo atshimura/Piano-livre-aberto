@@ -57,3 +57,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [37 — Importação MIDI](37-IMPORTACAO-MIDI.md)
 
 - [38 — Compatibilidade de dados](38-COMPATIBILIDADE-DE-DADOS.md)
+
+- [39 — Limites MusicXML](39-LIMITES-MUSICXML.md)
