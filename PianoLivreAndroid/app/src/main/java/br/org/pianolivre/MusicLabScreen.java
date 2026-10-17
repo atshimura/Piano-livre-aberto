@@ -111,10 +111,12 @@ final class MusicLabScreen extends LinearLayout {
     // manufacturing one from HashSet iteration order.
     if(newAttacks.size()==1){
      if(recordingSequence)addSequenceAttack(newAttacks.get(0));
-     else observeSpontaneous(newAttacks.get(0),notes.size()==1);
+     else observeSpontaneous(newAttacks.get(0),MusicPatternTracker.isIsolated(newAttacks.get(0),midi,notes));
     }else if(newAttacks.size()>1){
      rollingPatterns.clear();
-     if(recordingSequence)sequenceStatus.setText("Notas simultâneas: ordem indeterminada; toque uma de cada vez.");
+     sequenceStatus.setText(recordingSequence?
+      "Notas simultâneas: ordem indeterminada; toque uma de cada vez.":
+      "Notas simultâneas: reconhecimento livre reiniciado.");
     }
    }
    virtual.clear();virtual.addAll(notes);refresh();
@@ -128,7 +130,7 @@ final class MusicLabScreen extends LinearLayout {
   item(keyboardOptions,button("Oitava ▶",()->shift(12)),96,36);
   item(keyboardOptions,button("Limpar",()->keyboard.clear()),75,36);
   TextView caveat=label("Entrada USB-MIDI ou teclado virtual. Sem som sintetizado pelo teclado virtual. " +
-   "Escalas e arpejos exigem uma sequência completa de uma oitava, iniciada e concluída pelo usuário. " +
+   "Escalas e arpejos exigem uma sequência completa de uma oitava; Iniciar/Concluir é opcional. " +
    "Reconhecimento livre de sequências monofônicas completas disponível; catálogo amplo, registro e ritmo permanecem em desenvolvimento.",11,false);
   caveat.setPadding(0,dp(8),0,0);item(body,caveat,-1,-2);
   setLearn(false);setAssembling(false);
@@ -137,6 +139,10 @@ final class MusicLabScreen extends LinearLayout {
   keyboard.shift(amount);rangeLabel.setText(keyboard.rangeLabel());keyboard.clear();
  }
  private void setAssembling(boolean value){
+  if(assembling!=value){
+   rollingPatterns.clear();
+   if(!recordingSequence&&!learn)sequenceStatus.setText("Reconhecimento livre: aguardando sequência completa.");
+  }
   assembling=value;keyboard.setAssembling(value);
   touchButton.setEnabled(value);assembleButton.setEnabled(!value);
   refresh();
@@ -155,7 +161,7 @@ final class MusicLabScreen extends LinearLayout {
  void onMidiAttack(int pitch){
   if(getVisibility()!=VISIBLE||learn)return;
   if(recordingSequence)addSequenceAttack(pitch);
-  else observeSpontaneous(pitch,midi.size()==1&&midi.contains(pitch));
+  else observeSpontaneous(pitch,MusicPatternTracker.isIsolated(pitch,midi,virtual));
  }
  private void observeSpontaneous(int pitch,boolean isolated){
   List<MusicSequenceAnalyzer.Finding> findings=rollingPatterns.attack(pitch,isolated);
@@ -168,7 +174,16 @@ final class MusicLabScreen extends LinearLayout {
    sequenceStatus.setText(sb.toString());
   }else if(!isolated){
    sequenceStatus.setText("Notas sobrepostas: sequência indeterminada. Para reconhecer automaticamente, toque notas isoladas.");
+  }else{
+   // A previous finding no longer describes the just-played notes.
+   sequenceStatus.setText("Reconhecimento livre: "+rollingPatterns.size()+" ataques recentes; sem padrão completo neste momento.");
   }
+ }
+ /** A visit must not join pitches played before leaving the Laboratory. */
+ void beginObservation(){
+  recordingSequence=false;sequenceAttacks.clear();rollingPatterns.clear();
+  sequenceButton.setText("Iniciar sequência");
+  sequenceStatus.setText("Reconhecimento livre: aguardando sequência completa.");
  }
  private void addSequenceAttack(int pitch){
   if(sequenceAttacks.size()>=40){sequenceStatus.setText("Limite de 40 ataques. Toque Concluir análise.");return;}
