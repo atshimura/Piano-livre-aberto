@@ -15,7 +15,7 @@ public final class ScoreImport {
   while(base.contains(".."))base=base.replace("..","_");
   base=base.replaceAll("[.]+$", "_");
   if(!base.matches("^[A-Za-z0-9].*"))base="Importada_"+base;
-  if(base.length()>80)base=base.substring(0,80);File target=null;
+  if(base.length()>80)base=base.substring(0,80);base=base.replaceAll("[.]+$", "_");File target=null;
   for(int n=0;n<10000;n++){File candidate=new File(directory,base+(n==0?"":"_"+n)+extension);if(candidate.createNewFile()){target=candidate;break;}}
   if(target==null)throw new IOException("Não foi possível reservar um nome livre");
   boolean complete=false;
