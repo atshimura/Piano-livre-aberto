@@ -86,6 +86,23 @@ if __name__=="__main__":
     names=[n.attrib.get("text","") for n in home.iter("node")]
     assert any(DEFAULT_SCORE_TITLE in n for n in names), "Music library must be visible on launch: "+str(names[:30])
     print("PASS: library visible at startup",flush=True)
+    # Laboratory entry and its deliberately limited first Learn/Practice slice.
+    tap_text(["Laboratório"],exact=True)
+    lab_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Descobrir" in t for t in lab_labels), "Discovery screen not shown"
+    assert any("Toque uma nota ou acorde" in t for t in lab_labels), "MusicLab initial state missing"
+    tap_text(["Montar"],exact=True)
+    tap_text(["Aprender / Praticar"],exact=True)
+    learn_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Lá menor" in t for t in learn_labels), "Learn chord example missing"
+    tap_text(["Praticar"],exact=True)
+    practice_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("notas faltando" in t for t in practice_labels), "Free chord practice feedback missing"
+    screenshot("piano-laboratorio.png")
+    tap_text(["Biblioteca"])
+    assert_running()
+    assert any("BIBLIOTECA MUSICAL" in n.attrib.get("text","") for n in dump().iter("node")), "Laboratory return lost library"
+    print("PASS: Laboratory discovery, keyboard mode and guided chord practice",flush=True)
     # MIDI diagnostics must be discoverable even without a physical piano.
     tap_text(["Conecte seu piano","MIDI indisponível"])
     time.sleep(.6)
