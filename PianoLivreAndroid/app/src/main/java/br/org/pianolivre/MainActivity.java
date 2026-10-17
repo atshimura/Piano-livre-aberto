@@ -93,6 +93,11 @@ public class MainActivity extends Activity {
    try{android.util.Log.i("PianoLivreHistory","HISTORY_SELFTEST_PASS assertions="+HistorySelfTest.run(this));}
    catch(Exception ex){throw new IllegalStateException("History self-test failed",ex);}
   }
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("midifile_selftest",false)){
+   try{android.util.Log.i("PianoLivreMidiFile","MIDIFILE_SELFTEST_PASS assertions="+MidiFileSelfTest.run(this));}
+   catch(Exception ex){throw new IllegalStateException("MIDI file self-test failed",ex);}
+  }
   try{BackupArchive.recover(prefs,getFilesDir());}
   catch(Exception recovery){
    android.util.Log.e("PianoLivreBackup","Não foi possível recuperar restauração anterior",recovery);
@@ -166,6 +171,20 @@ public class MainActivity extends Activity {
    message("Atenção: não é possível determinar com segurança todos os retornos: "+
      String.join(", ",route.warnings)+". A reprodução desta partitura será linear.");
  }catch(Exception e){message("Não foi possível importar: "+e.getMessage());}}
+ void chooseMidiHands(MidiFileImport.Result midi,String name,List<Integer> tracks,int index,Map<Integer,Integer> hands){
+  if(index<tracks.size()){
+   int track=tracks.get(index);long count=midi.notes.stream().filter(n->n.track==track).count();
+   new AlertDialog.Builder(this).setTitle("Trilha "+(track+1)+" · "+count+" notas")
+    .setItems(new String[]{"Mão direita","Mão esquerda","Ignorar esta trilha"},(d,choice)->{
+     hands.put(track,choice==0?1:choice==1?2:0);chooseMidiHands(midi,name,tracks,index+1,hands);
+    }).setNegativeButton("Cancelar",null).show();return;
+  }
+  try{
+   File dest=MidiImportStorage.save(new File(getFilesDir(),"imported"),name,midi,hands);
+   loadScore(dest.getAbsolutePath(),true);
+   message("MIDI importado como notação aproximada. Fonte original preservada; pedal e controladores não fazem parte da conversão.");
+  }catch(Exception ex){message("Não foi possível importar o MIDI: "+ex.getMessage());}
+ }
  void importScore(){Intent in=new Intent(Intent.ACTION_OPEN_DOCUMENT);in.setType("*/*");in.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(in,IMPORT);}
  @Override protected void onActivityResult(int request,int result,Intent data){
   super.onActivityResult(request,result,data);
@@ -180,11 +199,17 @@ public class MainActivity extends Activity {
       if(idx>=0&&cursor.getString(idx)!=null)display=cursor.getString(idx);
      }
     }
-    File dest;
-    try(InputStream in=getContentResolver().openInputStream(uri)){
-     dest=ScoreImport.save(new File(getFilesDir(),"imported"),display,in);
+    if(display.toLowerCase(Locale.ROOT).endsWith(".mid")||display.toLowerCase(Locale.ROOT).endsWith(".midi")){
+     MidiFileImport.Result midi;try(InputStream in=getContentResolver().openInputStream(uri)){midi=MidiFileImport.read(in);}
+     final String midiName=display;
+     new AlertDialog.Builder(this).setTitle("Importar MIDI como partitura aproximada")
+      .setMessage("MIDI não contém a escrita original. A conversão usa compassos 4/4 e grafia aproximada; preserva tempos, ataques, durações e velocidades. Pedal, instrumentos, controladores, tonalidade e compassos originais não serão reproduzidos. O arquivo .mid original será conservado no backup. Escolha a mão de cada trilha; nenhuma mão será inferida pela altura.")
+      .setPositiveButton("Escolher trilhas",(dialog,which)->chooseMidiHands(midi,midiName,midi.noteTracks(),0,new HashMap<>()))
+      .setNegativeButton("Cancelar",null).show();
+    }else{
+     File dest;try(InputStream in=getContentResolver().openInputStream(uri)){dest=ScoreImport.save(new File(getFilesDir(),"imported"),display,in);}
+     loadScore(dest.getAbsolutePath(),true);
     }
-    loadScore(dest.getAbsolutePath(),true);
    }else if(request==EXPORT){
     try(OutputStream out=getContentResolver().openOutputStream(uri)){
      if(out==null)throw new IOException("Não foi possível abrir o arquivo de backup");

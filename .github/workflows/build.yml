@@ -37,6 +37,8 @@ jobs:
           java -cp build/score-tests ScoreSmokeTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/ScoreImport.java tests/ScoreImportTest.java
           java -Xmx512m -cp build/score-tests ScoreImportTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiFileImport.java app/src/main/java/br/org/pianolivre/MidiImportStorage.java tests/MidiFileImportTest.java
+          java -Xmx512m -cp build/score-tests MidiFileImportTest
           javac -cp build/score-tests -d build/score-tests tests/TempoMapTest.java
           java -cp build/score-tests TempoMapTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/RepeatNavigator.java tests/RepeatNavigatorTest.java tests/MusicStructureTest.java

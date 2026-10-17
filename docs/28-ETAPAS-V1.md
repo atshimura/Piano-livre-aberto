@@ -109,3 +109,7 @@ Histórico e metas por perfil implementados; detalhes e limites no documento 35.
 ## Continuação 0.9.27
 
 Importação não destrutiva e limites XML/MXL preparados; documento 36. Teste local ScoreImportTest passou. Confirmar CI e emulador do próprio commit, integrar após PR #24. Próxima tarefa: importação MIDI limitada com fonte preservada e escolha explícita de mãos; não encerrar por concluir esta versão.
+
+## Continuação 0.9.28
+
+Importação SMF 0/1 preparada com mãos explícitas por trilha, fonte original preservada e notação aproximada documentada em 37. Testes JVM locais passaram. Confirmar CI própria, MIDIFILE_SELFTEST_PASS e PRs #24/#25 antes de integrar em sequência. Próximas tarefas: seletor no emulador, remapeamento de caminhos restaurados e compatibilidade/adversariais de backup; ainda não concluir Etapa 5 nem V1.

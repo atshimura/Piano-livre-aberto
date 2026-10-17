@@ -53,3 +53,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [35 — Histórico e metas locais](35-HISTORICO-E-METAS.md)
 
 - [36 — Importação não destrutiva](36-IMPORTACAO-SEGURA.md)
+
+- [37 — Importação MIDI](37-IMPORTACAO-MIDI.md)
