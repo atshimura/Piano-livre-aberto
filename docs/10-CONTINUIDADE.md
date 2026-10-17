@@ -127,3 +127,7 @@ Branch de trabalho: `feat/biblioteca-grade-compacta`; documento [46](46-BIBLIOTE
 ## Entrega incremental: etiqueta de notas sobre a partitura
 
 Branch `feat/partitura-nome-nota-ao-toque`; consultar [47](47-NOME-DA-NOTA-TOQUE.md). Branch criada a partir da segunda entrega, já integrada no PR #36; abrir PR para `main`, conferir no **mesmo SHA** todos os testes e o emulador antes de integrar. A funcionalidade é apenas do estudo temporal, lê a grafia real das notas e cifra explícita MusicXML quando disponível, não inventa acorde. Próximas tarefas seguem em #34 e #11. Versão proposta `0.9.38-open-beta` / code47.
+
+## Entrega incremental: análise de sequências do Laboratório
+
+Branch `feat/lab-analise-sequencias`, construída da entrega de tooltip (#37). Consulte [doc 48](48-LAB-SEQUENCIAS.md), a issue #34 e o documento 45. Implementa apenas análise **delimitada por Iniciar/Concluir** de padrões completos de uma oitava no Descobrir, por ataques USB-MIDI/virtual Tocar. Automaticidade espontânea, mão/dedos, áudio, progresso e práticas de sequências permanecem pendentes. Verificar CI e emulador do SHA do PR antes de merge; V1 só após #11. Versão proposta 0.9.39-open-beta/code48.

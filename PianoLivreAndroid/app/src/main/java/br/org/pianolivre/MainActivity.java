@@ -465,7 +465,10 @@ public class MainActivity extends Activity {
    }
   }
   scoreView.pressed.clear();scoreView.pressed.addAll(downKeys);scoreView.invalidate();
-  if(screens!=null)screens.updatePressed(downKeys);
+  if(screens!=null){
+   screens.updatePressed(downKeys);
+   if(newAttack&&foreground)screens.onLabMidiAttack(pitch);
+  }
   if(!foreground||chordCalibration.recording()||score==null||mode!=0||!pressed||waitTraveling||
       (screens!=null&&!screens.isStudyOpen()))return;
   WaitRecognizer.Result result=waitRecognizer.noteOnTimed(pitch,newAttack,downKeys,now);
