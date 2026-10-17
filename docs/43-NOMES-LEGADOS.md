@@ -4,7 +4,9 @@ O importador anterior podia gerar nomes ASCII iniciados por sublinhado/hífen/po
 
 Validação passa a aceitar componentes ASCII simples de até 255 caracteres, incluindo esses nomes legados. Nomes exatamente . e .., barras, contrabarras e demais caracteres fora do conjunto continuam rejeitados. Dois pontos dentro de um nome simples não representam diretório pai. Toda restauração continua confinada à pasta imported local. Não há renomeação nem alteração de fonte. Metadados da biblioteca/histórico aceitam a chave portátil correspondente de até 264 caracteres.
 
-SessionCompatibilityTest passou 20 verificações locais. BackupArchiveSelfTest acrescenta backup/restauração byte a byte de quatro nomes legados (incluindo um de 244 caracteres), retomada sem renomear e favorito longo. Exigir BACKUP_SELFTEST_PASS ampliado no Android e regressões/CI da própria entrega antes de integrar. Nenhum teste físico declarado.
+A exportação também prepara o arquivo completo antes de abrir o destino externo: falha na preparação deixa de poder truncar um backup existente. Falha durante a escrita do provedor ainda pode deixar arquivo incompleto; use destino novo e preserve outra cópia.
+
+SessionCompatibilityTest passou 20 verificações locais. BackupArchiveSelfTest acrescenta backup/restauração byte a byte de quatro nomes legados (incluindo um de 244 caracteres), retomada sem renomear e favorito longo. Testes também exigem que erro de preparação não abra o destino e que exportação válida escreva/feche o arquivo. Exigir BACKUP_SELFTEST_PASS ampliado no Android e regressões/CI da própria entrega antes de integrar. Nenhum teste físico declarado.
 
 Estado confirmado: PR #29 integrado em 5bc251e4fa9ea53c5c325a25a5d6cd9617ecc36a, atualização no emulador aprovada; pré-release v0.9.31-open-beta existe com APK, certificado, metadados e SHA256SUMS. PR #30 integrado em edc504c6829e6230174276bcfad7e4e034c7032d após build 38986443966/emulador 38986444139. PR #31 passou build 38986656222/emulador 38986656236; integrar antes desta entrega.
 

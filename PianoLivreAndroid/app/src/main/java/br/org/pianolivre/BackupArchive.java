@@ -185,6 +185,15 @@ public final class BackupArchive {
    throw new IOException("Backup excede limite de exportação");
   return backup;
  }
+ /** Open the external destination only after the whole archive is prepared. */
+ public interface Destination {OutputStream open()throws IOException;}
+ public static void export(SharedPreferences prefs,File root,Destination destination)throws Exception{
+  byte[] payload=create(prefs,root).toString().getBytes(StandardCharsets.UTF_8);
+  try(OutputStream out=destination.open()){
+   if(out==null)throw new IOException("Não foi possível abrir o arquivo de backup");
+   out.write(payload);out.flush();
+  }
+ }
  private static final class Validated {
   final Map<String,Object> prefs;
   final LinkedHashMap<String,byte[]> files;
