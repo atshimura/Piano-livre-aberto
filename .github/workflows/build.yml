@@ -94,7 +94,7 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicLabCatalog.java tests/MusicLabCatalogTest.java
           java -cp build/score-tests MusicLabCatalogTest
-      - name: Test offline MIDI Laboratory demonstration planner (JVM)
+      - name: Test USB-MIDI Laboratory demonstration lifecycle (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicLabPlaybackPlan.java tests/MusicLabPlaybackPlanTest.java
           java -cp build/score-tests MusicLabPlaybackPlanTest

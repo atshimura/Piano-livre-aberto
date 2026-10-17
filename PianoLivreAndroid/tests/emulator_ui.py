@@ -100,7 +100,38 @@ if __name__=="__main__":
     assert any("Lá menor" in t for t in learn_labels), "Learn chord example missing"
     tap_text(["Praticar"],exact=True)
     practice_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("notas faltando" in t for t in practice_labels), "Free chord practice feedback missing"
+    assert any("classes de altura faltando" in t for t in practice_labels), "Free chord practice feedback missing"
+    # Search while practicing must stop old exercise and update the highlights.
+    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+    assert fields, "Catalog search field missing"
+    coords=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
+    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
+    adb("shell","input","text","arpejo")
+    dismiss_keyboard()
+    filtered=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Arpejo ·" in t for t in filtered), "Catalog category filter did not show arpeggios"
+    assert "Praticar" in filtered, "Editing search must stop any running practice"
+    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+    coords=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
+    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
+    adb("shell","input","keyevent","123")
+    for _ in range(6):adb("shell","input","keyevent","67")
+    adb("shell","input","text","zzzx")
+    dismiss_keyboard()
+    assert any("Nenhum item encontrado" in n.attrib.get("text","") for n in dump().iter("node")), "Catalog no-results state missing"
+    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+    coords=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
+    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
+    adb("shell","input","keyevent","123")
+    for _ in range(4):adb("shell","input","keyevent","67")
+    dismiss_keyboard()
+    assert any("Lá menor" in n.attrib.get("text","") for n in dump().iter("node")), "Catalog reset lost five legacy exercises"
+    print("PASS: Laboratory catalog filtering, empty state and practice reset",flush=True)
+    tap_text(["Demonstrar"],scroll=True)
+    assert any("Demonstração requer saída USB-MIDI" in n.attrib.get("text","") for n in dump().iter("node")), "Demo erroneously played without MIDI"
+    tap_text(["OK"],exact=True)
+    assert any("Demonstrar" in n.attrib.get("text","") for n in dump().iter("node")), "Failed demo did not remain stopped"
+    print("PASS: Laboratory demonstration unavailable without MIDI output",flush=True)
     tap_text(["Montar"],exact=True,scroll=True)
     screenshot("piano-laboratorio.png")
     tap_text(["Biblioteca"])

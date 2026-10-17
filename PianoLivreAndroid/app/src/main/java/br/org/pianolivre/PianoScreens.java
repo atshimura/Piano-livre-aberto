@@ -396,7 +396,7 @@ class PianoScreens {
   if(a.scoreView!=null&&a.scoreView.showKeyboard)setKeyboardOpen(false);
   header.setVisibility(View.VISIBLE);
   library.setVisibility(View.GONE);studio.setVisibility(View.GONE);freeRoot.setVisibility(View.GONE);
-  if(lab!=null){lab.onMidiPressed(a.downKeys);lab.setVisibility(View.VISIBLE);}
+  if(lab!=null){lab.beginObservation();lab.onMidiPressed(a.downKeys);lab.setVisibility(View.VISIBLE);}
  }
  void showHome(){
   stopLabDemonstration();

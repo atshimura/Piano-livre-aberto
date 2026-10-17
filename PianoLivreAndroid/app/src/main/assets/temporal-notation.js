@@ -550,7 +550,8 @@ function inferConventionalBeams(notes){
   complete();
  });
 }
-\n/** Assemble MusicXML beaming once for the complete timeline, not per tile.
+
+/** Assemble MusicXML beaming once for the complete timeline, not per tile.
  * Return continuous level-1 beams, additional levels and standalone hooks.
  * Data remain keyed by staff/voice so a lower-voice beam never joins upper.
  */

@@ -9,6 +9,11 @@ import java.util.*;
 public final class MusicPatternTracker {
  private static final int MAX_ATTACKS=13; // chromatic octave is 13 pitches
  private final ArrayDeque<Integer> recent=new ArrayDeque<>();
+ /** Note-on is monophonic only when exactly one key is held across BOTH inputs. */
+ public static boolean isIsolated(int pitch,Set<Integer> midi,Set<Integer> virtual){
+  return pitch>=0&&pitch<=127&&midi!=null&&virtual!=null&&
+    (midi.contains(pitch)||virtual.contains(pitch))&&midi.size()+virtual.size()==1;
+ }
  public void clear(){recent.clear();}
  public int size(){return recent.size();}
  public List<MusicSequenceAnalyzer.Finding> attack(int pitch,boolean isolated){

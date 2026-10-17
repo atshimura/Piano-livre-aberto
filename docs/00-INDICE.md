@@ -82,4 +82,4 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [51 — Vigas inferidas por métrica](51-VIGAS-INFERIDAS.md)
 - [52 — Reconhecimento livre de padrões](52-LAB-PADROES-LIVRES.md)
 - [53 — Catálogo pesquisável do Laboratório](53-LAB-CATALOGO.md)
-- [54 — Demonstração offline MIDI no Laboratório](54-LAB-DEMONSTRACAO-MIDI.md)
+- [54 — Demonstração musical USB-MIDI](54-LAB-DEMONSTRACAO-MIDI.md)

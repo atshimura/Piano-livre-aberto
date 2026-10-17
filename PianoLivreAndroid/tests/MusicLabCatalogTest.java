@@ -22,6 +22,33 @@ public class MusicLabCatalogTest{
   ok(readonly);
   int original=all.get(0).notes[0];int[] snapshot=all.get(0).notes.clone();snapshot[0]=-1;
   ok(all.get(0).notes[0]==original);
+  ok(all.size()==965); // 5 legacy plus 12 pitch classes x (1 note, 13 intervals, 42 chord voicings, 12 scales, 12 arpeggios)
+  String[] names={"Lá menor · Am","Dó maior · C","Fá maior · F","Sol com sétima · G7","Ré menor · Dm"};
+  int[][] pitches={{57,60,64},{60,64,67},{53,57,60},{55,59,62,65},{50,53,57}};
+  for(int i=0;i<5;i++){ok(all.get(i).title.equals(names[i]));ok(contains(all.get(i).notes,pitches[i]));}
+  for(int root=60;root<72;root++){
+   final int tonic=root;
+   String rootLabel=br.org.pianolivre.MusicTheory.noteName(root);
+   ok(all.stream().anyMatch(e->e.kind.equals("Nota")&&contains(e.notes,tonic)));
+   ok(all.stream().anyMatch(e->e.kind.equals("Intervalo")&&e.title.contains("uníssono")&&contains(e.notes,tonic,tonic)));
+   ok(all.stream().anyMatch(e->e.kind.equals("Intervalo")&&e.title.contains("oitava justa")&&contains(e.notes,tonic,tonic+12)));
+   ok(all.stream().filter(e->e.kind.equals("Escala")&&e.notes[0]==tonic).count()==12);
+   ok(all.stream().filter(e->e.kind.equals("Arpejo")&&e.notes[0]==tonic).count()==12);
+   ok(all.stream().filter(e->e.kind.equals("Acorde")&&e.title.startsWith(rootLabel+" · ")&&e.title.contains("inversão")).count()==30);
+   ok(all.stream().filter(e->e.kind.equals("Acorde")&&e.title.startsWith(rootLabel+" · ")&&e.description.contains("Estrutura cromática")).count()==42);
+   ok(all.stream().anyMatch(e->e.kind.equals("Arpejo")&&e.title.contains("diminuto com sétima diminuta")&&contains(e.notes,tonic,tonic+3,tonic+6,tonic+9,tonic+12)));
+   ok(all.stream().anyMatch(e->e.kind.equals("Acorde")&&e.title.startsWith(rootLabel+" · ")&&e.title.contains("menor com sétima maior")&&contains(e.notes,tonic,tonic+3,tonic+7,tonic+11)));
+   ok(all.stream().anyMatch(e->e.kind.equals("Escala")&&e.title.startsWith(rootLabel+" · ")&&e.title.contains("maior")&&contains(e.notes,tonic,tonic+2,tonic+4,tonic+5,tonic+7,tonic+9,tonic+11,tonic+12)));
+   ok(all.stream().anyMatch(e->e.kind.equals("Escala")&&e.title.startsWith(rootLabel+" · ")&&e.title.contains("cromática")&&e.notes.length==13&&e.notes[12]==tonic+12));
+   ok(all.stream().anyMatch(e->e.kind.equals("Acorde")&&e.title.startsWith(rootLabel+" · ")&&e.title.contains("maior · 1ª inversão")&&contains(e.notes,tonic+4,tonic+7,tonic+12)));
+  }
+  ok(MusicLabCatalog.filter(all,"DO4").stream().anyMatch(e->e.kind.equals("Nota")&&e.notes[0]==60));
+  ok(MusicLabCatalog.filter(all,"C#4").stream().anyMatch(e->e.kind.equals("Nota")&&e.notes[0]==61));
+  ok(MusicLabCatalog.filter(all,"acOrDe").stream().allMatch(e->e.kind.equals("Acorde")));
+  ok(MusicLabCatalog.selectionIndex(all,all.get(4))==4);
+  ok(MusicLabCatalog.selectionIndex(MusicLabCatalog.filter(all,"arpejo"),all.get(4))==0);
+  ok(MusicLabCatalog.selectionIndex(Collections.emptyList(),all.get(4))==-1);
+  ok(MusicLabCatalog.filter(all,"   ").size()==all.size());
   System.out.println("MUSIC_LAB_CATALOG_PASS checks="+tests+" entries="+all.size());
  }
 }

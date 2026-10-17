@@ -17,6 +17,9 @@ final class MidiSessionSelfTest {
    check(a.device==null&&a.inputPort==null&&a.outputPort==null&&a.activeInfo==null&&a.openingMidiId<0,"self-test requires no MIDI device");
    a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true);a.mode=0;a.currentHand=0;
    a.position=a.score.firstOnset(0);a.screens.showStudy();a.rearmWaitIfStudying();
+   check(!a.waitStarted&&a.waitRecognizer.expected().isEmpty(),"Espera não arma antes de Iniciar");
+   // Simulate the completion of the visual preparation without waiting five real seconds.
+   a.waitStarted=true;a.rearmWaitIfStudying();
    List<Score.Event> expected=a.score.at(a.position,0);
    check(!expected.isEmpty()&&!a.waitRecognizer.expected().isEmpty(),"initial Wait armed");
    a.disconnectMidi();check(a.waitRecognizer.expected().isEmpty(),"disconnect clears prior attacks");
@@ -26,7 +29,7 @@ final class MidiSessionSelfTest {
    check(a.position==start&&!a.waitTraveling,"library MIDI does not advance hidden study");
    a.screens.showStudy();a.disconnectMidi();a.waitRecognizer.arm(expected);a.foreground=false;notes(a,expected);
    check(a.position==start&&!a.waitTraveling,"background MIDI does not advance study");
-   a.foreground=true;a.disconnectMidi();a.rearmWaitIfStudying();notes(a,expected);
+   a.foreground=true;a.disconnectMidi();a.waitStarted=true;a.rearmWaitIfStudying();notes(a,expected);
    check(a.waitTraveling||a.position!=start,"fresh foreground attacks advance after reconnect");
    a.stopPlayback();a.screens.showHome();a.disconnectMidi();
    a.onMidiMessage(0x90,60,80);a.onMidiMessage(0x91,60,90);a.onMidiMessage(0xB0,64,127);
