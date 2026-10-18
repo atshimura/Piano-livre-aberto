@@ -252,6 +252,44 @@ if __name__=="__main__":
         print("\\n".join(line for line in logs.splitlines() if "PianoLivreNotation" in line)[-15000:],flush=True)
     assert notation_ready, "Real MusicXML notation renderer failed; fallback is not acceptable"
     screenshot("piano-engraved.png")
+    # OSMD SVG research mode is opt-in by LONG PRESS; never replaces the default.
+    before_memory=adb("shell","dumpsys","meminfo","br.org.pianolivre.opensource")
+    free_buttons=[n for n in dump().iter("node") if n.attrib.get("text")=="Partitura Livre"]
+    assert free_buttons, "Research preview requires existing Partitura Livre button"
+    bb=[int(x) for x in re.findall(r"\d+",free_buttons[0].attrib.get("bounds",""))]
+    cx,cy=(bb[0]+bb[2])//2,(bb[1]+bb[3])//2
+    adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1100")
+    professional=None
+    for attempt in range(24):
+        time.sleep(.65)
+        proof_logs=adb("logcat","-d","-v","brief")
+        entries=[line for line in proof_logs.splitlines() if "POC_OSMD_READY {" in line]
+        if entries:
+            try:professional=json.loads(entries[-1].split("POC_OSMD_READY ",1)[1].split(" @",1)[0])
+            except ValueError:pass
+            if professional:break
+    assert professional, "Bundled OSMD horizontal SVG proof did not render in Android WebView"
+    assert professional["svgNodes"]>50 and professional["width"]>0 and professional["measures"]>=3, "OSMD proof rendered no music"
+    time.sleep(2)
+    screenshot("piano-osmd-poc.png")
+    after_memory=adb("shell","dumpsys","meminfo","br.org.pianolivre.opensource")
+    Path("piano-engraving-poc.json").write_text(json.dumps({
+      "baseSha":"15cafe3c8da7c67b9752d14ba0fb6f8f6141177d",
+      "title":DEFAULT_SCORE_TITLE,
+      "studyBaseline":"piano-engraved.png",
+      "osmdPreview":"piano-osmd-poc.png",
+      "baselineMemoryPssKb":re.search(r"TOTAL PSS:\s*(\d+)",before_memory).group(1) if re.search(r"TOTAL PSS:\s*(\d+)",before_memory) else None,
+      "osmdMemoryPssKb":re.search(r"TOTAL PSS:\s*(\d+)",after_memory).group(1) if re.search(r"TOTAL PSS:\s*(\d+)",after_memory) else None,
+      "osmd":professional,
+      "restriction":"Comparative preview only. No verified strict beat-to-X, note hit mapping, or long-scroll performance."
+    },ensure_ascii=False,indent=2),encoding="utf-8")
+    print("PASS: OSMD professional rendering POC screenshot, SVG metrics and Java/JS isolation",flush=True)
+    # Restore legacy strict-proportional Estudo before all regression assertions.
+    adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1100")
+    for attempt in range(20):
+        time.sleep(.6)
+        if adb("logcat","-d","-v","brief").count("TIMELINE_READY")>=2:break
+    assert "POC_TOGGLE false" in adb("logcat","-d","-v","brief"), "Temporal rendering not restored after POC"
     assert "TIMELINE_READY" in logs, "Expected proportional timeline renderer, not ordinary print layout"
     # The generated coordinates must follow exactly x = origin + beat * pxPerBeat.
     import json
