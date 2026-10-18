@@ -36,6 +36,7 @@ public final class NotationView extends WebView {
  private boolean freeLayout=false;
  // Research switch only, not a shipping replacement for the proportional renderer.
  private boolean engravingProof=false;
+ private int studyHand=0;
  private final int originalLayerType;
  public NotationView(Context c,Listener listener){
   super(c);
@@ -83,6 +84,7 @@ public final class NotationView extends WebView {
     if(disposed)return;
     scoreRendered=true;Log.i("PianoLivreNotation","RENDERED_CALLBACK");
     setVisibility(View.VISIBLE);
+    sendStudyHand();
     callback.onRendered();
     sendPendingWaitPreparation();
    });}
@@ -165,6 +167,16 @@ public final class NotationView extends WebView {
   Log.i("PianoLivreNotation","POC_LAYER "+(enabled?"software":"original"));
   setVisibility(View.INVISIBLE);
   if(htmlReady)sendScore();
+ }
+ private void sendStudyHand(){
+  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered&&engravingProof)
+   evaluateJavascript("PianoNotation.studyHand("+studyHand+")",null);
+ }
+ public void setStudyHand(int hand){
+  if(hand<0||hand>2)return;
+  if(studyHand==hand)return;
+  studyHand=hand;
+  sendStudyHand();
  }
  public void seek(double beat,boolean animate,double bpm,boolean moving){
   pendingBeat=beat;
