@@ -52,6 +52,14 @@ ok(T.hitTest(mapped.notes,hitNote.x,hitNote.y+90)===null,"Reject touches away fr
 ok(T.hitTest(mapped.notes,NaN,hitNote.y)===null,"Reject invalid gesture");
 ok(T.hitTest(mapped.notes,hitNote.x,hitNote.y,0,7)===null,"Reject invalid hit area");
 ok(T.hitTest(mapped.notes,mapped.notes[2].x,mapped.notes[2].y)?.staff===2,"Both staves independently accessible");
+const overlappingHeads=[{x:50,y:30,midiEstimate:60},{x:50,y:30,midiEstimate:61}];
+ok(T.hitTest(overlappingHeads,50,30)===null,
+ "Identical graphical heads must not be given a fabricated identity");
+ok(T.hitTest([{x:48,y:30},{x:52,y:30}],50,30)===null,
+ "Exact midpoint between two musical heads must be treated as ambiguous");
+ok(T.hitTest([{x:48,y:30},{x:52,y:30}],47,30)?.x===48,
+ "Nearest unique head remains selectable");
+
 // Conservative cross-parser mapping: never guess a voice for an unison.
 const native=mapped.notes.map((n,i)=>({beat:n.beat,staff:n.staff,
  measure:n.measure,midi:n.midiEstimate,length:1,voice:String(i+1)}));
