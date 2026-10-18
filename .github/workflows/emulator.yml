@@ -98,6 +98,10 @@ jobs:
             PianoLivreAndroid/piano-osmd-poc-note-tap.png
             PianoLivreAndroid/piano-osmd-poc-loop.png
             PianoLivreAndroid/piano-osmd-poc-wait.png
+            PianoLivreAndroid/piano-temporal-long.png
+            PianoLivreAndroid/piano-osmd-long.png
+            PianoLivreAndroid/piano-osmd-long-moving.png
+            PianoLivreAndroid/piano-osmd-long.json
             PianoLivreAndroid/piano-engraving-poc.json
             PianoLivreAndroid/piano-free-reading.png
             PianoLivreAndroid/piano-with-keyboard.png
