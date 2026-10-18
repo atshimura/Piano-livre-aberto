@@ -77,6 +77,12 @@ jobs:
             python3 tests/emulator_ui.py
             python3 tests/emulator_release.py
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
+      - name: Print OSMD context selector diagnostics
+        if: always()
+        run: |
+          if [ -f PianoLivreAndroid/piano-osmd-context-failure-diagnostics.txt ]; then
+            cat PianoLivreAndroid/piano-osmd-context-failure-diagnostics.txt
+          fi
       - name: Store Android UI evidence
         if: always()
         uses: actions/upload-artifact@v4

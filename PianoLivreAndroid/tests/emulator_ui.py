@@ -41,10 +41,10 @@ def dump():
     raise AssertionError("Android UI hierarchy inaccessible")
 
 def normalized_accessibility_label(value):
-    # Android accessibility can expose invisible Unicode format characters
-    # even when the visible label is ordinary spaced text.
-    value="".join(ch for ch in value.casefold() if unicodedata.category(ch)!="Cf")
-    return " ".join(value.split())
+    # Compare the visible words while ignoring invisible formatting, accents,
+    # and punctuation Android may include in accessibility text.
+    normalized=unicodedata.normalize("NFKD",value).casefold()
+    return "".join(ch for ch in normalized if ch.isalnum())
 
 def tap_text(targets, return_point=False, exact=False, scroll=False):
     root=dump()
@@ -790,7 +790,7 @@ if __name__=="__main__":
     for attempt in range(8):
         context_root=dump()
         context_button=next((n for n in context_root.iter("node")
-          if "partitura livre" in normalized_accessibility_label(n.attrib.get("text",""))),None)
+          if "partituralivre" in normalized_accessibility_label(n.attrib.get("text",""))),None)
         if context_button:break
         time.sleep(.25)
     if not context_button:
@@ -800,12 +800,15 @@ if __name__=="__main__":
         Path("piano-osmd-context-failure-window.xml").write_bytes(ET.tostring(context_root,encoding="utf-8"))
         Path("piano-osmd-context-failure-diagnostics.txt").write_text(
           "LABELS\n"+json.dumps(context_labels,ensure_ascii=False)+
-          "\nCURRENT WINDOW\n"+json.dumps([{"text":repr(n.attrib.get("text","")),"codepoints":["U+%04X"%ord(ch) for ch in n.attrib.get("text","")],"bounds":n.attrib.get("bounds")} for n in context_root.iter("node") if n.attrib.get("text")],ensure_ascii=False)+
+          "\nCURRENT WINDOW\n"+json.dumps([{"text":repr(n.attrib.get("text","")),"codepoints":["U+%04X"%ord(ch) for ch in n.attrib.get("text","")],"normalized":normalized_accessibility_label(n.attrib.get("text","")),"bounds":n.attrib.get("bounds")} for n in context_root.iter("node") if n.attrib.get("text")],ensure_ascii=False)+
           "\nCONTEXT LOGS\n"+"\n".join(line for line in context_failure_logs.splitlines()
             if "PianoLivreContext" in line or "FATAL EXCEPTION" in line or "AndroidRuntime" in line or "PianoLivreNotation" in line)+
           "\nACTIVITY\n"+context_failure_activity[-6000:],encoding="utf-8")
-        raise AssertionError("Context fixture cannot open the OSMD study proof: "+
-          json.dumps([n.attrib.get("text","") for n in context_root.iter("node") if n.attrib.get("text")],ensure_ascii=False))
+        raise AssertionError("Context fixture cannot open the OSMD study proof; raw label diagnostics: "+
+          json.dumps([{"text":repr(n.attrib.get("text","")),
+            "codepoints":["U+%04X"%ord(ch) for ch in n.attrib.get("text","")],
+            "normalized":normalized_accessibility_label(n.attrib.get("text",""))}
+            for n in context_root.iter("node") if n.attrib.get("text")],ensure_ascii=False))
     context_bounds=[int(v) for v in re.findall(r"\d+",context_button.attrib["bounds"])]
     adb("shell","input","swipe",str((context_bounds[0]+context_bounds[2])//2),
         str((context_bounds[1]+context_bounds[3])//2),
