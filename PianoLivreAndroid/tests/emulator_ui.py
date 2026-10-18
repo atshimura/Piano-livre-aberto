@@ -315,6 +315,7 @@ if __name__=="__main__":
     hit=json.loads(touches[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
     assert hit["staff"]==1 and hit["midiEstimate"]==first["midiEstimate"], "Android head-touch resolved wrong note or staff"
     assert hit["mapped"] and hit["nativeMidi"]==first["midiEstimate"], "Actual Android note tap did not agree with native Score.java MIDI"
+    assert hit.get("writtenName")=="Mi4" and hit.get("xmlNoteIndex") is not None, "OSMD head did not preserve the actual written pitch and XML identity"
     screenshot("piano-osmd-poc-note-tap.png")
     print("PASS: actual Android tap identified first upper-staff OSMD notehead",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
@@ -614,6 +615,7 @@ if __name__=="__main__":
     assert len(all_hits)>previous_hits, "Scaled SVG did not recognize a real notehead touch"
     chosen_note=json.loads(all_hits[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
     assert chosen_note["staff"]==1 and chosen_note["nativeMidi"]==long_head["midiEstimate"] and chosen_note["mapped"], "Scaled notehead did not match native MusicXML/MIDI"
+    assert chosen_note.get("writtenName") and chosen_note.get("xmlNoteIndex") is not None, "Scaled notehead lost its original MusicXML notation"
     screenshot("piano-osmd-long-tap.png")
     print("PASS: scaled 78-measure OSMD graphical notehead maps to native MIDI",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
