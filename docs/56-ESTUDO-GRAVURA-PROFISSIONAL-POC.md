@@ -103,3 +103,14 @@ O trabalho continuou **sem necessidade de uma decisão adicional do usuário**. 
 - Manter `main` 0.9.46 sem novas versões. O PR #46 permanece draft. Verificar no GitHub Actions o SHA específico deste acréscimo antes de citar sucesso; não substituir ensaio em partituras reais longas, zoom, polifonia adversarial nem hardware #11.
 
 **Pendências de produção:** gravura profissional sem recortes em todo o corpus; desempenho/memória real no Realme 7 5G e Lenovo Tab M9; coerência de playback/MIDI no Yamaha P-45; grafia acidental e enarmonia, vozes concorrentes, tie/slur, rolagem em partituras extensas e gesto de seleção completo. A aprovação do usuário para espaçamento óptico não equivale a aceite editorial da interface.
+
+
+## Ensaio de gravura longa e redimensionamento conservador (18/10/2026)
+
+A pesquisa foi ampliada no mesmo PR #46 **sem modificar a interface padrão ou os dados do usuário**:
+
+- **Reutilização de SVG:** a prévia OSMD agora distingue redimensionamento apenas de altura (teclado guia aberto/fechado) de mudança efetiva de largura. Se a largura permaneceu igual, mantém o DOM SVG, posições gráficas de cabeças, mapa de evento reconciliado e estado de execução. O relógio nativo, a rolagem e os controles continuam separados. Re-diagramação do OSMD é mantida quando a largura muda. O cenário Android verifica o diagnóstico `POC_RESIZE_HEIGHT_ONLY` e que o número de renderizações completas não aumenta ao alternar teclado.
+- **Corpus público autorizado e comprimento real:** o teste `emulator_ui.py` passa a abrir a `Gymnopédie nº 1` da biblioteca incluída (partitura mais longa e polifônica), capturar `piano-temporal-long.png` da pauta original, `piano-osmd-long.png` da prova horizontal e `piano-osmd-long-moving.png` durante playback no WebView Android. Exige pelo menos 40 compassos, 50 notas gráficas e 1.000 elementos SVG; salva `piano-osmd-long.json` com medidas de render e intervalos de callbacks de animação. São **critérios estruturais preliminares**, não juízo de gravura editorial; o teste não mede FPS renderizados nem estabilidade prolongada.
+- **Regressão crítica:** os cenários anteriores para Espera, USB/MIDI, loop por cabeças OSMD, toque identificado, teclado guia, biblioteca e restauração do renderizador temporal permanecem. Não alterar `main` nem publicar nova release enquanto faltarem review visual, cobertura adversarial e desempenho físico.
+
+**Resultados e medidas:** consultar os dois workflows do **HEAD exato** do PR após execução e seus artefatos. Falha do SVG longo, recorte ou irregularidade observada é bloqueante à promoção do protótipo. Em testes Android, não interpretar tempo de callback ou PSS de um só processo como validação plena de fluidez.
