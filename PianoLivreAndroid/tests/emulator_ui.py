@@ -842,6 +842,7 @@ if __name__=="__main__":
         if any(state["measure"]>=3 for state in context_states):break
         assert_running()
         time.sleep(.5)
+    print("POC_CONTEXT_CHANGES_OBSERVED "+json.dumps(context_states),flush=True)
     assert any(state["measure"]==2 for state in context_states) and \
       any(state["measure"]==3 for state in context_states), (
         "Pinned context rail did not follow measures 2 and 3: "+json.dumps(context_states))
@@ -853,7 +854,8 @@ if __name__=="__main__":
         "Measure 2 did not advance its changed clef, key signature and time signature")
     assert third_measure["staffSources"][0]["clef"]==3 and \
       any(staff["key"]==3 and staff["time"]==3 for staff in third_measure["staffSources"]), (
-        "Measure 3 did not advance its changed clef, key signature and time signature")
+        "Measure 3 did not advance its changed clef, key signature and time signature: "+
+        json.dumps(context_states))
     screenshot("piano-osmd-context-changes.png")
     Path("piano-osmd-context-changes.json").write_text(json.dumps({
       "fixture":"debug-only three-measure MusicXML; 4/4 C, 3/4 D with C-clef, 6/8 E-flat with G-clef",
