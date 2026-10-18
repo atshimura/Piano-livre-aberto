@@ -302,14 +302,15 @@ if __name__=="__main__":
     context_logs=[line for line in adb("logcat","-d","-v","brief").splitlines()
                   if "POC_CONTEXT_" in line]
     Path("piano-osmd-context-probe.txt").write_text("\n".join(context_logs)+"\n",encoding="utf-8")
-    assert any("POC_CONTEXT_MEASURES " in line for line in context_logs), (
-      "OSMD active-measure context geometry was not captured: "+"\n".join(context_logs[-5:]))
-    assert any("POC_CONTEXT_SVG_ROOT " in line for line in context_logs), (
-      "OSMD SVG instruction groups were not captured: "+"\n".join(context_logs[-5:]))
-    assert any("POC_CONTEXT_GRAPHICS " in line for line in context_logs), (
-      "VexFlow instruction modifiers were not captured: "+"\n".join(context_logs[-5:]))
-    assert any("POC_CONTEXT_NODES " in line for line in context_logs), (
-      "Rendered measure child nodes were not captured: "+"\n".join(context_logs[-5:]))
+    for marker in ("POC_CONTEXT_MEASURE_1 ","POC_CONTEXT_MODIFIERS_1 ",
+                   "POC_CONTEXT_SVG_ROOT ","POC_CONTEXT_NODES_1 ","POC_CONTEXT_NODES_2 "):
+        matching=[line for line in context_logs if marker in line]
+        assert matching, "OSMD context detail missing "+marker+": "+"\n".join(context_logs[-5:])
+        assert len(matching[-1])<3500, "Android logcat may have truncated context record "+marker
+        payload=matching[-1].split(marker,1)[1].split(" @",1)[0].strip()
+        try:json.loads(payload)
+        except ValueError as exc:raise AssertionError("OSMD context JSON was truncated for "+marker) from exc
+    initial_context_records=set(context_logs)
     print("POC_CONTEXT_PROBE_EVIDENCE "+"\n".join(context_logs),flush=True)
     assert professional["musicalAnchors"]>=8 and professional["graphicalNotes"]>=12, "OSMD map lost musical events"
     mapping=professional.get("midiMapping") or {}
@@ -622,6 +623,20 @@ if __name__=="__main__":
             except ValueError:pass
             if long_proof:break
     assert long_proof, "Long MusicXML did not finish horizontal OSMD rendering"
+    long_context=[line for line in adb("logcat","-d","-v","brief").splitlines()
+                  if "POC_CONTEXT_" in line and line not in initial_context_records]
+    assert any("POC_CONTEXT_MEASURE_1 " in line for line in long_context), (
+      "Gymnopédie context was not recorded: "+"\n".join(long_context[-5:]))
+    for line in long_context:
+        assert len(line)<3500, "Android logcat may have truncated long-score context details"
+        marker=re.search(r"POC_CONTEXT_[A-Z0-9_]+ ",line)
+        if marker:
+            payload=line.split(marker.group(0),1)[1].split(" @",1)[0].strip()
+            try:json.loads(payload)
+            except ValueError as exc:raise AssertionError("Long-score context JSON was truncated") from exc
+    with open("piano-osmd-context-probe.txt","a",encoding="utf-8") as context_file:
+        context_file.write("\nGYMNOPEDIE CONTEXT\n"+"\n".join(long_context)+"\n")
+    print("POC_CONTEXT_LONG_EVIDENCE "+"\n".join(long_context),flush=True)
     # CI console evidence for diagnosing every unresolved written score head.
     # This mapping is bounded to 20 samples; source XML is never dumped.
     if long_proof:

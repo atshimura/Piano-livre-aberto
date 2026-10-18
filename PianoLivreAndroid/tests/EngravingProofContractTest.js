@@ -10,12 +10,14 @@ ok(html.includes("studyProof=(layout==='engraving-poc')"),"Explicit research mod
 ok(html.includes("renderSingleHorizontalStaffline:studyProof"),"OSMD horizontal only in PoC");
 ok(html.includes("if(!freeLayout&&!studyProof){"),"Default study must still use TemporalNotation");
 ok(html.includes("POC_OSMD_READY"),"SVG render metrics required");
-ok(html.includes("POC_CONTEXT_MEASURES")&&html.includes("POC_CONTEXT_SVG_ROOT")&&
- html.includes("POC_CONTEXT_GRAPHICS")&&html.includes("POC_CONTEXT_NODES")&&
+ok(html.includes("POC_CONTEXT_MEASURE_")&&html.includes("POC_CONTEXT_SVG_ROOT")&&
+ html.includes("POC_CONTEXT_MODIFIERS_")&&html.includes("POC_CONTEXT_NODES_")&&
  html.includes("beginInstructionsWidth"),
  "OSMD context rail must inspect native measure instruction geometry before pinning symbols");
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("piano-osmd-context-probe.txt"),
  "Emulator evidence must preserve the bounded OSMD instruction probe");
+ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("POC_CONTEXT_LONG_EVIDENCE"),
+ "Emulator evidence must include context glyphs from the long Gymnopédie score");
 ok(fs.readFileSync("../.github/workflows/emulator.yml","utf8").includes("PianoLivreAndroid/piano-osmd-context-probe.txt"),
  "Workflow artifact manifest must include the context probe report");
 ok(html.includes("POC_NOT_PRODUCTION_READY"),"Proof must never claim finished Study");
