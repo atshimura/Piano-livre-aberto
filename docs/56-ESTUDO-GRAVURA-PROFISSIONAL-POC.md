@@ -141,3 +141,12 @@ Na mesma branch experimental, `OpticalTimeMap.reconcile` passou a registrar cate
 
 
 **Correção posterior:** categorias diagnósticas agora são mutuamente exclusivas por cabeça de nota. Duplicações gráficas sem evento nativo contam como `ambiguous`, sem também incrementar `noNativeCandidate`; cada nova reconciliação limpa o diagnóstico anterior. Um teste garante que a soma das categorias corresponde ao total de cabeças não reconciliadas. Verificar Actions no novo SHA `b37b8a2` antes de atribuir êxito; não inferir correção musical das 14 divergências somente pela classificação.
+
+
+## Continuação 18/10/2026 — preparação gradual do Espera no protótipo
+
+Os Actions do commit `6a9a53ff69b2ed1b878d337138734453dc64f953` foram consultados: build `39131105661` e emulador `39131105654` encerraram com conclusão `success`. Esses resultados não validam os commits posteriores.
+
+A prévia OSMD passa a mostrar apenas a indicação **Preparação**, sem número regressivo. Durante o intervalo definido pela camada Android, a partitura recebe um deslocamento horizontal de apresentação inicial (até 100 px CSS ou 18% da largura visível) que decresce suavemente até zero, por `requestAnimationFrame` e curva smoothstep. Ao terminar ou cancelar, a transformação é removida. Não se altera beat, MIDI, reconhecimento, tempo configurado, XML, perfil ou persistência; a pauta temporal convencional mantém seu comportamento anterior. Testes de contrato verificam ausência do contador numérico, avanço visual e limpeza no cancelamento.
+
+**Limitação importante:** trata-se de uma primeira aproximação visual da preparação, **não aceite funcional**. O deslocamento é espacial e ainda exige capturas e ensaio de sincronização com os comandos de seek nativos, pausas, mudança de orientação, abertura do teclado e eventual cancelamento; confirmar também se o cursor e as notas terminam no lugar correto. A revisão visual no emulador e em hardware físico ainda é obrigatória. Não promover o PR #46 a produção por esta alteração isolada.
