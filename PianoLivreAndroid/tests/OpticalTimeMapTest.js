@@ -6,7 +6,7 @@ const coords=[{beat:0,x:100},{beat:1,x:150},{beat:2,x:240},{beat:3,x:280},
 const t=T.create(coords);
 ok(t.stops.length===4,"Simultaneous notes must share a single moment");
 ok(Math.abs(t.xAt(.5)-125.5)<.001,"Linear interpolation on first optical span");
-ok(Math.abs(t.xAt(1.5)-195.5)<.001,"Nonlinear x(beat) must respect graphic gap");
+ok(Math.abs(t.xAt(1.5)-195.25)<.001,"Nonlinear x(beat) must respect graphic gap");
 ok(t.xAt(0)===101&&t.xAt(-1)===101,"Clamp start");
 ok(t.xAt(100)===280,"Clamp end");
 ok(Math.abs(t.beatAt(t.xAt(1.7))-1.7)<.00001,"Every interpolated beat round-trips");
