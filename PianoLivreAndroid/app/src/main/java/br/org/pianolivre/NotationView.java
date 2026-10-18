@@ -190,11 +190,11 @@ public final class NotationView extends WebView {
    evaluateJavascript("PianoNotation.resize()",null);
  }
  public void setLoopEdit(boolean enabled){
-  if(!disposed&&!freeLayout&&!engravingProof&&htmlReady&&scoreRendered)
+  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
    evaluateJavascript("PianoNotation.loopEdit("+(enabled?"true":"false")+")",null);
  }
  public void clearLoop(){
-  if(!disposed&&!freeLayout&&!engravingProof&&htmlReady&&scoreRendered)
+  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
    evaluateJavascript("PianoNotation.clearLoop()",null);
  }
  public void dispose(){disposed=true;
