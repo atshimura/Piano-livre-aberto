@@ -122,8 +122,8 @@ ok(T.writtenPitch({step:"H",alter:0,octave:4})===null&&
  T.writtenPitch({step:"C",alter:.5,octave:4})===null&&
  T.writtenPitch({step:"D",alter:1,octave:NaN})===null,
  "Unsupported spelling must not be guessed");
-const written=[{...solo[0]}];
-report=T.reconcile(written,[{...exact[0],step:"D",alter:-1,octave:4,xmlNoteIndex:17}]);
+const written=[{...solo[0],midiEstimate:61}];
+report=T.reconcile(written,[{...exact[0],midi:61,step:"D",alter:-1,octave:4,xmlNoteIndex:17}]);
 ok(report.matched===1&&T.writtenPitch(written[0].nativeEvent)==="Ré♭4"&&
  written[0].nativeEvent.xmlNoteIndex===17,
  "Reconciled head keeps source-note identity and enharmonic spelling");
