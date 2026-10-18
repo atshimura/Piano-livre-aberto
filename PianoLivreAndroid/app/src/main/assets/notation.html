@@ -32,6 +32,7 @@
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
+ let opticalPerf={frames:0,intervals:0,totalGapMs:0,maxGapMs:0,slowGaps:0,lastFrameMs:null};
  let opticalLoopEditing=false,opticalLoopStart=null,opticalWaitRaf=0,opticalWaitDeadline=0,opticalWaitDuration=0;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
  function inform(s){message.textContent=s;message.style.display='block';}
@@ -101,7 +102,20 @@
   }
   paint();
  }
+ // Measure JS animation callbacks, NOT GPU composition FPS. No network or telemetry.
+ function reportOpticalPerf(reason){
+  if(opticalPerf.frames){
+   console.log('POC_OPTICAL_PERF '+JSON.stringify({reason:reason,
+    frames:opticalPerf.frames,intervals:opticalPerf.intervals,
+    meanCallbackGapMs:opticalPerf.intervals?+(opticalPerf.totalGapMs/opticalPerf.intervals).toFixed(2):null,
+    maxCallbackGapMs:+opticalPerf.maxGapMs.toFixed(2),slowGapsOver50Ms:opticalPerf.slowGaps,
+    svgNodes:document.querySelectorAll('#score svg *').length,
+    scrollWidth:viewport.scrollWidth,scrollViewport:viewport.clientWidth}));
+  }
+  opticalPerf={frames:0,intervals:0,totalGapMs:0,maxGapMs:0,slowGaps:0,lastFrameMs:null};
+ }
  function cancelOptical(){
+  reportOpticalPerf('teardown');
   if(opticalRaf)cancelAnimationFrame(opticalRaf);
   opticalRaf=0;optical=null;opticalAnchor=null;opticalFrames=0;opticalReconciliation=null;
   opticalLoopEditing=false;opticalLoopStart=null;
@@ -115,7 +129,17 @@
  function opticalFrame(){
   opticalRaf=0;
   if(!studyProof||!opticalAnchor||!optical)return;
-  const seconds=(performance.now()-opticalAnchor.at)/1000;
+  const now=performance.now();
+  if(opticalPerf.lastFrameMs!==null){
+   const gap=now-opticalPerf.lastFrameMs;
+   if(Number.isFinite(gap)&&gap>=0){
+    opticalPerf.intervals++;opticalPerf.totalGapMs+=gap;
+    opticalPerf.maxGapMs=Math.max(opticalPerf.maxGapMs,gap);
+    if(gap>50)opticalPerf.slowGaps++;
+   }
+  }
+  opticalPerf.lastFrameMs=now;opticalPerf.frames++;
+  const seconds=(now-opticalAnchor.at)/1000;
   const visualBeat=opticalAnchor.beat+seconds*opticalAnchor.bpm/60;
   opticalPosition(visualBeat);
   opticalFrames++;
@@ -128,12 +152,14 @@
   if(!optical||!Number.isFinite(beat))return;
   opticalPlayback={bpm:bpm,playing:!!playing};
   if(!playing||!Number.isFinite(bpm)||bpm<=0){
+   reportOpticalPerf('pause');
    if(opticalRaf)cancelAnimationFrame(opticalRaf);
    opticalRaf=0;opticalAnchor=null;
    opticalPosition(beat);
    return;
   }
   const now=performance.now();
+  if(!opticalAnchor)reportOpticalPerf('start');
   const projected=opticalAnchor
    ?opticalAnchor.beat+(now-opticalAnchor.at)*opticalAnchor.bpm/60000
    :NaN;
