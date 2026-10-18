@@ -265,7 +265,8 @@
    tip.style.top=Math.max(4,ev.clientY-44)+'px';tip.style.display='block';
    console.log('POC_NOTE_TAP '+JSON.stringify({beat:note.beat,staff:note.staff,
     midiEstimate:note.midiEstimate,nativeMidi:native?native.midi:null,
-    mapped:verified,status:note.mappingStatus,sourceEventIndex:native?native.index:null,x:x,y:y}));
+    mapped:verified,status:note.mappingStatus,sourceEventIndex:native?native.index:null,
+    writtenName:noteName,xmlNoteIndex:native?native.xmlNoteIndex:null,x:x,y:y}));
   });
  }
  function render(xml,start,layout,nativeEvents){
