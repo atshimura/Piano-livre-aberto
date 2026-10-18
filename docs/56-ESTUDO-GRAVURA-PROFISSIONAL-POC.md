@@ -203,3 +203,8 @@ A prévia OSMD recebeu uma camada SVG **não-interativa** de anéis discretos so
 ### Adaptação do toque à escala do SVG
 
 O toque no OSMD deixou de usar raio fixo de 11×7 unidades gráficas quando a pauta é reduzida para caber no viewport. `notation.html` calcula `hitRadiusX` e `hitRadiusY` com base na relação `viewBox/getBoundingClientRect`, com limites para não aceitar posições arbitrariamente distantes. O algoritmo `OpticalTimeMap.hitTest` preserva escolha do menor desvio normalizado e rejeita distância empatada, sem alterar o posicionamento da música, altura MIDI ou o arquivo original. Testes de unidade/contrato verificam alcance do alvo após redução, sem perder a identificação da cabeça correta. O emulador ainda deve confirmar o comportamento sobre acordes e cabeças muito próximas; raio maior não prova interatividade adequada em aparelho físico.
+
+
+### Medição de geometria de pautas do OSMD (sem mudança editorial)
+
+Para entender por que a Gymnopédie exige escala ~0,493 apesar das duas pautas visíveis, `POC_OSMD_READY` passa a registrar `firstStaffOrigins` (posição vertical OSMD da primeira medida em cada pauta) junto de altura nativa e escala exibida. Esta instrumentação **não move pautas** nem altera MusicXML, glifos ou o cálculo de beats; permite determinar se há espaço excessivo entre pautas antes de experimentar `EngravingRules`. Os parâmetros da biblioteca de gravação não foram alterados, porque compactar pautas sem inspeção musical pode causar colisões de linhas suplementares, ligaduras e dinâmica. Revisar as amostras e screenshots da CI atual para decidir o ajuste editorial.
