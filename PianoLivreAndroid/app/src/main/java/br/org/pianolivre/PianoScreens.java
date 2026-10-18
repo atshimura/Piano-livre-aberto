@@ -229,7 +229,17 @@ class PianoScreens {
   titlebar.addView(compact("← Biblioteca",false,()->showHome()),lp(115,32));addGap(titlebar,12);
   songTitle=text("Selecione uma partitura",16,ink,true);songTitle.setSingleLine(true);songTitle.setEllipsize(TextUtils.TruncateAt.END);
   titlebar.addView(songTitle,new LinearLayout.LayoutParams(0,-1,1));
-  titlebar.addView(compact("Partitura Livre",false,()->showFree()),lp(122,32));addGap(titlebar,10);
+  Button freeButton=compact("Partitura Livre",false,()->showFree());
+  // Research-only opt-in: long press never changes normal Study defaults.
+  freeButton.setOnLongClickListener(v->{
+   if(a.score==null||notation==null)return true;
+   a.stopPlayback();a.finishStudyWindow();editingLoop=false;
+   notation.setEngravingProof(!notation.isEngravingProof());
+   android.util.Log.i("PianoLivreNotation","POC_TOGGLE "+notation.isEngravingProof());
+   android.widget.Toast.makeText(a,notation.isEngravingProof()?"Prévia OSMD: sem mapeamento temporal validado":"Pauta temporal original restaurada",android.widget.Toast.LENGTH_SHORT).show();
+   return true;
+  });
+  titlebar.addView(freeButton,lp(122,32));addGap(titlebar,10);
   a.info=text("",11,muted,false);titlebar.addView(a.info,lp(203,-1));
   LinearLayout controls=row();controls.setPadding(d(10),0,d(10),0);controls.setBackgroundColor(0xffE8F0F9);
   studio.addView(controls,lp(-1,42));
