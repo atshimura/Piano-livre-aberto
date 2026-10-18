@@ -277,3 +277,8 @@ Build `39158718398` falhou no contrato estático porque `POC_CONTEXT_NODES` agor
 ### Ajuste do contrato da leitura do probe — SHA `95dcb01`
 
 Build `39158885775` alcançou o teste OSMD, mas falhou porque o contrato procurava a comparação antiga `measure == "1"`; o teste de UI passou a construir listas `first_measures` e `second_measures`. O contrato será atualizado para conferir a igualdade dos três primeiros compassos nas duas pautas. O emulador desse SHA segue ativo.
+
+
+### Probe limitado pelo tamanho do logcat — SHA `e2e4ee1`
+
+O emulador `39158718300` passou pelos fluxos principais, incluindo a Gymnopédie 469/469 e toque real, mas falhou antes da fixture porque a nova linha `POC_CONTEXT_NODES_1` ultrapassou o limite de registro do logcat. O próximo SHA limita o inventário a glifos de clave, armadura e fórmula de compasso nos quatro primeiros compassos de cada pauta, mantendo caixas SVG e o conteúdo da clave. Isso conserva a evidência necessária sem serializar os grupos de notas.

@@ -614,23 +614,23 @@
        childCount:node.childElementCount,html:node.outerHTML.slice(0,80)};
      }):[];
      const contextNodes=svg?Array.from(svg.querySelectorAll('g.staffline')).slice(0,2).map(function(staffline){
+      const symbolClasses=['vf-clef','vf-keysignature','vf-timesignature'];
       const measures=Array.from(staffline.children).filter(function(child){
        return child.classList&&child.classList.contains('vf-measure')&&
         Number(child.id)>=1&&Number(child.id)<=4;
       });
       return {staffline:staffline.id,measures:measures.map(function(measure){
-       return {measure:measure.id,children:Array.from(measure.children).map(function(child){
+       const symbols=Array.from(measure.children).filter(function(child){
+        return child.classList&&symbolClasses.some(function(kind){return child.classList.contains(kind);});
+       }).map(function(child){
         let box=null;try{const b=child.getBBox();box=[b.x,b.y,b.width,b.height].map(function(v){return +v.toFixed(1);});}catch(e){}
-        return {tag:child.tagName,id:child.id||null,cls:child.getAttribute('class'),box:box,
-         childCount:child.childElementCount,
-         html:child.classList&&child.classList.contains('vf-clef')?child.outerHTML.slice(0,220):undefined};
-       })};
+        return {cls:child.getAttribute('class'),box:box,
+         html:child.classList.contains('vf-clef')?child.outerHTML.slice(0,220):undefined};
+       });
+       return {measure:measure.id,childCount:measure.childElementCount,symbols:symbols};
       })};
      }):[];
-     console.log('POC_CONTEXT_SVG_ROOT '+JSON.stringify(rootChildren));
-     contextNodes.forEach(function(node,index){
-      console.log('POC_CONTEXT_NODES_'+(index+1)+' '+JSON.stringify(node));
-     });
+
      }catch(contextError){console.log('POC_CONTEXT_PROBE_ERROR '+contextError.message)}
      const firstHead=optical.notes.find(function(n){return n.staff===1&&Number.isFinite(n.x)&&Number.isFinite(n.y);});
      const nextHead=firstHead&&optical.notes.find(function(n){
