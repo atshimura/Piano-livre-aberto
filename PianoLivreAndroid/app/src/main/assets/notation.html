@@ -31,6 +31,7 @@
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
+ let osmdRenderedWidth=0,osmdRenderedHeight=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
  let opticalPerf={frames:0,intervals:0,totalGapMs:0,maxGapMs:0,slowGaps:0,lastFrameMs:null};
  let opticalLoopEditing=false,opticalLoopStart=null,opticalWaitRaf=0,opticalWaitDeadline=0,opticalWaitDuration=0;
@@ -229,6 +230,7 @@
   cancelOptical();cancelOpticalWait();
   document.getElementById('optical-note-tip').style.display='none';
   loaded=false;appliedBeat=-1;seekBeat=start||0;
+  osmdRenderedWidth=0;osmdRenderedHeight=0;
   freeLayout=(layout==='free');studyProof=(layout==='engraving-poc');
   lastNativeEvents=studyProof&&Array.isArray(nativeEvents)?nativeEvents:[];
   document.body.className=freeLayout?'free':(studyProof?'preview':'continuous');
@@ -273,6 +275,8 @@
     if(ticket!==generation)return;
     // Keep OSMD at its default internal zoom; apply a CSS transform to the entire grand staff.
     osmd.render();
+    osmdRenderedWidth=viewport.clientWidth;
+    osmdRenderedHeight=viewport.clientHeight;
     if(ticket!==generation)return;
     const svg=document.querySelector('#score svg');
     if(studyProof){
@@ -394,9 +398,25 @@
     if(!loaded)return;
     if(!freeLayout&&!studyProof){if(window.TemporalNotation)TemporalNotation.resize();return;}
     if(!osmd)return;
+    // Teclado guia changes HEIGHT only: preserve horizontal OSMD SVG and touch targets.
+    if(studyProof&&osmdRenderedWidth===viewport.clientWidth){
+     if(osmdRenderedHeight!==viewport.clientHeight){
+      osmdRenderedHeight=viewport.clientHeight;
+      const now=performance.now();
+      const activeBeat=opticalAnchor
+       ?opticalAnchor.beat+(now-opticalAnchor.at)*opticalAnchor.bpm/60000
+       :seekBeat;
+      opticalPosition(activeBeat);
+      console.log('POC_RESIZE_HEIGHT_ONLY '+JSON.stringify({width:viewport.clientWidth,
+       height:viewport.clientHeight,beat:activeBeat,svgNodes:document.querySelectorAll('#score svg *').length}));
+     }
+     return;
+    }
     clearTimeout(renderTimer);
     renderTimer=setTimeout(function(){try{
      osmd.render();appliedBeat=-1;
+     osmdRenderedWidth=viewport.clientWidth;
+     osmdRenderedHeight=viewport.clientHeight;
      if(studyProof){
       optical=OpticalTimeMap.fromGraphical(osmd.graphic);
       // Graphical positions are invalid after a re-layout: reconcile and bind again.
