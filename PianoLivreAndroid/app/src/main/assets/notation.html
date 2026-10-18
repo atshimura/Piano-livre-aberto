@@ -84,8 +84,11 @@
   opticalRaf=0;
   if(!studyProof||!opticalAnchor||!optical)return;
   const seconds=(performance.now()-opticalAnchor.at)/1000;
-  opticalPosition(opticalAnchor.beat+seconds*opticalAnchor.bpm/60);
+  const visualBeat=opticalAnchor.beat+seconds*opticalAnchor.bpm/60;
+  opticalPosition(visualBeat);
   opticalFrames++;
+  if(opticalFrames===1||opticalFrames%30===0)
+   console.log('OPTICAL_SAMPLE '+JSON.stringify({beat:visualBeat,x:optical.timeline.xAt(visualBeat),scroll:viewport.scrollLeft,viewport:viewport.clientWidth}));
   if(opticalFrames<8000)opticalRaf=requestAnimationFrame(opticalFrame);
  }
  function opticalSeek(beat,bpm,playing){
