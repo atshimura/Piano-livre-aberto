@@ -29,6 +29,15 @@ const graphic={measureList:[[
  {staffEntries:[entry(2,18.1,[52],2)]}
 ]]};
 const mapped=T.fromGraphical(graphic);
+const voicedGraph={measureList:[[{staffEntries:[{
+ getAbsoluteTimestamp:()=>({RealValue:0}),
+ PositionAndShape:{AbsolutePosition:{x:10,y:0}},
+ graphicalVoiceEntries:[{parentVoiceEntry:{ParentVoice:{VoiceId:2}},
+  notes:[{sourceNote:{halfTone:48,isRestFlag:false,IsGraceNote:false},
+   PositionAndShape:{AbsolutePosition:{x:10,y:4}}}]}]
+}]}]]};
+ok(T.fromGraphical(voicedGraph).notes[0].voiceId==="2",
+ "OSMD graphical entry preserves explicit original voice ID");
 ok(mapped.timeline.stops.length===4,"Measure and rest positions are in map");
 ok(mapped.notes.length===7,"Chord and concurrent staves retained");
 ok(mapped.notes.filter(x=>x.beat===2).length===3,"All chord attacks at one musical instant");
