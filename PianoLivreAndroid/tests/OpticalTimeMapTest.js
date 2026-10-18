@@ -105,6 +105,28 @@ ok(Object.values(report.reasons).reduce((a,b)=>a+b,0)===report.unmatched+report.
 report=T.reconcile(solo,exact);
 ok(solo[0].mappingReason===undefined&&report.matched===1,
  "Successful reconciliation must clear stale diagnostic reasons");
+// MusicXML retains written spelling even when MIDI semitones agree.
+ok(T.writtenPitch({step:"C",alter:1,octave:4})==="Dó♯4",
+ "C-sharp must retain its source spelling");
+ok(T.writtenPitch({step:"D",alter:-1,octave:4})==="Ré♭4",
+ "Enharmonic D-flat must not become C-sharp");
+ok(T.writtenPitch({step:"B",alter:1,octave:3})==="Si♯3"&&
+ T.writtenPitch({step:"C",alter:-1,octave:4})==="Dó♭4",
+ "Naturally adjacent notes must preserve written accidentals");
+ok(T.writtenPitch({step:"F",alter:2,octave:5})==="Fá𝄪5"&&
+ T.writtenPitch({step:"B",alter:-2,octave:2})==="Si𝄫2",
+ "Double accidentals must remain notated");
+ok(T.writtenPitch({step:"G",alter:0,octave:4})==="Sol4",
+ "Unaltered note keeps exact octave");
+ok(T.writtenPitch({step:"H",alter:0,octave:4})===null&&
+ T.writtenPitch({step:"C",alter:.5,octave:4})===null&&
+ T.writtenPitch({step:"D",alter:1,octave:NaN})===null,
+ "Unsupported spelling must not be guessed");
+const written=[{...solo[0]}];
+report=T.reconcile(written,[{...exact[0],step:"D",alter:-1,octave:4,xmlNoteIndex:17}]);
+ok(report.matched===1&&T.writtenPitch(written[0].nativeEvent)==="Ré♭4"&&
+ written[0].nativeEvent.xmlNoteIndex===17,
+ "Reconciled head keeps source-note identity and enharmonic spelling");
 // A long score must not require a quadratic lookup for musical scrolling.
 // This probes only the time/graphics map, NOT Android WebView SVG rendering.
 const longEntries=[];
