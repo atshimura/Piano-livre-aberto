@@ -48,6 +48,18 @@ SVG horizontal da partitura inteira pode criar um desenho largo demais ou render
 
 **Ainda a ampliar:** fixtures MusicXML originais/sintéticas de G/F e suas mudanças; 2/4,3/4,4/4,6/8,9/8 e irregulares; colcheias/semicolcheias/fusas, beaming explícito versus implícito; vozes opostas, acordes de segundos, uníssonos, acidentes locais, síncopes, pausas/pontos; ties, slurs, tuplets, grace, ledger lines e mudança de andamento; 1–2 pautas/mãos; casos longos, zoom, teclado/altura, plano de reprodução MIDI, Espera e seleção de trecho. Registrar captura antiga, OSMD de prova, referência editorial do **mesmo trecho**, pontos de diferença e correções. Não trazer imagens de partituras protegidas ao repositório.
 
+## Decisão do usuário — espaçamento óptico aprovado
+
+Em 17/10/2026 (diálogo da pesquisa) o usuário **autorizou** a substituição da proporcionalidade gráfica estrita por **espaçamento óptico profissional**, com as condições de que o relógio musical, as notas corretas no cursor nos instantes correspondentes, USB-MIDI, Espera, teclado, trecho, identificação ao toque e dados permanecem preservados. Isso **não significa aceite visual ou autorização para baixar outro motor/fonte**. As regras temporais continuam existentes na `main` e no Estudo comum do PR draft.
+
+### Evolução da prova de conceito do PR #46
+
+O arquivo `optical-time-map.js` é um módulo offline novo **de código próprio** que extrai `getAbsoluteTimestamp()` (em frações de semibreve, convertido para semínimas por `×4`) e `PositionAndShape.AbsolutePosition` (unidades gráficas OSMD, convertidas para SVG px por `×10`) de cada entrada de pauta, preservando um vetor separado de notas gráficas. Múltiplas vozes e mãos no mesmo onset formam **uma âncora temporal**; eventos seguintes podem ter distâncias ópticas diferentes. A interpolação por segmentos e sua inversa, limites e rejeição de regressos horizontais são cobertas por `OpticalTimeMapTest.js`. O `halfTone+12` de cada nota gráfica é apenas **estimativa diagnóstica** de MIDI e não confirma transposição nem substitui `Score.java`.
+
+Na **prévia opcional**, `PianoNotation.seek` recebe os beats enviados pela mesma `MainActivity` e interpola a posição óptica, de modo que a linha de referência permaneça fixa e o movimento use `requestAnimationFrame`, sem alterar ticker nativo ou mensagens MIDI. Foi adicionada uma comparação experimental da WebView com camada de software para investigar a falha visual de corte do SVG em dispositivos Android; a camada é restaurada ao voltar à apresentação original. O emulador deve demonstrar avanço de beat/scroll, tirar capturas antes, durante e depois, observar a continuidade das duas pautas, restaurar a camada e repetir todas as regressões anteriores. Esta experiência **não oferece ainda hit-test de glifos, selecionador gráfico de loops nem destaque por mão**: não promover para produção.
+
+**Condição de integração:** ainda exige resolver visualmente a pauta cortada e sua eventual causa, provar eventos individualizados e correspondência com MIDI, toque sobre cabeças, Espera/trechos/loop, movimento fluido sob alteração de tempo e benchmarks físicos e emulador; o PR continua draft sem versionCode/release novos até cumprir esses requisitos.
+
 ## Estado e próximos passos
 
 A presente entrega é **prova de conceito em branch de pesquisa**. CI/auditoria devem ser verificados no SHA final; enquanto o PR for draft, **não declarar item 1.2 concluído**, não mesclar na `main`, não publicar APK de distribuição, não marcar checkbox da issue #34. Próxima etapa depende de avaliação visual/temporal e escolha sobre espaçamento óptico. A reorganização da Biblioteca continua fora de escopo.
