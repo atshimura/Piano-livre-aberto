@@ -122,6 +122,7 @@
   for(const n of notes){
    if(!n)continue;
    delete n.nativeEvent;
+   delete n.mappingReason;
    n.mappingStatus="unmatched";
    if(![n.beat,n.staff,n.measure,n.midiEstimate].every(Number.isFinite))continue;
    const k=key(n.beat,n.staff,n.measure,n.midiEstimate);
@@ -138,8 +139,8 @@
    if(samples.length<20)samples.push({reason:reason,beat:n.beat,staff:n.staff,
     measure:n.measure,midiEstimate:n.midiEstimate});
   }
-  for(const n of notes){if(n){delete n.mappingReason;
-   if(![n.beat,n.staff,n.measure,n.midiEstimate].every(Number.isFinite))flag(n,"invalidGraphical");}}
+  for(const n of notes){if(n&&![n.beat,n.staff,n.measure,n.midiEstimate].every(Number.isFinite))
+   flag(n,"invalidGraphical");}
   for(const [k,graphNotes] of graphicalByKey){
    const native=nativeByKey.get(k)||[];
    // Two source voices sharing a pitch are NOT interchangeable, even if
@@ -149,7 +150,7 @@
      for(const n of graphNotes){n.mappingStatus="ambiguous";flag(n,"ambiguous");}
      ambiguous+=graphNotes.length;
     }
-    if(native.length===0)for(const n of graphNotes)flag(n,"noNativeCandidate");
+    if(native.length===0&&graphNotes.length===1)flag(graphNotes[0],"noNativeCandidate");
     continue;
    }
    const n=graphNotes[0],e=native[0];
