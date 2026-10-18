@@ -17,8 +17,10 @@ ok(bridge.includes("LAYER_TYPE_SOFTWARE"),"Research layer diagnostic isolated");
 ok(html.includes("opticalSeek(beat,bpm,!!playing)"),"OSMD pilot consumes beats, not MIDI output");
 ok(html.includes('src="optical-time-map.js"'),"Optical map is a bundled offline asset");
 ok(html.includes("opticalPosition"),"Reference-led optical movement required");
-ok(html.includes("OpticalTimeMap.hitTest(optical.notes,x,y)"),"Preview touch consults musical noteheads");
+ok(html.includes("OpticalTimeMap.hitTest(optical.notes,x,y,hitRadiusX,hitRadiusY)"),"Preview touch consults musical noteheads");
 ok(html.includes("POC_NOTE_TAP"),"Preview emits auditable notehead touch");
+ok(html.includes("12*vb.width/rect.width")&&html.includes("10*vb.height/rect.height"),
+  "Touch radius must remain usable after OSMD SVG scaling");
 ok(html.includes("role=\"status\""),"Preview note feedback exposed accessibly");
 ok(views.includes("setOnLongClickListener"),"Research activation deliberate");
 ok(time.includes("function computeX(beat,pxPerBeat,origin){return origin+beat*pxPerBeat;}"),
