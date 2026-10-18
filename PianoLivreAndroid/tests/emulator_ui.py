@@ -591,6 +591,37 @@ if __name__=="__main__":
             "reasons":mapping.get("reasons"),
             "samples":mapping.get("samples",[])
         },ensure_ascii=False),flush=True)
+    # Public-domain score fixture already bundled with the app. Read only
+    # the anomalous written measures; avoid any user-imported MusicXML.
+    source_fixture=Path("app/src/main/assets/scores/gymnopedie-no-1-satie.mxl")
+    if source_fixture.exists() and long_proof.get("midiMapping",{}).get("samples"):
+        import zipfile
+        with zipfile.ZipFile(source_fixture) as mxl:
+            xml_files=[name for name in mxl.namelist()
+                       if name.lower().endswith((".xml",".musicxml"))
+                       and not name.startswith("META-INF/")]
+            assert xml_files, "Bundled Gymnopédie archive lost its MusicXML score"
+            root=ET.fromstring(mxl.read(xml_files[0]))
+        parts=root.findall("./part")
+        original=[]
+        for anomaly in long_proof["midiMapping"]["samples"]:
+            measure_number=anomaly.get("measure")
+            if not parts:continue
+            measures=parts[0].findall("measure")
+            if not (isinstance(measure_number,int) and 1<=measure_number<=len(measures)):continue
+            notes=[]
+            for note in measures[measure_number-1].findall("note"):
+                pitch=note.find("pitch")
+                if pitch is None:continue
+                notes.append({"step":pitch.findtext("step"),"alter":pitch.findtext("alter"),
+                              "octave":pitch.findtext("octave"),
+                              "duration":note.findtext("duration"),
+                              "voice":note.findtext("voice"),
+                              "staff":note.findtext("staff"),
+                              "tie":[t.attrib.get("type") for t in note.findall("tie")]})
+            original.append({"measure":measure_number,"graphicalMidi":anomaly.get("midiEstimate"),
+                             "sourceNotes":notes[:12]})
+        print("POC_LONG_ORIGINAL_XML "+json.dumps(original,ensure_ascii=False),flush=True)
     assert long_proof["measures"]>=40, "Long-score fixture unexpectedly short"
     assert 0<long_proof["displayScale"]<1, "Dense two-staff score was not fitted to display height"
     assert long_proof["height"]<=long_proof["viewportHeight"], "OSMD two-staff SVG extends below viewport"
