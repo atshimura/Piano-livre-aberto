@@ -53,4 +53,8 @@ ok(bridge.includes("if(disposed||freeLayout||!htmlReady||!scoreRendered||pending
 ok(html.includes("POC_RESIZE_HEIGHT_ONLY"),"Height-only guide resize must avoid full OSMD render");
 ok(html.includes("osmdRenderedWidth===viewport.clientWidth"),"Width changes must still trigger OSMD re-layout");
 ok(html.includes("osmdRenderedHeight=viewport.clientHeight"),"Track rendered viewport height for guide toggles");
+ok(html.includes("function fitOpticalSvg(svg)"),"Two-staff SVG must fit vertical space");
+ok(html.includes("optical.timeline.xAt(beat)*opticalDisplayScale"),"Musical x movement must honor optical display zoom");
+ok(html.includes("svg.dataset.opticalNativeHeight"),"Height resize must retain original OSMD drawing metrics");
+ok(html.includes("displayScale:opticalDisplayScale"),"Piano score proof reports actual visual scaling");
 console.log("OSMD_POC_CONTRACT_PASS checks="+checks);
