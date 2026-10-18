@@ -80,13 +80,7 @@ ok(html.includes("osmdRenderedHeight=viewport.clientHeight"),"Track rendered vie
 ok(html.includes("function fitOpticalSvg(svg)"),"Two-staff SVG must fit vertical space");
 ok(html.includes("optical.timeline.xAt(beat)*opticalDisplayScale"),"Musical x movement must honor optical display zoom");
 ok(html.includes("svg.dataset.opticalNativeHeight"),"Height resize must retain original OSMD drawing metrics");
-ok(html.includes("const ink=svg.getBBox()")&&html.includes("const margin=12"),
- "Cropping may remove only empty SVG margins and must leave a safety margin");
-ok(html.includes("high-low<baseVbHeight*.92")&&
- html.includes("svg.dataset.opticalCropHeight"),
- "Small or unavailable ink bounds must keep native SVG viewBox");
-ok(html.includes("svg.setAttribute('viewBox',[baseX,cropY,baseVbWidth,cropHeight]"),
- "Vertical-only crop preserves original x-coordinates for beat and tap mapping");
+ok(!html.includes("svg.getBBox()"),"Failed crop experiment is not left in the OSMD rendering path");
 ok(html.includes("displayScale:opticalDisplayScale"),"Piano score proof reports actual visual scaling");
 ok(html.includes("Math.abs(viewport.scrollLeft-target)>=0.5"),"WebView skips redundant subpixel scroll updates");
 console.log("OSMD_POC_CONTRACT_PASS checks="+checks);
