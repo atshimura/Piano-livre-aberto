@@ -274,6 +274,25 @@ if __name__=="__main__":
     assert "POC_LAYER software" in adb("logcat","-d","-v","brief"), "Preview did not isolate software SVG diagnostic"
     time.sleep(2)
     screenshot("piano-osmd-poc.png")
+    # A real adb tap on the HEAD of the first note, not on an arbitrary beat column.
+    first=professional.get("firstNoteViewport")
+    assert first and first.get("midiEstimate") is not None, "OSMD notehead mapping missing"
+    webviews=[n for n in dump().iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
+    assert webviews, "Android WebView bounds unavailable for a physical note tap"
+    bounds=[int(v) for v in re.findall(r"\d+",webviews[0].attrib.get("bounds",""))]
+    assert len(bounds)==4, "Invalid WebView geometry"
+    w,h=bounds[2]-bounds[0],bounds[3]-bounds[1]
+    nx=bounds[0]+round(first["x"]*w/professional["viewportWidth"])
+    ny=bounds[1]+round(first["y"]*h/professional["viewportHeight"])
+    assert bounds[0]<=nx<bounds[2] and bounds[1]<=ny<bounds[3], "Mapped notehead outside visible WebView"
+    adb("shell","input","tap",str(nx),str(ny))
+    time.sleep(.5)
+    touches=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_NOTE_TAP {" in line]
+    assert touches, "Actual Android touch did not reach graphical notehead"
+    hit=json.loads(touches[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
+    assert hit["staff"]==1 and hit["midiEstimate"]==first["midiEstimate"], "Android head-touch resolved wrong note or staff"
+    screenshot("piano-osmd-poc-note-tap.png")
+    print("PASS: actual Android tap identified first upper-staff OSMD notehead",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     playback_point=tap_text(["Iniciar"],return_point=True)
     time.sleep(2)
