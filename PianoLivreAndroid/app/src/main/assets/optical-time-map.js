@@ -80,6 +80,17 @@
   }
   return {timeline:create(entries),notes:notes,sourceEntries:entries.length};
  }
+ /** Display exact MusicXML written spelling; MIDI pitch alone cannot distinguish
+  * D-sharp from E-flat or preserve B-sharp/C-flat. Incomplete source -> null.
+  */
+ function writtenPitch(event){
+  if(!event||!Number.isInteger(event.octave)||event.octave<0||event.octave>9||
+     !Number.isInteger(event.alter)||Math.abs(event.alter)>2)return null;
+  const steps={C:"Dó",D:"Ré",E:"Mi",F:"Fá",G:"Sol",A:"Lá",B:"Si"};
+  if(!Object.prototype.hasOwnProperty.call(steps,event.step))return null;
+  const alterations={"-2":"𝄫","-1":"♭","0":"","1":"♯","2":"𝄪"};
+  return steps[event.step]+alterations[event.alter]+event.octave;
+ }
  /** Hit-test the GRAPHICAL note head rather than an onset column or MIDI pitch.
   * Coordinates are SVG viewBox coordinates, not screen CSS coordinates.
   */
@@ -157,7 +168,9 @@
    if(Math.abs(n.beat-e.event.beat)>0.001){flag(n,"beatDisagreement");continue;}
    n.nativeEvent={index:e.index,beat:e.event.beat,midi:e.event.midi,
     staff:e.event.staff,measure:e.event.measure,voice:e.event.voice,
-    length:e.event.length,tieStart:!!e.event.tieStart};
+    length:e.event.length,tieStart:!!e.event.tieStart,
+    tieStop:!!e.event.tieStop,step:e.event.step,alter:e.event.alter,
+    octave:e.event.octave,xmlNoteIndex:e.event.xmlNoteIndex};
    n.mappingStatus="matched";
    matched++;
   }
@@ -166,7 +179,7 @@
    matched:matched,ambiguous:ambiguous,unmatched:notes.length-matched-ambiguous,
    unmatchedNative:events.length-invalidNative-matched,invalidNative:invalidNative};
  }
- const out={create:create,fromGraphical:fromGraphical,hitTest:hitTest,reconcile:reconcile};
+ const out={create:create,fromGraphical:fromGraphical,hitTest:hitTest,reconcile:reconcile,writtenPitch:writtenPitch};
  if(typeof module!=="undefined"&&module.exports)module.exports=out;
  if(root)root.OpticalTimeMap=out;
 })(typeof window!=="undefined"?window:null);
