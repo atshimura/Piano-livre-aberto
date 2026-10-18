@@ -299,6 +299,15 @@ if __name__=="__main__":
       ("long-press was not delivered" if not gesture_delivered else "long-press arrived; inspect WebView diagnostics"))
     assert gesture_delivered, "OSMD proof appeared without the expected long-press diagnostic"
     assert professional["svgNodes"]>50 and professional["width"]>0 and professional["measures"]>=3, "OSMD proof rendered no music"
+    context_logs=[line for line in adb("logcat","-d","-v","brief").splitlines()
+                  if "POC_CONTEXT_MEASURES " in line or "POC_CONTEXT_SVG_ROOT " in line or
+                     "POC_CONTEXT_PROBE_ERROR " in line]
+    Path("piano-osmd-context-probe.txt").write_text("\n".join(context_logs)+"\n",encoding="utf-8")
+    assert any("POC_CONTEXT_MEASURES " in line for line in context_logs), (
+      "OSMD active-measure context geometry was not captured: "+"\n".join(context_logs[-5:]))
+    assert any("POC_CONTEXT_SVG_ROOT " in line for line in context_logs), (
+      "OSMD SVG instruction groups were not captured: "+"\n".join(context_logs[-5:]))
+    print("POC_CONTEXT_PROBE_EVIDENCE "+"\n".join(context_logs),flush=True)
     assert professional["musicalAnchors"]>=8 and professional["graphicalNotes"]>=12, "OSMD map lost musical events"
     mapping=professional.get("midiMapping") or {}
     assert mapping.get("nativeEvents",0)>=12 and mapping.get("matched",0)>=5, "Original Java Score events are not cross-referenced with OSMD"
