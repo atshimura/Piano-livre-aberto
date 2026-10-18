@@ -97,7 +97,62 @@
   }
   return best;
  }
- const out={create:create,fromGraphical:fromGraphical,hitTest:hitTest};
+ /** Match original Android Score events only when graphical onset, staff, measure
+  * and MIDI pitch uniquely agree. Tied continuations and polyphonic unisons
+  * MUST stay unresolved; never silently assign an arbitrary voice.
+  * This is a cross-parser diagnostic, not a replacement for Score.java.
+  */
+ function reconcile(notes,events){
+  if(!Array.isArray(notes)||!Array.isArray(events))throw Error("Missing native/graphical events");
+  const key=(beat,staff,measure,midi)=>
+   Math.round(beat*1000)+":"+staff+":"+measure+":"+midi;
+  const nativeByKey=new Map(),graphicalByKey=new Map();
+  let invalidNative=0;
+  for(let i=0;i<events.length;i++){
+   const e=events[i];
+   if(!e||![e.beat,e.midi,e.staff,e.measure,e.length].every(Number.isFinite)
+       ||e.beat<0||e.length<0||!Number.isInteger(e.midi)
+       ||!Number.isInteger(e.staff)||!Number.isInteger(e.measure)){
+    invalidNative++;continue;
+   }
+   const k=key(e.beat,e.staff,e.measure,e.midi);
+   if(!nativeByKey.has(k))nativeByKey.set(k,[]);
+   nativeByKey.get(k).push({event:e,index:i});
+  }
+  for(const n of notes){
+   if(!n)continue;
+   delete n.nativeEvent;
+   n.mappingStatus="unmatched";
+   if(![n.beat,n.staff,n.measure,n.midiEstimate].every(Number.isFinite))continue;
+   const k=key(n.beat,n.staff,n.measure,n.midiEstimate);
+   if(!graphicalByKey.has(k))graphicalByKey.set(k,[]);
+   graphicalByKey.get(k).push(n);
+  }
+  let matched=0,ambiguous=0;
+  for(const [k,graphNotes] of graphicalByKey){
+   const native=nativeByKey.get(k)||[];
+   // Two source voices sharing a pitch are NOT interchangeable, even if
+   // both appear at the same beat or only one head was engraved.
+   if(graphNotes.length!==1||native.length!==1){
+    if(graphNotes.length>1||native.length>1){
+     for(const n of graphNotes)n.mappingStatus="ambiguous";
+     ambiguous+=graphNotes.length;
+    }
+    continue;
+   }
+   const n=graphNotes[0],e=native[0];
+   if(Math.abs(n.beat-e.event.beat)>0.001)continue;
+   n.nativeEvent={index:e.index,beat:e.event.beat,midi:e.event.midi,
+    staff:e.event.staff,measure:e.event.measure,voice:e.event.voice,
+    length:e.event.length,tieStart:!!e.event.tieStart};
+   n.mappingStatus="matched";
+   matched++;
+  }
+  return {graphicalNotes:notes.length,nativeEvents:events.length,
+   matched:matched,ambiguous:ambiguous,unmatched:notes.length-matched-ambiguous,
+   unmatchedNative:events.length-invalidNative-matched,invalidNative:invalidNative};
+ }
+ const out={create:create,fromGraphical:fromGraphical,hitTest:hitTest,reconcile:reconcile};
  if(typeof module!=="undefined"&&module.exports)module.exports=out;
  if(root)root.OpticalTimeMap=out;
 })(typeof window!=="undefined"?window:null);
