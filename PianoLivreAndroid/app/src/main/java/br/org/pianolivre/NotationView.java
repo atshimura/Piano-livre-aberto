@@ -13,6 +13,7 @@ import android.webkit.WebResourceError;
 import android.view.View;
 import android.graphics.Color;
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 /**
  * Offline MusicXML score engraving, using the bundled BSD-licensed
@@ -117,7 +118,30 @@ public final class NotationView extends WebView {
   // Proper JSON quoting prevents XML text being interpreted as JavaScript.
   Log.i("PianoLivreNotation","LOAD_XML "+xml.length());
   String layout=freeLayout?"'free'":(engravingProof?"'engraving-poc'":"'study'");
-  evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+layout+")",null);
+  String nativeEvents="null";
+  if(engravingProof){
+   // Send the authoritative parsed events only to the opt-in experiment.
+   // No persistence or alteration of the musical playback model.
+   if(pendingScore.events.size()>20000){
+    Log.w("PianoLivreNotation","POC_EVENT_LIMIT "+pendingScore.events.size());
+   }else{
+    JSONArray serialized=new JSONArray();
+    for(Score.Event event:pendingScore.events){
+     try{
+      JSONObject note=new JSONObject();
+      note.put("beat",event.beat);note.put("length",event.length);
+      note.put("midi",event.midi);note.put("staff",event.staff);
+      note.put("measure",event.measure);note.put("voice",event.voiceId);
+      note.put("tieStart",event.tieStart);note.put("tieStop",event.tieStop);
+      serialized.put(note);
+     }catch(org.json.JSONException exception){
+      Log.w("PianoLivreNotation","POC_EVENT_SERIALIZATION",exception);
+     }
+    }
+    nativeEvents=serialized.toString();
+   }
+  }
+  evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+layout+","+nativeEvents+")",null);
  }
  /** A proof-of-concept preview of the already-bundled OSMD SVG engine.
   * Disabled on normal score load; never drives study playback or event timing.
