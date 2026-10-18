@@ -313,6 +313,28 @@ if __name__=="__main__":
     assert samples[-1]["scroll"]>samples[0]["scroll"]+3, "Optical SVG did not move horizontally during playback"
     adb("shell","input","tap",*playback_point)
     print("PASS: experimental OSMD optical scroll follows native musical clock",flush=True)
+    # Graphical loop selection must use TWO native-reconciled noteheads,
+    # then call the existing native callback, not edit the MusicXML.
+    tap_text(["Início"],scroll=True)
+    time.sleep(.7)
+    second=professional.get("secondNoteViewport")
+    assert second and second.get("beat",0)>first["beat"], "No later matched upper-staff note for loop"
+    lx=bounds[0]+round(second["x"]*w/professional["viewportWidth"])
+    ly=bounds[1]+round(second["y"]*h/professional["viewportHeight"])
+    assert bounds[0]<=lx<bounds[2] and bounds[1]<=ly<bounds[3], "Second notehead outside WebView"
+    tap_text(["Trecho ↻"],exact=True,scroll=True)
+    adb("shell","input","tap",str(nx),str(ny))
+    time.sleep(.3)
+    adb("shell","input","tap",str(lx),str(ly))
+    time.sleep(.6)
+    selections=[line for line in adb("logcat","-d","-v","brief").splitlines()
+                if "POC_LOOP_SELECTED {" in line]
+    assert selections, "OSMD did not deliver notehead-based loop selection"
+    chosen=json.loads(selections[-1].split("POC_LOOP_SELECTED ",1)[1].split(" @",1)[0])
+    assert abs(chosen["start"]-first["beat"])<.01 and chosen["end"]>second["beat"], "Loop boundaries do not follow musical noteheads"
+    screenshot("piano-osmd-poc-loop.png")
+    tap_text(["Início"],scroll=True)  # Clear persisted loop before legacy renderer regression.
+    print("PASS: verified OSMD noteheads selected a native study loop",flush=True)
     after_memory=adb("shell","dumpsys","meminfo","br.org.pianolivre.opensource")
     Path("piano-engraving-poc.json").write_text(json.dumps({
       "baseSha":"15cafe3c8da7c67b9752d14ba0fb6f8f6141177d",
