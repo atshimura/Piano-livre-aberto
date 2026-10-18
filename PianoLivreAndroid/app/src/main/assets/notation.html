@@ -262,7 +262,12 @@
    if(rect.width<=0||rect.height<=0)return;
    const x=vb.x+(ev.clientX-rect.left)*vb.width/rect.width;
    const y=vb.y+(ev.clientY-rect.top)*vb.height/rect.height;
-   const note=OpticalTimeMap.hitTest(optical.notes,x,y);
+   // A score scaled to ~50% otherwise leaves heads only a few CSS pixels
+   // wide, making valid mobile touches unreliable. Expand in SCREEN units;
+   // the optical map still picks the nearest actual graphical head and rejects ties.
+   const hitRadiusX=Math.max(11,Math.min(34,12*vb.width/rect.width));
+   const hitRadiusY=Math.max(7,Math.min(26,10*vb.height/rect.height));
+   const note=OpticalTimeMap.hitTest(optical.notes,x,y,hitRadiusX,hitRadiusY);
    const tip=document.getElementById('optical-note-tip');
    if(!note){tip.style.display='none';return;}
    const native=note.nativeEvent;
