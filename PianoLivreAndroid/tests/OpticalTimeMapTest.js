@@ -178,6 +178,28 @@ report=T.reconcile(written,[{...exact[0],midi:61,step:"D",alter:-1,octave:4,xmlN
 ok(report.matched===1&&T.writtenPitch(written[0].nativeEvent)==="Ré♭4"&&
  written[0].nativeEvent.xmlNoteIndex===17&&written[0].nativeEvent.sourcePart===0,
  "Reconciled head keeps source-note identity and enharmonic spelling");
+// Visual cues choose only future attacks from the selected staff; both hands
+// remain independently present in the notation and the guide keyboard.
+const cueNotes=[
+ {beat:1,staff:1,x:10,nativeEvent:{playbackAttack:true}},
+ {beat:1,staff:2,x:12,nativeEvent:{playbackAttack:true}},
+ {beat:2,staff:1,x:20,nativeEvent:{playbackAttack:false}},
+ {beat:3,staff:1,x:25,nativeEvent:{playbackAttack:true}},
+ {beat:4,staff:2,x:30,nativeEvent:{playbackAttack:true}}
+];
+ok(T.nextCueHeads(cueNotes,0,0).length===2,
+ "Both-hand visual cues share simultaneous written attacks");
+ok(T.nextCueHeads(cueNotes,0,1).length===1&&
+ T.nextCueHeads(cueNotes,0,1)[0].staff===1,
+ "Right-hand cue excludes the left hand");
+ok(T.nextCueHeads(cueNotes,0,2).length===1&&
+ T.nextCueHeads(cueNotes,0,2)[0].staff===2,
+ "Left-hand cue excludes the right hand");
+ok(T.nextCueHeads(cueNotes,1.5,1)[0].beat===3,
+ "Tied continuation without attack must be skipped as an expected attack");
+ok(T.nextCueHeads(cueNotes,4.1,0).length===0&&
+ T.nextCueHeads(cueNotes,0,3).length===0,
+ "Cue algorithm refuses missing future attacks and invalid hand choice");
 // A long score must not require a quadratic lookup for musical scrolling.
 // This probes only the time/graphics map, NOT Android WebView SVG rendering.
 const longEntries=[];
