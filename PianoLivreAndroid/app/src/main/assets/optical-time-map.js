@@ -161,8 +161,17 @@
    n.mappingReason=reason;
    reasons[reason]++;
    // Small, bounded diagnostic; no source XML or user data logged.
-   if(samples.length<20)samples.push({reason:reason,beat:n.beat,staff:n.staff,
-    measure:n.measure,midiEstimate:n.midiEstimate});
+   if(samples.length<20){
+    const atOnset=reason==="noNativeCandidate"
+     ?events.filter(e=>e&&e.staff===n.staff&&e.measure===n.measure&&
+        Number.isFinite(e.beat)&&Math.abs(e.beat-n.beat)<.002)
+       .slice(0,8).map(e=>({midi:e.midi,voice:e.voice,
+         tieStart:!!e.tieStart,tieStop:!!e.tieStop,step:e.step,alter:e.alter}))
+     :[];
+    samples.push({reason:reason,beat:n.beat,staff:n.staff,
+     measure:n.measure,midiEstimate:n.midiEstimate,voiceId:n.voiceId,
+     nativeAtSameOnset:atOnset});
+   }
   }
   for(const n of notes){if(n&&![n.beat,n.staff,n.measure,n.midiEstimate].every(Number.isFinite))
    flag(n,"invalidGraphical");}
