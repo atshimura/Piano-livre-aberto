@@ -101,15 +101,18 @@
   if(!Array.isArray(notes)||!Number.isFinite(x)||!Number.isFinite(y))return null;
   const rx=xRadius===undefined?11:xRadius,ry=yRadius===undefined?7:yRadius;
   if(!(rx>0&&ry>0))return null;
-  let best=null,distance=Infinity;
+  let best=null,distance=Infinity,tied=false;
   for(const n of notes){
    if(!n||!Number.isFinite(n.x)||!Number.isFinite(n.y))continue;
    const dx=(n.x-x)/rx,dy=(n.y-y)/ry;
    if(Math.abs(dx)>1||Math.abs(dy)>1)continue;
    const d=dx*dx+dy*dy;
-   if(d<distance){best=n;distance=d;}
+   if(d<distance-0.0001){best=n;distance=d;tied=false;}
+   else if(Math.abs(d-distance)<=0.0001){tied=true;}
   }
-  return best;
+  // Coincident graphical heads or exactly equidistant heads are not a
+  // deterministic physical touch target. Prefer no result to wrong identity.
+  return tied?null:best;
  }
  /** Match original Android Score events only when graphical onset, staff, measure
   * and MIDI pitch uniquely agree. Tied continuations and polyphonic unisons
