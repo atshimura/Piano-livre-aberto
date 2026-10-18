@@ -34,7 +34,8 @@ ok(html.includes("POC_MIDI_MAPPING"),
    "Record mapping completeness and ambiguity for field diagnostics");
 ok(html.includes("MIDI não confirmado"),
    "Unmatched and polyphonic-unison heads must be disclosed, never treated as exact");
-ok(bridge.includes("for(Score.Event event:pendingScore.writtenEvents)")&&
+ok(bridge.includes("for(Score.Event event:graphicEvents)")&&
+ bridge.includes("pendingScore.writtenEvents.isEmpty()")&&
  bridge.includes('note.put("playbackAttack",event.playbackAttack)'),
  "Optical mapping must use original MusicXML heads, not MIDI-merged tie attacks");
 ok(html.includes("Início de trecho: escolha uma nota com ataque")&&
