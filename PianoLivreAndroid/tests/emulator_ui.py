@@ -636,6 +636,11 @@ if __name__=="__main__":
        "caution":"rAF callback timing does not establish composited frames or physical-device fluency."},
        ensure_ascii=False,indent=2),encoding="utf-8")
     print("PASS: real OSMD WebView long-score graphic and optical scrolling evidence",flush=True)
+    # Diagnose unexpected Home screen / process death instead of masking it by
+    # restarting the app. Failure here blocks promotion to production.
+    print("POC_POST_LONG_ACTIVITY "+
+          adb("shell","dumpsys","activity","activities")[-2200:],flush=True)
+    assert_running()
     tap_text(["Biblioteca"],scroll=True)
     assert_running()
     print("PASS emulator UI: library, music, study mode, playback, navigation",flush=True)
