@@ -111,6 +111,11 @@ public class Score {
   public double beat, length;
   public int midi, staff, voice, measure, velocity=80;
   public String voiceId;
+  /** Written pitch from MusicXML, independent of enharmonic MIDI spelling. */
+  public String writtenStep=null;
+  public int writtenOctave=Integer.MIN_VALUE;
+  public double writtenAlter=Double.NaN;
+  public int sourceNoteIndex=-1;
   private int sourcePart;private boolean velocityOverride;
   public boolean tieStart, tieStop;
   public Event(double b,double l,int n,int s,int v,int m){beat=b;length=l;midi=n;staff=s;voice=v;voiceId=String.valueOf(v);measure=m;}
@@ -338,6 +343,8 @@ public class Score {
        int n=12*(number(text(pitch,"octave","4"),4)+1)+offset+(int)Math.rint(decimal(text(pitch,"alter","0"),0));lastMidi=n;
        int localStaff=number(text(el,"staff",pi==0?"1":"2"),1);int staff=splitHands?pi+1:localStaff;int voice=number(text(el,"voice","1"),1);
        Event ev=new Event(base+onset,dur,n,staff,voice,mi+1);ev.voiceId=text(el,"voice","1");ev.sourcePart=pi;
+       ev.writtenStep=step;ev.writtenOctave=number(text(pitch,"octave","4"),4);
+       ev.writtenAlter=decimal(text(pitch,"alter","0"),0);ev.sourceNoteIndex=ci;
        double noteDynamics=decimal(el.getAttribute("dynamics"),Double.NaN);
        if(Double.isFinite(noteDynamics)&&noteDynamics>=0){ev.velocity=velocity(noteDynamics);ev.velocityOverride=true;}
        NodeList ties=el.getElementsByTagName("tie");for(int ti=0;ti<ties.getLength();ti++){Element tie=(Element)ties.item(ti);if("start".equals(tie.getAttribute("type")))ev.tieStart=true;if("stop".equals(tie.getAttribute("type")))ev.tieStop=true;}
