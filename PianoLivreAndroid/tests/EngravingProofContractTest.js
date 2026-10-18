@@ -43,4 +43,11 @@ ok(html.includes("if(studyProof){\n     opticalLoopEditing=!!enabled"),
    "Opt-in proof must handle loop selection without invoking old renderer");
 ok(bridge.includes("if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)"),
    "Native loop callback remains guarded by native study lifecycle");
+ok(html.includes("POC_WAIT_PREPARE"),"Native Wait countdown must be logged in proof");
+ok(html.includes("if(studyProof){beginOpticalWait(milliseconds);return;}"),
+   "Only experimental OSMD preview uses optical Wait preparation");
+ok(html.includes("if(studyProof){cancelOpticalWait();return;}"),
+   "Native stop cancels OSMD countdown");
+ok(bridge.includes("if(disposed||freeLayout||!htmlReady||!scoreRendered||pendingWaitDeadline<=0)return;"),
+   "Wait preparation can reach preview through native bridge");
 console.log("OSMD_POC_CONTRACT_PASS checks="+checks);
