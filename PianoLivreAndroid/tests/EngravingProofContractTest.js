@@ -24,4 +24,16 @@ ok(views.includes("setOnLongClickListener"),"Research activation deliberate");
 ok(time.includes("function computeX(beat,pxPerBeat,origin){return origin+beat*pxPerBeat;}"),
    "Strict beat-proportional baseline untouched");
 ok(time.includes("function cursorPx(width){return width*.4;}"),"Existing cursor placement untouched");
+ok(bridge.includes("JSONArray serialized=new JSONArray()"),
+   "Native Score events must be serialized only in engraving preview");
+ok(bridge.includes('note.put("midi",event.midi)'),
+   "Native MIDI authority travels alongside the graphical proof");
+ok(html.includes("OpticalTimeMap.reconcile(optical.notes"),
+   "Preview must explicitly cross-reference graphical noteheads with native events");
+ok(html.includes("POC_MIDI_MAPPING"),
+   "Record mapping completeness and ambiguity for field diagnostics");
+ok(html.includes("MIDI não confirmado"),
+   "Unmatched and polyphonic-unison heads must be disclosed, never treated as exact");
+ok(html.includes("attachOpticalNoteTouch(document.querySelector('#score svg'))"),
+   "Re-rendered SVG must have an active head hit-target after resize");
 console.log("OSMD_POC_CONTRACT_PASS checks="+checks);
