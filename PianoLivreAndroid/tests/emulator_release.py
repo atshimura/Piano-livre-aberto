@@ -2,7 +2,8 @@
 """Upgrade the synthetic installation to non-debuggable release, then verify UI.
 No hardware claims. Both variants use only this runner's disposable certificate.
 """
-import json,pathlib,subprocess,time
+import json,pathlib,subprocess,time,tempfile
+from upgrade_fixture import synthetic_upgrade_preferences
 from emulator_ui import adb,dump,tap_text,screenshot,assert_running
 PACKAGE='br.org.pianolivre.opensource'
 apk='app/build/outputs/apk/release/app-release.apk'
@@ -11,6 +12,12 @@ adb('shell','am','force-stop',PACKAGE)
 adb('push','app/src/main/assets/scores/ode-to-joy-ludwig-van-beethoven.mxl','/data/local/tmp/release-upgrade.mxl')
 adb('shell','run-as',PACKAGE,'mkdir','-p','files/imported')
 adb('shell','run-as',PACKAGE,'cp','/data/local/tmp/release-upgrade.mxl','files/imported/upgrade.mxl')
+with tempfile.TemporaryDirectory(prefix='piano-release-upgrade-') as temporary:
+    prefs=pathlib.Path(temporary)/'upgrade-prefs.xml'
+    prefs.write_text(synthetic_upgrade_preferences(),encoding='utf-8')
+    adb('push',str(prefs),'/data/local/tmp/release-upgrade-prefs.xml')
+    adb('shell','run-as',PACKAGE,'mkdir','-p','shared_prefs')
+    adb('shell','run-as',PACKAGE,'cp','/data/local/tmp/release-upgrade-prefs.xml','shared_prefs/piano_data.xml')
 adb('install','-r',apk)
 flags=['backup_selftest','profiles_selftest','library_selftest','history_selftest','midifile_selftest','xml_input_selftest','upgrade_selftest','midi_selftest','midi_import_ui_selftest']
 args=['shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity']

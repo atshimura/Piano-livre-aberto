@@ -297,3 +297,8 @@ O emulador `39159409919` confirmou fixture OSMD pronta (3 compassos, 19 cabeças
 ### Contrato de origem musical — SHA `8a317a4`
 
 Build `39160134890` falhou no contrato estático ao exigir `sourceMeasure:measureNumber`, a antiga equivalência entre grupo SVG e compasso. A lógica agora preenche `sourceMeasure` com o compasso musical seguinte quando o glifo está junto à borda direita. O teste do emulador no mesmo SHA segue em andamento; o próximo contrato verifica `sourceMeasure:targetMeasure` e o registro de remapeamentos.
+
+
+### Isolamento do teste de upgrade release — SHA `8a4e278`
+
+O teste de contexto no emulador passou: m1 `1/null/1`, m2 `2/2/2`, m3 `3/3/3`; remapeamentos SVG `1→2` e `2→3` confirmados. A etapa seguinte `emulator_release.py` falhou em `Ocultar teclado` porque `emulator_ui.py` havia alterado a mesma preferência sintética de upgrade e deixado uma partitura debug-only ativa. Corrigirei a contaminação do cenário usando um único construtor de preferências sintéticas e resemeando o estado determinístico antes da instalação do APK release, preservando as verificações de perfil, teclado e andamento.

@@ -29,16 +29,9 @@ with tempfile.TemporaryDirectory(prefix='piano-upgrade-') as temporary:
         run('adb','shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity')
         run('adb','shell','am','force-stop',PACKAGE)
         # Synthetic state matches the v0.9.25 schema, with non-contiguous IDs.
-        profiles=json.dumps([dict(id=0,name='Upgrade A',avatar=0),dict(id=7,name='Upgrade B',avatar=3)],ensure_ascii=False)
-        library=json.dumps(dict(version=1,favorites=['imported/upgrade.mxl'],collections=[]))
-        bits=lambda value:struct.unpack('>q',struct.pack('>d',value))[0]
-        lines=['<map>', '<boolean name="upgrade_test_fixture" value="true"/>']
-        for key,value in {'profiles':'["Upgrade A","Upgrade B"]','profiles_v2':profiles,'user_7_file':'/data/user/0/br.org.pianolivre.opensource/files/imported/upgrade.mxl','user_7_library':library}.items():
-            lines.append('<string name="'+key+'">'+html.escape(value)+'</string>')
-        for key,value in {'active_profile':7,'profiles_next_id':8,'user_7_mode':1,'user_7_hand':2}.items():lines.append(f'<int name="{key}" value="{value}"/>')
-        for key,value in {'position':.75,'tempo':.8,'loop_start':0,'loop_end':8}.items():lines.append(f'<long name="user_7_{key}" value="{bits(value)}"/>')
-        lines.extend(['<boolean name="user_7_keyboard" value="true"/>','</map>'])
-        prefs=pathlib.Path(temporary)/'upgrade-prefs.xml';prefs.write_text('\n'.join(lines))
+        from upgrade_fixture import synthetic_upgrade_preferences
+        prefs=pathlib.Path(temporary)/'upgrade-prefs.xml'
+        prefs.write_text(synthetic_upgrade_preferences(),encoding='utf-8')
         source=baseline/'PianoLivreAndroid/app/src/main/assets/scores/ode-to-joy-ludwig-van-beethoven.mxl'
         run('adb','push',str(source),'/data/local/tmp/upgrade.mxl')
         run('adb','push',str(prefs),'/data/local/tmp/upgrade-prefs.xml')
