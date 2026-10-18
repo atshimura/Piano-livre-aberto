@@ -442,6 +442,7 @@ class PianoScreens {
  void displayScore(Score score,double beat){
   editingLoop=false;updateSelections();
   legacyFallback.setVisibility(View.VISIBLE);
+  notation.setStudyHand(a.currentHand);
   notation.loadScore(score,beat);
   virtualKeys.score=score;
   virtualKeys.playhead=beat;
