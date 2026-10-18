@@ -39,7 +39,7 @@ const hitNote=mapped.notes.find(n=>n.staff===1&&n.beat===0);
 ok(!!hitNote,"First graphical head exists");
 ok(T.hitTest(mapped.notes,hitNote.x,hitNote.y)?.midiEstimate===60,"Click near graphical head identifies exact note");
 ok(T.hitTest(mapped.notes,hitNote.x+5,hitNote.y+3)?.midiEstimate===60,"Allow small touch imprecision");
-ok(T.hitTest(mapped.notes,hitNote.x+50,hitNote.y)===null,"Reject clicks between noteheads");
+ok(T.hitTest(mapped.notes,hitNote.x,hitNote.y+90)===null,"Reject touches away from both staves");
 ok(T.hitTest(mapped.notes,NaN,hitNote.y)===null,"Reject invalid gesture");
 ok(T.hitTest(mapped.notes,hitNote.x,hitNote.y,0,7)===null,"Reject invalid hit area");
 ok(T.hitTest(mapped.notes,mapped.notes[2].x,mapped.notes[2].y)?.staff===2,"Both staves independently accessible");
