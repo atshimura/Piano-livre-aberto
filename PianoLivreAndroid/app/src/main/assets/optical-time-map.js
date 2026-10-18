@@ -129,19 +129,31 @@
    graphicalByKey.get(k).push(n);
   }
   let matched=0,ambiguous=0;
+  const reasons={invalidGraphical:0,noNativeCandidate:0,ambiguous:0,beatDisagreement:0};
+  const samples=[];
+  function flag(n,reason){
+   n.mappingReason=reason;
+   reasons[reason]++;
+   // Small, bounded diagnostic; no source XML or user data logged.
+   if(samples.length<20)samples.push({reason:reason,beat:n.beat,staff:n.staff,
+    measure:n.measure,midiEstimate:n.midiEstimate});
+  }
+  for(const n of notes){if(n){delete n.mappingReason;
+   if(![n.beat,n.staff,n.measure,n.midiEstimate].every(Number.isFinite))flag(n,"invalidGraphical");}}
   for(const [k,graphNotes] of graphicalByKey){
    const native=nativeByKey.get(k)||[];
    // Two source voices sharing a pitch are NOT interchangeable, even if
    // both appear at the same beat or only one head was engraved.
    if(graphNotes.length!==1||native.length!==1){
     if(graphNotes.length>1||native.length>1){
-     for(const n of graphNotes)n.mappingStatus="ambiguous";
+     for(const n of graphNotes){n.mappingStatus="ambiguous";flag(n,"ambiguous");}
      ambiguous+=graphNotes.length;
     }
+    if(native.length===0)for(const n of graphNotes)flag(n,"noNativeCandidate");
     continue;
    }
    const n=graphNotes[0],e=native[0];
-   if(Math.abs(n.beat-e.event.beat)>0.001)continue;
+   if(Math.abs(n.beat-e.event.beat)>0.001){flag(n,"beatDisagreement");continue;}
    n.nativeEvent={index:e.index,beat:e.event.beat,midi:e.event.midi,
     staff:e.event.staff,measure:e.event.measure,voice:e.event.voice,
     length:e.event.length,tieStart:!!e.event.tieStart};
@@ -149,6 +161,7 @@
    matched++;
   }
   return {graphicalNotes:notes.length,nativeEvents:events.length,
+   reasons:reasons,samples:samples,
    matched:matched,ambiguous:ambiguous,unmatched:notes.length-matched-ambiguous,
    unmatchedNative:events.length-invalidNative-matched,invalidNative:invalidNative};
  }
