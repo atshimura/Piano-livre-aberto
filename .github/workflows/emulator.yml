@@ -80,9 +80,15 @@ jobs:
       - name: Print OSMD context selector diagnostics
         if: always()
         run: |
-          if [ -f PianoLivreAndroid/piano-osmd-context-failure-diagnostics.txt ]; then
-            cat PianoLivreAndroid/piano-osmd-context-failure-diagnostics.txt
-          fi
+          for file in \
+            PianoLivreAndroid/piano-osmd-context-load-probe.txt \
+            PianoLivreAndroid/piano-osmd-context-changes.json \
+            PianoLivreAndroid/piano-osmd-context-failure-diagnostics.txt; do
+            if [ -f "$file" ]; then
+              echo "===== $file ====="
+              cat "$file"
+            fi
+          done
       - name: Store Android UI evidence
         if: always()
         uses: actions/upload-artifact@v4

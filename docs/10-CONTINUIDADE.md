@@ -232,3 +232,8 @@ O SHA `f60fbc5d517f315b61645b63fc994f46a5ed255c` passou no build `39148592764` e
 ### Retomada do diagnóstico de contexto — SHA `ace0d0f`
 
 O build passou (`39156493985`) e o emulador falhou na verificação de clave no compasso 3. A captura de probes ainda misturou registros de partituras anteriores e não provou que o `POC_OSMD_READY` encontrado correspondia ao gesto da fixture. Os estados `1/null/1`, `2/2/2`, `2/3/3` não são atribuídos à fixture sem correlação. Artefato do emulador: `12147131689`. O commit seguinte exige `CONTEXT_FIXTURE_LOAD_OK` com três compassos, limpa logcat imediatamente antes do toque prolongado, exige novo `POC_OSMD_READY` e arquiva o inventário OSMD/SVG e estados antes das asserções. Nenhuma transição de contexto da fixture está validada neste ponto.
+
+
+### Fixture correlacionada — SHA `373972c`
+
+Build completo `39157236327` passou. O emulador `39157236347` confirmou a carga Java da fixture, limpou log antes do toque prolongado e encontrou um `POC_OSMD_READY` novo de 3 compassos. Assim, os estados são desta fixture: m1 `1/null/1`; m2 `2/2/2`; m3 `2/3/3` (origens de clave/armadura/compasso). Falha real confirmada: o rail não avança a clave de sol de retorno no m3. Artefato `12147393066` inclui JSON e probes pré-asserção. Próxima ação: imprimir esse probe no log do Actions para verificar os atributos OSMD de m3 e se o glifo clef aparece no SVG; corrigir o extrator/modelo sem reduzir a asserção.

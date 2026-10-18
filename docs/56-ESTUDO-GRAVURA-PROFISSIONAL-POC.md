@@ -259,3 +259,6 @@ No SHA `c4b17f1`, build e emulador passaram; a Gymnopédie conciliou 469/469 cab
 
 
 **SHA `ace0d0f` — evidência inconclusiva:** o build passou, mas o emulador falhou na clave do compasso 3. O probe arquivado ainda continha registros de score anterior e não prova que o evento `POC_OSMD_READY` pertencia à fixture após o gesto. Não atribuir os estados do rail à fixture. O SHA seguinte sincroniza a carga Java `CONTEXT_FIXTURE_LOAD_OK`, o gesto, um novo `POC_OSMD_READY` e o inventário OSMD/SVG; preserva JSON/capturas antes da asserção para identificar a origem do defeito sem enfraquecer o requisito.
+
+
+**SHA `373972c`:** build passou; emulador provou a carga nativa (3 compassos) e um novo `POC_OSMD_READY` depois do gesto, com log limpo. Os estados do fixture são m1 `1/null/1`, m2 `2/2/2`, m3 `2/3/3` (clave/armadura/compasso); m3 falha porque a clave não muda para origem 3. Artefato `12147393066` guarda o JSON e os probes OSMD/SVG antes da asserção. O próximo commit imprime o probe completo no log e usa os dados do modelo OSMD/SVG para localizar a falta da clave no rail.
