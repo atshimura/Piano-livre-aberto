@@ -134,6 +134,7 @@ public final class NotationView extends WebView {
       note.put("beat",event.beat);note.put("length",event.length);
       note.put("midi",event.midi);note.put("staff",event.staff);
       note.put("measure",event.measure);note.put("voice",event.voiceId);
+      note.put("sourcePart",event.originalPartIndex());
       note.put("tieStart",event.tieStart);note.put("tieStop",event.tieStop);
       note.put("playbackAttack",event.playbackAttack);
       if(event.writtenStep!=null){
