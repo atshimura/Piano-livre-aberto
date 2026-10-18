@@ -578,6 +578,18 @@ if __name__=="__main__":
             except ValueError:pass
             if long_proof:break
     assert long_proof, "Long MusicXML did not finish horizontal OSMD rendering"
+    # CI console evidence for diagnosing every unresolved written score head.
+    # This mapping is bounded to 20 samples; source XML is never dumped.
+    if long_proof:
+        mapping=long_proof.get("midiMapping",{})
+        print("POC_LONG_MAPPING "+json.dumps({
+            "graphicalNotes":mapping.get("graphicalNotes"),
+            "matched":mapping.get("matched"),
+            "ambiguous":mapping.get("ambiguous"),
+            "unmatched":mapping.get("unmatched"),
+            "reasons":mapping.get("reasons"),
+            "samples":mapping.get("samples",[])
+        },ensure_ascii=False),flush=True)
     assert long_proof["measures"]>=40, "Long-score fixture unexpectedly short"
     assert 0<long_proof["displayScale"]<1, "Dense two-staff score was not fitted to display height"
     assert long_proof["height"]<=long_proof["viewportHeight"], "OSMD two-staff SVG extends below viewport"
