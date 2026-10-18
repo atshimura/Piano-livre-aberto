@@ -34,6 +34,12 @@ ok(html.includes("POC_MIDI_MAPPING"),
    "Record mapping completeness and ambiguity for field diagnostics");
 ok(html.includes("MIDI não confirmado"),
    "Unmatched and polyphonic-unison heads must be disclosed, never treated as exact");
+ok(bridge.includes("for(Score.Event event:pendingScore.writtenEvents)")&&
+ bridge.includes('note.put("playbackAttack",event.playbackAttack)'),
+ "Optical mapping must use original MusicXML heads, not MIDI-merged tie attacks");
+ok(html.includes("Início de trecho: escolha uma nota com ataque")&&
+ html.includes("Ligadura: sem novo ataque MIDI"),
+ "Tied continuation may be identified but cannot fabricate a new loop attack");
 ok(bridge.includes('note.put("step",event.writtenStep)')&&
  bridge.includes('note.put("xmlNoteIndex",event.sourceNoteIndex)'),
  "Native bridge preserves written pitch and source note index");
