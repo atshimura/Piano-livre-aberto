@@ -80,7 +80,24 @@
   }
   return {timeline:create(entries),notes:notes,sourceEntries:entries.length};
  }
- const out={create:create,fromGraphical:fromGraphical};
+ /** Hit-test the GRAPHICAL note head rather than an onset column or MIDI pitch.
+  * Coordinates are SVG viewBox coordinates, not screen CSS coordinates.
+  */
+ function hitTest(notes,x,y,xRadius,yRadius){
+  if(!Array.isArray(notes)||!Number.isFinite(x)||!Number.isFinite(y))return null;
+  const rx=xRadius===undefined?11:xRadius,ry=yRadius===undefined?7:yRadius;
+  if(!(rx>0&&ry>0))return null;
+  let best=null,distance=Infinity;
+  for(const n of notes){
+   if(!n||!Number.isFinite(n.x)||!Number.isFinite(n.y))continue;
+   const dx=(n.x-x)/rx,dy=(n.y-y)/ry;
+   if(Math.abs(dx)>1||Math.abs(dy)>1)continue;
+   const d=dx*dx+dy*dy;
+   if(d<distance){best=n;distance=d;}
+  }
+  return best;
+ }
+ const out={create:create,fromGraphical:fromGraphical,hitTest:hitTest};
  if(typeof module!=="undefined"&&module.exports)module.exports=out;
  if(root)root.OpticalTimeMap=out;
 })(typeof window!=="undefined"?window:null);
