@@ -41,6 +41,9 @@ ok(bridge.includes("PianoNotation.studyHand(")&&
 ok(html.includes("paintOpticalCues(beat)")&&
  html.includes("paintOpticalCues(seekBeat)"),
  "Preview cues update after native beat seek and SVG resize");
+ok(!html.includes("overlay.replaceChildren()")&&
+ html.includes("while(overlay.firstChild)overlay.removeChild(overlay.firstChild)"),
+ "SVG cue replacement must work in the Android WebView's Chromium 74 baseline");
 ok(html.includes("POC_MIDI_MAPPING"),
    "Record mapping completeness and ambiguity for field diagnostics");
 ok(html.includes("MIDI não confirmado"),

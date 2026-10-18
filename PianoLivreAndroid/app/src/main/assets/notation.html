@@ -179,7 +179,9 @@
    overlay.setAttribute('pointer-events','none');
    svg.appendChild(overlay);
   }
-  overlay.replaceChildren();
+  // Android WebView on supported devices may be Chromium 74; SVGElement.
+  // replaceChildren() is not available there. Use the DOM Level 1 API.
+  while(overlay.firstChild)overlay.removeChild(overlay.firstChild);
   for(const n of heads){
    if(!Number.isFinite(n.x)||!Number.isFinite(n.y))continue;
    const ring=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
