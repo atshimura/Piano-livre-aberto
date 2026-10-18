@@ -116,7 +116,10 @@ jobs:
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/StudyClock.java tests/StudyClockTest.java
           java -cp build/score-tests StudyClockTest
       - name: Test isolated OSMD engraving research path (JavaScript)
-        run: node tests/EngravingProofContractTest.js
+        run: |
+          node tests/EngravingProofContractTest.js
+          node tests/OpticalTimeMapTest.js
+          node --check app/src/main/assets/optical-time-map.js
       - name: Test proportional score layout (JavaScript)
         run: |
           node --check app/src/main/assets/temporal-notation.js
