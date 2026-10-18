@@ -112,5 +112,6 @@ jobs:
             PianoLivreAndroid/piano-motion.mp4
             PianoLivreAndroid/piano-performance.json
             PianoLivreAndroid/piano-upgrade.json
+            PianoLivreAndroid/piano-osmd-context-probe.txt
             PianoLivreAndroid/window.xml
             PianoLivreAndroid/piano-selftests.log

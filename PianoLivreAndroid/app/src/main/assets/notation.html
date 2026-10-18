@@ -421,8 +421,31 @@
       return {tag:node.tagName,id:node.id||null,cls:node.getAttribute('class'),box:box,
        childCount:node.childElementCount,html:node.outerHTML.slice(0,80)};
      }):[];
+     const contextModifiers=columns.slice(0,3).map(function(group,measureIndex){
+      return (group||[]).map(function(measure,staffIndex){
+       const stave=measure&&measure.getVFStave&&measure.getVFStave();
+       const modifiers=stave&&stave.getModifiers?stave.getModifiers():[];
+       return {measure:measureIndex+1,staff:staffIndex+1,modifiers:modifiers.map(function(modifier){
+        return {category:modifier.getCategory&&modifier.getCategory(),
+         position:modifier.getPosition&&modifier.getPosition(),
+         x:modifier.getX&&modifier.getX(),width:modifier.getWidth&&modifier.getWidth(),
+         attrsType:modifier.attrs&&modifier.attrs.type,keys:Object.keys(modifier).slice(0,10)};
+       })};
+      });
+     });
+     const contextNodes=svg?Array.from(svg.querySelectorAll('g.staffline > g.vf-measure')).slice(0,2).map(function(node){
+      return {staffline:node.parentElement&&node.parentElement.id,measure:node.id,
+       box:(function(){try{const b=node.getBBox();return [b.x,b.y,b.width,b.height].map(function(v){return +v.toFixed(1);});}catch(e){return null;}})(),
+       children:Array.from(node.children).slice(0,24).map(function(child){
+        let box=null;try{const b=child.getBBox();box=[b.x,b.y,b.width,b.height].map(function(v){return +v.toFixed(1);});}catch(e){}
+        return {tag:child.tagName,id:child.id||null,cls:child.getAttribute('class'),box:box,
+         childCount:child.childElementCount,html:child.outerHTML.slice(0,150)};
+       })};
+     }):[];
      console.log('POC_CONTEXT_MEASURES '+JSON.stringify(contextProbe));
      console.log('POC_CONTEXT_SVG_ROOT '+JSON.stringify(rootChildren));
+     console.log('POC_CONTEXT_GRAPHICS '+JSON.stringify(contextModifiers));
+     console.log('POC_CONTEXT_NODES '+JSON.stringify(contextNodes));
      }catch(contextError){console.log('POC_CONTEXT_PROBE_ERROR '+contextError.message)}
      const firstHead=optical.notes.find(function(n){return n.staff===1&&Number.isFinite(n.x)&&Number.isFinite(n.y);});
      const nextHead=firstHead&&optical.notes.find(function(n){
