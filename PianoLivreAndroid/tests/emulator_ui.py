@@ -287,6 +287,16 @@ if __name__=="__main__":
     assert "POC_LAYER software" in adb("logcat","-d","-v","brief"), "Preview did not isolate software SVG diagnostic"
     time.sleep(2)
     screenshot("piano-osmd-poc.png")
+    # Guide opening changes only height; keep the same OSMD SVG and all note IDs.
+    render_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
+    tap_text(["Teclado guia"],scroll=True)
+    time.sleep(.7)
+    tap_text(["Ocultar teclado"],scroll=True)
+    time.sleep(.7)
+    after_resize_log=adb("logcat","-d","-v","brief")
+    assert "POC_RESIZE_HEIGHT_ONLY {" in after_resize_log, "Guide resize did not use fast optical path"
+    assert after_resize_log.count("POC_OSMD_READY {")==render_count, "Guide height resize unexpectedly reloaded MusicXML"
+    print("PASS: keyboard height resize retains the OSMD graphical note map",flush=True)
     # A real adb tap on the HEAD of the first note, not on an arbitrary beat column.
     first=professional.get("firstNoteViewport")
     assert first and first.get("midiEstimate") is not None, "OSMD notehead mapping missing"
@@ -534,4 +544,50 @@ if __name__=="__main__":
     logs=adb("logcat","-d","-v","brief")
     if "FATAL EXCEPTION" in logs and "Process: br.org.pianolivre.opensource" in logs:
         raise AssertionError("Fatal exception in Piano Livre")
+    # Additional real Android WebView stress with an already authorized longer
+    # MusicXML score; a large pure-JS map test does NOT test SVG rendering.
+    old_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
+    tap_text(["Gymnopédie nº 1"],scroll=True)
+    time.sleep(3)
+    assert_running()
+    screenshot("piano-temporal-long.png")
+    buttons=[n for n in dump().iter("node") if n.attrib.get("text")=="Partitura Livre"]
+    assert buttons, "Long-score comparison cannot locate OSMD preview control"
+    c=[int(v) for v in re.findall(r"\d+",buttons[0].attrib["bounds"])]
+    adb("shell","input","swipe",str((c[0]+c[2])//2),str((c[1]+c[3])//2),
+        str((c[0]+c[2])//2),str((c[1]+c[3])//2),"1100")
+    long_proof=None
+    for attempt in range(35):
+        time.sleep(.8)
+        frames=[line.split("POC_OSMD_READY ",1)[1].split(" @",1)[0]
+                for line in adb("logcat","-d","-v","brief").splitlines()
+                if "POC_OSMD_READY {" in line]
+        if len(frames)>old_count:
+            try:long_proof=json.loads(frames[-1])
+            except ValueError:pass
+            if long_proof:break
+    assert long_proof, "Long MusicXML did not finish horizontal OSMD rendering"
+    assert long_proof["measures"]>=40, "Long-score fixture unexpectedly short"
+    assert long_proof["graphicalNotes"]>=50 and long_proof["svgNodes"]>=1000, "Long-score engraving incomplete"
+    screenshot("piano-osmd-long.png")
+    tap_text(["Contínuo"],exact=True,scroll=True)
+    long_play_point=tap_text(["Iniciar"],return_point=True,scroll=True)
+    time.sleep(2)
+    screenshot("piano-osmd-long-moving.png")
+    adb("shell","input","tap",*long_play_point)
+    long_logs=adb("logcat","-d","-v","brief")
+    long_perf=[]
+    for line in long_logs.splitlines():
+        if "POC_OPTICAL_PERF {" in line:
+            try:long_perf.append(json.loads(line.split("POC_OPTICAL_PERF ",1)[1].split(" @",1)[0]))
+            except ValueError:pass
+    assert long_perf and any(x["frames"]>=2 for x in long_perf), "Long score animation metrics absent"
+    Path("piano-osmd-long.json").write_text(json.dumps({"title":"Gymnopédie nº 1",
+       "source":"authorized MXL already bundled in app; Android API29 emulator",
+       "osmd":long_proof,"callbackSamples":long_perf[-3:],
+       "caution":"rAF callback timing does not establish composited frames or physical-device fluency."},
+       ensure_ascii=False,indent=2),encoding="utf-8")
+    print("PASS: real OSMD WebView long-score graphic and optical scrolling evidence",flush=True)
+    tap_text(["Biblioteca"],scroll=True)
+    assert_running()
     print("PASS emulator UI: library, music, study mode, playback, navigation",flush=True)
