@@ -237,3 +237,8 @@ O build passou (`39156493985`) e o emulador falhou na verificação de clave no 
 ### Fixture correlacionada — SHA `373972c`
 
 Build completo `39157236327` passou. O emulador `39157236347` confirmou a carga Java da fixture, limpou log antes do toque prolongado e encontrou um `POC_OSMD_READY` novo de 3 compassos. Assim, os estados são desta fixture: m1 `1/null/1`; m2 `2/2/2`; m3 `2/3/3` (origens de clave/armadura/compasso). Falha real confirmada: o rail não avança a clave de sol de retorno no m3. Artefato `12147393066` inclui JSON e probes pré-asserção. Próxima ação: imprimir esse probe no log do Actions para verificar os atributos OSMD de m3 e se o glifo clef aparece no SVG; corrigir o extrator/modelo sem reduzir a asserção.
+
+
+### Diagnóstico de contexto — SHA `2416e9d`
+
+O build `39157939341` passou; o emulador `39157939343` falhou somente na asserção de troca de clave do compasso 3. A suíte percorreu antes a Gymnopédie de 78 compassos e conciliou `469/469` cabeças escritas, sem ambiguidades ou divergências, e reconheceu toque real em nota. A clave da régua reportou origem 2 no compasso 3 apesar de a fixture declarar nova clave de sol; armadura e compasso reportaram origem 3. O arquivo de probe foi criado no diretório do projeto, mas o passo de log no workflow usou prefixos incompatíveis com o `working-directory`, então seus dados não apareceram no log. Próximo SHA corrige o caminho e registra os filhos SVG dos primeiros quatro compassos por pauta para identificar se a clave está ausente no modelo ou apenas no seletor. A falha e a asserção permanecem intactas.

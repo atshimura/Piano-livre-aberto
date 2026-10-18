@@ -81,9 +81,9 @@ jobs:
         if: always()
         run: |
           for file in \
-            PianoLivreAndroid/piano-osmd-context-load-probe.txt \
-            PianoLivreAndroid/piano-osmd-context-changes.json \
-            PianoLivreAndroid/piano-osmd-context-failure-diagnostics.txt; do
+            piano-osmd-context-load-probe.txt \
+            piano-osmd-context-changes.json \
+            piano-osmd-context-failure-diagnostics.txt; do
             if [ -f "$file" ]; then
               echo "===== $file ====="
               cat "$file"

@@ -262,3 +262,8 @@ No SHA `c4b17f1`, build e emulador passaram; a Gymnopédie conciliou 469/469 cab
 
 
 **SHA `373972c`:** build passou; emulador provou a carga nativa (3 compassos) e um novo `POC_OSMD_READY` depois do gesto, com log limpo. Os estados do fixture são m1 `1/null/1`, m2 `2/2/2`, m3 `2/3/3` (clave/armadura/compasso); m3 falha porque a clave não muda para origem 3. Artefato `12147393066` guarda o JSON e os probes OSMD/SVG antes da asserção. O próximo commit imprime o probe completo no log e usa os dados do modelo OSMD/SVG para localizar a falta da clave no rail.
+
+
+### Diagnóstico de contexto — SHA `2416e9d`
+
+O build `39157939341` passou; o emulador `39157939343` falhou somente na asserção de troca de clave do compasso 3. A suíte percorreu antes a Gymnopédie de 78 compassos e conciliou `469/469` cabeças escritas, sem ambiguidades ou divergências, e reconheceu toque real em nota. A clave da régua reportou origem 2 no compasso 3 apesar de a fixture declarar nova clave de sol; armadura e compasso reportaram origem 3. O arquivo de probe foi criado no diretório do projeto, mas o passo de log no workflow usou prefixos incompatíveis com o `working-directory`, então seus dados não apareceram no log. Próximo SHA corrige o caminho e registra os filhos SVG dos primeiros quatro compassos por pauta para identificar se a clave está ausente no modelo ou apenas no seletor. A falha e a asserção permanecem intactas.
