@@ -17,6 +17,9 @@
  body.preview #score svg{overflow:visible}
  #optical-reference{display:none;position:absolute;top:0;bottom:0;width:2px;background:#0c8a78;opacity:0.9;pointer-events:none;z-index:4}
  body.preview #optical-reference{display:block}
+ #optical-context-rail{display:none;position:absolute;left:0;overflow:hidden;background:#fff;pointer-events:none;z-index:5}
+ #optical-context-rail svg{position:absolute;left:0;top:0;overflow:hidden}
+ body.preview #optical-context-rail{display:block}
  #optical-wait{display:none;position:absolute;bottom:8px;left:8px;width:142px;padding:7px 10px;border:1px solid #92b7ad;border-radius:7px;background:rgba(255,255,255,.96);color:#164b40;z-index:10;font:12px system-ui;pointer-events:none;box-shadow:0 1px 4px #0002}
  #optical-wait-progress{height:4px;margin-top:5px;background:#d8eee7;border-radius:2px;overflow:hidden}
  #optical-wait-fill{height:100%;width:0;background:#008b78}
@@ -25,7 +28,7 @@
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
 <script src="temporal-notation.js"></script>
 <script src="optical-time-map.js"></script></head>
-<body><div id="viewport"><div id="score"></div></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
+<body><div id="viewport"><div id="score"></div></div><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
 <script>
 (function(){
  'use strict';
@@ -36,6 +39,7 @@
  let opticalPerf={frames:0,intervals:0,totalGapMs:0,maxGapMs:0,slowGaps:0,lastFrameMs:null};
  let opticalLoopEditing=false,opticalLoopStart=null,opticalWaitRaf=0,opticalWaitDeadline=0,opticalWaitDuration=0;
  let opticalHand=0,opticalCueKey='',opticalCueSvg=null;
+ let opticalContextState=null,opticalContextMeasure=-1;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
  function inform(s){message.textContent=s;message.style.display='block';}
  function atBeat(beat,smooth){
@@ -140,6 +144,8 @@
   opticalRaf=0;optical=null;opticalAnchor=null;opticalFrames=0;opticalReconciliation=null;
   opticalLoopEditing=false;opticalLoopStart=null;
   opticalCueKey='';opticalCueSvg=null;
+  opticalContextState=null;opticalContextMeasure=-1;
+  document.getElementById('optical-context-rail').innerHTML='';
  }
  /** Preserve MusicXML and note identity: scale CSS SVG, not musical events.
   * The original SVG viewBox continues to drive precise notehead hit tests.
@@ -162,6 +168,131 @@
   console.log('POC_SVG_FIT '+JSON.stringify({scale:scale,rawWidth:baseWidth,
    rawHeight:baseHeight,width:baseWidth*scale,height:baseHeight*scale,
    viewportHeight:viewport.clientHeight})); }
+ function makeOpticalContextState(svg,columns){
+  const rail=document.getElementById('optical-context-rail');
+  rail.innerHTML='';
+  if(!svg||!columns||!columns.length){opticalContextState=null;return;}
+  const stafflines=Array.from(svg.querySelectorAll('g.staffline')).filter(function(node){
+   return /^Piano\d+-\d+$/.test(node.id||'');
+  }).slice(0,2);
+  if(stafflines.length!==2){
+   console.log('POC_CONTEXT_RAIL_SKIP '+JSON.stringify({stafflines:stafflines.length}));
+   opticalContextState=null;return;
+  }
+  const viewBox=svg.viewBox&&svg.viewBox.baseVal;
+  const nativeWidth=Number(svg.dataset.opticalNativeWidth);
+  const nativeHeight=Number(svg.dataset.opticalNativeHeight);
+  if(!viewBox||!(nativeWidth>0&&nativeHeight>0)){opticalContextState=null;return;}
+  const overlay=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  overlay.setAttribute('viewBox',[viewBox.x,viewBox.y,viewBox.width,viewBox.height].join(' '));
+  overlay.setAttribute('width',String(nativeWidth*opticalDisplayScale));
+  overlay.setAttribute('height',String(nativeHeight*opticalDisplayScale));
+  overlay.setAttribute('aria-hidden','true');
+  const base=[];
+  stafflines.forEach(function(staffline,staffIndex){
+   const measures=Array.from(staffline.children).filter(function(node){
+    return node.classList&&node.classList.contains('vf-measure');
+   });
+   const first=measures.find(function(node){return node.id==='1';});
+   if(!first){base.push(null);return;}
+   const lineGroup=document.createElementNS('http://www.w3.org/2000/svg','g');
+   lineGroup.setAttribute('data-context-staff',String(staffIndex+1));
+   Array.from(first.children).filter(function(node){
+    return node.tagName.toLowerCase()==='path';
+   }).slice(0,5).forEach(function(path){
+    const copy=path.cloneNode(true);
+    copy.setAttribute('transform','translate(-20 0)');
+    lineGroup.appendChild(copy);
+   });
+   overlay.appendChild(lineGroup);
+   const symbolMeasures=measures.map(function(measure,index){
+    const found={measure:index+1,clef:null,key:null,time:null};
+    [['clef','vf-clef'],['key','vf-keysignature'],['time','vf-timesignature']].forEach(function(pair){
+     const node=Array.from(measure.children).find(function(child){
+      return child.classList&&child.classList.contains(pair[1]);
+     });
+     if(node){
+      const box=node.getBBox();
+      found[pair[0]]={node:node.cloneNode(true),x:box.x,width:box.width};
+     }
+    });
+    return found;
+   });
+   base.push({line:lineGroup,measures:symbolMeasures});
+  });
+  if(base.filter(Boolean).length!==2){
+   console.log('POC_CONTEXT_RAIL_SKIP '+JSON.stringify({staffData:base.filter(Boolean).length}));
+   opticalContextState=null;return;
+  }
+  const measureStarts=columns.map(function(group,index){
+   let firstBeat=Infinity;
+   (group||[]).forEach(function(measure){
+    (measure&&measure.staffEntries||[]).forEach(function(entry){
+     const stamp=entry.getAbsoluteTimestamp&&entry.getAbsoluteTimestamp();
+     if(stamp&&Number.isFinite(stamp.RealValue))firstBeat=Math.min(firstBeat,stamp.RealValue*4);
+    });
+   });
+   return {index:index,beat:Number.isFinite(firstBeat)?firstBeat:(index?Infinity:0)};
+  });
+  opticalContextState={svg:svg,overlay:overlay,base:base,measureStarts:measureStarts,
+   active:[{clef:null,key:null,time:null},{clef:null,key:null,time:null}],
+   viewBox:viewBox,nativeWidth:nativeWidth,nativeHeight:nativeHeight,
+   railLeft:svg.getBoundingClientRect().left-viewport.getBoundingClientRect().left};
+  rail.appendChild(overlay);
+  paintOpticalContext(0,true);
+  console.log('POC_CONTEXT_RAIL_READY '+JSON.stringify({staves:base.length,
+   measures:measureStarts.length,scale:opticalDisplayScale}));
+ }
+ function paintOpticalContext(beat,force){
+  const state=opticalContextState;
+  if(!studyProof||!state||!Number.isFinite(beat))return;
+  let target=0;
+  for(let i=1;i<state.measureStarts.length;i++){
+   if(state.measureStarts[i].beat<=beat+.0001)target=i;else break;
+  }
+  if(!force&&target===opticalContextMeasure)return;
+  opticalContextMeasure=target;
+  state.active=[{clef:null,key:null,time:null},{clef:null,key:null,time:null}];
+  for(let index=0;index<=target;index++){
+   state.base.forEach(function(staff,indexStaff){
+    const measure=staff&&staff.measures[index];
+    if(!measure)return;
+    ['clef','key','time'].forEach(function(kind){
+     if(measure[kind])state.active[indexStaff][kind]=measure[kind];
+    });
+   });
+  }
+  while(state.overlay.firstChild)state.overlay.removeChild(state.overlay.firstChild);
+  state.base.forEach(function(staff,staffIndex){
+   if(!staff)return;
+   const lines=staff.line.cloneNode(true);
+   state.overlay.appendChild(lines);
+   const symbols=state.active[staffIndex]||{};
+   const clef=symbols.clef;
+   const key=symbols.key;
+   const time=symbols.time;
+   const slots={clef:25,key:clef?25+clef.width+10:61,
+    time:key?Math.max(66,61+key.width+15):66};
+   ['clef','key','time'].forEach(function(kind){
+    const symbol=symbols[kind];
+    if(!symbol)return;
+    const wrapper=document.createElementNS('http://www.w3.org/2000/svg','g');
+    wrapper.setAttribute('transform','translate('+(slots[kind]-symbol.x)+' 0)');
+    wrapper.appendChild(symbol.node.cloneNode(true));
+    state.overlay.appendChild(wrapper);
+   });
+  });
+  const source=state.svg.getBoundingClientRect();
+  const viewportRect=viewport.getBoundingClientRect();
+  const rail=document.getElementById('optical-context-rail');
+  rail.style.left=Math.max(0,state.railLeft)+'px';
+  rail.style.top=Math.max(0,source.top-viewportRect.top)+'px';
+  rail.style.width=Math.min(viewport.clientWidth,130*opticalDisplayScale)+'px';
+  rail.style.height=(state.nativeHeight*opticalDisplayScale)+'px';
+  state.overlay.setAttribute('width',String(state.nativeWidth*opticalDisplayScale));
+  state.overlay.setAttribute('height',String(state.nativeHeight*opticalDisplayScale));
+  console.log('POC_CONTEXT_RAIL_MEASURE '+JSON.stringify({measure:target+1,beat:beat}));
+ }
  function paintOpticalCues(beat){
   if(!studyProof||!optical||!Number.isFinite(beat))return;
   const svg=document.querySelector('#score svg');
@@ -202,6 +333,7 @@
   // Do not commit identical/sub-pixel scroll positions to Android WebView.
   // The native beat clock remains authoritative; CSS pixels are presentation only.
   if(Math.abs(viewport.scrollLeft-target)>=0.5)viewport.scrollLeft=target;
+  paintOpticalContext(beat,false);
  }
  function opticalFrame(){
   opticalRaf=0;
@@ -318,6 +450,8 @@
   document.getElementById('optical-note-tip').style.display='none';
   loaded=false;appliedBeat=-1;seekBeat=start||0;
   osmdRenderedWidth=0;osmdRenderedHeight=0;opticalDisplayScale=1;
+  opticalContextState=null;opticalContextMeasure=-1;
+  document.getElementById('optical-context-rail').innerHTML='';
   freeLayout=(layout==='free');studyProof=(layout==='engraving-poc');
   lastNativeEvents=studyProof&&Array.isArray(nativeEvents)?nativeEvents:[];
   document.body.className=freeLayout?'free':(studyProof?'preview':'continuous');
@@ -383,6 +517,7 @@
      opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(start||0)*opticalDisplayScale);
      document.getElementById('score').style.marginLeft=opticalOffset+'px';
      document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
+     makeOpticalContextState(svg,columns);
      const ref=document.getElementById('optical-reference');
      ref.style.left=(viewport.clientWidth*.4)+'px';
      opticalSeek(start||0,100,false);
@@ -564,6 +699,7 @@
      if(osmdRenderedHeight!==viewport.clientHeight){
       osmdRenderedHeight=viewport.clientHeight;
       fitOpticalSvg(document.querySelector('#score svg'));
+      paintOpticalContext(seekBeat,true);
       opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat)*opticalDisplayScale);
       document.getElementById('score').style.marginLeft=opticalOffset+'px';
       const now=performance.now();
@@ -583,7 +719,8 @@
      osmdRenderedHeight=viewport.clientHeight;
      if(studyProof){
       optical=OpticalTimeMap.fromGraphical(osmd.graphic);
-      fitOpticalSvg(document.querySelector('#score svg'));
+      const resizedSvg=document.querySelector('#score svg');
+      fitOpticalSvg(resizedSvg);
       // Graphical positions are invalid after a re-layout: reconcile and bind again.
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
       attachOpticalNoteTouch(document.querySelector('#score svg'));
@@ -591,6 +728,7 @@
       opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat)*opticalDisplayScale);
       document.getElementById('score').style.marginLeft=opticalOffset+'px';
       document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
+      makeOpticalContextState(resizedSvg,osmd.graphic&&osmd.graphic.measureList||[]);
       document.getElementById('optical-reference').style.left=(viewport.clientWidth*.4)+'px';
       opticalSeek(seekBeat,opticalPlayback.bpm,opticalPlayback.playing);
      }else if(!freeLayout)atBeat(seekBeat,false);

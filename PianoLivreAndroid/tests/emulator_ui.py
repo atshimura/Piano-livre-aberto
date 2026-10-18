@@ -316,6 +316,12 @@ if __name__=="__main__":
     assert first_staff["measure"]==second_staff["measure"]=="1" and \
       first_staff["staffline"]!=second_staff["staffline"], (
         "OSMD context probe must inspect measure 1 on both grand-staff lines")
+    rail_lines=[line for line in adb("logcat","-d","-v","brief").splitlines()
+                if "POC_CONTEXT_RAIL_READY {" in line]
+    assert rail_lines, "OSMD did not build the fixed-left context rail"
+    rail=json.loads(rail_lines[-1].split("POC_CONTEXT_RAIL_READY ",1)[1].split(" @",1)[0])
+    assert rail.get("staves")==2 and rail.get("measures")==professional["measures"], (
+        "Fixed context rail is not tied to both rendered piano staves and measures")
     initial_context_records=set(context_logs)
     print("POC_CONTEXT_PROBE_EVIDENCE "+"\n".join(context_logs),flush=True)
     assert professional["musicalAnchors"]>=8 and professional["graphicalNotes"]>=12, "OSMD map lost musical events"
@@ -381,6 +387,10 @@ if __name__=="__main__":
     assert len(samples)>=2, "No dynamic optical scroll samples"
     assert samples[-1]["beat"]>samples[0]["beat"]+.3, "Optical position did not progress with musical clock"
     assert samples[-1]["scroll"]>samples[0]["scroll"]+3, "Optical SVG did not move horizontally during playback"
+    rail_progress=[json.loads(line.split("POC_CONTEXT_RAIL_MEASURE ",1)[1].split(" @",1)[0])
+                   for line in motion_log.splitlines() if "POC_CONTEXT_RAIL_MEASURE {" in line]
+    assert rail_progress and rail_progress[-1]["measure"]>=1, (
+      "Pinned OSMD clef/key/time symbols disappeared during playback")
     adb("shell","input","tap",*playback_point)
     print("PASS: experimental OSMD optical scroll follows native musical clock",flush=True)
     # Graphical loop selection must use TWO native-reconciled noteheads,

@@ -23,6 +23,15 @@ ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("POC_CONTEXT_LONG_EVI
  "Emulator evidence must include context glyphs from the long Gymnopédie score");
 ok(fs.readFileSync("../.github/workflows/emulator.yml","utf8").includes("PianoLivreAndroid/piano-osmd-context-probe.txt"),
  "Workflow artifact manifest must include the context probe report");
+ok(html.includes("function makeOpticalContextState(svg,columns)")&&
+ html.includes("node.cloneNode(true)")&&html.includes("translate(-20 0)"),
+ "Pinned context rail must reuse native OSMD glyphs and staff lines");
+ok(html.includes("function paintOpticalContext(beat,force)")&&
+ html.includes("state.measureStarts[i].beat<=beat+.0001")&&
+ html.includes("paintOpticalContext(beat,false)"),
+ "Pinned clef, key, and time context must update at native measure boundaries");
+ok(html.includes("/^Piano\\d+-\\d+$/")&&html.includes("stafflines.length!==2"),
+ "Context rail must require the two separate piano staves");
 ok(html.includes("POC_NOT_PRODUCTION_READY"),"Proof must never claim finished Study");
 ok(bridge.includes("engravingProof=false"),"Normal score load disables proof");
 ok(bridge.includes("if(freeLayout||disposed||!htmlReady||!scoreRendered)return;"),"Study native seek remains anchored to native clock");

@@ -235,6 +235,12 @@ O SVG OSMD da Gymnopédie levou **1.366 ms** no emulador e criou **4.927 nós**.
 
 O artefato do emulador `39144872440` contém **26 arquivos**, inclusive `piano-engraved.png`, `piano-osmd-poc.png`, `piano-free-reading.png`, `piano-osmd-long.png`, capturas de movimento/toque/loop/Espera, vídeos e JSON. O artefato expira em três dias. A inspeção lado a lado confirma a pauta artesanal atual, a aparência convencional OSMD e a escala longa; nenhuma imagem foi fabricada. A avaliação visual do usuário ainda está pendente.
 
+### Auditoria de contexto e trilho fixo (18/10/2026)
+
+O SHA `f60fbc5d517f315b61645b63fc994f46a5ed255c` passou no [build](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39148592764) e no [emulador Android](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39148592883). O artefato (27 arquivos) foi baixado e verificado; a Gymnopédie marca 78 compassos, 469/469 cabeças conciliadas, 1.167 ms de render, 4.927 elementos SVG, escala 0,4927 em viewport de 738×196. A captura mostra as duas pautas e o tamanho ainda precisa de aceite visual. A sondagem agora seleciona corretamente compasso 1 em ambas as pautas (`Piano0-1` e `Piano0-2`).
+
+O código local seguinte inicia o trilho contextual fixo **apenas na prévia de pesquisa**. Ele copia linhas, clave, armadura e fórmula de compasso dos grupos SVG reais do OSMD, acompanha a medida pelos timestamps gráficos e atualiza a cópia ao mudar de compasso; não redesenha eventos ou altera o mapa beat→x. O teste Android exige as duas pautas no estado da faixa e que ela continue durante movimento. **Este código ainda aguarda CI e emulador no novo SHA.** Também falta fixture com mudanças de clave, armadura e fórmula: não declarar suporte completo a mudanças até observar a saída concreta do OSMD nesses casos. A aparência comum de Estudo segue intacta.
+
 **Estado de produto:** PR #46 segue aberto em draft; `main` permanece em 0.9.46/code55. Não publicar nova beta. Permanecem: contexto esquerdo fixo, revisão editorial e de legibilidade em celulares/tablets, seleção de trecho editável com arrasto/alças, corpus de acordes/vozes/alterações/quiálteras/síncopes, investigação do custo de scroll/render WebView, lifecycle/andamento/loop prolongado, eventual segmentação segura, aceite visual e testes físicos Realme 7 5G, Lenovo Tab M9 e Yamaha P-45. A captura do emulador demonstra funcionalidade técnica nos casos exercitados, não conclusão do item 1.2.
 
 ### Sondagem para o contexto fixo
