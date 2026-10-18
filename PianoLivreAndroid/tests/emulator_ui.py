@@ -834,12 +834,22 @@ if __name__=="__main__":
     assert context_ready and context_ready["measures"]==3 and context_ready["graphicalNotes"]>=12, (
         "Three-measure context fixture did not engrave on Android")
     context_load_logs=adb("logcat","-d","-v","brief")
+    clef_remaps=[]
+    for line in context_load_logs.splitlines():
+        if "POC_CONTEXT_CLEF_NEXT " in line:
+            payload=line.split("POC_CONTEXT_CLEF_NEXT ",1)[1].split(" @",1)[0]
+            clef_remaps.append(json.loads(payload))
+    assert any(item["glyphMeasure"]==1 and item["targetMeasure"]==2 for item in clef_remaps) and \
+      any(item["glyphMeasure"]==2 and item["targetMeasure"]==3 for item in clef_remaps), (
+        "OSMD clefs immediately before barlines must map to the following musical measure: "+
+        json.dumps(clef_remaps))
     Path("piano-osmd-context-load-probe.txt").write_text("\n".join(
       line for line in context_load_logs.splitlines()
       if "CONTEXT_FIXTURE_" in line or "POC_OSMD_" in line or
          "POC_CONTEXT_MEASURE_" in line or "POC_CONTEXT_MODIFIERS_" in line or
          "POC_CONTEXT_RAIL_READY" in line or "POC_CONTEXT_SVG_ROOT" in line or
-         "POC_CONTEXT_NODES_" in line),encoding="utf-8")
+         "POC_CONTEXT_NODES_" in line or
+         "POC_CONTEXT_CLEF_NEXT " in line),encoding="utf-8")
     screenshot("piano-osmd-context-start.png")
     context_states=[]
     context_seen=set()

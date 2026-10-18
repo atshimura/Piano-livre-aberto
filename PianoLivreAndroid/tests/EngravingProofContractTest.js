@@ -22,6 +22,9 @@ ok(html.includes("svg.querySelectorAll('g.staffline')")&&
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes('first_staff["measures"]')&&
  fs.readFileSync("tests/emulator_ui.py","utf8").includes('first_measures[:3]==second_measures[:3]==["1","2","3"]'),
  "Emulator probe must validate measures 1-3 on both staves");
+ok(html.includes("POC_CONTEXT_CLEF_NEXT")&&html.includes("distanceFromRight<distanceFromLeft")&&
+ fs.readFileSync("tests/emulator_ui.py","utf8").includes('item["targetMeasure"]==3'),
+ "Clef glyphs at a measure's right edge must map to the next musical measure");
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("piano-osmd-context-probe.txt"),
  "Emulator evidence must preserve the bounded OSMD instruction probe");
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("POC_CONTEXT_LONG_EVIDENCE"),

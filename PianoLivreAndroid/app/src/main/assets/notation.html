@@ -232,21 +232,44 @@
    });
    overlay.appendChild(lineGroup);
    const symbolMeasures=[];
+   function contextAt(measureNumber){
+    let found=symbolMeasures[measureNumber-1];
+    if(!found){found={measure:measureNumber,clef:null,key:null,time:null};symbolMeasures[measureNumber-1]=found;}
+    return found;
+   }
    measures.forEach(function(measure){
     const measureNumber=Number(measure.id);
     if(!Number.isInteger(measureNumber)||measureNumber<1||measureNumber>columns.length)return;
-    const found={measure:measureNumber,clef:null,key:null,time:null};
+    const measureBox=measure.getBBox();
     [['clef','vf-clef'],['key','vf-keysignature'],['time','vf-timesignature']].forEach(function(pair){
-     const node=Array.from(measure.children).find(function(child){
+     Array.from(measure.children).filter(function(child){
       return child.classList&&child.classList.contains(pair[1]);
-     });
-     if(node){
+     }).forEach(function(node){
       const box=node.getBBox();
-      found[pair[0]]={node:node.cloneNode(true),x:box.x,width:box.width,
-       sourceMeasure:measureNumber};
-     }
+      let targetMeasure=measureNumber;
+      if(pair[0]==='clef'&&measureNumber<columns.length){
+       const glyphCenter=box.x+box.width/2;
+       const measureLeft=measureBox.x;
+       const measureRight=measureBox.x+measureBox.width;
+       const distanceFromLeft=glyphCenter-measureLeft;
+       const distanceFromRight=measureRight-glyphCenter;
+       // OSMD/VexFlow stores a clef change immediately before the barline
+       // in the preceding measure's SVG group. Its musical context begins
+       // in the next measure, so assign right-edge clefs forward.
+       if(distanceFromRight>=0&&distanceFromRight<distanceFromLeft){
+        targetMeasure=measureNumber+1;
+        console.log('POC_CONTEXT_CLEF_NEXT '+JSON.stringify({glyphMeasure:measureNumber,
+         targetMeasure:targetMeasure,centerX:+glyphCenter.toFixed(2),
+         measureLeft:+measureLeft.toFixed(2),measureRight:+measureRight.toFixed(2)}));
+       }
+      }
+      const found=contextAt(targetMeasure);
+      if(!found[pair[0]]||box.x>found[pair[0]].x){
+       found[pair[0]]={node:node.cloneNode(true),x:box.x,width:box.width,
+        sourceMeasure:targetMeasure};
+      }
+     });
     });
-    symbolMeasures[measureNumber-1]=found;
    });
    base.push({line:lineGroup,measures:symbolMeasures});
   });

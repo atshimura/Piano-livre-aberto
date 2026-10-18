@@ -287,3 +287,8 @@ O emulador `39158718300` passou pelos fluxos principais, incluindo a Gymnopédie
 ### Restaurar saída dos probes limitados — SHA `88b4749`
 
 Build `39159267925` falhou no contrato de contexto porque a substituição que limitou os objetos SVG também removeu as linhas que os escreviam no log. O conteúdo resumido continua no código, mas não era emitido. O próximo SHA restaura os marcadores `POC_CONTEXT_SVG_ROOT` e `POC_CONTEXT_NODES_*` com apenas glifos de contexto, sem grupos de notas.
+
+
+### Causa da clave contextual localizada — SHA `117e044`
+
+O emulador `39159409919` confirmou fixture OSMD pronta (3 compassos, 19 cabeças) e preservou no modelo `InitiallyActiveClef`: compasso 2 = clave de dó (`clefType:2`), compasso 3 = clave de sol (`clefType:0`). O SVG VexFlow, porém, guarda a mudança de clave de dó ao fim do grupo SVG do compasso 1 (x=226.4, perto do limite 254.4) e a mudança para sol ao fim do grupo do compasso 2 (x=470.7, perto do limite 498.7); os compassos 3 não têm grupos `vf-clef`. Portanto a partitura fonte e o OSMD estão corretos, mas o extrator confundia grupo gráfico com compasso musical. O próximo SHA atribui glifos de clave junto à borda direita ao compasso seguinte, mantém o glifo OSMD original, registra os remapeamentos `1→2` e `2→3`, e exige o rail correto nos compassos 2 e 3.
