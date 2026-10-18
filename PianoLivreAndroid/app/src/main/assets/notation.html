@@ -31,7 +31,7 @@
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
- let osmdRenderedWidth=0,osmdRenderedHeight=0;
+ let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
  let opticalPerf={frames:0,intervals:0,totalGapMs:0,maxGapMs:0,slowGaps:0,lastFrameMs:null};
  let opticalLoopEditing=false,opticalLoopStart=null,opticalWaitRaf=0,opticalWaitDeadline=0,opticalWaitDuration=0;
@@ -121,9 +121,31 @@
   opticalRaf=0;optical=null;opticalAnchor=null;opticalFrames=0;opticalReconciliation=null;
   opticalLoopEditing=false;opticalLoopStart=null;
  }
+ /** Preserve MusicXML and note identity: scale CSS SVG, not musical events.
+  * The original SVG viewBox continues to drive precise notehead hit tests.
+  */
+ function fitOpticalSvg(svg){
+  if(!svg||!studyProof)return;
+  let baseWidth=Number(svg.dataset.opticalNativeWidth);
+  let baseHeight=Number(svg.dataset.opticalNativeHeight);
+  if(!(baseWidth>0&&baseHeight>0)){
+   const rect=svg.getBoundingClientRect();
+   baseWidth=rect.width;baseHeight=rect.height;
+   if(!(baseWidth>0&&baseHeight>0))throw Error('OSMD sem tamanho SVG válido');
+   svg.dataset.opticalNativeWidth=String(baseWidth);
+   svg.dataset.opticalNativeHeight=String(baseHeight);
+  }
+  const scale=Math.min(1,Math.max(0.05,(viewport.clientHeight-8)/baseHeight));
+  opticalDisplayScale=scale;
+  svg.style.width=(baseWidth*scale)+'px';
+  svg.style.height=(baseHeight*scale)+'px';
+  console.log('POC_SVG_FIT '+JSON.stringify({scale:scale,rawWidth:baseWidth,
+   rawHeight:baseHeight,width:baseWidth*scale,height:baseHeight*scale,
+   viewportHeight:viewport.clientHeight}));
+ }
  function opticalPosition(beat){
   if(!optical)return;
-  const wanted=optical.timeline.xAt(beat)+opticalOffset-viewport.clientWidth*.4-53;
+  const wanted=optical.timeline.xAt(beat)*opticalDisplayScale+opticalOffset-viewport.clientWidth*.4-53;
   const maximum=Math.max(0,viewport.scrollWidth-viewport.clientWidth);
   viewport.scrollLeft=Math.max(0,Math.min(maximum,wanted));
  }
@@ -230,7 +252,7 @@
   cancelOptical();cancelOpticalWait();
   document.getElementById('optical-note-tip').style.display='none';
   loaded=false;appliedBeat=-1;seekBeat=start||0;
-  osmdRenderedWidth=0;osmdRenderedHeight=0;
+  osmdRenderedWidth=0;osmdRenderedHeight=0;opticalDisplayScale=1;
   freeLayout=(layout==='free');studyProof=(layout==='engraving-poc');
   lastNativeEvents=studyProof&&Array.isArray(nativeEvents)?nativeEvents:[];
   document.body.className=freeLayout?'free':(studyProof?'preview':'continuous');
@@ -283,10 +305,11 @@
      const graphic=osmd.graphic,columns=graphic&&graphic.measureList||[];
      if(!window.OpticalTimeMap)throw Error('Mapeamento óptico não carregado');
      optical=OpticalTimeMap.fromGraphical(graphic);
+     fitOpticalSvg(svg);
      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
      console.log('POC_MIDI_MAPPING '+JSON.stringify(opticalReconciliation));
      attachOpticalNoteTouch(svg);
-     opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(start||0));
+     opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(start||0)*opticalDisplayScale);
      document.getElementById('score').style.marginLeft=opticalOffset+'px';
      document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
      const ref=document.getElementById('optical-reference');
@@ -323,6 +346,8 @@
        svgNodes:svg?svg.querySelectorAll('*').length:0,
        width:svg?Math.round(svg.getBoundingClientRect().width):0,
        height:svg?Math.round(svg.getBoundingClientRect().height):0,
+       displayScale:opticalDisplayScale,
+       nativeSvgHeight:svg?Number(svg.dataset.opticalNativeHeight):0,
        measures:columns.length,firstEntries:samples.slice(0,16),
        musicalAnchors:optical.timeline.stops.length,graphicalNotes:optical.notes.length,
        midiMapping:opticalReconciliation,
@@ -402,6 +427,9 @@
     if(studyProof&&osmdRenderedWidth===viewport.clientWidth){
      if(osmdRenderedHeight!==viewport.clientHeight){
       osmdRenderedHeight=viewport.clientHeight;
+      fitOpticalSvg(document.querySelector('#score svg'));
+      opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat)*opticalDisplayScale);
+      document.getElementById('score').style.marginLeft=opticalOffset+'px';
       const now=performance.now();
       const activeBeat=opticalAnchor
        ?opticalAnchor.beat+(now-opticalAnchor.at)*opticalAnchor.bpm/60000
@@ -419,10 +447,11 @@
      osmdRenderedHeight=viewport.clientHeight;
      if(studyProof){
       optical=OpticalTimeMap.fromGraphical(osmd.graphic);
+      fitOpticalSvg(document.querySelector('#score svg'));
       // Graphical positions are invalid after a re-layout: reconcile and bind again.
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
       attachOpticalNoteTouch(document.querySelector('#score svg'));
-      opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat));
+      opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat)*opticalDisplayScale);
       document.getElementById('score').style.marginLeft=opticalOffset+'px';
       document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
       document.getElementById('optical-reference').style.left=(viewport.clientWidth*.4)+'px';
