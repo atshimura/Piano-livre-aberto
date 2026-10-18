@@ -36,4 +36,11 @@ ok(html.includes("MIDI não confirmado"),
    "Unmatched and polyphonic-unison heads must be disclosed, never treated as exact");
 ok(html.includes("attachOpticalNoteTouch(document.querySelector('#score svg'))"),
    "Re-rendered SVG must have an active head hit-target after resize");
+ok(html.includes("POC_LOOP_SELECTED"),"Proof must log graphical loop start/end");
+ok(html.includes("AndroidNotation.onLoopSelected(beginning,finish)"),
+   "Native musical controller receives experimental graphical loop bounds");
+ok(html.includes("if(studyProof){\n     opticalLoopEditing=!!enabled"),
+   "Opt-in proof must handle loop selection without invoking old renderer");
+ok(bridge.includes("if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)"),
+   "Native loop callback remains guarded by native study lifecycle");
 console.log("OSMD_POC_CONTRACT_PASS checks="+checks);
