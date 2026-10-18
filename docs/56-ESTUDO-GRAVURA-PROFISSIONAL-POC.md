@@ -282,3 +282,8 @@ Build `39158885775` alcançou o teste OSMD, mas falhou porque o contrato procura
 ### Probe limitado pelo tamanho do logcat — SHA `e2e4ee1`
 
 O emulador `39158718300` passou pelos fluxos principais, incluindo a Gymnopédie 469/469 e toque real, mas falhou antes da fixture porque a nova linha `POC_CONTEXT_NODES_1` ultrapassou o limite de registro do logcat. O próximo SHA limita o inventário a glifos de clave, armadura e fórmula de compasso nos quatro primeiros compassos de cada pauta, mantendo caixas SVG e o conteúdo da clave. Isso conserva a evidência necessária sem serializar os grupos de notas.
+
+
+### Restaurar saída dos probes limitados — SHA `88b4749`
+
+Build `39159267925` falhou no contrato de contexto porque a substituição que limitou os objetos SVG também removeu as linhas que os escreviam no log. O conteúdo resumido continua no código, mas não era emitido. O próximo SHA restaura os marcadores `POC_CONTEXT_SVG_ROOT` e `POC_CONTEXT_NODES_*` com apenas glifos de contexto, sem grupos de notas.

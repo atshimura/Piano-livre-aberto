@@ -630,7 +630,10 @@
        return {measure:measure.id,childCount:measure.childElementCount,symbols:symbols};
       })};
      }):[];
-
+     console.log('POC_CONTEXT_SVG_ROOT '+JSON.stringify(rootChildren));
+     contextNodes.forEach(function(node,index){
+      console.log('POC_CONTEXT_NODES_'+(index+1)+' '+JSON.stringify(node));
+     });
      }catch(contextError){console.log('POC_CONTEXT_PROBE_ERROR '+contextError.message)}
      const firstHead=optical.notes.find(function(n){return n.staff===1&&Number.isFinite(n.x)&&Number.isFinite(n.y);});
      const nextHead=firstHead&&optical.notes.find(function(n){
