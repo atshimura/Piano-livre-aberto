@@ -117,6 +117,16 @@ report=T.reconcile(solo,[{...exact[0],beat:0.0006}]);
 ok(report.unmatched===1,"Mismatch beyond quantization bound is not silently matched");
 try{T.reconcile([],null);throw Error("Should reject missing native events");}
 catch(e){ok(e.message!=="Should reject missing native events","Null native input rejected");}
+// Tied heads are two written MusicXML events but only one playback attack.
+const tiedGraphics=[{...solo[0],midiEstimate:66},
+ {...solo[0],beat:1,measure:2,midiEstimate:66,x:150}];
+const tiedNative=[{...exact[0],midi:66,tieStart:true,playbackAttack:true},
+ {...exact[0],beat:1,measure:2,midi:66,tieStop:true,playbackAttack:false}];
+report=T.reconcile(tiedGraphics,tiedNative);
+ok(report.matched===2&&report.unmatched===0&&
+ tiedGraphics[0].nativeEvent.playbackAttack&&
+ !tiedGraphics[1].nativeEvent.playbackAttack,
+ "Both tied heads identify exact pitches while only first attacks over MIDI");
 // Diagnostics distinguish causes so missing musical events are not hidden by a pass rate.
 report=T.reconcile(solo,[{...exact[0],midi:61}]);
 ok(report.reasons.noNativeCandidate===1&&report.samples[0].reason==="noNativeCandidate",
