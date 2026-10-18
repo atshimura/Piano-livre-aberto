@@ -188,7 +188,16 @@
        if(tm&&origin)samples.push({beat:4*tm.RealValue,x:origin.x,y:origin.y});
       }
      }
+     const firstHead=optical.notes.find(function(n){return n.staff===1&&Number.isFinite(n.x)&&Number.isFinite(n.y);});
+     const svgRect=svg?svg.getBoundingClientRect():null;
+     const vb=svg&&svg.viewBox?svg.viewBox.baseVal:null;
+     const firstHeadViewport=firstHead&&svgRect&&vb&&vb.width>0&&vb.height>0?{
+      x:svgRect.left+(firstHead.x-vb.x)*svgRect.width/vb.width,
+      y:svgRect.top+(firstHead.y-vb.y)*svgRect.height/vb.height,
+      beat:firstHead.beat,midiEstimate:firstHead.midiEstimate
+     }:null;
      const proof={engine:'OpenSheetMusicDisplay bundled 1.9.8',mode:'horizontal',
+       firstNoteViewport:firstHeadViewport,
        renderMs:Math.round(performance.now()-proofStarted),
        svgNodes:svg?svg.querySelectorAll('*').length:0,
        width:svg?Math.round(svg.getBoundingClientRect().width):0,
