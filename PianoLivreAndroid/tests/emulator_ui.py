@@ -355,7 +355,7 @@ if __name__=="__main__":
     tap_text(["Início"],scroll=True)  # Clear persisted loop before legacy renderer regression.
     print("PASS: verified OSMD noteheads selected a native study loop",flush=True)
     # Wait-mode preparation uses the same native 1–30-second preference and
-    # visually counts down in the OSMD preview without changing attack rules.
+    # animates a nonnumeric horizontal pre-roll without changing attack rules.
     tap_text(["Espera"],exact=True,scroll=True)
     tap_text(["Iniciar"],scroll=True)
     time.sleep(1)
@@ -366,8 +366,19 @@ if __name__=="__main__":
             break
         time.sleep(.6)
     assert "POC_WAIT_COMPLETE" in adb("logcat","-d","-v","brief"), "Visual Wait countdown did not finish"
+    # Recorded graphical positions must actually move toward zero, not just toggle an overlay.
+    wait_frames=[]
+    for line in adb("logcat","-d","-v","brief").splitlines():
+        if "POC_WAIT_FRAME {" in line:
+            try:wait_frames.append(json.loads(line.split("POC_WAIT_FRAME ",1)[1].split(" @",1)[0]))
+            except ValueError:pass
+    assert len(wait_frames)>=3, "OSMD did not sample gradual preparation frames"
+    assert wait_frames[0]["remainingPx"]>wait_frames[-1]["remainingPx"], "Visual preparation must move toward the cursor"
+    assert all(wait_frames[i]["remainingPx"]>=wait_frames[i+1]["remainingPx"]-0.1
+               for i in range(len(wait_frames)-1)), "Visual preparation moved backwards"
+    print("POC_WAIT_TRAVEL "+json.dumps(wait_frames),flush=True)
     tap_text(["Início"],scroll=True)
-    print("PASS: OSMD preparation follows native Wait-mode duration",flush=True)
+    print("PASS: OSMD preparation animates toward the native Wait cursor",flush=True)
     after_memory=adb("shell","dumpsys","meminfo","br.org.pianolivre.opensource")
     baseline_pss=memory_pss_kb(before_memory)
     preview_pss=memory_pss_kb(after_memory)
