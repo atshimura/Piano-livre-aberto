@@ -429,7 +429,11 @@
       return {tag:node.tagName,id:node.id||null,cls:node.getAttribute('class'),box:box,
        childCount:node.childElementCount,html:node.outerHTML.slice(0,80)};
      }):[];
-     const contextNodes=svg?Array.from(svg.querySelectorAll('g.staffline > g.vf-measure')).slice(0,2).map(function(node){
+     const contextNodes=svg?Array.from(svg.querySelectorAll('g.staffline')).slice(0,2).map(function(staffline){
+      const node=Array.from(staffline.children).find(function(child){
+       return child.classList&&child.classList.contains('vf-measure')&&child.id==='1';
+      });
+      if(!node)return {staffline:staffline.id,measure:null,box:null,children:[],groups:[]};
       return {staffline:node.parentElement&&node.parentElement.id,measure:node.id,
        box:(function(){try{const b=node.getBBox();return [b.x,b.y,b.width,b.height].map(function(v){return +v.toFixed(1);});}catch(e){return null;}})(),
        children:Array.from(node.children).slice(0,14).map(function(child){

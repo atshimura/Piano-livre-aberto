@@ -302,14 +302,20 @@ if __name__=="__main__":
     context_logs=[line for line in adb("logcat","-d","-v","brief").splitlines()
                   if "POC_CONTEXT_" in line]
     Path("piano-osmd-context-probe.txt").write_text("\n".join(context_logs)+"\n",encoding="utf-8")
+    parsed_context={}
     for marker in ("POC_CONTEXT_MEASURE_1 ","POC_CONTEXT_MODIFIERS_1 ",
                    "POC_CONTEXT_SVG_ROOT ","POC_CONTEXT_NODES_1 ","POC_CONTEXT_NODES_2 "):
         matching=[line for line in context_logs if marker in line]
         assert matching, "OSMD context detail missing "+marker+": "+"\n".join(context_logs[-5:])
         assert len(matching[-1])<3500, "Android logcat may have truncated context record "+marker
         payload=matching[-1].split(marker,1)[1].split(" @",1)[0].strip()
-        try:json.loads(payload)
+        try:parsed_context[marker.strip()]=json.loads(payload)
         except ValueError as exc:raise AssertionError("OSMD context JSON was truncated for "+marker) from exc
+    first_staff=parsed_context["POC_CONTEXT_NODES_1"]
+    second_staff=parsed_context["POC_CONTEXT_NODES_2"]
+    assert first_staff["measure"]==second_staff["measure"]=="1" and \
+      first_staff["staffline"]!=second_staff["staffline"], (
+        "OSMD context probe must inspect measure 1 on both grand-staff lines")
     initial_context_records=set(context_logs)
     print("POC_CONTEXT_PROBE_EVIDENCE "+"\n".join(context_logs),flush=True)
     assert professional["musicalAnchors"]>=8 and professional["graphicalNotes"]>=12, "OSMD map lost musical events"
