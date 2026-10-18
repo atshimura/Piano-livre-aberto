@@ -170,6 +170,8 @@
   const key=opticalHand+':'+heads.map(n=>n.beat+','+n.x+','+n.y).join('|');
   if(svg===opticalCueSvg&&key===opticalCueKey)return;
   opticalCueSvg=svg;opticalCueKey=key;
+  console.log('POC_HAND_CUES '+JSON.stringify({hand:opticalHand,
+   beat:beat,count:heads.length,staffs:heads.map(n=>n.staff)}));
   let overlay=svg.querySelector('#piano-optical-study-cues');
   if(!overlay){
    overlay=document.createElementNS('http://www.w3.org/2000/svg','g');
