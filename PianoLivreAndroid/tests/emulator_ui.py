@@ -779,6 +779,16 @@ if __name__=="__main__":
             if "PianoLivreContext" in line or "FATAL EXCEPTION" in line or "AndroidRuntime" in line or "PianoLivreNotation" in line)+
           "\nACTIVITY\n"+context_failure_activity[-6000:],encoding="utf-8")
         raise AssertionError("Debug context-change fixture did not load: "+json.dumps(context_labels,ensure_ascii=False))
+    fixture_load_line=None
+    for attempt in range(30):
+        context_logs=adb("logcat","-d","-v","brief")
+        fixture_load_line=next((line for line in context_logs.splitlines()
+          if "CONTEXT_FIXTURE_LOAD_OK" in line and "measures=3" in line and
+             "title=Context changes test" in line),None)
+        if fixture_load_line:break
+        time.sleep(.5)
+    assert fixture_load_line, "Debug context fixture load marker did not confirm the three-measure score"
+    context_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     context_button=None
     context_root=None
     for attempt in range(8):
@@ -804,6 +814,8 @@ if __name__=="__main__":
             }
             for n in context_root.iter("node") if n.attrib.get("text")],ensure_ascii=False))
     context_bounds=[int(v) for v in re.findall(r"\d+",context_button.attrib["bounds"])]
+    # Start a fresh log window so the ready marker must come from this gesture.
+    adb("logcat","-c")
     adb("shell","input","swipe",str((context_bounds[0]+context_bounds[2])//2),
         str((context_bounds[1]+context_bounds[3])//2),
         str((context_bounds[0]+context_bounds[2])//2),
@@ -826,8 +838,6 @@ if __name__=="__main__":
          "POC_CONTEXT_MEASURE_" in line or "POC_CONTEXT_MODIFIERS_" in line or
          "POC_CONTEXT_RAIL_READY" in line or "POC_CONTEXT_SVG_ROOT" in line or
          "POC_CONTEXT_NODES_" in line),encoding="utf-8")
-    # Isolate fixture playback state from delayed callbacks of the previous score.
-    adb("logcat","-c")
     screenshot("piano-osmd-context-start.png")
     context_states=[]
     context_seen=set()
