@@ -17,19 +17,22 @@
  body.preview #score svg{overflow:visible}
  #optical-reference{display:none;position:absolute;top:0;bottom:0;width:2px;background:#0c8a78;opacity:0.9;pointer-events:none;z-index:4}
  body.preview #optical-reference{display:block}
+ #optical-wait{display:none;position:absolute;bottom:8px;left:8px;width:142px;padding:7px 10px;border:1px solid #92b7ad;border-radius:7px;background:rgba(255,255,255,.96);color:#164b40;z-index:10;font:12px system-ui;pointer-events:none;box-shadow:0 1px 4px #0002}
+ #optical-wait-progress{height:4px;margin-top:5px;background:#d8eee7;border-radius:2px;overflow:hidden}
+ #optical-wait-fill{height:100%;width:0;background:#008b78}
  #optical-note-tip{display:none;position:absolute;z-index:12;background:#fff;border:1px solid #a7c6bc;border-radius:6px;padding:5px 9px;font:14px sans-serif;color:#183b38;box-shadow:0 2px 6px #0002;pointer-events:none;max-width:210px}
 </style>
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
 <script src="temporal-notation.js"></script>
 <script src="optical-time-map.js"></script></head>
-<body><div id="viewport"><div id="score"></div></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="loading">Preparando partitura...</div>
+<body><div id="viewport"><div id="score"></div></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
 <script>
 (function(){
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
- let opticalLoopEditing=false,opticalLoopStart=null;
+ let opticalLoopEditing=false,opticalLoopStart=null,opticalWaitRaf=0,opticalWaitDeadline=0,opticalWaitDuration=0;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
  function inform(s){message.textContent=s;message.style.display='block';}
  function atBeat(beat,smooth){
@@ -72,6 +75,31 @@
    }
    appliedBeat=beat;
   }catch(e){ if(window.AndroidNotation)AndroidNotation.onError('Navegação: '+e.message); }
+ }
+ function cancelOpticalWait(){
+  if(opticalWaitRaf)cancelAnimationFrame(opticalWaitRaf);
+  opticalWaitRaf=0;opticalWaitDeadline=0;
+  document.getElementById('optical-wait').style.display='none';
+ }
+ function beginOpticalWait(milliseconds){
+  cancelOpticalWait();
+  if(!studyProof||!Number.isFinite(milliseconds)||milliseconds<=0)return;
+  opticalWaitDuration=milliseconds;opticalWaitDeadline=performance.now()+milliseconds;
+  const widget=document.getElementById('optical-wait');
+  widget.style.display='block';
+  console.log('POC_WAIT_PREPARE '+JSON.stringify({ms:milliseconds,beat:seekBeat}));
+  function paint(){
+   opticalWaitRaf=0;
+   if(!studyProof||!opticalWaitDeadline)return;
+   const remaining=Math.max(0,opticalWaitDeadline-performance.now());
+   document.getElementById('optical-wait-label').textContent=
+     'Preparação · '+Math.ceil(remaining/1000)+' s';
+   document.getElementById('optical-wait-fill').style.width=
+     (100*(1-remaining/opticalWaitDuration)).toFixed(1)+'%';
+   if(remaining>0)opticalWaitRaf=requestAnimationFrame(paint);
+   else {console.log('POC_WAIT_COMPLETE');cancelOpticalWait();}
+  }
+  paint();
  }
  function cancelOptical(){
   if(opticalRaf)cancelAnimationFrame(opticalRaf);
@@ -172,7 +200,7 @@
  }
  function render(xml,start,layout,nativeEvents){
   const ticket=++generation;
-  cancelOptical();
+  cancelOptical();cancelOpticalWait();
   document.getElementById('optical-note-tip').style.display='none';
   loaded=false;appliedBeat=-1;seekBeat=start||0;
   freeLayout=(layout==='free');studyProof=(layout==='engraving-poc');
@@ -311,9 +339,11 @@
     if(window.TemporalNotation)TemporalNotation.sync(beat,bpm,!!playing);
    },
    waitPrepare:function(milliseconds){
+    if(studyProof){beginOpticalWait(milliseconds);return;}
     if(!freeLayout&&loaded&&window.TemporalNotation)TemporalNotation.waitPrepare(milliseconds);
    },
    waitCancel:function(){
+    if(studyProof){cancelOpticalWait();return;}
     if(window.TemporalNotation)TemporalNotation.waitCancel();
    },
    loopEdit:function(enabled){
