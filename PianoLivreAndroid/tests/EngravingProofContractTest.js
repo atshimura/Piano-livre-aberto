@@ -57,4 +57,5 @@ ok(html.includes("function fitOpticalSvg(svg)"),"Two-staff SVG must fit vertical
 ok(html.includes("optical.timeline.xAt(beat)*opticalDisplayScale"),"Musical x movement must honor optical display zoom");
 ok(html.includes("svg.dataset.opticalNativeHeight"),"Height resize must retain original OSMD drawing metrics");
 ok(html.includes("displayScale:opticalDisplayScale"),"Piano score proof reports actual visual scaling");
+ok(html.includes("Math.abs(viewport.scrollLeft-target)>=0.5"),"WebView skips redundant subpixel scroll updates");
 console.log("OSMD_POC_CONTRACT_PASS checks="+checks);
