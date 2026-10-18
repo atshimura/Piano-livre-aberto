@@ -121,6 +121,8 @@ public class Score {
   /** False when this written head continues an already sounding tied note. */
   public boolean playbackAttack=true;
   private int sourcePart;private boolean velocityOverride;
+  /** Zero-based original MusicXML part index; not inferred from MIDI pitch. */
+  public int originalPartIndex(){return sourcePart;}
   public boolean tieStart, tieStop;
   public Event(double b,double l,int n,int s,int v,int m){beat=b;length=l;midi=n;staff=s;voice=v;voiceId=String.valueOf(v);measure=m;}
  }
