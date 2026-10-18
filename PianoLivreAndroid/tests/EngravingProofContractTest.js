@@ -38,6 +38,12 @@ ok(html.includes("function paintOpticalContext(beat,force)")&&
  html.includes("paintOpticalContext(beat,false)")&&
  html.includes("POC_CONTEXT_RAIL_PINNED"),
  "Pinned clef, key, and time context must update at native measure boundaries");
+ok(html.includes("POC_CONTEXT_RAIL_STATE")&&html.includes("sourceMeasure:measureNumber")&&
+ fs.readFileSync("tests/emulator_ui.py","utf8").includes("POC_CONTEXT_CHANGES "),
+ "Emulator evidence must verify which source measure supplies each pinned context symbol");
+ok(fs.existsSync("app/src/debug/assets/scores/engraving-context-change.musicxml")&&
+ fs.readFileSync("../.github/workflows/emulator.yml","utf8").includes("piano-osmd-context-changes.png"),
+ "Changing-context score fixture must remain debug-only and its screenshot must be archived");
 ok(html.includes("match(/^(.+)-1$/)")&&html.includes("match[1]+'-2'")&&
  html.includes("stafflines.length!==2"),
  "Context rail must require the two separate piano staves");

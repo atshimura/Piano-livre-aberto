@@ -759,3 +759,64 @@ if __name__=="__main__":
     tap_text(["Biblioteca"],scroll=True)
     assert_running()
     print("PASS emulator UI: library, music, study mode, playback, navigation",flush=True)
+    # Exercise genuinely changing score context on Android, using a fixture
+    # that exists only in the debug source set and is loaded only by this flag.
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("logcat","-c")
+    adb("shell","am","start","-W","-n",
+        "br.org.pianolivre.opensource/br.org.pianolivre.MainActivity",
+        "--ez","engraving_context_selftest","true")
+    time.sleep(2)
+    context_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Context changes test" in s for s in context_labels), "Debug context-change fixture did not load"
+    context_button=next((n for n in dump().iter("node")
+                         if n.attrib.get("text")=="Partitura Livre"),None)
+    assert context_button, "Context fixture cannot open the OSMD study proof"
+    context_bounds=[int(v) for v in re.findall(r"\d+",context_button.attrib["bounds"])]
+    adb("shell","input","swipe",str((context_bounds[0]+context_bounds[2])//2),
+        str((context_bounds[1]+context_bounds[3])//2),
+        str((context_bounds[0]+context_bounds[2])//2),
+        str((context_bounds[1]+context_bounds[3])//2),"1100")
+    context_ready=None
+    for attempt in range(30):
+        assert_running()
+        context_logs=adb("logcat","-d","-v","brief")
+        ready=[line for line in context_logs.splitlines() if "POC_OSMD_READY {" in line]
+        if ready:
+            context_ready=json.loads(ready[-1].split("POC_OSMD_READY ",1)[1].split(" @",1)[0])
+            break
+        time.sleep(.5)
+    assert context_ready and context_ready["measures"]==3 and context_ready["graphicalNotes"]>=12, (
+        "Three-measure context fixture did not engrave on Android")
+    context_states=[]
+    context_seen=set()
+    tap_text(["Contínuo"],exact=True,scroll=True)
+    tap_text(["Iniciar"],scroll=True)
+    for attempt in range(40):
+        context_logs=adb("logcat","-d","-v","brief")
+        for line in context_logs.splitlines():
+            if "POC_CONTEXT_RAIL_STATE {" in line and line not in context_seen:
+                context_seen.add(line)
+                context_states.append(json.loads(line.split("POC_CONTEXT_RAIL_STATE ",1)[1].split(" @",1)[0]))
+        if any(state["measure"]>=3 for state in context_states):break
+        assert_running()
+        time.sleep(.5)
+    assert any(state["measure"]==2 for state in context_states) and \
+      any(state["measure"]==3 for state in context_states), (
+        "Pinned context rail did not follow measures 2 and 3: "+json.dumps(context_states))
+    second_measure=next(state for state in context_states if state["measure"]==2)
+    third_measure=next(state for state in context_states if state["measure"]==3)
+    assert second_measure["staffSources"][0]["clef"]==2 and \
+      any(staff["key"]==2 and staff["time"]==2 for staff in second_measure["staffSources"]), (
+        "Measure 2 did not advance its changed clef, key signature and time signature")
+    assert third_measure["staffSources"][0]["clef"]==3 and \
+      any(staff["key"]==3 and staff["time"]==3 for staff in third_measure["staffSources"]), (
+        "Measure 3 did not advance its changed clef, key signature and time signature")
+    screenshot("piano-osmd-context-changes.png")
+    Path("piano-osmd-context-changes.json").write_text(json.dumps({
+      "fixture":"debug-only three-measure MusicXML; 4/4 C, 3/4 D with C-clef, 6/8 E-flat with G-clef",
+      "engraving":context_ready,"railStates":context_states,
+      "scope":"Android emulator only; context symbols advance from source measures 1 to 3"
+    },ensure_ascii=False,indent=2),encoding="utf-8")
+    print("POC_CONTEXT_CHANGES "+json.dumps(context_states),flush=True)
+    print("PASS: OSMD pinned context follows clef, key and time changes in Android playback",flush=True)

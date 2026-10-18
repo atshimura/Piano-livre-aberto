@@ -105,6 +105,8 @@ jobs:
             PianoLivreAndroid/piano-osmd-long.png
             PianoLivreAndroid/piano-osmd-long-tap.png
             PianoLivreAndroid/piano-osmd-long-moving.png
+            PianoLivreAndroid/piano-osmd-context-changes.png
+            PianoLivreAndroid/piano-osmd-context-changes.json
             PianoLivreAndroid/piano-osmd-long.json
             PianoLivreAndroid/piano-engraving-poc.json
             PianoLivreAndroid/piano-free-reading.png

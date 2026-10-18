@@ -128,6 +128,9 @@ public class MainActivity extends Activity {
   buildUi();loadProfiles();setupMidi();String previous=prefs.getString("user_"+user+"_file","");if(!previous.isEmpty())loadScore(previous,false);
   handler.post(ticker);
   if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("engraving_context_selftest",false))
+   handler.post(()->loadScore("scores/engraving-context-change.musicxml",true));
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("midi_selftest",false))handler.post(()->MidiSessionSelfTest.run(this));
  }
  private String readAsset(String asset)throws IOException{try(InputStream in=getAssets().open(asset)){return new String(all(in),StandardCharsets.UTF_8);}}

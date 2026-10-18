@@ -242,7 +242,8 @@
      });
      if(node){
       const box=node.getBBox();
-      found[pair[0]]={node:node.cloneNode(true),x:box.x,width:box.width};
+      found[pair[0]]={node:node.cloneNode(true),x:box.x,width:box.width,
+       sourceMeasure:measureNumber};
      }
     });
     symbolMeasures[measureNumber-1]=found;
@@ -340,6 +341,9 @@
   state.overlay.setAttribute('width',String(state.nativeWidth*opticalDisplayScale));
   state.overlay.setAttribute('height',String(state.nativeHeight*opticalDisplayScale));
   console.log('POC_CONTEXT_RAIL_MEASURE '+JSON.stringify({measure:target+1,beat:beat}));
+  console.log('POC_CONTEXT_RAIL_STATE '+JSON.stringify({measure:target+1,
+   staffSources:state.active.map(function(symbols){return {clef:symbols.clef&&symbols.clef.sourceMeasure,
+    key:symbols.key&&symbols.key.sourceMeasure,time:symbols.time&&symbols.time.sourceMeasure};})}));
  }
  function paintOpticalCues(beat){
   if(!studyProof||!optical||!Number.isFinite(beat))return;
