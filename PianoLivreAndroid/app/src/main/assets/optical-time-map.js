@@ -64,11 +64,14 @@
      const x=pos.x*10;
      entries.push({beat:beat,x:x,staff:staffIndex+1,measure:measureIndex+1});
      for(const voice of e.graphicalVoiceEntries||[])for(const gn of voice.notes||[]){
+      const sourceVoice=voice.parentVoiceEntry&&voice.parentVoiceEntry.ParentVoice;
+      const sourceVoiceId=sourceVoice&&sourceVoice.VoiceId;
       const src=gn.sourceNote;
       if(!src||src.isRestFlag||src.IsGraceNote)continue;
       const gp=gn.PositionAndShape&&gn.PositionAndShape.AbsolutePosition;
       const pitch=src.halfTone;
       notes.push({beat:beat,staff:staffIndex+1,measure:measureIndex+1,
+       voiceId:Number.isInteger(sourceVoiceId)&&sourceVoiceId>=0?String(sourceVoiceId):null,
        x:gp&&Number.isFinite(gp.x)?gp.x*10:x,
        y:gp&&Number.isFinite(gp.y)?gp.y*10:null,
        // OSMD halfTone uses C3=48; legacy Score.java MIDI counts C4=60.
@@ -141,6 +144,14 @@
    graphicalByKey.get(k).push(n);
   }
   let matched=0,ambiguous=0;
+  function assign(n,e){
+   n.nativeEvent={index:e.index,beat:e.event.beat,midi:e.event.midi,
+    staff:e.event.staff,measure:e.event.measure,voice:e.event.voice,
+    length:e.event.length,tieStart:!!e.event.tieStart,
+    tieStop:!!e.event.tieStop,step:e.event.step,alter:e.event.alter,
+    octave:e.event.octave,xmlNoteIndex:e.event.xmlNoteIndex};
+   n.mappingStatus="matched";matched++;
+  }
   const reasons={invalidGraphical:0,noNativeCandidate:0,ambiguous:0,beatDisagreement:0};
   const samples=[];
   function flag(n,reason){
@@ -157,6 +168,31 @@
    // Two source voices sharing a pitch are NOT interchangeable, even if
    // both appear at the same beat or only one head was engraved.
    if(graphNotes.length!==1||native.length!==1){
+    // Resolve polyphonic unisons only with an exact, bijective source voice ID.
+    // One engraved head for two native voices cannot be distinguished.
+    if(graphNotes.length>1&&graphNotes.length===native.length){
+     const byVoice=new Map();let reliable=true;
+     for(const e of native){
+      const v=String(e.event.voice);
+      if(!/^[0-9]+$/.test(v)||byVoice.has(v)){reliable=false;break;}
+      byVoice.set(v,e);
+     }
+     if(reliable){
+      const paired=new Set();
+      for(const n of graphNotes){
+       if(n.voiceId===null||!/^[0-9]+$/.test(String(n.voiceId))||
+          paired.has(n.voiceId)||!byVoice.has(n.voiceId)||
+          Math.abs(n.beat-byVoice.get(n.voiceId).event.beat)>0.001){
+        reliable=false;break;
+       }
+       paired.add(n.voiceId);
+      }
+     }
+     if(reliable){
+      for(const n of graphNotes)assign(n,byVoice.get(n.voiceId));
+      continue;
+     }
+    }
     if(graphNotes.length>1||native.length>1){
      for(const n of graphNotes){n.mappingStatus="ambiguous";flag(n,"ambiguous");}
      ambiguous+=graphNotes.length;
@@ -166,13 +202,7 @@
    }
    const n=graphNotes[0],e=native[0];
    if(Math.abs(n.beat-e.event.beat)>0.001){flag(n,"beatDisagreement");continue;}
-   n.nativeEvent={index:e.index,beat:e.event.beat,midi:e.event.midi,
-    staff:e.event.staff,measure:e.event.measure,voice:e.event.voice,
-    length:e.event.length,tieStart:!!e.event.tieStart,
-    tieStop:!!e.event.tieStop,step:e.event.step,alter:e.event.alter,
-    octave:e.event.octave,xmlNoteIndex:e.event.xmlNoteIndex};
-   n.mappingStatus="matched";
-   matched++;
+   assign(n,e);
   }
   return {graphicalNotes:notes.length,nativeEvents:events.length,
    reasons:reasons,samples:samples,
