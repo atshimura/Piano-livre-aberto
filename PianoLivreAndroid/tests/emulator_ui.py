@@ -335,6 +335,20 @@ if __name__=="__main__":
     screenshot("piano-osmd-poc-loop.png")
     tap_text(["Início"],scroll=True)  # Clear persisted loop before legacy renderer regression.
     print("PASS: verified OSMD noteheads selected a native study loop",flush=True)
+    # Wait-mode preparation uses the same native 1–30-second preference and
+    # visually counts down in the OSMD preview without changing attack rules.
+    tap_text(["Espera"],exact=True,scroll=True)
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(1)
+    assert "POC_WAIT_PREPARE {" in adb("logcat","-d","-v","brief"), "Native Wait preparation did not reach OSMD"
+    screenshot("piano-osmd-poc-wait.png")
+    for attempt in range(14):
+        if "POC_WAIT_COMPLETE" in adb("logcat","-d","-v","brief"):
+            break
+        time.sleep(.6)
+    assert "POC_WAIT_COMPLETE" in adb("logcat","-d","-v","brief"), "Visual Wait countdown did not finish"
+    tap_text(["Início"],scroll=True)
+    print("PASS: OSMD preparation follows native Wait-mode duration",flush=True)
     after_memory=adb("shell","dumpsys","meminfo","br.org.pianolivre.opensource")
     Path("piano-engraving-poc.json").write_text(json.dumps({
       "baseSha":"15cafe3c8da7c67b9752d14ba0fb6f8f6141177d",
