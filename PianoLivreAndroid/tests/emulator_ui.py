@@ -779,9 +779,27 @@ if __name__=="__main__":
             if "PianoLivreContext" in line or "FATAL EXCEPTION" in line or "AndroidRuntime" in line or "PianoLivreNotation" in line)+
           "\nACTIVITY\n"+context_failure_activity[-6000:],encoding="utf-8")
         raise AssertionError("Debug context-change fixture did not load: "+json.dumps(context_labels,ensure_ascii=False))
-    context_button=next((n for n in dump().iter("node")
-                         if n.attrib.get("text")=="Partitura Livre"),None)
-    assert context_button, "Context fixture cannot open the OSMD study proof"
+    context_button=None
+    context_root=None
+    for attempt in range(8):
+        context_root=dump()
+        context_button=next((n for n in context_root.iter("node")
+          if "partitura livre" in " ".join(n.attrib.get("text","").casefold().split())),None)
+        if context_button:break
+        time.sleep(.25)
+    if not context_button:
+        context_failure_logs=adb("logcat","-d","-v","brief")
+        context_failure_activity=adb("shell","dumpsys","activity","activities")
+        screenshot("piano-osmd-context-failure.png")
+        Path("piano-osmd-context-failure-window.xml").write_bytes(ET.tostring(context_root,encoding="utf-8"))
+        Path("piano-osmd-context-failure-diagnostics.txt").write_text(
+          "LABELS\n"+json.dumps(context_labels,ensure_ascii=False)+
+          "\nCURRENT WINDOW\n"+json.dumps([n.attrib for n in context_root.iter("node") if n.attrib.get("text")],ensure_ascii=False)+
+          "\nCONTEXT LOGS\n"+"\n".join(line for line in context_failure_logs.splitlines()
+            if "PianoLivreContext" in line or "FATAL EXCEPTION" in line or "AndroidRuntime" in line or "PianoLivreNotation" in line)+
+          "\nACTIVITY\n"+context_failure_activity[-6000:],encoding="utf-8")
+        raise AssertionError("Context fixture cannot open the OSMD study proof: "+
+          json.dumps([n.attrib.get("text","") for n in context_root.iter("node") if n.attrib.get("text")],ensure_ascii=False))
     context_bounds=[int(v) for v in re.findall(r"\d+",context_button.attrib["bounds"])]
     adb("shell","input","swipe",str((context_bounds[0]+context_bounds[2])//2),
         str((context_bounds[1]+context_bounds[3])//2),
@@ -798,8 +816,11 @@ if __name__=="__main__":
         time.sleep(.5)
     assert context_ready and context_ready["measures"]==3 and context_ready["graphicalNotes"]>=12, (
         "Three-measure context fixture did not engrave on Android")
+    screenshot("piano-osmd-context-start.png")
     context_states=[]
     context_seen=set()
+    captured_middle=False
+    captured_end=False
     tap_text(["Contínuo"],exact=True,scroll=True)
     tap_text(["Iniciar"],scroll=True)
     for attempt in range(40):
@@ -807,13 +828,21 @@ if __name__=="__main__":
         for line in context_logs.splitlines():
             if "POC_CONTEXT_RAIL_STATE {" in line and line not in context_seen:
                 context_seen.add(line)
-                context_states.append(json.loads(line.split("POC_CONTEXT_RAIL_STATE ",1)[1].split(" @",1)[0]))
+                state=json.loads(line.split("POC_CONTEXT_RAIL_STATE ",1)[1].split(" @",1)[0])
+                context_states.append(state)
+                if state["measure"]==2 and not captured_middle:
+                    screenshot("piano-osmd-context-middle.png")
+                    captured_middle=True
+                if state["measure"]>=3 and not captured_end:
+                    screenshot("piano-osmd-context-end.png")
+                    captured_end=True
         if any(state["measure"]>=3 for state in context_states):break
         assert_running()
         time.sleep(.5)
     assert any(state["measure"]==2 for state in context_states) and \
       any(state["measure"]==3 for state in context_states), (
         "Pinned context rail did not follow measures 2 and 3: "+json.dumps(context_states))
+    assert captured_middle and captured_end, "Context transition screenshots were not captured at measures 2 and 3"
     second_measure=next(state for state in context_states if state["measure"]==2)
     third_measure=next(state for state in context_states if state["measure"]==3)
     assert second_measure["staffSources"][0]["clef"]==2 and \
