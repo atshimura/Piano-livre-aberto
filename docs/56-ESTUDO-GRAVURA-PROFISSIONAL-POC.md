@@ -292,3 +292,8 @@ Build `39159267925` falhou no contrato de contexto porque a substituição que l
 ### Causa da clave contextual localizada — SHA `117e044`
 
 O emulador `39159409919` confirmou fixture OSMD pronta (3 compassos, 19 cabeças) e preservou no modelo `InitiallyActiveClef`: compasso 2 = clave de dó (`clefType:2`), compasso 3 = clave de sol (`clefType:0`). O SVG VexFlow, porém, guarda a mudança de clave de dó ao fim do grupo SVG do compasso 1 (x=226.4, perto do limite 254.4) e a mudança para sol ao fim do grupo do compasso 2 (x=470.7, perto do limite 498.7); os compassos 3 não têm grupos `vf-clef`. Portanto a partitura fonte e o OSMD estão corretos, mas o extrator confundia grupo gráfico com compasso musical. O próximo SHA atribui glifos de clave junto à borda direita ao compasso seguinte, mantém o glifo OSMD original, registra os remapeamentos `1→2` e `2→3`, e exige o rail correto nos compassos 2 e 3.
+
+
+### Contrato de origem musical — SHA `8a317a4`
+
+Build `39160134890` falhou no contrato estático ao exigir `sourceMeasure:measureNumber`, a antiga equivalência entre grupo SVG e compasso. A lógica agora preenche `sourceMeasure` com o compasso musical seguinte quando o glifo está junto à borda direita. O teste do emulador no mesmo SHA segue em andamento; o próximo contrato verifica `sourceMeasure:targetMeasure` e o registro de remapeamentos.
