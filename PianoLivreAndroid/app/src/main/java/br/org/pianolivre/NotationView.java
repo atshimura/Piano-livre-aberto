@@ -120,13 +120,15 @@ public final class NotationView extends WebView {
   String layout=freeLayout?"'free'":(engravingProof?"'engraving-poc'":"'study'");
   String nativeEvents="null";
   if(engravingProof){
+   java.util.List<Score.Event> graphicEvents=pendingScore.writtenEvents.isEmpty()
+      ?pendingScore.events:pendingScore.writtenEvents;
    // Send the authoritative parsed events only to the opt-in experiment.
    // No persistence or alteration of the musical playback model.
-   if(pendingScore.writtenEvents.size()>20000){
-    Log.w("PianoLivreNotation","POC_EVENT_LIMIT "+pendingScore.writtenEvents.size());
+   if(graphicEvents.size()>20000){
+    Log.w("PianoLivreNotation","POC_EVENT_LIMIT "+graphicEvents.size());
    }else{
     JSONArray serialized=new JSONArray();
-    for(Score.Event event:pendingScore.writtenEvents){
+    for(Score.Event event:graphicEvents){
      try{
       JSONObject note=new JSONObject();
       note.put("beat",event.beat);note.put("length",event.length);
