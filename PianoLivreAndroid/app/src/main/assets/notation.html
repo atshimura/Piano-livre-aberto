@@ -81,23 +81,34 @@
  function cancelOpticalWait(){
   if(opticalWaitRaf)cancelAnimationFrame(opticalWaitRaf);
   opticalWaitRaf=0;opticalWaitDeadline=0;
+  // The score always returns to the native clock's optical position.
+  document.getElementById('score').style.transform='none';
   document.getElementById('optical-wait').style.display='none';
  }
  function beginOpticalWait(milliseconds){
   cancelOpticalWait();
-  if(!studyProof||!Number.isFinite(milliseconds)||milliseconds<=0)return;
+  if(!studyProof||!optical||!Number.isFinite(milliseconds)||milliseconds<=0)return;
   opticalWaitDuration=milliseconds;opticalWaitDeadline=performance.now()+milliseconds;
   const widget=document.getElementById('optical-wait');
+  const score=document.getElementById('score');
+  // Pure presentation offset: do not seek or advance a musical beat.
+  // A rightward starting offset progressively reaches the fixed reference.
+  const preparationDistance=Math.min(100,viewport.clientWidth*.18);
   widget.style.display='block';
-  console.log('POC_WAIT_PREPARE '+JSON.stringify({ms:milliseconds,beat:seekBeat}));
+  document.getElementById('optical-wait-label').textContent='Preparação';
+  console.log('POC_WAIT_PREPARE '+JSON.stringify({ms:milliseconds,beat:seekBeat,
+   travelPx:preparationDistance}));
   function paint(){
    opticalWaitRaf=0;
    if(!studyProof||!opticalWaitDeadline)return;
    const remaining=Math.max(0,opticalWaitDeadline-performance.now());
-   document.getElementById('optical-wait-label').textContent=
-     'Preparação · '+Math.ceil(remaining/1000)+' s';
+   const progress=1-remaining/opticalWaitDuration;
+   // Smoothstep: gradual departure and arrival without a jump at completion.
+   const eased=progress*progress*(3-2*progress);
+   score.style.transform='translate3d('+
+     (preparationDistance*(1-eased)).toFixed(2)+'px,0,0)';
    document.getElementById('optical-wait-fill').style.width=
-     (100*(1-remaining/opticalWaitDuration)).toFixed(1)+'%';
+     (100*progress).toFixed(1)+'%';
    if(remaining>0)opticalWaitRaf=requestAnimationFrame(paint);
    else {console.log('POC_WAIT_COMPLETE');cancelOpticalWait();}
   }
