@@ -28,3 +28,7 @@ GPL-3.0-only para o código próprio; direitos das músicas e de terceiros separ
 ## Nova linha funcional: Laboratório Musical
 
 Produto aprovou nova área Descobrir/Aprender com teclado virtual+USB-MIDI, pauta sempre visível, catálogo amplo, práticas, demonstração, ritmo opcional e histórico por perfil, além de melhorias em Espera, biblioteca, notação e toque na cabeça da nota. A implementação ocorre incrementalmente na [issue #34](https://github.com/atshimura/Piano-livre-aberto/issues/34) e no [documento 45](45-LABORATORIO-ESCOPO-E-CONTINUIDADE.md). A primeira entrega inicia a análise offline de acordes e uma interface experimental, **sem equivaler ao Laboratório completo ou a aceite físico**. O texto anterior sobre V1 permanece válido e #11 continua pendente.
+
+## Avaliação visual pendente — 0.9.46 e PR #46
+
+A pauta do Estudo em SVG manual foi reprovada na avaliação visual real, portanto não deve ser descrita como qualidade editorial profissional mesmo após correções de claves/hastes/vigas. O OSMD 1.9.8 já empacotado oferece uma referência visual melhor em Partitura Livre; um PR de pesquisa/draft registra capturas e a prova horizontal. Sem validação temporal (proporcionalidade estrita vigente), mapeamento de eventos, toque e desempenho, **não há aceite de substituição nem release**. Ver [doc 56](56-ESTUDO-GRAVURA-PROFISSIONAL-POC.md).

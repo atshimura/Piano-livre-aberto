@@ -119,3 +119,7 @@ Ao abrir teclado guia via **PianoScreens.setKeyboardOpen(true)**, o cabeçalho, 
 - **Não substituir motor de partitura temporal por OSMD convencional sem reproduzir os contratos de tempo, posição, seleção, pauta fixa e desempenho.**
 
 Ver [03](03-NOTACAO-TEMPO.md), [04](04-MIDI-ESTUDO.md), [05](05-DADOS-BACKUP.md) e [07](07-ESTADO-E-ROADMAP.md).
+
+## Revisão de arquitetura — Estudo com gravura profissional (pesquisa PR #46)
+
+A partir da 0.9.46 constatou-se que `study` sempre chama `TemporalNotation.render`, cuja gravura é SVG manual; a Partitura Livre chama o OSMD 1.9.8 (já empacotado). Um novo modo exclusivamente de comparação `engraving-poc` usa OSMD horizontal mediante gesto opt-in e deixa intacto o renderer da experiência normal. `NotationView` não envia seek/sessão de aprendizagem para esse preview, para não sugerir sincronização inexistente. Avaliar mapeamento completo XML→MIDI→GraphicalNote e performance antes de tentar adotar a gravura óptica mantendo decisões pedagógicas. Consulte [doc 56](56-ESTUDO-GRAVURA-PROFISSIONAL-POC.md); PR ainda draft, sem release nem alteração de dados.
