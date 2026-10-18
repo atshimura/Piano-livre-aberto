@@ -83,6 +83,23 @@
   }
   return {timeline:create(entries),notes:notes,sourceEntries:entries.length};
  }
+ /** Heads at the next written onset for the chosen study hand (0: both).
+  * This changes only the visual cue. MIDI attacks remain owned by Android.
+  * Tied continuations remain in the score but are not new expected attacks.
+  */
+ function nextCueHeads(notes,beat,hand){
+  if(!Array.isArray(notes)||!Number.isFinite(beat))return [];
+  if(hand!==0&&hand!==1&&hand!==2)return [];
+  let next=Infinity;const out=[];
+  for(const n of notes){
+   if(!n||!n.nativeEvent||n.nativeEvent.playbackAttack===false||
+      !Number.isFinite(n.beat)||n.beat<beat-.005||
+      (hand!==0&&n.staff!==hand))continue;
+   if(n.beat<next-.00001){next=n.beat;out.length=0;out.push(n);}
+   else if(Math.abs(n.beat-next)<.00001){out.push(n);}
+  }
+  return out.slice(0,24);
+ }
  /** Display exact MusicXML written spelling; MIDI pitch alone cannot distinguish
   * D-sharp from E-flat or preserve B-sharp/C-flat. Incomplete source -> null.
   */
@@ -223,7 +240,7 @@
    matched:matched,ambiguous:ambiguous,unmatched:notes.length-matched-ambiguous,
    unmatchedNative:events.length-invalidNative-matched,invalidNative:invalidNative};
  }
- const out={create:create,fromGraphical:fromGraphical,hitTest:hitTest,reconcile:reconcile,writtenPitch:writtenPitch};
+ const out={create:create,fromGraphical:fromGraphical,hitTest:hitTest,reconcile:reconcile,writtenPitch:writtenPitch,nextCueHeads:nextCueHeads};
  if(typeof module!=="undefined"&&module.exports)module.exports=out;
  if(root)root.OpticalTimeMap=out;
 })(typeof window!=="undefined"?window:null);
