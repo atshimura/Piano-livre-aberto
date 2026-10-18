@@ -48,7 +48,7 @@ ok(html.includes("const preparationDistance=Math.min(100,viewport.clientWidth*.1
  "Preview Wait animates a bounded graphical pre-roll");
 ok(html.includes("score.style.transform='translate3d('"),
  "Score moves gradually without changing the musical clock");
-ok(html.includes("score.style.transform='none'"),
+ok(html.includes("document.getElementById('score').style.transform='none'"),
  "Wait cancellation or completion restores exact score geometry");
 ok(html.includes("textContent='Preparação'")&&
  !html.includes("Math.ceil(remaining/1000)+' s'"),
