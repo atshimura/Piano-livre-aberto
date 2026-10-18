@@ -627,6 +627,7 @@ if __name__=="__main__":
     assert long_proof["height"]<=long_proof["viewportHeight"], "OSMD two-staff SVG extends below viewport"
     assert long_proof["nativeSvgHeight"]>long_proof["height"], "Original engraving dimensions were not preserved in diagnostics"
     assert long_proof["graphicalNotes"]>=50 and long_proof["svgNodes"]>=1000, "Long-score engraving incomplete"
+    assert long_proof["midiMapping"]["matched"]==long_proof["graphicalNotes"], "Each written Gymnopédie notehead must reconcile, including tied continuations"
     screenshot("piano-osmd-long.png")
     # A scaled SVG must preserve actual Android hit targets, not just its appearance.
     long_head=long_proof.get("firstNoteViewport")
