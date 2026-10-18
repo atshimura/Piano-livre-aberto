@@ -171,7 +171,7 @@ public final class NotationView extends WebView {
   evaluateJavascript("PianoNotation.seek("+beat+","+(animate?"true":"false")+","+bpm+","+(moving?"true":"false")+")",null);
  }
  private void sendPendingWaitPreparation(){
-  if(disposed||freeLayout||engravingProof||!htmlReady||!scoreRendered||pendingWaitDeadline<=0)return;
+  if(disposed||freeLayout||!htmlReady||!scoreRendered||pendingWaitDeadline<=0)return;
   long remaining=pendingWaitDeadline-android.os.SystemClock.uptimeMillis();
   if(remaining>0)evaluateJavascript("PianoNotation.waitPrepare("+remaining+")",null);
   else pendingWaitDeadline=0;
@@ -183,7 +183,7 @@ public final class NotationView extends WebView {
  }
  public void cancelWaitPreparation(){
   pendingWaitDeadline=0;
-  if(!disposed&&!freeLayout&&!engravingProof&&htmlReady&&scoreRendered)evaluateJavascript("PianoNotation.waitCancel()",null);
+  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)evaluateJavascript("PianoNotation.waitCancel()",null);
  }
  public void resizeToFit(){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
