@@ -121,6 +121,9 @@ catch(e){ok(e.message!=="Should reject missing native events","Null native input
 report=T.reconcile(solo,[{...exact[0],midi:61}]);
 ok(report.reasons.noNativeCandidate===1&&report.samples[0].reason==="noNativeCandidate",
  "Pitch discrepancies are reported without guessing a source event");
+ok(report.samples[0].nativeAtSameOnset.length===1&&
+ report.samples[0].nativeAtSameOnset[0].midi===61,
+ "Mismatched heads diagnose the actual native pitch at the same beat");
 report=T.reconcile(solo,[exact[0],{...exact[0],voice:"2"}]);
 ok(report.reasons.ambiguous===1&&solo[0].mappingReason==="ambiguous",
  "Native unisons must be explicitly diagnosed");
