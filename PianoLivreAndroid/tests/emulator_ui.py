@@ -819,6 +819,8 @@ if __name__=="__main__":
         time.sleep(.5)
     assert context_ready and context_ready["measures"]==3 and context_ready["graphicalNotes"]>=12, (
         "Three-measure context fixture did not engrave on Android")
+    # Isolate fixture playback state from delayed callbacks of the previous score.
+    adb("logcat","-c")
     screenshot("piano-osmd-context-start.png")
     context_states=[]
     context_seen=set()
@@ -833,10 +835,10 @@ if __name__=="__main__":
                 context_seen.add(line)
                 state=json.loads(line.split("POC_CONTEXT_RAIL_STATE ",1)[1].split(" @",1)[0])
                 context_states.append(state)
-                if state["measure"]==2 and not captured_middle:
+                if state["measure"]==2 and any(staff["clef"]==2 and staff["key"]==2 and staff["time"]==2 for staff in state["staffSources"]) and not captured_middle:
                     screenshot("piano-osmd-context-middle.png")
                     captured_middle=True
-                if state["measure"]>=3 and not captured_end:
+                if state["measure"]>=3 and any(staff["key"]==3 and staff["time"]==3 for staff in state["staffSources"]) and not captured_end:
                     screenshot("piano-osmd-context-end.png")
                     captured_end=True
         if any(state["measure"]>=3 for state in context_states):break
@@ -847,13 +849,15 @@ if __name__=="__main__":
       any(state["measure"]==3 for state in context_states), (
         "Pinned context rail did not follow measures 2 and 3: "+json.dumps(context_states))
     assert captured_middle and captured_end, "Context transition screenshots were not captured at measures 2 and 3"
-    second_measure=next(state for state in context_states if state["measure"]==2)
-    third_measure=next(state for state in context_states if state["measure"]==3)
-    assert second_measure["staffSources"][0]["clef"]==2 and \
-      any(staff["key"]==2 and staff["time"]==2 for staff in second_measure["staffSources"]), (
-        "Measure 2 did not advance its changed clef, key signature and time signature")
-    assert third_measure["staffSources"][0]["clef"]==3 and \
-      any(staff["key"]==3 and staff["time"]==3 for staff in third_measure["staffSources"]), (
+    second_measure=next((state for state in context_states if state["measure"]==2 and
+      any(staff["clef"]==2 and staff["key"]==2 and staff["time"]==2
+        for staff in state["staffSources"])),None)
+    third_measure=next((state for state in context_states if state["measure"]==3 and
+      any(staff["key"]==3 and staff["time"]==3 for staff in state["staffSources"])),None)
+    assert second_measure and second_measure["staffSources"][0]["clef"]==2, (
+        "Measure 2 did not advance its changed clef, key signature and time signature: "+
+        json.dumps(context_states))
+    assert third_measure and third_measure["staffSources"][0]["clef"]==3, (
         "Measure 3 did not advance its changed clef, key signature and time signature: "+
         json.dumps(context_states))
     screenshot("piano-osmd-context-changes.png")
