@@ -122,17 +122,18 @@ public final class NotationView extends WebView {
   if(engravingProof){
    // Send the authoritative parsed events only to the opt-in experiment.
    // No persistence or alteration of the musical playback model.
-   if(pendingScore.events.size()>20000){
-    Log.w("PianoLivreNotation","POC_EVENT_LIMIT "+pendingScore.events.size());
+   if(pendingScore.writtenEvents.size()>20000){
+    Log.w("PianoLivreNotation","POC_EVENT_LIMIT "+pendingScore.writtenEvents.size());
    }else{
     JSONArray serialized=new JSONArray();
-    for(Score.Event event:pendingScore.events){
+    for(Score.Event event:pendingScore.writtenEvents){
      try{
       JSONObject note=new JSONObject();
       note.put("beat",event.beat);note.put("length",event.length);
       note.put("midi",event.midi);note.put("staff",event.staff);
       note.put("measure",event.measure);note.put("voice",event.voiceId);
       note.put("tieStart",event.tieStart);note.put("tieStop",event.tieStop);
+      note.put("playbackAttack",event.playbackAttack);
       if(event.writtenStep!=null){
        note.put("step",event.writtenStep);note.put("octave",event.writtenOctave);
        if(Double.isFinite(event.writtenAlter))note.put("alter",event.writtenAlter);
