@@ -287,6 +287,17 @@ if __name__=="__main__":
     assert "POC_LAYER software" in adb("logcat","-d","-v","brief"), "Preview did not isolate software SVG diagnostic"
     time.sleep(2)
     screenshot("piano-osmd-poc.png")
+    # Select each native hand without changing the MusicXML or piano key guide.
+    for hand_name,hand_index in [("Direita",1),("Esquerda",2),("Ambas",0)]:
+        tap_text([hand_name],exact=True,scroll=True)
+        time.sleep(.3)
+        cue_lines=[line for line in adb("logcat","-d","-v","brief").splitlines()
+                   if "POC_HAND_CUES {" in line]
+        assert cue_lines, "OSMD did not report graphical selected-hand cues"
+        cue=json.loads(cue_lines[-1].split("POC_HAND_CUES ",1)[1].split(" @",1)[0])
+        assert cue["hand"]==hand_index and all(staff==hand_index for staff in cue["staffs"]
+                                               if hand_index!=0), "Graphical cues ignored source hand"
+    print("PASS: optical study cues follow native right/left/both selection",flush=True)
     # Guide opening changes only height; keep the same OSMD SVG and all note IDs.
     render_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     tap_text(["Teclado guia"],scroll=True)
