@@ -50,4 +50,7 @@ ok(html.includes("if(studyProof){cancelOpticalWait();return;}"),
    "Native stop cancels OSMD countdown");
 ok(bridge.includes("if(disposed||freeLayout||!htmlReady||!scoreRendered||pendingWaitDeadline<=0)return;"),
    "Wait preparation can reach preview through native bridge");
+ok(html.includes("POC_RESIZE_HEIGHT_ONLY"),"Height-only guide resize must avoid full OSMD render");
+ok(html.includes("osmdRenderedWidth===viewport.clientWidth"),"Width changes must still trigger OSMD re-layout");
+ok(html.includes("osmdRenderedHeight=viewport.clientHeight"),"Track rendered viewport height for guide toggles");
 console.log("OSMD_POC_CONTRACT_PASS checks="+checks);
