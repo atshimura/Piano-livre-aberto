@@ -231,10 +231,20 @@ class PianoScreens {
   titlebar.addView(songTitle,new LinearLayout.LayoutParams(0,-1,1));
   Button freeButton=compact("Partitura Livre",false,()->showFree());
   // Research-only opt-in: long press never changes normal Study defaults.
+  freeButton.setOnTouchListener((v,event)->{
+   if(event.getActionMasked()==android.view.MotionEvent.ACTION_DOWN||
+      event.getActionMasked()==android.view.MotionEvent.ACTION_UP||
+      event.getActionMasked()==android.view.MotionEvent.ACTION_CANCEL){
+    android.util.Log.i("PianoLivreNotation","POC_GESTURE_TOUCH action="+event.getActionMasked()+
+      " x="+Math.round(event.getX())+" y="+Math.round(event.getY()));
+   }
+   return false;
+  });
   freeButton.setOnLongClickListener(v->{
    if(a.score==null||notation==null)return true;
    a.stopPlayback();a.finishStudyWindow();editingLoop=false;
    notation.setEngravingProof(!notation.isEngravingProof());
+   android.util.Log.i("PianoLivreNotation","POC_GESTURE_LONG_CLICK delivered=true enabled="+notation.isEngravingProof());
    android.util.Log.i("PianoLivreNotation","POC_TOGGLE "+notation.isEngravingProof());
    android.widget.Toast.makeText(a,notation.isEngravingProof()?"Prévia OSMD: sem mapeamento temporal validado":"Pauta temporal original restaurada",android.widget.Toast.LENGTH_SHORT).show();
    return true;

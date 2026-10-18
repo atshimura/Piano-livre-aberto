@@ -208,3 +208,12 @@ O toque no OSMD deixou de usar raio fixo de 11×7 unidades gráficas quando a pa
 ### Medição de geometria de pautas do OSMD (sem mudança editorial)
 
 Para entender por que a Gymnopédie exige escala ~0,493 apesar das duas pautas visíveis, `POC_OSMD_READY` passa a registrar `firstStaffOrigins` (posição vertical OSMD da primeira medida em cada pauta) junto de altura nativa e escala exibida. Esta instrumentação **não move pautas** nem altera MusicXML, glifos ou o cálculo de beats; permite determinar se há espaço excessivo entre pautas antes de experimentar `EngravingRules`. Os parâmetros da biblioteca de gravação não foram alterados, porque compactar pautas sem inspeção musical pode causar colisões de linhas suplementares, ligaduras e dinâmica. Revisar as amostras e screenshots da CI atual para decidir o ajuste editorial.
+
+
+## Interrupção do emulador no SHA `f1d3dc1` — diagnóstico em andamento (18/10/2026)
+
+A execução `39135829973` falhou em `tests/emulator_ui.py` na busca de `POC_OSMD_READY`. O PR permanece aberto como draft. O artefato `PianoLivre-public-emulator-evidence` existe (1.261.670 bytes), mas contém somente nove arquivos, entre eles `piano-song.png`, `piano-engraved.png` e `window.xml`; **não contém captura OSMD nem logcat**. A captura e a hierarquia mostram “Partitura Livre” visível, clicável e `long-clickable=true`, limites `[1073,201][1409,289]`. Isso confirma disponibilidade visual, mas não confirma entrega do toque.
+
+O log do job termina no traceback e não imprime estado da Activity, PID, mensagens `PianoLivreNotation`, erros Chromium/WebView ou estado do renderer, pois a asserção anterior não coletava esses dados em caso de falha. Portanto a evidência daquela execução **não permite atribuir a falha à camada Java, ao gesto, ao JavaScript, ao OSMD ou ao tempo de renderização**.
+
+Instrumentação acrescentada para a próxima execução: eventos `ACTION_DOWN/UP/CANCEL` no botão; marcadores separados para `OnLongClick`, despacho `setEngravingProof`, início/fim do `osmd.load`, fim do `osmd.render`, criação do mapa e exceção JS com stack; em caso de falha, screenshot, XML da janela, estado `dumpsys activity`, lista de processos e logcat integral passam a ser gravados e enviados ao artefato. O teste também diferencia falha de entrega do gesto de falha depois da ativação. Essa mudança é diagnóstica e **não é correção nem aprovação do emulador**. A próxima ação é executar o workflow no novo SHA, ler as evidências, corrigir a causa demonstrada e repetir a suíte completa.

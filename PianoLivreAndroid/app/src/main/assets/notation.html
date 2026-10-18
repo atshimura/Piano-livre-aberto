@@ -344,6 +344,8 @@
   const proofStarted=performance.now();
   try{
    if(!window.opensheetmusicdisplay){throw new Error('Motor musical indisponível');}
+   if(studyProof)console.log('POC_OSMD_LOAD_BEGIN '+JSON.stringify({xmlLength:xml.length,
+    nativeEvents:lastNativeEvents.length,viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight}));
    osmd=new opensheetmusicdisplay.OpenSheetMusicDisplay('score',{
     backend:'svg',
     autoResize:false,
@@ -358,8 +360,10 @@
    });
    Promise.resolve(osmd.load(xml)).then(function(){
     if(ticket!==generation)return;
+    if(studyProof)console.log('POC_OSMD_LOAD_RESOLVED');
     // Keep OSMD at its default internal zoom; apply a CSS transform to the entire grand staff.
     osmd.render();
+    if(studyProof)console.log('POC_OSMD_RENDER_RESOLVED');
     osmdRenderedWidth=viewport.clientWidth;
     osmdRenderedHeight=viewport.clientHeight;
     if(ticket!==generation)return;
@@ -368,6 +372,7 @@
      const graphic=osmd.graphic,columns=graphic&&graphic.measureList||[];
      if(!window.OpticalTimeMap)throw Error('Mapeamento óptico não carregado');
      optical=OpticalTimeMap.fromGraphical(graphic);
+     console.log('POC_OPTICAL_MAP_CREATED '+JSON.stringify({anchors:optical.timeline.stops.length,notes:optical.notes.length}));
      fitOpticalSvg(svg);
      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
      console.log('POC_MIDI_MAPPING '+JSON.stringify(opticalReconciliation));
@@ -449,6 +454,7 @@
     if(window.AndroidNotation)AndroidNotation.onRendered();
     if(!freeLayout&&!studyProof)requestAnimationFrame(()=>setTimeout(()=>atBeat(seekBeat,true),150));
    }).catch(function(err){
+    console.error('POC_OSMD_EXCEPTION '+(err&&err.stack||err));
     inform('Falha ao abrir notação: '+err.message);
     if(window.AndroidNotation)AndroidNotation.onError(err.message);
    });

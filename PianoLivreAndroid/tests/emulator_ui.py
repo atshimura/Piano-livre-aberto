@@ -269,15 +269,35 @@ if __name__=="__main__":
     cx,cy=(bb[0]+bb[2])//2,(bb[1]+bb[3])//2
     adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1100")
     professional=None
+    gesture_delivered=False
     for attempt in range(24):
         time.sleep(.65)
         proof_logs=adb("logcat","-d","-v","brief")
+        gesture_delivered="POC_GESTURE_LONG_CLICK delivered=true enabled=true" in proof_logs
         entries=[line for line in proof_logs.splitlines() if "POC_OSMD_READY {" in line]
         if entries:
             try:professional=json.loads(entries[-1].split("POC_OSMD_READY ",1)[1].split(" @",1)[0])
             except ValueError:pass
             if professional:break
-    assert professional, "Bundled OSMD horizontal SVG proof did not render in Android WebView"
+    if not professional:
+        proof_logs=adb("logcat","-d","-v","brief")
+        screenshot("piano-osmd-failure.png")
+        proof_ui=dump()
+        Path("piano-osmd-failure-window.xml").write_bytes(ET.tostring(proof_ui,encoding="utf-8"))
+        activity=adb("shell","dumpsys","activity","activities")
+        processes=adb("shell","ps","-A")
+        Path("piano-osmd-failure-diagnostics.txt").write_text(
+            "GESTURE_DELIVERED="+str(gesture_delivered)+"\n\nACTIVITY\n"+activity+
+            "\n\nPROCESSES\n"+processes+"\n\nLOGCAT\n"+proof_logs,encoding="utf-8")
+        relevant=[line for line in proof_logs.splitlines() if any(token in line for token in
+          ("PianoLivreNotation","POC_GESTURE","FATAL EXCEPTION","AndroidRuntime","chromium","ANR"))]
+        print("POC_FAILURE_STATE gesture="+str(gesture_delivered)+" pid="+
+          adb("shell","pidof","br.org.pianolivre.opensource").strip(),flush=True)
+        print("POC_FAILURE_ACTIVITY "+activity[-8000:],flush=True)
+        print("POC_FAILURE_LOGCAT\n"+"\n".join(relevant[-240:]),flush=True)
+    assert professional, ("Bundled OSMD horizontal SVG proof did not render; "+
+      ("long-press was not delivered" if not gesture_delivered else "long-press arrived; inspect WebView diagnostics"))
+    assert gesture_delivered, "OSMD proof appeared without the expected long-press diagnostic"
     assert professional["svgNodes"]>50 and professional["width"]>0 and professional["measures"]>=3, "OSMD proof rendered no music"
     assert professional["musicalAnchors"]>=8 and professional["graphicalNotes"]>=12, "OSMD map lost musical events"
     mapping=professional.get("midiMapping") or {}

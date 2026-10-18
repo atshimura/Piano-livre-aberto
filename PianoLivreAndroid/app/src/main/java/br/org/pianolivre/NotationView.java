@@ -164,9 +164,12 @@ public final class NotationView extends WebView {
   // Diagnostic only: distinguish GPU SVG tile clipping from musical data loss.
   // Revert to the original WebView layer immediately on leaving the preview.
   setLayerType(enabled?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
+  Log.i("PianoLivreNotation","POC_PROOF_DISPATCH enabled="+enabled+" htmlReady="+htmlReady+
+    " score="+pendingScore.title+" events="+(pendingScore.writtenEvents.isEmpty()
+      ?pendingScore.events.size():pendingScore.writtenEvents.size()));
   Log.i("PianoLivreNotation","POC_LAYER "+(enabled?"software":"original"));
   setVisibility(View.INVISIBLE);
-  if(htmlReady)sendScore();
+  if(htmlReady)sendScore();else Log.e("PianoLivreNotation","POC_PROOF_BLOCKED htmlReady=false");
  }
  private void sendStudyHand(){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered&&engravingProof)

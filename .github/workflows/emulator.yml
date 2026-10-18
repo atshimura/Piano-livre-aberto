@@ -94,6 +94,9 @@ jobs:
             PianoLivreAndroid/piano-song.png
             PianoLivreAndroid/piano-engraved.png
             PianoLivreAndroid/piano-osmd-poc.png
+            PianoLivreAndroid/piano-osmd-failure.png
+            PianoLivreAndroid/piano-osmd-failure-window.xml
+            PianoLivreAndroid/piano-osmd-failure-diagnostics.txt
             PianoLivreAndroid/piano-osmd-poc-moving.png
             PianoLivreAndroid/piano-osmd-poc-note-tap.png
             PianoLivreAndroid/piano-osmd-poc-loop.png
