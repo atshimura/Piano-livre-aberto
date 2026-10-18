@@ -568,6 +568,9 @@ if __name__=="__main__":
             if long_proof:break
     assert long_proof, "Long MusicXML did not finish horizontal OSMD rendering"
     assert long_proof["measures"]>=40, "Long-score fixture unexpectedly short"
+    assert 0<long_proof["displayScale"]<1, "Dense two-staff score was not fitted to display height"
+    assert long_proof["height"]<=long_proof["viewportHeight"], "OSMD two-staff SVG extends below viewport"
+    assert long_proof["nativeSvgHeight"]>long_proof["height"], "Original engraving dimensions were not preserved in diagnostics"
     assert long_proof["graphicalNotes"]>=50 and long_proof["svgNodes"]>=1000, "Long-score engraving incomplete"
     screenshot("piano-osmd-long.png")
     tap_text(["Contínuo"],exact=True,scroll=True)
