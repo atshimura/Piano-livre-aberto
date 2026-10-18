@@ -14,9 +14,14 @@ ok(html.includes("POC_CONTEXT_MEASURE_")&&html.includes("POC_CONTEXT_SVG_ROOT")&
  html.includes("POC_CONTEXT_MODIFIERS_")&&html.includes("POC_CONTEXT_NODES_")&&
  html.includes("beginInstructionsWidth"),
  "OSMD context rail must inspect native measure instruction geometry before pinning symbols");
-ok(html.includes("svg.querySelectorAll('g.staffline')")&&html.includes("child.id==='1'")&&
+ok(html.includes("svg.querySelectorAll('g.staffline')")&&
+ html.includes("Number(child.id)>=1")&&html.includes("Number(child.id)<=4")&&
+ html.includes("child.outerHTML.slice(0,220)")&&
  fs.readFileSync("tests/emulator_ui.py","utf8").includes('first_staff["staffline"]!=second_staff["staffline"]'),
- "Context symbol geometry must compare the first measure on both piano staves");
+ "Context SVG diagnostics must capture bounded measure glyphs from both piano staves");
+ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes('first_staff["measures"]')&&
+ fs.readFileSync("tests/emulator_ui.py","utf8").includes('["measure"]=="1"'),
+ "Emulator probe must validate measure 1 on both staves");
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("piano-osmd-context-probe.txt"),
  "Emulator evidence must preserve the bounded OSMD instruction probe");
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("POC_CONTEXT_LONG_EVIDENCE"),
