@@ -28,6 +28,7 @@
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
+ let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
  function inform(s){message.textContent=s;message.style.display='block';}
  function atBeat(beat,smooth){
@@ -73,7 +74,7 @@
  }
  function cancelOptical(){
   if(opticalRaf)cancelAnimationFrame(opticalRaf);
-  opticalRaf=0;optical=null;opticalAnchor=null;opticalFrames=0;
+  opticalRaf=0;optical=null;opticalAnchor=null;opticalFrames=0;opticalReconciliation=null;
  }
  function opticalPosition(beat){
   if(!optical)return;
@@ -94,6 +95,7 @@
  }
  function opticalSeek(beat,bpm,playing){
   if(!optical||!Number.isFinite(beat))return;
+  opticalPlayback={bpm:bpm,playing:!!playing};
   if(opticalRaf)cancelAnimationFrame(opticalRaf);
   opticalRaf=0;opticalAnchor=null;
   opticalPosition(beat);
@@ -102,12 +104,40 @@
    opticalFrames=0;opticalRaf=requestAnimationFrame(opticalFrame);
   }
  }
- function render(xml,start,layout){
+ // Reattach after every OSMD render/resize: OSMD can replace its SVG root.
+ function attachOpticalNoteTouch(svg){
+  if(!svg||svg.dataset.opticalTouch==='yes')return;
+  svg.dataset.opticalTouch='yes';
+  svg.addEventListener('click',function(ev){
+   if(!studyProof||!optical)return;
+   const rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+   if(rect.width<=0||rect.height<=0)return;
+   const x=vb.x+(ev.clientX-rect.left)*vb.width/rect.width;
+   const y=vb.y+(ev.clientY-rect.top)*vb.height/rect.height;
+   const note=OpticalTimeMap.hitTest(optical.notes,x,y);
+   const tip=document.getElementById('optical-note-tip');
+   if(!note){tip.style.display='none';return;}
+   const native=note.nativeEvent;
+   const m=native?native.midi:note.midiEstimate;
+   const names=['Dó','Dó♯','Ré','Ré♯','Mi','Fá','Fá♯','Sol','Sol♯','Lá','Lá♯','Si'];
+   const noteName=Number.isFinite(m)?names[((m%12)+12)%12]+(Math.floor(m/12)-1):'Altura a conferir';
+   const verified=note.mappingStatus==='matched';
+   tip.textContent=noteName+' · compasso '+note.measure+' · pauta '+note.staff+
+    (verified?' · MIDI conferido':' · MIDI não confirmado');
+   tip.style.left=Math.max(4,Math.min(window.innerWidth-220,ev.clientX+10))+'px';
+   tip.style.top=Math.max(4,ev.clientY-44)+'px';tip.style.display='block';
+   console.log('POC_NOTE_TAP '+JSON.stringify({beat:note.beat,staff:note.staff,
+    midiEstimate:note.midiEstimate,nativeMidi:native?native.midi:null,
+    mapped:verified,status:note.mappingStatus,sourceEventIndex:native?native.index:null,x:x,y:y}));
+  });
+ }
+ function render(xml,start,layout,nativeEvents){
   const ticket=++generation;
   cancelOptical();
   document.getElementById('optical-note-tip').style.display='none';
   loaded=false;appliedBeat=-1;seekBeat=start||0;
   freeLayout=(layout==='free');studyProof=(layout==='engraving-poc');
+  lastNativeEvents=studyProof&&Array.isArray(nativeEvents)?nativeEvents:[];
   document.body.className=freeLayout?'free':(studyProof?'preview':'continuous');
   // Native pinch zoom remains available in traditional reading mode only.
   document.querySelector('meta[name="viewport"]').setAttribute('content',
@@ -156,23 +186,9 @@
      const graphic=osmd.graphic,columns=graphic&&graphic.measureList||[];
      if(!window.OpticalTimeMap)throw Error('Mapeamento óptico não carregado');
      optical=OpticalTimeMap.fromGraphical(graphic);
-     if(svg)svg.addEventListener('click',function(ev){
-      if(!studyProof||!optical)return;
-      const rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
-      if(rect.width<=0||rect.height<=0)return;
-      const x=vb.x+(ev.clientX-rect.left)*vb.width/rect.width;
-      const y=vb.y+(ev.clientY-rect.top)*vb.height/rect.height;
-      const note=OpticalTimeMap.hitTest(optical.notes,x,y);
-      const tip=document.getElementById('optical-note-tip');
-      if(!note){tip.style.display='none';return;}
-      const m=note.midiEstimate;
-      const names=['Dó','Dó♯','Ré','Ré♯','Mi','Fá','Fá♯','Sol','Sol♯','Lá','Lá♯','Si'];
-      const noteName=Number.isFinite(m)?names[((m%12)+12)%12]+(Math.floor(m/12)-1):'Altura a conferir';
-      tip.textContent=noteName+' · compasso '+note.measure+' · pauta '+note.staff;
-      tip.style.left=Math.max(4,Math.min(window.innerWidth-220,ev.clientX+10))+'px';
-      tip.style.top=Math.max(4,ev.clientY-44)+'px';tip.style.display='block';
-      console.log('POC_NOTE_TAP '+JSON.stringify({beat:note.beat,staff:note.staff,midiEstimate:m,x:x,y:y}));
-     });
+     opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
+     console.log('POC_MIDI_MAPPING '+JSON.stringify(opticalReconciliation));
+     attachOpticalNoteTouch(svg);
      opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(start||0));
      document.getElementById('score').style.marginLeft=opticalOffset+'px';
      document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
@@ -204,6 +220,7 @@
        height:svg?Math.round(svg.getBoundingClientRect().height):0,
        measures:columns.length,firstEntries:samples.slice(0,16),
        musicalAnchors:optical.timeline.stops.length,graphicalNotes:optical.notes.length,
+       midiMapping:opticalReconciliation,
        firstMusicalX:optical.timeline.xAt(start||0),referenceOffset:opticalOffset,
        viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight};
      console.log('POC_OSMD_READY '+JSON.stringify(proof));
@@ -253,10 +270,10 @@
     if(window.TemporalNotation)TemporalNotation.waitCancel();
    },
    loopEdit:function(enabled){
-    if(!freeLayout&&window.TemporalNotation)TemporalNotation.loopEdit(!!enabled);
+    if(!freeLayout&&!studyProof&&window.TemporalNotation)TemporalNotation.loopEdit(!!enabled);
    },
    clearLoop:function(){
-    if(!freeLayout&&window.TemporalNotation)TemporalNotation.clearLoop();
+    if(!freeLayout&&!studyProof&&window.TemporalNotation)TemporalNotation.clearLoop();
    },
    resize:function(){
     if(!loaded)return;
@@ -267,11 +284,14 @@
      osmd.render();appliedBeat=-1;
      if(studyProof){
       optical=OpticalTimeMap.fromGraphical(osmd.graphic);
+      // Graphical positions are invalid after a re-layout: reconcile and bind again.
+      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
+      attachOpticalNoteTouch(document.querySelector('#score svg'));
       opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat));
       document.getElementById('score').style.marginLeft=opticalOffset+'px';
       document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
       document.getElementById('optical-reference').style.left=(viewport.clientWidth*.4)+'px';
-      opticalSeek(seekBeat,100,false);
+      opticalSeek(seekBeat,opticalPlayback.bpm,opticalPlayback.playing);
      }else if(!freeLayout)atBeat(seekBeat,false);
     }catch(e){console.log('POC_RESIZE_ERROR',e.message)}},220);
    }
