@@ -313,9 +313,11 @@ if __name__=="__main__":
         except ValueError as exc:raise AssertionError("OSMD context JSON was truncated for "+marker) from exc
     first_staff=parsed_context["POC_CONTEXT_NODES_1"]
     second_staff=parsed_context["POC_CONTEXT_NODES_2"]
-    assert first_staff["measure"]==second_staff["measure"]=="1" and \
+    first_measures=[measure["measure"] for measure in first_staff["measures"]]
+    second_measures=[measure["measure"] for measure in second_staff["measures"]]
+    assert first_measures[:3]==second_measures[:3]==["1","2","3"] and \
       first_staff["staffline"]!=second_staff["staffline"], (
-        "OSMD context probe must inspect measure 1 on both grand-staff lines")
+        "OSMD context probe must inspect measures 1-3 on both grand-staff lines")
     rail_lines=[line for line in adb("logcat","-d","-v","brief").splitlines()
                 if "POC_CONTEXT_RAIL_READY {" in line]
     assert rail_lines, "OSMD did not build the fixed-left context rail"
