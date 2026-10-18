@@ -79,6 +79,24 @@ report=T.reconcile(solo,[{...exact[0],beat:0.0006}]);
 ok(report.unmatched===1,"Mismatch beyond quantization bound is not silently matched");
 try{T.reconcile([],null);throw Error("Should reject missing native events");}
 catch(e){ok(e.message!=="Should reject missing native events","Null native input rejected");}
+// Diagnostics distinguish causes so missing musical events are not hidden by a pass rate.
+report=T.reconcile(solo,[{...exact[0],midi:61}]);
+ok(report.reasons.noNativeCandidate===1&&report.samples[0].reason==="noNativeCandidate",
+ "Pitch discrepancies are reported without guessing a source event");
+report=T.reconcile(solo,[exact[0],{...exact[0],voice:"2"}]);
+ok(report.reasons.ambiguous===1&&solo[0].mappingReason==="ambiguous",
+ "Native unisons must be explicitly diagnosed");
+const invalidGraphic=[{beat:0,staff:1,measure:1,midiEstimate:null,x:1,y:2}];
+report=T.reconcile(invalidGraphic,exact);
+ok(report.reasons.invalidGraphical===1&&report.unmatched===1,
+ "Unresolved graphical pitch is diagnosed without a false match");
+const manyUnknown=Array.from({length:40},(_,i)=>({beat:i,staff:1,measure:i+1,midiEstimate:70}));
+report=T.reconcile(manyUnknown,[]);
+ok(report.reasons.noNativeCandidate===40&&report.samples.length===20,
+ "Diagnostic samples remain bounded for a large score");
+report=T.reconcile(solo,exact);
+ok(solo[0].mappingReason===undefined&&report.matched===1,
+ "Successful reconciliation must clear stale diagnostic reasons");
 // A long score must not require a quadratic lookup for musical scrolling.
 // This probes only the time/graphics map, NOT Android WebView SVG rendering.
 const longEntries=[];
