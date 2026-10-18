@@ -34,7 +34,7 @@
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
- let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1;
+ let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1,opticalReferenceX=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
  let opticalPerf={frames:0,intervals:0,totalGapMs:0,maxGapMs:0,slowGaps:0,lastFrameMs:null};
  let opticalLoopEditing=false,opticalLoopStart=null,opticalWaitRaf=0,opticalWaitDeadline=0,opticalWaitDuration=0;
@@ -168,13 +168,28 @@
   console.log('POC_SVG_FIT '+JSON.stringify({scale:scale,rawWidth:baseWidth,
    rawHeight:baseHeight,width:baseWidth*scale,height:baseHeight*scale,
    viewportHeight:viewport.clientHeight})); }
+ function alignOpticalScore(beat){
+  opticalReferenceX=Math.min(viewport.clientWidth*.4,
+   Math.min(viewport.clientWidth,130*opticalDisplayScale)+12);
+  opticalOffset=Math.max(0,opticalReferenceX+53-optical.timeline.xAt(beat)*opticalDisplayScale);
+  document.getElementById('score').style.marginLeft=opticalOffset+'px';
+  document.getElementById('optical-reference').style.left=opticalReferenceX+'px';
+ }
  function makeOpticalContextState(svg,columns){
   const rail=document.getElementById('optical-context-rail');
   rail.innerHTML='';
   if(!svg||!columns||!columns.length){opticalContextState=null;return;}
-  const stafflines=Array.from(svg.querySelectorAll('g.staffline')).filter(function(node){
-   return /^Piano\d+-\d+$/.test(node.id||'');
-  }).slice(0,2);
+  const candidates=Array.from(svg.querySelectorAll('g.staffline')).filter(function(node){
+   return node.classList&&node.classList.contains('staffline');
+  });
+  let stafflines=null;
+  for(let i=0;i<candidates.length;i++){
+   const match=(candidates[i].id||'').match(/^(.+)-1$/);
+   if(!match)continue;
+   const lower=candidates.find(function(node){return node.id===match[1]+'-2';});
+   if(lower){stafflines=[candidates[i],lower];break;}
+  }
+  stafflines=stafflines||[];
   if(stafflines.length!==2){
    console.log('POC_CONTEXT_RAIL_SKIP '+JSON.stringify({stafflines:stafflines.length}));
    opticalContextState=null;return;
@@ -188,6 +203,17 @@
   overlay.setAttribute('width',String(nativeWidth*opticalDisplayScale));
   overlay.setAttribute('height',String(nativeHeight*opticalDisplayScale));
   overlay.setAttribute('aria-hidden','true');
+  const firstMeasure=function(staffline){return Array.from(staffline.children).find(function(node){
+   return node.classList&&node.classList.contains('vf-measure')&&node.id==='1';
+  });};
+  const upperNode=firstMeasure(stafflines[0]),lowerNode=firstMeasure(stafflines[1]);
+  if(!upperNode||!lowerNode){opticalContextState=null;return;}
+  const upperBox=upperNode.getBBox(),lowerBox=lowerNode.getBBox();
+  const brace=Array.from(svg.querySelectorAll('g.vf-brace')).find(function(node){
+   const box=node.getBBox();
+   return box.y<upperBox.y+upperBox.height&&box.y+box.height>lowerBox.y;
+  });
+  const braceCopy=brace?brace.cloneNode(true):null;
   const base=[];
   stafflines.forEach(function(staffline,staffIndex){
    const measures=Array.from(staffline.children).filter(function(node){
@@ -205,8 +231,11 @@
     lineGroup.appendChild(copy);
    });
    overlay.appendChild(lineGroup);
-   const symbolMeasures=measures.map(function(measure,index){
-    const found={measure:index+1,clef:null,key:null,time:null};
+   const symbolMeasures=[];
+   measures.forEach(function(measure){
+    const measureNumber=Number(measure.id);
+    if(!Number.isInteger(measureNumber)||measureNumber<1||measureNumber>columns.length)return;
+    const found={measure:measureNumber,clef:null,key:null,time:null};
     [['clef','vf-clef'],['key','vf-keysignature'],['time','vf-timesignature']].forEach(function(pair){
      const node=Array.from(measure.children).find(function(child){
       return child.classList&&child.classList.contains(pair[1]);
@@ -216,7 +245,7 @@
       found[pair[0]]={node:node.cloneNode(true),x:box.x,width:box.width};
      }
     });
-    return found;
+    symbolMeasures[measureNumber-1]=found;
    });
    base.push({line:lineGroup,measures:symbolMeasures});
   });
@@ -237,18 +266,36 @@
   opticalContextState={svg:svg,overlay:overlay,base:base,measureStarts:measureStarts,
    active:[{clef:null,key:null,time:null},{clef:null,key:null,time:null}],
    viewBox:viewBox,nativeWidth:nativeWidth,nativeHeight:nativeHeight,
-   railLeft:svg.getBoundingClientRect().left-viewport.getBoundingClientRect().left};
+   railLeft:0,svgStartLeft:svg.getBoundingClientRect().left-viewport.getBoundingClientRect().left,
+   braceNode:braceCopy,hasBrace:!!brace};
+  Array.from(svg.querySelectorAll('g.vf-clef,g.vf-keysignature,g.vf-timesignature')).forEach(function(node){
+   node.style.visibility='hidden';
+  });
+  if(brace)brace.style.visibility='hidden';
   rail.appendChild(overlay);
   paintOpticalContext(0,true);
-  console.log('POC_CONTEXT_RAIL_READY '+JSON.stringify({staves:base.length,
-   measures:measureStarts.length,scale:opticalDisplayScale}));
+  console.log('POC_CONTEXT_RAIL_READY '+JSON.stringify({staves:base.length,brace:!!brace,
+   measures:measureStarts.length,scale:opticalDisplayScale,railLeft:0,
+   railWidth:Math.min(viewport.clientWidth,130*opticalDisplayScale),
+   referenceX:opticalReferenceX,svgStartLeft:+opticalContextState.svgStartLeft.toFixed(2)}));
  }
  function paintOpticalContext(beat,force){
   const state=opticalContextState;
   if(!studyProof||!state||!Number.isFinite(beat))return;
-  let target=0;
-  for(let i=1;i<state.measureStarts.length;i++){
-   if(state.measureStarts[i].beat<=beat+.0001)target=i;else break;
+  let low=0,high=state.measureStarts.length;
+  while(low+1<high){
+   const middle=(low+high)>>1;
+   if(state.measureStarts[middle].beat<=beat+.0001)low=middle;else high=middle;
+  }
+  const target=low;
+  const sourceNow=state.svg.getBoundingClientRect();
+  const viewportNow=viewport.getBoundingClientRect();
+  const movingSvgLeft=sourceNow.left-viewportNow.left;
+  if(!state.pinnedEvidence&&Math.abs(movingSvgLeft-state.svgStartLeft)>3){
+   state.pinnedEvidence=true;
+   console.log('POC_CONTEXT_RAIL_PINNED '+JSON.stringify({measure:target+1,
+    railLeft:0,svgStartLeft:+state.svgStartLeft.toFixed(2),svgLeft:+movingSvgLeft.toFixed(2),
+    scrollLeft:+viewport.scrollLeft.toFixed(2)}));
   }
   if(!force&&target===opticalContextMeasure)return;
   opticalContextMeasure=target;
@@ -263,6 +310,7 @@
    });
   }
   while(state.overlay.firstChild)state.overlay.removeChild(state.overlay.firstChild);
+  if(state.braceNode)state.overlay.appendChild(state.braceNode.cloneNode(true));
   state.base.forEach(function(staff,staffIndex){
    if(!staff)return;
    const lines=staff.line.cloneNode(true);
@@ -282,10 +330,10 @@
     state.overlay.appendChild(wrapper);
    });
   });
-  const source=state.svg.getBoundingClientRect();
-  const viewportRect=viewport.getBoundingClientRect();
+  const source=sourceNow;
+  const viewportRect=viewportNow;
   const rail=document.getElementById('optical-context-rail');
-  rail.style.left=Math.max(0,state.railLeft)+'px';
+  rail.style.left='0px';
   rail.style.top=Math.max(0,source.top-viewportRect.top)+'px';
   rail.style.width=Math.min(viewport.clientWidth,130*opticalDisplayScale)+'px';
   rail.style.height=(state.nativeHeight*opticalDisplayScale)+'px';
@@ -327,7 +375,7 @@
  }
  function opticalPosition(beat){
   if(!optical)return;
-  const wanted=optical.timeline.xAt(beat)*opticalDisplayScale+opticalOffset-viewport.clientWidth*.4-53;
+  const wanted=optical.timeline.xAt(beat)*opticalDisplayScale+opticalOffset-opticalReferenceX-53;
   const maximum=Math.max(0,viewport.scrollWidth-viewport.clientWidth);
   const target=Math.max(0,Math.min(maximum,wanted));
   // Do not commit identical/sub-pixel scroll positions to Android WebView.
@@ -514,12 +562,9 @@
      console.log('POC_MIDI_MAPPING '+JSON.stringify(opticalReconciliation));
      attachOpticalNoteTouch(svg);
      paintOpticalCues(start||0);
-     opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(start||0)*opticalDisplayScale);
-     document.getElementById('score').style.marginLeft=opticalOffset+'px';
+     alignOpticalScore(start||0);
      document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
      makeOpticalContextState(svg,columns);
-     const ref=document.getElementById('optical-reference');
-     ref.style.left=(viewport.clientWidth*.4)+'px';
      opticalSeek(start||0,100,false);
      const samples=[];
      for(const group of columns.slice(0,6))for(const measure of group||[]){
@@ -699,9 +744,8 @@
      if(osmdRenderedHeight!==viewport.clientHeight){
       osmdRenderedHeight=viewport.clientHeight;
       fitOpticalSvg(document.querySelector('#score svg'));
+      alignOpticalScore(seekBeat);
       paintOpticalContext(seekBeat,true);
-      opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat)*opticalDisplayScale);
-      document.getElementById('score').style.marginLeft=opticalOffset+'px';
       const now=performance.now();
       const activeBeat=opticalAnchor
        ?opticalAnchor.beat+(now-opticalAnchor.at)*opticalAnchor.bpm/60000
@@ -725,11 +769,9 @@
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
       attachOpticalNoteTouch(document.querySelector('#score svg'));
       paintOpticalCues(seekBeat);
-      opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat)*opticalDisplayScale);
-      document.getElementById('score').style.marginLeft=opticalOffset+'px';
+      alignOpticalScore(seekBeat);
       document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
       makeOpticalContextState(resizedSvg,osmd.graphic&&osmd.graphic.measureList||[]);
-      document.getElementById('optical-reference').style.left=(viewport.clientWidth*.4)+'px';
       opticalSeek(seekBeat,opticalPlayback.bpm,opticalPlayback.playing);
      }else if(!freeLayout)atBeat(seekBeat,false);
     }catch(e){console.log('POC_RESIZE_ERROR',e.message)}},220);

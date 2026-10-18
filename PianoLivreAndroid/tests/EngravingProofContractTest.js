@@ -24,13 +24,22 @@ ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("POC_CONTEXT_LONG_EVI
 ok(fs.readFileSync("../.github/workflows/emulator.yml","utf8").includes("PianoLivreAndroid/piano-osmd-context-probe.txt"),
  "Workflow artifact manifest must include the context probe report");
 ok(html.includes("function makeOpticalContextState(svg,columns)")&&
- html.includes("node.cloneNode(true)")&&html.includes("translate(-20 0)"),
- "Pinned context rail must reuse native OSMD glyphs and staff lines");
+ html.includes("node.cloneNode(true)")&&html.includes("translate(-20 0)")&&
+ html.includes("g.vf-brace")&&html.includes("brace.cloneNode(true)")&&
+ html.includes("Number(measure.id)")&&
+ html.includes("node.style.visibility='hidden'")&&html.includes("rail.style.left='0px'"),
+ "Pinned context rail must reuse native OSMD glyphs, brace, and staff lines");
+ok(html.includes("function alignOpticalScore(beat)")&&
+ html.includes("Math.min(viewport.clientWidth*.4")&&
+ html.includes("opticalReferenceX+53"),
+ "Pinned context rail must reserve left space and keep the cursor after the symbols");
 ok(html.includes("function paintOpticalContext(beat,force)")&&
- html.includes("state.measureStarts[i].beat<=beat+.0001")&&
- html.includes("paintOpticalContext(beat,false)"),
+ html.includes("state.measureStarts[middle].beat<=beat+.0001")&&
+ html.includes("paintOpticalContext(beat,false)")&&
+ html.includes("POC_CONTEXT_RAIL_PINNED"),
  "Pinned clef, key, and time context must update at native measure boundaries");
-ok(html.includes("/^Piano\\d+-\\d+$/")&&html.includes("stafflines.length!==2"),
+ok(html.includes("match(/^(.+)-1$/)")&&html.includes("match[1]+'-2'")&&
+ html.includes("stafflines.length!==2"),
  "Context rail must require the two separate piano staves");
 ok(html.includes("POC_NOT_PRODUCTION_READY"),"Proof must never claim finished Study");
 ok(bridge.includes("engravingProof=false"),"Normal score load disables proof");
