@@ -819,6 +819,13 @@ if __name__=="__main__":
         time.sleep(.5)
     assert context_ready and context_ready["measures"]==3 and context_ready["graphicalNotes"]>=12, (
         "Three-measure context fixture did not engrave on Android")
+    context_load_logs=adb("logcat","-d","-v","brief")
+    Path("piano-osmd-context-load-probe.txt").write_text("\n".join(
+      line for line in context_load_logs.splitlines()
+      if "CONTEXT_FIXTURE_" in line or "POC_OSMD_" in line or
+         "POC_CONTEXT_MEASURE_" in line or "POC_CONTEXT_MODIFIERS_" in line or
+         "POC_CONTEXT_RAIL_READY" in line or "POC_CONTEXT_SVG_ROOT" in line or
+         "POC_CONTEXT_NODES_" in line),encoding="utf-8")
     # Isolate fixture playback state from delayed callbacks of the previous score.
     adb("logcat","-c")
     screenshot("piano-osmd-context-start.png")
@@ -845,6 +852,11 @@ if __name__=="__main__":
         assert_running()
         time.sleep(.5)
     print("POC_CONTEXT_CHANGES_OBSERVED "+json.dumps(context_states),flush=True)
+    Path("piano-osmd-context-changes.json").write_text(json.dumps({
+      "fixture":"debug-only three-measure MusicXML; 4/4 C, 3/4 D with C-clef, 6/8 E-flat with G-clef",
+      "engraving":context_ready,"railStates":context_states,
+      "scope":"Android emulator only; captured before context assertions"
+    },ensure_ascii=False,indent=2),encoding="utf-8")
     assert any(state["measure"]==2 for state in context_states) and \
       any(state["measure"]==3 for state in context_states), (
         "Pinned context rail did not follow measures 2 and 3: "+json.dumps(context_states))

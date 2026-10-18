@@ -113,6 +113,7 @@ jobs:
             PianoLivreAndroid/piano-osmd-long-moving.png
             PianoLivreAndroid/piano-osmd-context-changes.png
             PianoLivreAndroid/piano-osmd-context-changes.json
+            PianoLivreAndroid/piano-osmd-context-load-probe.txt
             PianoLivreAndroid/piano-osmd-context-start.png
             PianoLivreAndroid/piano-osmd-context-middle.png
             PianoLivreAndroid/piano-osmd-context-end.png
