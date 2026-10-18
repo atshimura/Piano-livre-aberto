@@ -573,6 +573,26 @@ if __name__=="__main__":
     assert long_proof["nativeSvgHeight"]>long_proof["height"], "Original engraving dimensions were not preserved in diagnostics"
     assert long_proof["graphicalNotes"]>=50 and long_proof["svgNodes"]>=1000, "Long-score engraving incomplete"
     screenshot("piano-osmd-long.png")
+    # A scaled SVG must preserve actual Android hit targets, not just its appearance.
+    long_head=long_proof.get("firstNoteViewport")
+    assert long_head and long_head.get("midiEstimate") is not None, "Long score has no testable upper-staff notehead"
+    views=[n for n in dump().iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
+    assert views, "Long-score WebView geometry unavailable"
+    rect=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
+    assert len(rect)==4, "Invalid scaled WebView dimensions"
+    xx=rect[0]+round(long_head["x"]*(rect[2]-rect[0])/long_proof["viewportWidth"])
+    yy=rect[1]+round(long_head["y"]*(rect[3]-rect[1])/long_proof["viewportHeight"])
+    assert rect[0]<=xx<rect[2] and rect[1]<=yy<rect[3], "Scaled graphical notehead outside screen"
+    previous_hits=adb("logcat","-d","-v","brief").count("POC_NOTE_TAP {")
+    adb("shell","input","tap",str(xx),str(yy))
+    time.sleep(.4)
+    logs=adb("logcat","-d","-v","brief")
+    all_hits=[line for line in logs.splitlines() if "POC_NOTE_TAP {" in line]
+    assert len(all_hits)>previous_hits, "Scaled SVG did not recognize a real notehead touch"
+    chosen_note=json.loads(all_hits[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
+    assert chosen_note["staff"]==1 and chosen_note["nativeMidi"]==long_head["midiEstimate"] and chosen_note["mapped"], "Scaled notehead did not match native MusicXML/MIDI"
+    screenshot("piano-osmd-long-tap.png")
+    print("PASS: scaled 78-measure OSMD graphical notehead maps to native MIDI",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     long_play_point=tap_text(["Iniciar"],return_point=True,scroll=True)
     time.sleep(2)
