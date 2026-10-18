@@ -153,12 +153,42 @@
    svg.dataset.opticalNativeWidth=String(baseWidth);
    svg.dataset.opticalNativeHeight=String(baseHeight);
   }
-  const scale=Math.min(1,Math.max(0.05,(viewport.clientHeight-8)/baseHeight));
+  // Crop only EMPTY outer margins, not music. Preserve the complete ink
+  // bounding box (including both staves, accidentals and written markings).
+  // Reuse the crop on height-only resize; do not recompute from an altered viewBox.
+  let croppedHeight=Number(svg.dataset.opticalCropHeight);
+  if(!(croppedHeight>0)){
+   const vb=svg.viewBox.baseVal;
+   const baseX=vb.x,baseY=vb.y,baseVbWidth=vb.width,baseVbHeight=vb.height;
+   let cropY=baseY,cropHeight=baseVbHeight;
+   try{
+    const ink=svg.getBBox();
+    const margin=12; // SVG user units to retain stroke edges and labels.
+    if(Number.isFinite(ink.y)&&Number.isFinite(ink.height)&&ink.height>0){
+     const low=Math.max(baseY,ink.y-margin);
+     const high=Math.min(baseY+baseVbHeight,ink.y+ink.height+margin);
+     if(high-low>0&&high-low<baseVbHeight*.92){
+      cropY=low;cropHeight=high-low;
+     }
+    }
+   }catch(e){console.log('POC_CROP_BBOX_UNAVAILABLE '+e.message);}
+   // Maintain native x units: optical beat-to-x and hit-test stay exact.
+   if(cropHeight<baseVbHeight){
+    svg.setAttribute('viewBox',[baseX,cropY,baseVbWidth,cropHeight].join(' '));
+   }
+   svg.dataset.opticalCropHeight=String(cropHeight);
+   svg.dataset.opticalOriginalViewBoxHeight=String(baseVbHeight);
+   croppedHeight=cropHeight;
+  }
+  const scale=Math.min(1,Math.max(0.05,(viewport.clientHeight-8)/croppedHeight));
   opticalDisplayScale=scale;
   svg.style.width=(baseWidth*scale)+'px';
-  svg.style.height=(baseHeight*scale)+'px';
+  svg.style.height=(baseHeight*scale*
+    (croppedHeight/Number(svg.dataset.opticalOriginalViewBoxHeight||croppedHeight)))+'px';
   console.log('POC_SVG_FIT '+JSON.stringify({scale:scale,rawWidth:baseWidth,
-   rawHeight:baseHeight,width:baseWidth*scale,height:baseHeight*scale,
+   rawHeight:baseHeight,croppedHeight:croppedHeight,
+   cropRatio:croppedHeight/Number(svg.dataset.opticalOriginalViewBoxHeight||croppedHeight),
+   width:svg.getBoundingClientRect().width,height:svg.getBoundingClientRect().height,
    viewportHeight:viewport.clientHeight}));
  }
  function opticalPosition(beat){
