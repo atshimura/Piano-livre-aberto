@@ -35,6 +35,7 @@
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
  let opticalPerf={frames:0,intervals:0,totalGapMs:0,maxGapMs:0,slowGaps:0,lastFrameMs:null};
  let opticalLoopEditing=false,opticalLoopStart=null,opticalWaitRaf=0,opticalWaitDeadline=0,opticalWaitDuration=0;
+ let opticalHand=0,opticalCueKey='',opticalCueSvg=null;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
  function inform(s){message.textContent=s;message.style.display='block';}
  function atBeat(beat,smooth){
@@ -138,6 +139,7 @@
   if(opticalRaf)cancelAnimationFrame(opticalRaf);
   opticalRaf=0;optical=null;opticalAnchor=null;opticalFrames=0;opticalReconciliation=null;
   opticalLoopEditing=false;opticalLoopStart=null;
+  opticalCueKey='';opticalCueSvg=null;
  }
  /** Preserve MusicXML and note identity: scale CSS SVG, not musical events.
   * The original SVG viewBox continues to drive precise notehead hit tests.
@@ -160,6 +162,34 @@
   console.log('POC_SVG_FIT '+JSON.stringify({scale:scale,rawWidth:baseWidth,
    rawHeight:baseHeight,width:baseWidth*scale,height:baseHeight*scale,
    viewportHeight:viewport.clientHeight})); }
+ function paintOpticalCues(beat){
+  if(!studyProof||!optical||!Number.isFinite(beat))return;
+  const svg=document.querySelector('#score svg');
+  if(!svg)return;
+  const heads=OpticalTimeMap.nextCueHeads(optical.notes,beat,opticalHand);
+  const key=opticalHand+':'+heads.map(n=>n.beat+','+n.x+','+n.y).join('|');
+  if(svg===opticalCueSvg&&key===opticalCueKey)return;
+  opticalCueSvg=svg;opticalCueKey=key;
+  let overlay=svg.querySelector('#piano-optical-study-cues');
+  if(!overlay){
+   overlay=document.createElementNS('http://www.w3.org/2000/svg','g');
+   overlay.setAttribute('id','piano-optical-study-cues');
+   overlay.setAttribute('pointer-events','none');
+   svg.appendChild(overlay);
+  }
+  overlay.replaceChildren();
+  for(const n of heads){
+   if(!Number.isFinite(n.x)||!Number.isFinite(n.y))continue;
+   const ring=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+   ring.setAttribute('cx',n.x);ring.setAttribute('cy',n.y);
+   ring.setAttribute('rx','11');ring.setAttribute('ry','8');
+   ring.setAttribute('fill','none');
+   ring.setAttribute('stroke',n.staff===1?'#158078':'#225da6');
+   ring.setAttribute('stroke-opacity','.65');
+   ring.setAttribute('stroke-width','3');
+   overlay.appendChild(ring);
+  }
+ }
  function opticalPosition(beat){
   if(!optical)return;
   const wanted=optical.timeline.xAt(beat)*opticalDisplayScale+opticalOffset-viewport.clientWidth*.4-53;
@@ -194,6 +224,7 @@
  function opticalSeek(beat,bpm,playing){
   if(!optical||!Number.isFinite(beat))return;
   opticalPlayback={bpm:bpm,playing:!!playing};
+  paintOpticalCues(beat);
   if(!playing||!Number.isFinite(bpm)||bpm<=0){
    reportOpticalPerf('pause');
    if(opticalRaf)cancelAnimationFrame(opticalRaf);
@@ -334,6 +365,7 @@
      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
      console.log('POC_MIDI_MAPPING '+JSON.stringify(opticalReconciliation));
      attachOpticalNoteTouch(svg);
+     paintOpticalCues(start||0);
      opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(start||0)*opticalDisplayScale);
      document.getElementById('score').style.marginLeft=opticalOffset+'px';
      document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
@@ -418,6 +450,11 @@
     if(studyProof){opticalSeek(beat,bpm,!!playing);return;}
     if(window.TemporalNotation)TemporalNotation.sync(beat,bpm,!!playing);
    },
+   studyHand:function(hand){
+    if(hand!==0&&hand!==1&&hand!==2)return;
+    opticalHand=hand;opticalCueKey='';
+    if(studyProof)paintOpticalCues(seekBeat);
+   },
    waitPrepare:function(milliseconds){
     if(studyProof){beginOpticalWait(milliseconds);return;}
     if(!freeLayout&&loaded&&window.TemporalNotation)TemporalNotation.waitPrepare(milliseconds);
@@ -476,6 +513,7 @@
       // Graphical positions are invalid after a re-layout: reconcile and bind again.
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
       attachOpticalNoteTouch(document.querySelector('#score svg'));
+      paintOpticalCues(seekBeat);
       opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat)*opticalDisplayScale);
       document.getElementById('score').style.marginLeft=opticalOffset+'px';
       document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
