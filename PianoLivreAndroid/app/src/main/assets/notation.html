@@ -267,6 +267,8 @@
    if(opticalLoopEditing){
     if(!native){tip.textContent='Trecho: escolha uma nota confirmada pelo MIDI';}
     else if(opticalLoopStart===null){
+     if(!native.playbackAttack){tip.textContent='Início de trecho: escolha uma nota com ataque';
+      tip.style.left='12px';tip.style.top='10px';tip.style.display='block';return;}
      opticalLoopStart=note.beat;
      tip.textContent='Início escolhido: '+note.beat.toFixed(2)+' · toque a última nota';
      console.log('POC_LOOP_START '+JSON.stringify({beat:opticalLoopStart,midi:native.midi}));
@@ -290,13 +292,15 @@
    // A MIDI semitone does not reveal whether e.g. D-sharp or E-flat was written.
    const noteName=verified?OpticalTimeMap.writtenPitch(native):null;
    tip.textContent=(noteName||'Grafia a conferir')+' · compasso '+note.measure+' · pauta '+note.staff+
-    (verified?' · MIDI conferido':' · MIDI não confirmado');
+    (verified?(native.playbackAttack?' · MIDI conferido':' · Ligadura: sem novo ataque MIDI'):
+      ' · MIDI não confirmado');
    tip.style.left=Math.max(4,Math.min(window.innerWidth-220,ev.clientX+10))+'px';
    tip.style.top=Math.max(4,ev.clientY-44)+'px';tip.style.display='block';
    console.log('POC_NOTE_TAP '+JSON.stringify({beat:note.beat,staff:note.staff,
     midiEstimate:note.midiEstimate,nativeMidi:native?native.midi:null,
     mapped:verified,status:note.mappingStatus,sourceEventIndex:native?native.index:null,
-    writtenName:noteName,xmlNoteIndex:native?native.xmlNoteIndex:null,x:x,y:y}));
+    writtenName:noteName,xmlNoteIndex:native?native.xmlNoteIndex:null,
+    playbackAttack:native?native.playbackAttack:null,x:x,y:y}));
   });
  }
  function render(xml,start,layout,nativeEvents){
