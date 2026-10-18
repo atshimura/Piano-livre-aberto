@@ -133,6 +133,11 @@ public final class NotationView extends WebView {
       note.put("midi",event.midi);note.put("staff",event.staff);
       note.put("measure",event.measure);note.put("voice",event.voiceId);
       note.put("tieStart",event.tieStart);note.put("tieStop",event.tieStop);
+      if(event.writtenStep!=null){
+       note.put("step",event.writtenStep);note.put("octave",event.writtenOctave);
+       if(Double.isFinite(event.writtenAlter))note.put("alter",event.writtenAlter);
+      }
+      if(event.sourceNoteIndex>=0)note.put("xmlNoteIndex",event.sourceNoteIndex);
       serialized.put(note);
      }catch(org.json.JSONException exception){
       Log.w("PianoLivreNotation","POC_EVENT_SERIALIZATION",exception);
