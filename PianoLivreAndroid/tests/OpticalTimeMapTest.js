@@ -43,4 +43,40 @@ ok(T.hitTest(mapped.notes,hitNote.x,hitNote.y+90)===null,"Reject touches away fr
 ok(T.hitTest(mapped.notes,NaN,hitNote.y)===null,"Reject invalid gesture");
 ok(T.hitTest(mapped.notes,hitNote.x,hitNote.y,0,7)===null,"Reject invalid hit area");
 ok(T.hitTest(mapped.notes,mapped.notes[2].x,mapped.notes[2].y)?.staff===2,"Both staves independently accessible");
+// Conservative cross-parser mapping: never guess a voice for an unison.
+const native=mapped.notes.map((n,i)=>({beat:n.beat,staff:n.staff,
+ measure:n.measure,midi:n.midiEstimate,length:1,voice:String(i+1)}));
+let report=T.reconcile(mapped.notes,native);
+ok(report.matched===7&&report.unmatched===0&&report.ambiguous===0,"Unique original events reconcile");
+ok(mapped.notes[0].nativeEvent.midi===60&&mapped.notes[0].mappingStatus==="matched",
+ "Actual native MIDI overrides the estimate only on exact agreement");
+ok(mapped.notes.find(n=>n.staff===2).nativeEvent.staff===2,"Native staff identity is retained");
+ok(report.unmatchedNative===0&&report.invalidNative===0,"Every unique native event accounted for");
+const solo=[{beat:0,staff:1,measure:1,midiEstimate:60,x:100,y:100}];
+const exact=[{beat:0,staff:1,measure:1,midi:60,length:1,voice:"1"}];
+report=T.reconcile(solo,exact);
+ok(report.matched===1&&solo[0].nativeEvent.index===0,"Matching source event index");
+report=T.reconcile(solo,[{...exact[0],midi:61}]);
+ok(report.unmatched===1&&solo[0].nativeEvent===undefined,"Never retain a stale matched MIDI");
+report=T.reconcile(solo,[{...exact[0],staff:2}]);
+ok(report.unmatched===1,"Same pitch from other hand must not match");
+report=T.reconcile(solo,[{...exact[0],beat:1}]);
+ok(report.unmatched===1,"Different onset must not match");
+report=T.reconcile(solo,[{...exact[0],measure:2}]);
+ok(report.unmatched===1,"Measure identity is required");
+report=T.reconcile(solo,[exact[0],{...exact[0],voice:"2"}]);
+ok(report.ambiguous===1&&solo[0].nativeEvent===undefined,
+ "Two native voices sharing unison cannot be arbitrarily assigned");
+const unison=[{...solo[0]},{...solo[0],x:120}];
+report=T.reconcile(unison,exact);
+ok(report.ambiguous===2&&unison.every(n=>n.nativeEvent===undefined),
+ "Duplicate graphical unisons remain ambiguous");
+report=T.reconcile(solo,[{...exact[0],length:-1},exact[0]]);
+ok(report.matched===1&&report.invalidNative===1,"Invalid native events are excluded");
+report=T.reconcile(solo,[{...exact[0],beat:0.00049}]);
+ok(report.matched===1,"Parser floating point drift within half-millisecond beat accepted");
+report=T.reconcile(solo,[{...exact[0],beat:0.0006}]);
+ok(report.unmatched===1,"Mismatch beyond quantization bound is not silently matched");
+try{T.reconcile([],null);throw Error("Should reject missing native events");}
+catch(e){ok(e.message!=="Should reject missing native events","Null native input rejected");}
 console.log("OPTICAL_TIME_MAP_PASS checks="+checks);
