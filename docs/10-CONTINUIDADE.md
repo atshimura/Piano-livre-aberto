@@ -180,3 +180,8 @@ Após ler `AGENTS.md`, a arquitetura, a notação e o [diagnóstico 56](56-ESTUD
 Posteriormente, o PR recebeu uma **primeira seleção gráfica de loop por dois toques** em notas já cruzadas com o motor MIDI, usando o callback nativo existente, sem alterações de dados ou motor. O emulador ganhou cenário com registro `POC_LOOP_SELECTED` e captura `piano-osmd-poc-loop.png` quando executar. É experimental: não equivale à experiência com arrasto, alças e seleção de notas polifônicas.
 
 **Próximo trabalho independente:** revisar resultados de CI, corrigir falhas, depois completar interação de loop com arrasto/alças, preparo do Espera, filtragem de mãos, cursor sob mudanças de tempo, complexidade de vozes e testes de longa duração. Guardar capturas reais (pauta antiga, prévia estática e em movimento) para inspeção humana. O app normal continua na notação temporal antiga, o preview é opt-in, e o PR deve permanecer draft até qualidade editorial aceita e regressões funcionais comprovadas. Nenhum teste de hardware real foi feito nesta retomada. Não tocar no repositório privado.
+
+
+### Continuação do Espera na camada OSMD (18/10/2026)
+
+A prévia opt-in agora recebe os comandos já existentes de preparação/cancelamento do Espera e apresenta contador visual baseado na duração nativa configurada, sem tocar no relógio de execução MIDI, na seleção de mãos nem no arquivo original. A simulação do emulador testa `POC_WAIT_PREPARE`, `POC_WAIT_COMPLETE` e salva `piano-osmd-poc-wait.png`; o workflow inclui também `piano-osmd-poc-loop.png`. **Confira os dois workflows do commit final antes de declarar a interface aprovada**. Ainda pendem trajetória espacial preparatória, aceite editorial e ensaios físicos.
