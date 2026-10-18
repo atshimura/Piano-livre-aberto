@@ -413,6 +413,10 @@
        displayScale:opticalDisplayScale,
        nativeSvgHeight:svg?Number(svg.dataset.opticalNativeHeight):0,
        measures:columns.length,firstEntries:samples.slice(0,16),
+       firstStaffOrigins:(columns[0]||[]).map(function(measure,staffIndex){
+        const p=measure&&measure.PositionAndShape&&measure.PositionAndShape.AbsolutePosition;
+        return {staff:staffIndex+1,y:p&&Number.isFinite(p.y)?p.y*10:null};
+       }),
        musicalAnchors:optical.timeline.stops.length,graphicalNotes:optical.notes.length,
        midiMapping:opticalReconciliation,
        firstMusicalX:optical.timeline.xAt(start||0),referenceOffset:opticalOffset,
