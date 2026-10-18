@@ -35,9 +35,11 @@ public final class NotationView extends WebView {
  private boolean freeLayout=false;
  // Research switch only, not a shipping replacement for the proportional renderer.
  private boolean engravingProof=false;
+ private final int originalLayerType;
  public NotationView(Context c,Listener listener){
   super(c);
   callback=listener;
+  originalLayerType=getLayerType();
   setBackgroundColor(Color.WHITE);
   getSettings().setJavaScriptEnabled(true);
   getSettings().setAllowFileAccess(true);
@@ -100,6 +102,7 @@ public final class NotationView extends WebView {
  }
  public void loadScore(Score score,double position,boolean traditional){
   freeLayout=traditional;engravingProof=false;
+  if(getLayerType()!=originalLayerType)setLayerType(originalLayerType,null);
   getSettings().setSupportZoom(traditional);
   getSettings().setBuiltInZoomControls(traditional);
   getSettings().setDisplayZoomControls(false);
@@ -123,12 +126,16 @@ public final class NotationView extends WebView {
  public void setEngravingProof(boolean enabled){
   if(disposed||freeLayout||pendingScore==null||engravingProof==enabled)return;
   engravingProof=enabled;scoreRendered=false;lastBeat=Double.NaN;
+  // Diagnostic only: distinguish GPU SVG tile clipping from musical data loss.
+  // Revert to the original WebView layer immediately on leaving the preview.
+  setLayerType(enabled?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
+  Log.i("PianoLivreNotation","POC_LAYER "+(enabled?"software":"original"));
   setVisibility(View.INVISIBLE);
   if(htmlReady)sendScore();
  }
  public void seek(double beat,boolean animate,double bpm,boolean moving){
   pendingBeat=beat;
-  if(freeLayout||engravingProof||disposed||!htmlReady||!scoreRendered)return;
+  if(freeLayout||disposed||!htmlReady||!scoreRendered)return;
   // Timestamp events synchronize a separate requestAnimationFrame visual clock.
   // No throttling to musical note onsets: the visual motion is continuous.
   long now=android.os.SystemClock.uptimeMillis();
@@ -166,5 +173,7 @@ public final class NotationView extends WebView {
   if(!disposed&&!freeLayout&&!engravingProof&&htmlReady&&scoreRendered)
    evaluateJavascript("PianoNotation.clearLoop()",null);
  }
- public void dispose(){disposed=true;removeJavascriptInterface("AndroidNotation");destroy();}
+ public void dispose(){disposed=true;
+  if(getLayerType()!=originalLayerType)setLayerType(originalLayerType,null);
+  removeJavascriptInterface("AndroidNotation");destroy();}
 }
