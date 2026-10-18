@@ -79,4 +79,25 @@ report=T.reconcile(solo,[{...exact[0],beat:0.0006}]);
 ok(report.unmatched===1,"Mismatch beyond quantization bound is not silently matched");
 try{T.reconcile([],null);throw Error("Should reject missing native events");}
 catch(e){ok(e.message!=="Should reject missing native events","Null native input rejected");}
+// A long score must not require a quadratic lookup for musical scrolling.
+// This probes only the time/graphics map, NOT Android WebView SVG rendering.
+const longEntries=[];
+for(let i=0;i<12000;i++)longEntries.push({
+ beat:i*.25,x:90+i*2.8+(i%7)*.03
+});
+const mapStart=performance.now();
+const longMap=T.create(longEntries);
+ok(longMap.stops.length===longEntries.length,"Long score retains every anchor");
+ok(longMap.range.to===2999.75&&longMap.range.right>longMap.range.left,
+   "Long score range remains finite and monotonic");
+for(let i=0;i<12000;i+=137){
+ const beat=i*.25;
+ ok(Math.abs(longMap.beatAt(longMap.xAt(beat))-beat)<.00001,
+    "Long-score x/beat roundtrip at index "+i);
+}
+const mappingMs=+(performance.now()-mapStart).toFixed(1);
+ok(mappingMs<5000,"12,000 musical anchors must not use quadratic rendering calculations");
+console.log("OPTICAL_LONG_MAP_PASS anchors="+longMap.stops.length+
+ " mapAndLookupMs="+mappingMs+
+ " heapUsedBytes="+process.memoryUsage().heapUsed);
 console.log("OPTICAL_TIME_MAP_PASS checks="+checks);
