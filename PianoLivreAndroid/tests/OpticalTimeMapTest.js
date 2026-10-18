@@ -67,6 +67,27 @@ ok(report.unmatched===1,"Measure identity is required");
 report=T.reconcile(solo,[exact[0],{...exact[0],voice:"2"}]);
 ok(report.ambiguous===1&&solo[0].nativeEvent===undefined,
  "Two native voices sharing unison cannot be arbitrarily assigned");
+// Same-pitch independent voices can be reconciled ONLY by a proven
+// one-to-one source voice identity; graphical position must not imply hand.
+const independentVoices=[{...solo[0],voiceId:"1"},{...solo[0],voiceId:"2",x:112,y:104}];
+report=T.reconcile(independentVoices,[{...exact[0],voice:"1",step:"C",alter:0,octave:4},
+ {...exact[0],voice:"2",step:"C",alter:0,octave:4}]);
+ok(report.matched===2&&report.ambiguous===0&&
+ independentVoices[0].nativeEvent.voice==="1"&&
+ independentVoices[1].nativeEvent.voice==="2",
+ "Exact bijective MusicXML voice IDs safely distinguish independent unisons");
+const mismatchedVoices=[{...solo[0],voiceId:"1"},{...solo[0],voiceId:"3",x:112}];
+report=T.reconcile(mismatchedVoices,[{...exact[0],voice:"1"},{...exact[0],voice:"2"}]);
+ok(report.ambiguous===2&&report.matched===0,
+ "Different source voice IDs must remain ambiguous");
+const sameVoiceTwice=[{...solo[0],voiceId:"1"},{...solo[0],voiceId:"1",x:112}];
+report=T.reconcile(sameVoiceTwice,[{...exact[0],voice:"1"},{...exact[0],voice:"2"}]);
+ok(report.ambiguous===2&&report.matched===0,
+ "Repeated graphical voice ID cannot fabricate a bijection");
+const reducedUnison=[{...solo[0],voiceId:"1"}];
+report=T.reconcile(reducedUnison,[{...exact[0],voice:"1"},{...exact[0],voice:"2"}]);
+ok(report.ambiguous===1&&report.matched===0,
+ "One engraved head for two voices must stay unresolved");
 const unison=[{...solo[0]},{...solo[0],x:120}];
 report=T.reconcile(unison,exact);
 ok(report.ambiguous===2&&unison.every(n=>n.nativeEvent===undefined),
