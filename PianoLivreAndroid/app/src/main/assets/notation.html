@@ -147,7 +147,10 @@
   if(!optical)return;
   const wanted=optical.timeline.xAt(beat)*opticalDisplayScale+opticalOffset-viewport.clientWidth*.4-53;
   const maximum=Math.max(0,viewport.scrollWidth-viewport.clientWidth);
-  viewport.scrollLeft=Math.max(0,Math.min(maximum,wanted));
+  const target=Math.max(0,Math.min(maximum,wanted));
+  // Do not commit identical/sub-pixel scroll positions to Android WebView.
+  // The native beat clock remains authoritative; CSS pixels are presentation only.
+  if(Math.abs(viewport.scrollLeft-target)>=0.5)viewport.scrollLeft=target;
  }
  function opticalFrame(){
   opticalRaf=0;
