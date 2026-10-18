@@ -43,7 +43,16 @@ ok(html.includes("if(studyProof){\n     opticalLoopEditing=!!enabled"),
    "Opt-in proof must handle loop selection without invoking old renderer");
 ok(bridge.includes("if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)"),
    "Native loop callback remains guarded by native study lifecycle");
-ok(html.includes("POC_WAIT_PREPARE"),"Native Wait countdown must be logged in proof");
+ok(html.includes("POC_WAIT_PREPARE"),"Native Wait preparation must be logged in proof");
+ok(html.includes("const preparationDistance=Math.min(100,viewport.clientWidth*.18)"),
+ "Preview Wait animates a bounded graphical pre-roll");
+ok(html.includes("score.style.transform='translate3d('"),
+ "Score moves gradually without changing the musical clock");
+ok(html.includes("score.style.transform='none'"),
+ "Wait cancellation or completion restores exact score geometry");
+ok(html.includes("textContent='Preparação'")&&
+ !html.includes("Math.ceil(remaining/1000)+' s'"),
+ "Wait preparation must not display a numerical countdown");
 ok(html.includes("if(studyProof){beginOpticalWait(milliseconds);return;}"),
    "Only experimental OSMD preview uses optical Wait preparation");
 ok(html.includes("if(studyProof){cancelOpticalWait();return;}"),
