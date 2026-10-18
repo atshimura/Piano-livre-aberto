@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Automated Android emulator GUI smoke test; no physical MIDI required."""
-import os, re, subprocess, time, xml.etree.ElementTree as ET, json
+import os, re, subprocess, time, xml.etree.ElementTree as ET, json, unicodedata
 from pathlib import Path
 DEFAULT_SCORE_TITLE = json.loads(Path('app/src/main/assets/catalog.json').read_text(encoding='utf-8'))[0]['name']
 
@@ -39,6 +39,12 @@ def dump():
             print("UI dump retry", retry+1, exc, flush=True)
             time.sleep(4)
     raise AssertionError("Android UI hierarchy inaccessible")
+
+def normalized_accessibility_label(value):
+    # Android accessibility can expose invisible Unicode format characters
+    # even when the visible label is ordinary spaced text.
+    value="".join(ch for ch in value.casefold() if unicodedata.category(ch)!="Cf")
+    return " ".join(value.split())
 
 def tap_text(targets, return_point=False, exact=False, scroll=False):
     root=dump()
@@ -784,7 +790,7 @@ if __name__=="__main__":
     for attempt in range(8):
         context_root=dump()
         context_button=next((n for n in context_root.iter("node")
-          if "partitura livre" in " ".join(n.attrib.get("text","").casefold().split())),None)
+          if "partitura livre" in normalized_accessibility_label(n.attrib.get("text",""))),None)
         if context_button:break
         time.sleep(.25)
     if not context_button:
@@ -794,7 +800,7 @@ if __name__=="__main__":
         Path("piano-osmd-context-failure-window.xml").write_bytes(ET.tostring(context_root,encoding="utf-8"))
         Path("piano-osmd-context-failure-diagnostics.txt").write_text(
           "LABELS\n"+json.dumps(context_labels,ensure_ascii=False)+
-          "\nCURRENT WINDOW\n"+json.dumps([n.attrib for n in context_root.iter("node") if n.attrib.get("text")],ensure_ascii=False)+
+          "\nCURRENT WINDOW\n"+json.dumps([{"text":repr(n.attrib.get("text","")),"codepoints":["U+%04X"%ord(ch) for ch in n.attrib.get("text","")],"bounds":n.attrib.get("bounds")} for n in context_root.iter("node") if n.attrib.get("text")],ensure_ascii=False)+
           "\nCONTEXT LOGS\n"+"\n".join(line for line in context_failure_logs.splitlines()
             if "PianoLivreContext" in line or "FATAL EXCEPTION" in line or "AndroidRuntime" in line or "PianoLivreNotation" in line)+
           "\nACTIVITY\n"+context_failure_activity[-6000:],encoding="utf-8")
