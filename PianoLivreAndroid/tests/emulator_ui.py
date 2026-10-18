@@ -15,6 +15,15 @@ def dismiss_keyboard():
         adb("shell","input","keyevent","4")
         time.sleep(.5)
 
+def memory_pss_kb(text):
+    """Read measured app process PSS; dumpsys layouts differ across API versions."""
+    for pattern in (r"(?mi)^\\s*TOTAL\\s+PSS\\s*:\\s*([\\d,]+)",
+                    r"(?mi)^\\s*TOTAL\\s*:\\s*([\\d,]+)",
+                    r"(?mi)^\\s*TOTAL\\s+([\\d,]+)\\s+(?:[\\d,]+|\\d+)"):
+        m=re.search(pattern,text)
+        if m:return int(m.group(1).replace(",",""))
+    return None
+
 def screenshot(name):
     adb("shell", "screencap", "-p", "/sdcard/"+name)
     adb("pull", "/sdcard/"+name, name)
@@ -350,13 +359,26 @@ if __name__=="__main__":
     tap_text(["Início"],scroll=True)
     print("PASS: OSMD preparation follows native Wait-mode duration",flush=True)
     after_memory=adb("shell","dumpsys","meminfo","br.org.pianolivre.opensource")
+    baseline_pss=memory_pss_kb(before_memory)
+    preview_pss=memory_pss_kb(after_memory)
+    print("POC_MEMORY_PSS "+json.dumps({"baselineKb":baseline_pss,
+          "previewKb":preview_pss,"scope":"app process only; WebView renderer may be separate"}),flush=True)
+    perf=[]
+    for line in adb("logcat","-d","-v","brief").splitlines():
+        if "POC_OPTICAL_PERF {" in line:
+            try:perf.append(json.loads(line.split("POC_OPTICAL_PERF ",1)[1].split(" @",1)[0]))
+            except ValueError:pass
+    assert any(m["frames"]>=2 and m["intervals"]>=1 for m in perf), "Optical scroll callback metrics missing"
+    print("POC_OPTICAL_PERF_REPORT "+json.dumps(perf),flush=True)
     Path("piano-engraving-poc.json").write_text(json.dumps({
       "baseSha":"15cafe3c8da7c67b9752d14ba0fb6f8f6141177d",
       "title":DEFAULT_SCORE_TITLE,
       "studyBaseline":"piano-engraved.png",
       "osmdPreview":"piano-osmd-poc.png",
-      "baselineMemoryPssKb":re.search(r"TOTAL PSS:\s*(\d+)",before_memory).group(1) if re.search(r"TOTAL PSS:\s*(\d+)",before_memory) else None,
-      "osmdMemoryPssKb":re.search(r"TOTAL PSS:\s*(\d+)",after_memory).group(1) if re.search(r"TOTAL PSS:\s*(\d+)",after_memory) else None,
+      "baselineMemoryPssKb":baseline_pss,
+      "osmdMemoryPssKb":preview_pss,
+      "memoryScope":"App process PSS only; WebView renderer process may be separate; two samples not a regression claim.",
+      "opticalCallbackMetrics":perf,
       "osmd":professional,
       "restriction":"Research-only optical interpolation and test playback. MIDI clock unchanged. Visual clipping, click accuracy, long-scroll performance and editorial quality not yet approved."
     },ensure_ascii=False,indent=2),encoding="utf-8")
