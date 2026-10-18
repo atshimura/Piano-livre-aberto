@@ -17,9 +17,9 @@ def dismiss_keyboard():
 
 def memory_pss_kb(text):
     """Read measured app process PSS; dumpsys layouts differ across API versions."""
-    for pattern in (r"(?mi)^\\s*TOTAL\\s+PSS\\s*:\\s*([\\d,]+)",
-                    r"(?mi)^\\s*TOTAL\\s*:\\s*([\\d,]+)",
-                    r"(?mi)^\\s*TOTAL\\s+([\\d,]+)\\s+(?:[\\d,]+|\\d+)"):
+    for pattern in (r"(?mi)^\s*TOTAL\s+PSS\s*:\s*([\d,]+)",
+                    r"(?mi)^\s*TOTAL\s*:\s*([\d,]+)",
+                    r"(?mi)^\s*TOTAL\s+([\d,]+)\s+(?:[\d,]+|\d+)"):
         m=re.search(pattern,text)
         if m:return int(m.group(1).replace(",",""))
     return None
