@@ -94,6 +94,14 @@ const manyUnknown=Array.from({length:40},(_,i)=>({beat:i,staff:1,measure:i+1,mid
 report=T.reconcile(manyUnknown,[]);
 ok(report.reasons.noNativeCandidate===40&&report.samples.length===20,
  "Diagnostic samples remain bounded for a large score");
+const repeatedGraph=[{...solo[0]},{...solo[0],x:150}];
+report=T.reconcile(repeatedGraph,[]);
+ok(report.ambiguous===2&&report.reasons.ambiguous===2&&
+ report.reasons.noNativeCandidate===0&&
+ report.reasons.invalidGraphical===0,
+ "A single head cannot be counted under two diagnostic causes");
+ok(Object.values(report.reasons).reduce((a,b)=>a+b,0)===report.unmatched+report.ambiguous,
+ "All unresolved heads must have exactly one diagnostic cause");
 report=T.reconcile(solo,exact);
 ok(solo[0].mappingReason===undefined&&report.matched===1,
  "Successful reconciliation must clear stale diagnostic reasons");
