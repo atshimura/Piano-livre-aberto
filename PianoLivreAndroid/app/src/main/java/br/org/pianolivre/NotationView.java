@@ -33,6 +33,8 @@ public final class NotationView extends WebView {
  private boolean disposed=false;
  private long pendingWaitDeadline=0L;
  private boolean freeLayout=false;
+ // Research switch only, not a shipping replacement for the proportional renderer.
+ private boolean engravingProof=false;
  public NotationView(Context c,Listener listener){
   super(c);
   callback=listener;
@@ -97,7 +99,7 @@ public final class NotationView extends WebView {
   loadScore(score,position,false);
  }
  public void loadScore(Score score,double position,boolean traditional){
-  freeLayout=traditional;
+  freeLayout=traditional;engravingProof=false;
   getSettings().setSupportZoom(traditional);
   getSettings().setBuiltInZoomControls(traditional);
   getSettings().setDisplayZoomControls(false);
@@ -111,11 +113,22 @@ public final class NotationView extends WebView {
   if(xml==null||xml.isEmpty()){callback.onError("A partitura não contém MusicXML");return;}
   // Proper JSON quoting prevents XML text being interpreted as JavaScript.
   Log.i("PianoLivreNotation","LOAD_XML "+xml.length());
-  evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+(freeLayout?"'free'":"'study'")+")",null);
+  String layout=freeLayout?"'free'":(engravingProof?"'engraving-poc'":"'study'");
+  evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+layout+")",null);
+ }
+ /** A proof-of-concept preview of the already-bundled OSMD SVG engine.
+  * Disabled on normal score load; never drives study playback or event timing.
+  */
+ public boolean isEngravingProof(){return engravingProof;}
+ public void setEngravingProof(boolean enabled){
+  if(disposed||freeLayout||pendingScore==null||engravingProof==enabled)return;
+  engravingProof=enabled;scoreRendered=false;lastBeat=Double.NaN;
+  setVisibility(View.INVISIBLE);
+  if(htmlReady)sendScore();
  }
  public void seek(double beat,boolean animate,double bpm,boolean moving){
   pendingBeat=beat;
-  if(freeLayout||disposed||!htmlReady||!scoreRendered)return;
+  if(freeLayout||engravingProof||disposed||!htmlReady||!scoreRendered)return;
   // Timestamp events synchronize a separate requestAnimationFrame visual clock.
   // No throttling to musical note onsets: the visual motion is continuous.
   long now=android.os.SystemClock.uptimeMillis();
@@ -127,7 +140,7 @@ public final class NotationView extends WebView {
   evaluateJavascript("PianoNotation.seek("+beat+","+(animate?"true":"false")+","+bpm+","+(moving?"true":"false")+")",null);
  }
  private void sendPendingWaitPreparation(){
-  if(disposed||freeLayout||!htmlReady||!scoreRendered||pendingWaitDeadline<=0)return;
+  if(disposed||freeLayout||engravingProof||!htmlReady||!scoreRendered||pendingWaitDeadline<=0)return;
   long remaining=pendingWaitDeadline-android.os.SystemClock.uptimeMillis();
   if(remaining>0)evaluateJavascript("PianoNotation.waitPrepare("+remaining+")",null);
   else pendingWaitDeadline=0;
@@ -139,18 +152,18 @@ public final class NotationView extends WebView {
  }
  public void cancelWaitPreparation(){
   pendingWaitDeadline=0;
-  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)evaluateJavascript("PianoNotation.waitCancel()",null);
+  if(!disposed&&!freeLayout&&!engravingProof&&htmlReady&&scoreRendered)evaluateJavascript("PianoNotation.waitCancel()",null);
  }
  public void resizeToFit(){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
    evaluateJavascript("PianoNotation.resize()",null);
  }
  public void setLoopEdit(boolean enabled){
-  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
+  if(!disposed&&!freeLayout&&!engravingProof&&htmlReady&&scoreRendered)
    evaluateJavascript("PianoNotation.loopEdit("+(enabled?"true":"false")+")",null);
  }
  public void clearLoop(){
-  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
+  if(!disposed&&!freeLayout&&!engravingProof&&htmlReady&&scoreRendered)
    evaluateJavascript("PianoNotation.clearLoop()",null);
  }
  public void dispose(){disposed=true;removeJavascriptInterface("AndroidNotation");destroy();}
