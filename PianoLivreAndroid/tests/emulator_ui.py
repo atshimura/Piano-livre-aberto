@@ -271,6 +271,10 @@ if __name__=="__main__":
     assert professional, "Bundled OSMD horizontal SVG proof did not render in Android WebView"
     assert professional["svgNodes"]>50 and professional["width"]>0 and professional["measures"]>=3, "OSMD proof rendered no music"
     assert professional["musicalAnchors"]>=8 and professional["graphicalNotes"]>=12, "OSMD map lost musical events"
+    mapping=professional.get("midiMapping") or {}
+    assert mapping.get("nativeEvents",0)>=12 and mapping.get("matched",0)>=5, "Original Java Score events are not cross-referenced with OSMD"
+    assert sum(mapping.get(k,0) for k in ("matched","unmatched","ambiguous"))==professional["graphicalNotes"], "Graphical note reconciliation counts inconsistent"
+    print("POC_NATIVE_MIDI_MAPPING "+json.dumps(mapping),flush=True)
     assert "POC_LAYER software" in adb("logcat","-d","-v","brief"), "Preview did not isolate software SVG diagnostic"
     time.sleep(2)
     screenshot("piano-osmd-poc.png")
@@ -291,6 +295,7 @@ if __name__=="__main__":
     assert touches, "Actual Android touch did not reach graphical notehead"
     hit=json.loads(touches[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
     assert hit["staff"]==1 and hit["midiEstimate"]==first["midiEstimate"], "Android head-touch resolved wrong note or staff"
+    assert hit["mapped"] and hit["nativeMidi"]==first["midiEstimate"], "Actual Android note tap did not agree with native Score.java MIDI"
     screenshot("piano-osmd-poc-note-tap.png")
     print("PASS: actual Android tap identified first upper-staff OSMD notehead",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
