@@ -98,6 +98,7 @@
   document.getElementById('optical-wait-label').textContent='Preparação';
   console.log('POC_WAIT_PREPARE '+JSON.stringify({ms:milliseconds,beat:seekBeat,
    travelPx:preparationDistance}));
+  let lastBucket=-1;
   function paint(){
    opticalWaitRaf=0;
    if(!studyProof||!opticalWaitDeadline)return;
@@ -105,8 +106,14 @@
    const progress=1-remaining/opticalWaitDuration;
    // Smoothstep: gradual departure and arrival without a jump at completion.
    const eased=progress*progress*(3-2*progress);
-   score.style.transform='translate3d('+
-     (preparationDistance*(1-eased)).toFixed(2)+'px,0,0)';
+   const remainingPx=preparationDistance*(1-eased);
+   score.style.transform='translate3d('+remainingPx.toFixed(2)+'px,0,0)';
+   const bucket=Math.min(4,Math.floor(progress*4));
+   if(bucket!==lastBucket){
+    lastBucket=bucket;
+    console.log('POC_WAIT_FRAME '+JSON.stringify({progress:+progress.toFixed(3),
+     remainingPx:+remainingPx.toFixed(2)}));
+   }
    document.getElementById('optical-wait-fill').style.width=
      (100*progress).toFixed(1)+'%';
    if(remaining>0)opticalWaitRaf=requestAnimationFrame(paint);
