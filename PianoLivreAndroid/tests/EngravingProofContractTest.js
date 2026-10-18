@@ -30,6 +30,15 @@ ok(bridge.includes('note.put("midi",event.midi)'),
    "Native MIDI authority travels alongside the graphical proof");
 ok(html.includes("OpticalTimeMap.reconcile(optical.notes"),
    "Preview must explicitly cross-reference graphical noteheads with native events");
+ok(html.includes("OpticalTimeMap.nextCueHeads(optical.notes,beat,opticalHand)")&&
+ html.includes("overlay.setAttribute('pointer-events','none')"),
+ "OSMD visual hand cues must not intercept individual notehead taps");
+ok(bridge.includes("PianoNotation.studyHand(")&&
+ views.includes("notation.setStudyHand(a.currentHand)"),
+ "Native initial study-hand filter must reach OSMD without changing MIDI");
+ok(html.includes("paintOpticalCues(beat)")&&
+ html.includes("paintOpticalCues(seekBeat)"),
+ "Preview cues update after native beat seek and SVG resize");
 ok(html.includes("POC_MIDI_MAPPING"),
    "Record mapping completeness and ambiguity for field diagnostics");
 ok(html.includes("MIDI não confirmado"),
