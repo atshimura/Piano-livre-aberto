@@ -107,6 +107,8 @@ public class Score {
  public int measures=0;
  public double durationBeats=0;
  public final ArrayList<Event> events=new ArrayList<>();
+ /** Original MusicXML note segments, including tie continuations; never used for MIDI attacks. */
+ public final ArrayList<Event> writtenEvents=new ArrayList<>();
  public static class Event {
   public double beat, length;
   public int midi, staff, voice, measure, velocity=80;
@@ -116,9 +118,21 @@ public class Score {
   public int writtenOctave=Integer.MIN_VALUE;
   public double writtenAlter=Double.NaN;
   public int sourceNoteIndex=-1;
+  /** False when this written head continues an already sounding tied note. */
+  public boolean playbackAttack=true;
   private int sourcePart;private boolean velocityOverride;
   public boolean tieStart, tieStop;
   public Event(double b,double l,int n,int s,int v,int m){beat=b;length=l;midi=n;staff=s;voice=v;voiceId=String.valueOf(v);measure=m;}
+ }
+ private static Event writtenCopy(Event e,boolean attack){
+  Event copy=new Event(e.beat,e.length,e.midi,e.staff,e.voice,e.measure);
+  copy.voiceId=e.voiceId;copy.sourcePart=e.sourcePart;
+  copy.velocity=e.velocity;copy.velocityOverride=e.velocityOverride;
+  copy.tieStart=e.tieStart;copy.tieStop=e.tieStop;
+  copy.writtenStep=e.writtenStep;copy.writtenAlter=e.writtenAlter;
+  copy.writtenOctave=e.writtenOctave;copy.sourceNoteIndex=e.sourceNoteIndex;
+  copy.playbackAttack=attack;
+  return copy;
  }
  private static String text(Element e,String tag,String def){NodeList n=e.getElementsByTagName(tag);return n.getLength()>0?n.item(0).getTextContent().trim():def;}
  private static int number(String s,int fallback){try{return Integer.parseInt(s.trim());}catch(Exception e){return fallback;}}
@@ -417,6 +431,9 @@ public class Score {
   for(Event e:score.events){
    String key=e.staff+":"+e.voiceId+":"+e.midi;
    Event prior=e.tieStop?sustained.get(key):null;
+   // Snapshot before merging/modifying length or tie flags, preserving the
+   // graphical segment without manufacturing an extra MIDI attack.
+   score.writtenEvents.add(writtenCopy(e,prior==null));
    if(prior!=null){
     prior.length=Math.max(prior.length,e.beat+e.length-prior.beat);
     if(!e.tieStart)sustained.remove(key);
