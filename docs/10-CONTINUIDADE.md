@@ -247,3 +247,8 @@ O build `39157939341` passou; o emulador `39157939343` falhou somente na asserç
 ### Contrato do probe — SHA `e2e4ee1`
 
 Build `39158718398` falhou no contrato estático porque `POC_CONTEXT_NODES` agora armazena uma lista de compassos por pauta, enquanto a verificação ainda esperava um único nó de compasso. Os testes JVM anteriores passaram. O emulador `39158718300` está executando com o caminho corrigido do passo de diagnóstico. O SHA seguinte atualiza o contrato para exigir as duas pautas e os compassos até 4, sem alterar a asserção funcional da clave.
+
+
+### Ajuste do contrato da leitura do probe — SHA `95dcb01`
+
+Build `39158885775` alcançou o teste OSMD, mas falhou porque o contrato procurava a comparação antiga `measure == "1"`; o teste de UI passou a construir listas `first_measures` e `second_measures`. O contrato será atualizado para conferir a igualdade dos três primeiros compassos nas duas pautas. O emulador desse SHA segue ativo.

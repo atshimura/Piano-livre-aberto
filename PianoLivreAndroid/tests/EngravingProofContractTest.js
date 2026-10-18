@@ -20,8 +20,8 @@ ok(html.includes("svg.querySelectorAll('g.staffline')")&&
  fs.readFileSync("tests/emulator_ui.py","utf8").includes('first_staff["staffline"]!=second_staff["staffline"]'),
  "Context SVG diagnostics must capture bounded measure glyphs from both piano staves");
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes('first_staff["measures"]')&&
- fs.readFileSync("tests/emulator_ui.py","utf8").includes('["measure"]=="1"'),
- "Emulator probe must validate measure 1 on both staves");
+ fs.readFileSync("tests/emulator_ui.py","utf8").includes('first_measures[:3]==second_measures[:3]==["1","2","3"]'),
+ "Emulator probe must validate measures 1-3 on both staves");
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("piano-osmd-context-probe.txt"),
  "Emulator evidence must preserve the bounded OSMD instruction probe");
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("POC_CONTEXT_LONG_EVIDENCE"),
