@@ -91,18 +91,34 @@
   opticalFrames++;
   if(opticalFrames===1||opticalFrames%30===0)
    console.log('OPTICAL_SAMPLE '+JSON.stringify({beat:visualBeat,x:optical.timeline.xAt(visualBeat),scroll:viewport.scrollLeft,viewport:viewport.clientWidth}));
-  if(opticalFrames<8000)opticalRaf=requestAnimationFrame(opticalFrame);
+  // A long score cannot stop animating after a fixed count of frames.
+  if(studyProof&&opticalAnchor)opticalRaf=requestAnimationFrame(opticalFrame);
  }
  function opticalSeek(beat,bpm,playing){
   if(!optical||!Number.isFinite(beat))return;
   opticalPlayback={bpm:bpm,playing:!!playing};
-  if(opticalRaf)cancelAnimationFrame(opticalRaf);
-  opticalRaf=0;opticalAnchor=null;
-  opticalPosition(beat);
-  if(playing&&Number.isFinite(bpm)&&bpm>0){
-   opticalAnchor={beat:beat,bpm:bpm,at:performance.now()};
-   opticalFrames=0;opticalRaf=requestAnimationFrame(opticalFrame);
+  if(!playing||!Number.isFinite(bpm)||bpm<=0){
+   if(opticalRaf)cancelAnimationFrame(opticalRaf);
+   opticalRaf=0;opticalAnchor=null;
+   opticalPosition(beat);
+   return;
   }
+  const now=performance.now();
+  const projected=opticalAnchor
+   ?opticalAnchor.beat+(now-opticalAnchor.at)*opticalAnchor.bpm/60000
+   :NaN;
+  const drift=beat-projected;
+  if(!Number.isFinite(projected)||Math.abs(opticalAnchor.bpm-bpm)>0.01||Math.abs(drift)>0.12){
+   // Explicit seek, loop wrap or tempo discontinuity: snap to native beat.
+   opticalAnchor={beat:beat,bpm:bpm,at:now};
+   opticalPosition(beat);
+  }else{
+   // Native MIDI clock remains authoritative. Correct small phase errors
+   // without cancelling and restarting the same 60 Hz animation on every IPC.
+   opticalAnchor={beat:projected+Math.max(-0.015,Math.min(0.015,drift)),
+    bpm:bpm,at:now};
+  }
+  if(!opticalRaf)opticalRaf=requestAnimationFrame(opticalFrame);
  }
  // Reattach after every OSMD render/resize: OSMD can replace its SVG root.
  function attachOpticalNoteTouch(svg){
