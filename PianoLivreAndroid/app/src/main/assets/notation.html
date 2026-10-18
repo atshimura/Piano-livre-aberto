@@ -11,6 +11,10 @@
  body.continuous #score{width:100%;height:100%;min-height:0;transform:none;padding:0;overflow:hidden}
  body.free #viewport{overflow:auto;scroll-behavior:auto}
  body.free #score{width:153.846%;min-height:100%;transform:scale(0.65);transform-origin:top left}
+ /* Research-only proof: preserve the existing Estudo renderer by default. */
+ body.preview #viewport{overflow:auto;scroll-behavior:auto}
+ body.preview #score{width:100%;height:100%;min-height:0;transform:none;padding:0;overflow:visible}
+ body.preview #score svg{overflow:visible}
 </style>
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
 <script src="temporal-notation.js"></script></head>
@@ -18,7 +22,7 @@
 <script>
 (function(){
  'use strict';
- let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false;
+ let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let generation=0,renderTimer=null;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
  function inform(s){message.textContent=s;message.style.display='block';}
@@ -66,8 +70,8 @@
  function render(xml,start,layout){
   const ticket=++generation;
   loaded=false;appliedBeat=-1;seekBeat=start||0;
-  freeLayout=(layout==='free');
-  document.body.className=freeLayout?'free':'continuous';
+  freeLayout=(layout==='free');studyProof=(layout==='engraving-poc');
+  document.body.className=freeLayout?'free':(studyProof?'preview':'continuous');
   // Native pinch zoom remains available in traditional reading mode only.
   document.querySelector('meta[name="viewport"]').setAttribute('content',
     freeLayout?'width=device-width,initial-scale=1,minimum-scale=0.5,maximum-scale=3,user-scalable=yes'
@@ -75,8 +79,8 @@
   inform('Diagramando a partitura...');
   document.getElementById('score').innerHTML='';
   viewport.scrollTo({top:0,left:0,behavior:'auto'});
-  if(freeLayout&&window.TemporalNotation)TemporalNotation.teardown();
-  if(!freeLayout){
+  if((freeLayout||studyProof)&&window.TemporalNotation)TemporalNotation.teardown();
+  if(!freeLayout&&!studyProof){
    try{
     const timePlan=TemporalNotation.render(xml,document.getElementById('score'),viewport,seekBeat);
     loaded=true;message.style.display='none';
@@ -88,6 +92,7 @@
    }
    return;
   }
+  const proofStarted=performance.now();
   try{
    if(!window.opensheetmusicdisplay){throw new Error('Motor musical indisponível');}
    osmd=new opensheetmusicdisplay.OpenSheetMusicDisplay('score',{
@@ -97,9 +102,9 @@
     drawComposer:false,
     drawPartNames:false,
     drawingParameters:'compacttight',
-    renderSingleHorizontalStaffline:!freeLayout,
-    newSystemFromXML:freeLayout, // preserve source print system breaks when present
-    disableCursor:freeLayout,
+    renderSingleHorizontalStaffline:studyProof,
+    newSystemFromXML:freeLayout, // respect explicit systems only in reading mode
+    disableCursor:freeLayout||studyProof,
     cursorsOptions:[{type:1,color:'#008b78',alpha:0.8,follow:false}]
    });
    Promise.resolve(osmd.load(xml)).then(function(){
@@ -108,7 +113,28 @@
     osmd.render();
     if(ticket!==generation)return;
     const svg=document.querySelector('#score svg');
-    if(!freeLayout&&svg){
+    if(studyProof){
+     const graphic=osmd.graphic,columns=graphic&&graphic.measureList||[];
+     const samples=[];
+     for(const group of columns.slice(0,6))for(const measure of group||[]){
+      if(!measure)continue;
+      for(const entry of (measure.staffEntries||[]).slice(0,15)){
+       const tm=entry.getAbsoluteTimestamp&&entry.getAbsoluteTimestamp();
+       const origin=entry.PositionAndShape&&entry.PositionAndShape.AbsolutePosition;
+       if(tm&&origin)samples.push({beat:4*tm.RealValue,x:origin.x,y:origin.y});
+      }
+     }
+     const proof={engine:'OpenSheetMusicDisplay bundled 1.9.8',mode:'horizontal',
+       renderMs:Math.round(performance.now()-proofStarted),
+       svgNodes:svg?svg.querySelectorAll('*').length:0,
+       width:svg?Math.round(svg.getBoundingClientRect().width):0,
+       height:svg?Math.round(svg.getBoundingClientRect().height):0,
+       measures:columns.length,firstEntries:samples.slice(0,16),
+       viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight};
+     console.log('POC_OSMD_READY '+JSON.stringify(proof));
+     console.log('POC_NOT_PRODUCTION_READY: no validated beat-to-x continuity or note hit mapping; strict timeline unchanged');
+    }
+    if(!freeLayout&&!studyProof&&svg){
      const groups=Array.from(svg.querySelectorAll('g')).slice(0,44);
      console.log('TEMPORAL_PROBE_GROUPS',JSON.stringify(groups.map(g=>({
       cls:g.getAttribute('class'),id:g.id,transform:g.getAttribute('transform'),
@@ -129,9 +155,9 @@
     console.log('SCORE_DRAWN','zoom=',osmd.Zoom,'svg=',svg?svg.getBoundingClientRect().toJSON():null,
       'scroll=',viewport.scrollHeight,viewport.clientHeight);
     loaded=true;message.style.display='none';
-    if(!freeLayout&&osmd.cursor){osmd.cursor.reset();osmd.cursor.show();}
+    if(!freeLayout&&!studyProof&&osmd.cursor){osmd.cursor.reset();osmd.cursor.show();}
     if(window.AndroidNotation)AndroidNotation.onRendered();
-    if(!freeLayout)requestAnimationFrame(()=>setTimeout(()=>atBeat(seekBeat,true),150));
+    if(!freeLayout&&!studyProof)requestAnimationFrame(()=>setTimeout(()=>atBeat(seekBeat,true),150));
    }).catch(function(err){
     inform('Falha ao abrir notação: '+err.message);
     if(window.AndroidNotation)AndroidNotation.onError(err.message);
@@ -141,7 +167,7 @@
  window.PianoNotation={
    load:render,
    seek:function(beat,animated,bpm,playing){
-    if(freeLayout)return;seekBeat=beat;
+    if(freeLayout||studyProof)return;seekBeat=beat;
     if(window.TemporalNotation)TemporalNotation.sync(beat,bpm,!!playing);
    },
    waitPrepare:function(milliseconds){
@@ -158,10 +184,10 @@
    },
    resize:function(){
     if(!loaded)return;
-    if(!freeLayout){if(window.TemporalNotation)TemporalNotation.resize();return;}
+    if(!freeLayout&&!studyProof){if(window.TemporalNotation)TemporalNotation.resize();return;}
     if(!osmd)return;
     clearTimeout(renderTimer);
-    renderTimer=setTimeout(function(){try{osmd.render();appliedBeat=-1;if(!freeLayout)atBeat(seekBeat,false);}catch(e){}},220);
+    renderTimer=setTimeout(function(){try{osmd.render();appliedBeat=-1;if(!freeLayout&&!studyProof)atBeat(seekBeat,false);}catch(e){}},220);
    }
  };
  window.addEventListener('resize',function(){PianoNotation.resize();});
