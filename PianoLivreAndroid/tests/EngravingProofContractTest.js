@@ -34,6 +34,14 @@ ok(html.includes("POC_MIDI_MAPPING"),
    "Record mapping completeness and ambiguity for field diagnostics");
 ok(html.includes("MIDI não confirmado"),
    "Unmatched and polyphonic-unison heads must be disclosed, never treated as exact");
+ok(bridge.includes('note.put("step",event.writtenStep)')&&
+ bridge.includes('note.put("xmlNoteIndex",event.sourceNoteIndex)'),
+ "Native bridge preserves written pitch and source note index");
+ok(html.includes("OpticalTimeMap.writtenPitch(native)"),
+ "Preview note tooltip requires exact written pitch, not MIDI chromatic guesses");
+ok(!html.includes("const names=['Dó','Dó♯','Ré','Ré♯'"),
+ "Chromatic guessed spelling must never be used in the OSMD preview");
+
 ok(html.includes("attachOpticalNoteTouch(document.querySelector('#score svg'))"),
    "Re-rendered SVG must have an active head hit-target after resize");
 ok(html.includes("POC_LOOP_SELECTED"),"Proof must log graphical loop start/end");
