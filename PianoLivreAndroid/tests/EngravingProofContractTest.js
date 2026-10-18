@@ -29,8 +29,13 @@ ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("piano-osmd-context-p
  "Emulator evidence must preserve the bounded OSMD instruction probe");
 ok(fs.readFileSync("tests/emulator_ui.py","utf8").includes("POC_CONTEXT_LONG_EVIDENCE"),
  "Emulator evidence must include context glyphs from the long Gymnopédie score");
-ok(fs.readFileSync("../.github/workflows/emulator.yml","utf8").includes("PianoLivreAndroid/piano-osmd-context-probe.txt"),
+const emulatorWorkflow=fs.readFileSync("../.github/workflows/emulator.yml","utf8");
+ok(emulatorWorkflow.includes("PianoLivreAndroid/piano-osmd-context-probe.txt"),
  "Workflow artifact manifest must include the context probe report");
+ok(emulatorWorkflow.includes("Verify captured Android visual evidence")&&
+ emulatorWorkflow.includes("piano-visual-evidence.json")&&
+ emulatorWorkflow.includes("piano-osmd-context-changes.png"),
+ "Workflow must validate real PNG captures before archiving them");
 ok(html.includes("function makeOpticalContextState(svg,columns)")&&
  html.includes("node.cloneNode(true)")&&html.includes("translate(-20 0)")&&
  html.includes("g.vf-brace")&&html.includes("brace.cloneNode(true)")&&

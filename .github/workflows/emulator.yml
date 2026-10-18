@@ -77,6 +77,41 @@ jobs:
             python3 tests/emulator_ui.py
             python3 tests/emulator_release.py
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
+      - name: Verify captured Android visual evidence
+        if: success()
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, struct
+          names = [
+              "piano-engraved.png",
+              "piano-osmd-poc.png",
+              "piano-osmd-poc-moving.png",
+              "piano-osmd-poc-note-tap.png",
+              "piano-osmd-poc-loop.png",
+              "piano-osmd-poc-wait.png",
+              "piano-temporal-long.png",
+              "piano-osmd-long.png",
+              "piano-osmd-long-tap.png",
+              "piano-osmd-long-moving.png",
+              "piano-osmd-context-start.png",
+              "piano-osmd-context-middle.png",
+              "piano-osmd-context-end.png",
+              "piano-osmd-context-changes.png",
+              "piano-release.png",
+          ]
+          report = []
+          for name in names:
+              path = pathlib.Path(name)
+              data = path.read_bytes()
+              assert data[:8] == b"\x89PNG\r\n\x1a\n", f"{name} is not a PNG"
+              width, height = struct.unpack(">II", data[16:24])
+              assert width > 0 and height > 0, f"{name} has invalid dimensions"
+              report.append({"name": name, "bytes": len(data), "width": width, "height": height})
+          output = {"sha": os.environ.get("GITHUB_SHA"), "images": report}
+          pathlib.Path("piano-visual-evidence.json").write_text(
+              json.dumps(output, indent=2), encoding="utf-8")
+          print("ANDROID_VISUAL_EVIDENCE " + json.dumps(output), flush=True)
+          PY
       - name: Print OSMD context selector diagnostics
         if: always()
         run: |
@@ -119,6 +154,7 @@ jobs:
             PianoLivreAndroid/piano-osmd-long-moving.png
             PianoLivreAndroid/piano-osmd-context-changes.png
             PianoLivreAndroid/piano-osmd-context-changes.json
+            PianoLivreAndroid/piano-visual-evidence.json
             PianoLivreAndroid/piano-osmd-context-load-probe.txt
             PianoLivreAndroid/piano-osmd-context-start.png
             PianoLivreAndroid/piano-osmd-context-middle.png
