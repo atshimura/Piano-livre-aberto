@@ -763,12 +763,22 @@ if __name__=="__main__":
     # that exists only in the debug source set and is loaded only by this flag.
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("logcat","-c")
-    adb("shell","am","start","-W","-n",
+    adb("shell","am","start","-S","-W","-n",
         "br.org.pianolivre.opensource/br.org.pianolivre.MainActivity",
         "--ez","engraving_context_selftest","true")
     time.sleep(2)
     context_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Context changes test" in s for s in context_labels), "Debug context-change fixture did not load"
+    if not any("Context changes test" in s for s in context_labels):
+        context_failure_logs=adb("logcat","-d","-v","brief")
+        context_failure_activity=adb("shell","dumpsys","activity","activities")
+        screenshot("piano-osmd-context-failure.png")
+        Path("piano-osmd-context-failure-window.xml").write_bytes(ET.tostring(dump(),encoding="utf-8"))
+        Path("piano-osmd-context-failure-diagnostics.txt").write_text(
+          "INTENT\nengraving_context_selftest=true\nLABELS\n"+json.dumps(context_labels,ensure_ascii=False)+
+          "\nCONTEXT LOGS\n"+"\n".join(line for line in context_failure_logs.splitlines()
+            if "PianoLivreContext" in line or "FATAL EXCEPTION" in line or "AndroidRuntime" in line or "PianoLivreNotation" in line)+
+          "\nACTIVITY\n"+context_failure_activity[-6000:],encoding="utf-8")
+        raise AssertionError("Debug context-change fixture did not load: "+json.dumps(context_labels,ensure_ascii=False))
     context_button=next((n for n in dump().iter("node")
                          if n.attrib.get("text")=="Partitura Livre"),None)
     assert context_button, "Context fixture cannot open the OSMD study proof"

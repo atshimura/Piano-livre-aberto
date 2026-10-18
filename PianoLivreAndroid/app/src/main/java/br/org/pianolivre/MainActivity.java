@@ -125,11 +125,21 @@ public class MainActivity extends Activity {
    prefs=getSharedPreferences("piano_midi_selftest",MODE_PRIVATE);prefs.edit().clear().commit();
   }
   midiManager=(MidiManager)getSystemService(MIDI_SERVICE);try{catalog=new JSONArray(readAsset("catalog.json"));}catch(Exception e){catalog=new JSONArray();}
-  buildUi();loadProfiles();setupMidi();String previous=prefs.getString("user_"+user+"_file","");if(!previous.isEmpty())loadScore(previous,false);
+  buildUi();loadProfiles();setupMidi();String previous=prefs.getString("user_"+user+"_file","");
+  boolean contextSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("engraving_context_selftest",false);
+  if(!contextSelfTest&&!previous.isEmpty())loadScore(previous,false);
   handler.post(ticker);
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("engraving_context_selftest",false))
-   handler.post(()->loadScore("scores/engraving-context-change.musicxml",true));
+  if(contextSelfTest){
+   android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_INTENT accepted previousPath="+previous);
+   handler.post(()->{
+    String fixture="scores/engraving-context-change.musicxml";
+    loadScore(fixture,true);
+    if(score==null||!fixture.equals(currentFile))
+     android.util.Log.e("PianoLivreContext","CONTEXT_FIXTURE_LOAD_FAILED currentFile="+currentFile+" score="+(score==null?"null":score.title));
+    else android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size());
+   });
+  }
   if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("midi_selftest",false))handler.post(()->MidiSessionSelfTest.run(this));
  }
