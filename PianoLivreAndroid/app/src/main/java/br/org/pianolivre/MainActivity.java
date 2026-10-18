@@ -571,6 +571,7 @@ public class MainActivity extends Activity {
   if(selected<0||selected>2)return;
   stopPlayback();finishStudyWindow();
   currentHand=selected;scoreView.hand=selected;
+  if(screens!=null&&screens.notation!=null)screens.notation.setStudyHand(selected);
   if(score!=null)position=HandNavigation.nextPosition(score,position,selected,loopStart,loopEnd);
   if(routeCursor!=null)routeCursor.align(position);
   scoreView.playhead=position;scoreView.invalidate();
