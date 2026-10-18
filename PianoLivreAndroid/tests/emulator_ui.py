@@ -270,8 +270,25 @@ if __name__=="__main__":
             if professional:break
     assert professional, "Bundled OSMD horizontal SVG proof did not render in Android WebView"
     assert professional["svgNodes"]>50 and professional["width"]>0 and professional["measures"]>=3, "OSMD proof rendered no music"
+    assert professional["musicalAnchors"]>=8 and professional["graphicalNotes"]>=12, "OSMD map lost musical events"
+    assert "POC_LAYER software" in adb("logcat","-d","-v","brief"), "Preview did not isolate software SVG diagnostic"
     time.sleep(2)
     screenshot("piano-osmd-poc.png")
+    tap_text(["Contínuo"],exact=True,scroll=True)
+    playback_point=tap_text(["Iniciar"],return_point=True)
+    time.sleep(2)
+    screenshot("piano-osmd-poc-moving.png")
+    motion_log=adb("logcat","-d","-v","brief")
+    samples=[]
+    for line in motion_log.splitlines():
+        if "OPTICAL_SAMPLE {" in line:
+            try:samples.append(json.loads(line.split("OPTICAL_SAMPLE ",1)[1].split(" @",1)[0]))
+            except ValueError:pass
+    assert len(samples)>=2, "No dynamic optical scroll samples"
+    assert samples[-1]["beat"]>samples[0]["beat"]+.3, "Optical position did not progress with musical clock"
+    assert samples[-1]["scroll"]>samples[0]["scroll"]+3, "Optical SVG did not move horizontally during playback"
+    adb("shell","input","tap",*playback_point)
+    print("PASS: experimental OSMD optical scroll follows native musical clock",flush=True)
     after_memory=adb("shell","dumpsys","meminfo","br.org.pianolivre.opensource")
     Path("piano-engraving-poc.json").write_text(json.dumps({
       "baseSha":"15cafe3c8da7c67b9752d14ba0fb6f8f6141177d",
@@ -281,7 +298,7 @@ if __name__=="__main__":
       "baselineMemoryPssKb":re.search(r"TOTAL PSS:\s*(\d+)",before_memory).group(1) if re.search(r"TOTAL PSS:\s*(\d+)",before_memory) else None,
       "osmdMemoryPssKb":re.search(r"TOTAL PSS:\s*(\d+)",after_memory).group(1) if re.search(r"TOTAL PSS:\s*(\d+)",after_memory) else None,
       "osmd":professional,
-      "restriction":"Comparative preview only. No verified strict beat-to-X, note hit mapping, or long-scroll performance."
+      "restriction":"Research-only optical interpolation and test playback. MIDI clock unchanged. Visual clipping, click accuracy, long-scroll performance and editorial quality not yet approved."
     },ensure_ascii=False,indent=2),encoding="utf-8")
     print("PASS: OSMD professional rendering POC screenshot, SVG metrics and Java/JS isolation",flush=True)
     # Restore legacy strict-proportional Estudo before all regression assertions.
@@ -290,6 +307,7 @@ if __name__=="__main__":
         time.sleep(.6)
         if adb("logcat","-d","-v","brief").count("TIMELINE_READY")>=2:break
     assert "POC_TOGGLE false" in adb("logcat","-d","-v","brief"), "Temporal rendering not restored after POC"
+    assert "POC_LAYER original" in adb("logcat","-d","-v","brief"), "WebView layer was not restored"
     assert "TIMELINE_READY" in logs, "Expected proportional timeline renderer, not ordinary print layout"
     # The generated coordinates must follow exactly x = origin + beat * pxPerBeat.
     import json
