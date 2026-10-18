@@ -255,11 +255,11 @@
     tip.style.top=Math.max(4,ev.clientY-44)+'px';tip.style.display='block';
     return;
    }
-   const m=native?native.midi:note.midiEstimate;
-   const names=['Dó','Dó♯','Ré','Ré♯','Mi','Fá','Fá♯','Sol','Sol♯','Lá','Lá♯','Si'];
-   const noteName=Number.isFinite(m)?names[((m%12)+12)%12]+(Math.floor(m/12)-1):'Altura a conferir';
    const verified=note.mappingStatus==='matched';
-   tip.textContent=noteName+' · compasso '+note.measure+' · pauta '+note.staff+
+   // Only a reconciled native event can confirm exact MusicXML spelling.
+   // A MIDI semitone does not reveal whether e.g. D-sharp or E-flat was written.
+   const noteName=verified?OpticalTimeMap.writtenPitch(native):null;
+   tip.textContent=(noteName||'Grafia a conferir')+' · compasso '+note.measure+' · pauta '+note.staff+
     (verified?' · MIDI conferido':' · MIDI não confirmado');
    tip.style.left=Math.max(4,Math.min(window.innerWidth-220,ev.clientX+10))+'px';
    tip.style.top=Math.max(4,ev.clientY-44)+'px';tip.style.display='block';
