@@ -150,6 +150,7 @@
   function assign(n,e){
    n.nativeEvent={index:e.index,beat:e.event.beat,midi:e.event.midi,
     staff:e.event.staff,measure:e.event.measure,voice:e.event.voice,
+    sourcePart:e.event.sourcePart,
     length:e.event.length,tieStart:!!e.event.tieStart,
     tieStop:!!e.event.tieStop,playbackAttack:e.event.playbackAttack!==false,
     step:e.event.step,alter:e.event.alter,
