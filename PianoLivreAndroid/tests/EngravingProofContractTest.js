@@ -10,6 +10,8 @@ ok(html.includes("studyProof=(layout==='engraving-poc')"),"Explicit research mod
 ok(html.includes("renderSingleHorizontalStaffline:studyProof"),"OSMD horizontal only in PoC");
 ok(html.includes("if(!freeLayout&&!studyProof){"),"Default study must still use TemporalNotation");
 ok(html.includes("POC_OSMD_READY"),"SVG render metrics required");
+ok(html.includes("POC_CONTEXT_MEASURES")&&html.includes("POC_CONTEXT_SVG_ROOT")&&html.includes("beginInstructionsWidth"),
+ "OSMD context rail must inspect native measure instruction geometry before pinning symbols");
 ok(html.includes("POC_NOT_PRODUCTION_READY"),"Proof must never claim finished Study");
 ok(bridge.includes("engravingProof=false"),"Normal score load disables proof");
 ok(bridge.includes("if(freeLayout||disposed||!htmlReady||!scoreRendered)return;"),"Study native seek remains anchored to native clock");

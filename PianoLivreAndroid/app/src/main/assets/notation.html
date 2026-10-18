@@ -395,6 +395,35 @@
        if(tm&&origin)samples.push({beat:4*tm.RealValue,x:origin.x,y:origin.y});
       }
      }
+     // Inspect OSMD's existing engraved instruction nodes before building a
+     // pinned context rail. Keep this bounded: logcat truncates long records,
+     // and the probe must not copy or mutate the production SVG.
+     try{
+     const contextProbe=columns.slice(0,8).map(function(group,measureIndex){
+      return (group||[]).map(function(measure,staffIndex){
+       if(!measure)return null;
+       const clef=measure.InitiallyActiveClef;
+       const instruction=measure.firstInstructionStaffEntry||measure.FirstInstructionStaffEntry;
+       const pos=measure.PositionAndShape&&measure.PositionAndShape.AbsolutePosition;
+       return {measure:measureIndex+1,staff:staffIndex+1,
+        x:pos&&Number.isFinite(pos.x)?+pos.x.toFixed(2):null,
+        beginWidth:Number.isFinite(measure.beginInstructionsWidth)?+measure.beginInstructionsWidth.toFixed(2):null,
+        showKey:measure.ShowKeySignature,showTime:measure.ShowTimeSignature,
+        clef:clef?{type:clef.clefType||clef.ClefType||null,octave:clef.Octave||clef.octave||null,
+         text:typeof clef.ToString==='function'?clef.ToString():null,keys:Object.keys(clef).slice(0,8)}:null,
+        instructionEntry:instruction?{keys:Object.keys(instruction).slice(0,10),
+         x:instruction.PositionAndShape&&instruction.PositionAndShape.AbsolutePosition&&
+          instruction.PositionAndShape.AbsolutePosition.x}:null};
+      });
+     });
+     const rootChildren=svg?Array.from(svg.children).slice(0,14).map(function(node){
+      let box=null;try{const b=node.getBBox();box=[b.x,b.y,b.width,b.height].map(function(v){return +v.toFixed(1);});}catch(e){}
+      return {tag:node.tagName,id:node.id||null,cls:node.getAttribute('class'),box:box,
+       childCount:node.childElementCount,html:node.outerHTML.slice(0,80)};
+     }):[];
+     console.log('POC_CONTEXT_MEASURES '+JSON.stringify(contextProbe));
+     console.log('POC_CONTEXT_SVG_ROOT '+JSON.stringify(rootChildren));
+     }catch(contextError){console.log('POC_CONTEXT_PROBE_ERROR '+contextError.message)}
      const firstHead=optical.notes.find(function(n){return n.staff===1&&Number.isFinite(n.x)&&Number.isFinite(n.y);});
      const nextHead=firstHead&&optical.notes.find(function(n){
       return n.staff===1&&n.beat>firstHead.beat+.01&&n.nativeEvent&&Number.isFinite(n.x)&&Number.isFinite(n.y);
