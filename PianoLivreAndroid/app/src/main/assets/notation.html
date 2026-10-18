@@ -12,18 +12,21 @@
  body.free #viewport{overflow:auto;scroll-behavior:auto}
  body.free #score{width:153.846%;min-height:100%;transform:scale(0.65);transform-origin:top left}
  /* Research-only proof: preserve the existing Estudo renderer by default. */
- body.preview #viewport{overflow:auto;scroll-behavior:auto}
+ body.preview #viewport{overflow:hidden;scroll-behavior:auto}
  body.preview #score{width:100%;height:100%;min-height:0;transform:none;padding:0;overflow:visible}
  body.preview #score svg{overflow:visible}
+ #optical-reference{display:none;position:absolute;top:0;bottom:0;width:2px;background:#0c8a78;opacity:0.9;pointer-events:none;z-index:4}
+ body.preview #optical-reference{display:block}
 </style>
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
-<script src="temporal-notation.js"></script></head>
-<body><div id="viewport"><div id="score"></div></div><div id="loading">Preparando partitura...</div>
+<script src="temporal-notation.js"></script>
+<script src="optical-time-map.js"></script></head>
+<body><div id="viewport"><div id="score"></div></div><div id="optical-reference"></div><div id="loading">Preparando partitura...</div>
 <script>
 (function(){
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
- let generation=0,renderTimer=null;
+ let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
  function inform(s){message.textContent=s;message.style.display='block';}
  function atBeat(beat,smooth){
@@ -67,8 +70,37 @@
    appliedBeat=beat;
   }catch(e){ if(window.AndroidNotation)AndroidNotation.onError('Navegação: '+e.message); }
  }
+ function cancelOptical(){
+  if(opticalRaf)cancelAnimationFrame(opticalRaf);
+  opticalRaf=0;optical=null;opticalAnchor=null;opticalFrames=0;
+ }
+ function opticalPosition(beat){
+  if(!optical)return;
+  const wanted=optical.timeline.xAt(beat)+opticalOffset-viewport.clientWidth*.4-53;
+  const maximum=Math.max(0,viewport.scrollWidth-viewport.clientWidth);
+  viewport.scrollLeft=Math.max(0,Math.min(maximum,wanted));
+ }
+ function opticalFrame(){
+  opticalRaf=0;
+  if(!studyProof||!opticalAnchor||!optical)return;
+  const seconds=(performance.now()-opticalAnchor.at)/1000;
+  opticalPosition(opticalAnchor.beat+seconds*opticalAnchor.bpm/60);
+  opticalFrames++;
+  if(opticalFrames<8000)opticalRaf=requestAnimationFrame(opticalFrame);
+ }
+ function opticalSeek(beat,bpm,playing){
+  if(!optical||!Number.isFinite(beat))return;
+  if(opticalRaf)cancelAnimationFrame(opticalRaf);
+  opticalRaf=0;opticalAnchor=null;
+  opticalPosition(beat);
+  if(playing&&Number.isFinite(bpm)&&bpm>0){
+   opticalAnchor={beat:beat,bpm:bpm,at:performance.now()};
+   opticalFrames=0;opticalRaf=requestAnimationFrame(opticalFrame);
+  }
+ }
  function render(xml,start,layout){
   const ticket=++generation;
+  cancelOptical();
   loaded=false;appliedBeat=-1;seekBeat=start||0;
   freeLayout=(layout==='free');studyProof=(layout==='engraving-poc');
   document.body.className=freeLayout?'free':(studyProof?'preview':'continuous');
@@ -78,6 +110,8 @@
               :'width=device-width,initial-scale=1,user-scalable=no');
   inform('Diagramando a partitura...');
   document.getElementById('score').innerHTML='';
+  document.getElementById('score').style.marginLeft='0px';
+  document.getElementById('score').style.paddingRight='0px';
   viewport.scrollTo({top:0,left:0,behavior:'auto'});
   if((freeLayout||studyProof)&&window.TemporalNotation)TemporalNotation.teardown();
   if(!freeLayout&&!studyProof){
@@ -115,6 +149,14 @@
     const svg=document.querySelector('#score svg');
     if(studyProof){
      const graphic=osmd.graphic,columns=graphic&&graphic.measureList||[];
+     if(!window.OpticalTimeMap)throw Error('Mapeamento óptico não carregado');
+     optical=OpticalTimeMap.fromGraphical(graphic);
+     opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(start||0));
+     document.getElementById('score').style.marginLeft=opticalOffset+'px';
+     document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
+     const ref=document.getElementById('optical-reference');
+     ref.style.left=(viewport.clientWidth*.4)+'px';
+     opticalSeek(start||0,100,false);
      const samples=[];
      for(const group of columns.slice(0,6))for(const measure of group||[]){
       if(!measure)continue;
@@ -130,9 +172,11 @@
        width:svg?Math.round(svg.getBoundingClientRect().width):0,
        height:svg?Math.round(svg.getBoundingClientRect().height):0,
        measures:columns.length,firstEntries:samples.slice(0,16),
+       musicalAnchors:optical.timeline.stops.length,graphicalNotes:optical.notes.length,
+       firstMusicalX:optical.timeline.xAt(start||0),referenceOffset:opticalOffset,
        viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight};
      console.log('POC_OSMD_READY '+JSON.stringify(proof));
-     console.log('POC_NOT_PRODUCTION_READY: no validated beat-to-x continuity or note hit mapping; strict timeline unchanged');
+     console.log('POC_NOT_PRODUCTION_READY: optical beat-to-x interpolation is experimental; note hit mapping, visual clipping and performance remain unvalidated');
     }
     if(!freeLayout&&!studyProof&&svg){
      const groups=Array.from(svg.querySelectorAll('g')).slice(0,44);
@@ -167,7 +211,8 @@
  window.PianoNotation={
    load:render,
    seek:function(beat,animated,bpm,playing){
-    if(freeLayout||studyProof)return;seekBeat=beat;
+    if(freeLayout)return;seekBeat=beat;
+    if(studyProof){opticalSeek(beat,bpm,!!playing);return;}
     if(window.TemporalNotation)TemporalNotation.sync(beat,bpm,!!playing);
    },
    waitPrepare:function(milliseconds){
@@ -187,7 +232,17 @@
     if(!freeLayout&&!studyProof){if(window.TemporalNotation)TemporalNotation.resize();return;}
     if(!osmd)return;
     clearTimeout(renderTimer);
-    renderTimer=setTimeout(function(){try{osmd.render();appliedBeat=-1;if(!freeLayout&&!studyProof)atBeat(seekBeat,false);}catch(e){}},220);
+    renderTimer=setTimeout(function(){try{
+     osmd.render();appliedBeat=-1;
+     if(studyProof){
+      optical=OpticalTimeMap.fromGraphical(osmd.graphic);
+      opticalOffset=Math.max(0,viewport.clientWidth*.4+53-optical.timeline.xAt(seekBeat));
+      document.getElementById('score').style.marginLeft=opticalOffset+'px';
+      document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
+      document.getElementById('optical-reference').style.left=(viewport.clientWidth*.4)+'px';
+      opticalSeek(seekBeat,100,false);
+     }else if(!freeLayout)atBeat(seekBeat,false);
+    }catch(e){console.log('POC_RESIZE_ERROR',e.message)}},220);
    }
  };
  window.addEventListener('resize',function(){PianoNotation.resize();});
