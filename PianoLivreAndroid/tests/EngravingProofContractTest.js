@@ -12,7 +12,11 @@ ok(html.includes("if(!freeLayout&&!studyProof){"),"Default study must still use 
 ok(html.includes("POC_OSMD_READY"),"SVG render metrics required");
 ok(html.includes("POC_NOT_PRODUCTION_READY"),"Proof must never claim finished Study");
 ok(bridge.includes("engravingProof=false"),"Normal score load disables proof");
-ok(bridge.includes("freeLayout||engravingProof||disposed"),"Playback cannot drive unvalidated proof");
+ok(bridge.includes("if(freeLayout||disposed||!htmlReady||!scoreRendered)return;"),"Study native seek remains anchored to native clock");
+ok(bridge.includes("LAYER_TYPE_SOFTWARE"),"Research layer diagnostic isolated");
+ok(html.includes("opticalSeek(beat,bpm,!!playing)"),"OSMD pilot consumes beats, not MIDI output");
+ok(html.includes('src="optical-time-map.js"'),"Optical map is a bundled offline asset");
+ok(html.includes("opticalPosition"),"Reference-led optical movement required");
 ok(views.includes("setOnLongClickListener"),"Research activation deliberate");
 ok(time.includes("function computeX(beat,pxPerBeat,origin){return origin+beat*pxPerBeat;}"),
    "Strict beat-proportional baseline untouched");
