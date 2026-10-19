@@ -128,7 +128,9 @@ public class MainActivity extends Activity {
   buildUi();loadProfiles();setupMidi();String previous=prefs.getString("user_"+user+"_file","");
   boolean contextSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("engraving_context_selftest",false);
-  if(!contextSelfTest&&!previous.isEmpty())loadScore(previous,false);
+  boolean complexEngravingSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("engraving_complex_selftest",false);
+  if(!contextSelfTest&&!complexEngravingSelfTest&&!previous.isEmpty())loadScore(previous,false);
   handler.post(ticker);
   if(contextSelfTest){
    android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_INTENT accepted previousPath="+previous);
@@ -138,6 +140,15 @@ public class MainActivity extends Activity {
     if(score==null||!fixture.equals(currentFile))
      android.util.Log.e("PianoLivreContext","CONTEXT_FIXTURE_LOAD_FAILED currentFile="+currentFile+" score="+(score==null?"null":score.title));
     else android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size());
+   });
+  }
+  if(complexEngravingSelfTest){
+   handler.post(()->{
+    String fixture="scores/engraving-complex-synthetic.musicxml";
+    loadScore(fixture,true);
+    if(score==null||!fixture.equals(currentFile))
+     android.util.Log.e("PianoLivreContext","COMPLEX_FIXTURE_LOAD_FAILED currentFile="+currentFile+" score="+(score==null?"null":score.title));
+    else android.util.Log.i("PianoLivreContext","COMPLEX_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size());
    });
   }
   if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0

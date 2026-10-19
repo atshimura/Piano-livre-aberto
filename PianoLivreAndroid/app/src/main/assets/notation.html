@@ -12,7 +12,7 @@
  body.free #viewport{overflow:auto;scroll-behavior:auto}
  body.free #score{width:153.846%;min-height:100%;transform:scale(0.65);transform-origin:top left}
  /* Research-only proof: preserve the existing Estudo renderer by default. */
- body.preview #viewport{overflow:hidden;scroll-behavior:auto}
+ body.preview #viewport{overflow-x:hidden;overflow-y:auto;scroll-behavior:auto;overscroll-behavior:contain;touch-action:pan-y}
  body.preview #score{width:100%;height:100%;min-height:0;transform:none;padding:0;overflow:visible}
  body.preview #score svg{overflow:visible}
  #optical-reference{display:none;position:absolute;top:0;bottom:0;width:2px;background:#0c8a78;opacity:0.9;pointer-events:none;z-index:4}
@@ -41,6 +41,18 @@
  let opticalHand=0,opticalCueKey='',opticalCueSvg=null;
  let opticalContextState=null,opticalContextMeasure=-1;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
+ let lastLoggedVerticalPan=-2;
+ viewport.addEventListener('scroll',function(){
+  const top=viewport.scrollTop;
+  if(studyProof&&Math.abs(top-lastLoggedVerticalPan)>=2){
+   lastLoggedVerticalPan=top;
+   console.log('POC_VERTICAL_SCROLL '+JSON.stringify({top:top,
+    max:Math.max(0,viewport.scrollHeight-viewport.clientHeight)}));
+  }
+  const rail=document.getElementById('optical-context-rail');
+  if(studyProof&&top>1)rail.style.display='none';
+  else if(studyProof&&rail.style.display==='none')paintOpticalContext(seekBeat,true);
+ },{passive:true});
  function inform(s){message.textContent=s;message.style.display='block';}
  function atBeat(beat,smooth){
   if(freeLayout)return;
@@ -147,8 +159,9 @@
   opticalContextState=null;opticalContextMeasure=-1;
   document.getElementById('optical-context-rail').innerHTML='';
  }
- /** Preserve MusicXML and note identity: scale CSS SVG, not musical events.
-  * The original SVG viewBox continues to drive precise notehead hit tests.
+ /** Preserve OSMD's native engraving geometry and MusicXML note identity.
+  * When a two-staff score is taller than the viewport, vertical scrolling
+  * exposes the complete system instead of shrinking noteheads and staff spaces.
   */
  function fitOpticalSvg(svg){
   if(!svg||!studyProof)return;
@@ -161,13 +174,38 @@
    svg.dataset.opticalNativeWidth=String(baseWidth);
    svg.dataset.opticalNativeHeight=String(baseHeight);
   }
-  const scale=Math.min(1,Math.max(0.05,(viewport.clientHeight-8)/baseHeight));
+  const scale=1;
   opticalDisplayScale=scale;
-  svg.style.width=(baseWidth*scale)+'px';
-  svg.style.height=(baseHeight*scale)+'px';
+  svg.style.width=baseWidth+'px';
+  svg.style.height=baseHeight+'px';
+  const score=document.getElementById('score');
+  score.style.width=baseWidth+'px';
+  score.style.height=baseHeight+'px';
+  let staffSpace=0,staffGapSpaces=0;
+  const stafflines=Array.from(svg.querySelectorAll('g.staffline')).slice(0,2);
+  const lineSets=stafflines.map(function(staffline){
+   const measure=Array.from(staffline.children).find(function(node){
+    return node.classList&&node.classList.contains('vf-measure');
+   });
+   return measure&&Array.from(measure.children).filter(function(node){
+    return node.tagName&&node.tagName.toLowerCase()==='path';
+   }).slice(0,5);
+  });
+  if(lineSets[0]&&lineSets[0].length>=5){
+   try{const a=lineSets[0][0].getBBox(),b=lineSets[0][1].getBBox();
+    staffSpace=Math.abs((b.y+b.height/2)-(a.y+a.height/2))*scale;
+    if(lineSets[1]&&lineSets[1].length>=1&&staffSpace>0){
+     const upper=lineSets[0][4].getBBox(),lower=lineSets[1][0].getBBox();
+     staffGapSpaces=((lower.y+lower.height/2)-(upper.y+upper.height/2))/staffSpace;
+    }
+   }catch(e){}
+  }
+  svg.dataset.opticalStaffSpaceCss=String(staffSpace);
+  svg.dataset.opticalStaffGapSpaces=String(staffGapSpaces);
   console.log('POC_SVG_FIT '+JSON.stringify({scale:scale,rawWidth:baseWidth,
    rawHeight:baseHeight,width:baseWidth*scale,height:baseHeight*scale,
-   viewportHeight:viewport.clientHeight})); }
+   viewportHeight:viewport.clientHeight,verticalOverflow:Math.max(0,baseHeight-viewport.clientHeight),
+   nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
  function alignOpticalScore(beat){
   opticalReferenceX=Math.min(viewport.clientWidth*.4,
    Math.min(viewport.clientWidth,130*opticalDisplayScale)+12);
@@ -306,6 +344,9 @@
  function paintOpticalContext(beat,force){
   const state=opticalContextState;
   if(!studyProof||!state||!Number.isFinite(beat))return;
+  const rail=document.getElementById('optical-context-rail');
+  if(viewport.scrollTop>1){rail.style.display='none';return;}
+  rail.style.display='block';
   let low=0,high=state.measureStarts.length;
   while(low+1<high){
    const middle=(low+high)>>1;
@@ -356,7 +397,6 @@
   });
   const source=sourceNow;
   const viewportRect=viewportNow;
-  const rail=document.getElementById('optical-context-rail');
   rail.style.left='0px';
   rail.style.top=Math.max(0,source.top-viewportRect.top)+'px';
   rail.style.width=Math.min(viewport.clientWidth,130*opticalDisplayScale)+'px';
@@ -691,6 +731,17 @@
        midiMapping:opticalReconciliation,
        firstMusicalX:optical.timeline.xAt(start||0),referenceOffset:opticalOffset,
        viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight};
+     proof.viewportScrollHeight=viewport.scrollHeight;
+     proof.viewportMaxScrollTop=Math.max(0,viewport.scrollHeight-viewport.clientHeight);
+     proof.nativeStaffSpaceCssPx=Number(svg&&svg.dataset.opticalStaffSpaceCss||0);
+     proof.staffSeparationSpaces=Number(svg&&svg.dataset.opticalStaffGapSpaces||0);
+     proof.svgFeatureCounts={
+      beams:svg?svg.querySelectorAll('[class*="beam"]').length:0,
+      ties:svg?svg.querySelectorAll('.vf-stavetie').length:0,
+      slurs:svg?svg.querySelectorAll('.vf-curve').length:0,
+      accidentals:svg?svg.querySelectorAll('[class*="accidental"]').length:0,
+      dynamics:svg?svg.querySelectorAll('[class*="dynamic"], [class*="wedge"], .vf-line').length:0,
+      tuplets:svg?svg.querySelectorAll('[class*="tuplet"]').length:0};
      console.log('POC_OSMD_READY '+JSON.stringify(proof));
      console.log('POC_NOT_PRODUCTION_READY: optical beat-to-x interpolation is experimental; note hit mapping, visual clipping and performance remain unvalidated');
     }

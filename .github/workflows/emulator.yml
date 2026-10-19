@@ -91,12 +91,14 @@ jobs:
               "piano-osmd-poc-wait.png",
               "piano-temporal-long.png",
               "piano-osmd-long.png",
+              "piano-osmd-long-vertical-pan.png",
               "piano-osmd-long-tap.png",
               "piano-osmd-long-moving.png",
               "piano-osmd-context-start.png",
               "piano-osmd-context-middle.png",
               "piano-osmd-context-end.png",
               "piano-osmd-context-changes.png",
+              "piano-osmd-complex-synthetic.png",
               "piano-release.png",
           ]
           report = []
@@ -150,9 +152,12 @@ jobs:
             PianoLivreAndroid/piano-osmd-poc-wait.png
             PianoLivreAndroid/piano-temporal-long.png
             PianoLivreAndroid/piano-osmd-long.png
+            PianoLivreAndroid/piano-osmd-long-vertical-pan.png
             PianoLivreAndroid/piano-osmd-long-tap.png
             PianoLivreAndroid/piano-osmd-long-moving.png
             PianoLivreAndroid/piano-osmd-context-changes.png
+            PianoLivreAndroid/piano-osmd-complex-synthetic.png
+            PianoLivreAndroid/piano-osmd-complex-synthetic.json
             PianoLivreAndroid/piano-osmd-context-changes.json
             PianoLivreAndroid/piano-visual-evidence.json
             PianoLivreAndroid/piano-osmd-context-load-probe.txt

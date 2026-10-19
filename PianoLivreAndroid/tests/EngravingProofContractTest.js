@@ -4,6 +4,7 @@ const assert=require("node:assert/strict"),fs=require("node:fs");
 const html=fs.readFileSync("app/src/main/assets/notation.html","utf8");
 const bridge=fs.readFileSync("app/src/main/java/br/org/pianolivre/NotationView.java","utf8");
 const views=fs.readFileSync("app/src/main/java/br/org/pianolivre/PianoScreens.java","utf8");
+const activity=fs.readFileSync("app/src/main/java/br/org/pianolivre/MainActivity.java","utf8");
 const time=fs.readFileSync("app/src/main/assets/temporal-notation.js","utf8");
 let checks=0;function ok(cond,msg){checks++;assert.ok(cond,msg)}
 ok(html.includes("studyProof=(layout==='engraving-poc')"),"Explicit research mode required");
@@ -143,9 +144,32 @@ ok(bridge.includes("if(disposed||freeLayout||!htmlReady||!scoreRendered||pending
 ok(html.includes("POC_RESIZE_HEIGHT_ONLY"),"Height-only guide resize must avoid full OSMD render");
 ok(html.includes("osmdRenderedWidth===viewport.clientWidth"),"Width changes must still trigger OSMD re-layout");
 ok(html.includes("osmdRenderedHeight=viewport.clientHeight"),"Track rendered viewport height for guide toggles");
-ok(html.includes("function fitOpticalSvg(svg)"),"Two-staff SVG must fit vertical space");
+ok(html.includes("function fitOpticalSvg(svg)"),"Two-staff SVG geometry must follow the available display area");
 ok(html.includes("optical.timeline.xAt(beat)*opticalDisplayScale"),"Musical x movement must honor optical display zoom");
 ok(html.includes("svg.dataset.opticalNativeHeight"),"Height resize must retain original OSMD drawing metrics");
+ok(html.includes("body.preview #viewport{overflow-x:hidden;overflow-y:auto")&&
+ html.includes("touch-action:pan-y"),
+ "Tall OSMD scores must remain vertically touch-scrollable while playback owns horizontal movement");
+ok(html.includes("const scale=1;")&&html.includes("svg.style.width=baseWidth+'px'")&&
+ html.includes("svg.style.height=baseHeight+'px'")&&
+ html.includes("score.style.height=baseHeight+'px'")&&
+ html.includes("verticalOverflow:Math.max(0,baseHeight-viewport.clientHeight)"),
+ "Vertical fit must preserve native OSMD geometry and expose overflow instead of shrinking staff spaces");
+ok(html.includes("viewport.addEventListener('scroll'")&&html.includes("POC_VERTICAL_SCROLL")&&
+ html.includes("viewportMaxScrollTop")&&html.includes("nativeStaffSpaceCssPx")&&
+ html.includes("if(viewport.scrollTop>1){rail.style.display='none';return;}"),
+ "Vertical scrolling, native geometry and context-rail visibility must remain observable and coherent");
+ok(activity.includes("engraving_complex_selftest")&&
+ activity.includes("scores/engraving-complex-synthetic.musicxml")&&
+ activity.includes("FLAG_DEBUGGABLE"),
+ "Complex engraving fixture must be loaded only by the debug-only Android test path");
+const complexFixture=fs.readFileSync("app/src/debug/assets/scores/engraving-complex-synthetic.musicxml","utf8");
+ok(complexFixture.includes("Synthetic engraving geometry test")&&
+ complexFixture.includes("<chord/>")&&complexFixture.includes("<beam")&&
+ complexFixture.includes("<tie")&&complexFixture.includes("<slur")&&
+ complexFixture.includes("<wedge")&&complexFixture.includes("<time-modification")&&
+ complexFixture.includes("<alter>1</alter>")&&complexFixture.includes("<staves>2</staves>"),
+ "Synthetic debug-only geometry fixture must cover piano chords, beams, ties, slurs, dynamics, tuplets and accidentals");
 ok(!html.includes("svg.getBBox()"),"Failed crop experiment is not left in the OSMD rendering path");
 ok(html.includes("displayScale:opticalDisplayScale"),"Piano score proof reports actual visual scaling");
 ok(html.includes("Math.abs(viewport.scrollLeft-target)>=0.5"),"WebView skips redundant subpixel scroll updates");

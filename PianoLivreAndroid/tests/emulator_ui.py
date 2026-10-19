@@ -299,6 +299,9 @@ if __name__=="__main__":
       ("long-press was not delivered" if not gesture_delivered else "long-press arrived; inspect WebView diagnostics"))
     assert gesture_delivered, "OSMD proof appeared without the expected long-press diagnostic"
     assert professional["svgNodes"]>50 and professional["width"]>0 and professional["measures"]>=3, "OSMD proof rendered no music"
+    assert professional["displayScale"]==1 and \
+      professional["height"]==professional["nativeSvgHeight"] and \
+      professional["nativeStaffSpaceCssPx"]>0, "Simple-score OSMD geometry changed or was scaled"
     context_logs=[line for line in adb("logcat","-d","-v","brief").splitlines()
                   if "POC_CONTEXT_" in line]
     Path("piano-osmd-context-probe.txt").write_text("\n".join(context_logs)+"\n",encoding="utf-8")
@@ -708,13 +711,16 @@ if __name__=="__main__":
                              "sourceNotes":notes[:12]})
         print("POC_LONG_ORIGINAL_XML "+json.dumps(original,ensure_ascii=False),flush=True)
     assert long_proof["measures"]>=40, "Long-score fixture unexpectedly short"
-    assert 0<long_proof["displayScale"]<1, "Dense two-staff score was not fitted to display height"
-    assert long_proof["height"]<=long_proof["viewportHeight"], "OSMD two-staff SVG extends below viewport"
-    assert long_proof["nativeSvgHeight"]>long_proof["height"], "Original engraving dimensions were not preserved in diagnostics"
+    assert long_proof["displayScale"]==1, "Dense two-staff score was compressed below native OSMD scale"
+    assert long_proof["height"]==long_proof["nativeSvgHeight"], "OSMD native engraving height was altered"
+    assert long_proof["nativeStaffSpaceCssPx"]>0, "Native staff-line spacing was not measured"
+    assert long_proof["staffSeparationSpaces"]>4, "Dense score's native collision-safe staff separation was reduced"
+    if long_proof["nativeSvgHeight"]>long_proof["viewportHeight"]:
+        assert long_proof["viewportMaxScrollTop"]>0, "Tall score has no vertical navigation range"
     assert long_proof["graphicalNotes"]>=50 and long_proof["svgNodes"]>=1000, "Long-score engraving incomplete"
     assert long_proof["midiMapping"]["matched"]==long_proof["graphicalNotes"], "Each written Gymnopédie notehead must reconcile, including tied continuations"
     screenshot("piano-osmd-long.png")
-    # A scaled SVG must preserve actual Android hit targets, not just its appearance.
+    # Native-scale SVG geometry must preserve notehead hit targets on Android.
     long_head=long_proof.get("firstNoteViewport")
     assert long_head and long_head.get("midiEstimate") is not None, "Long score has no testable upper-staff notehead"
     views=[n for n in dump().iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
@@ -731,9 +737,37 @@ if __name__=="__main__":
     all_hits=[line for line in logs.splitlines() if "POC_NOTE_TAP {" in line]
     assert len(all_hits)>previous_hits, "Scaled SVG did not recognize a real notehead touch"
     chosen_note=json.loads(all_hits[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
-    assert chosen_note["staff"]==1 and chosen_note["nativeMidi"]==long_head["midiEstimate"] and chosen_note["mapped"], "Scaled notehead did not match native MusicXML/MIDI"
+    assert chosen_note["staff"]==1 and chosen_note["nativeMidi"]==long_head["midiEstimate"] and chosen_note["mapped"], "Native-scale notehead did not match native MusicXML/MIDI"
     assert chosen_note.get("writtenName") and chosen_note.get("xmlNoteIndex") is not None, "Scaled notehead lost its original MusicXML notation"
     screenshot("piano-osmd-long-tap.png")
+    # If the landscape viewport is shorter than the native long score, prove
+    # touch panning reaches the lower staff and returns without a rerender.
+    if long_proof["viewportMaxScrollTop"]>0:
+        view=next((n for n in dump().iter("node")
+                   if n.attrib.get("class")=="android.webkit.WebView"),None)
+        assert view,"Long-score vertical pan cannot locate WebView bounds"
+        box=[int(v) for v in re.findall(r"\d+",view.attrib.get("bounds",""))]
+        midx=(box[0]+box[2])//2
+        start_count=adb("logcat","-d","-v","brief").count("POC_VERTICAL_SCROLL {")
+        adb("shell","input","swipe",str(midx),str(box[3]-35),str(midx),str(box[1]+35),"500")
+        pan=None
+        for attempt in range(12):
+            rows=[line for line in adb("logcat","-d","-v","brief").splitlines()
+                  if "POC_VERTICAL_SCROLL {" in line]
+            if len(rows)>start_count:
+                try:pan=json.loads(rows[-1].split("POC_VERTICAL_SCROLL ",1)[1].split(" @",1)[0])
+                except ValueError:pass
+                if pan and pan["top"]>0:break
+            time.sleep(.25)
+        assert pan and pan["top"]>0,"Vertical touch pan did not reveal overflow content"
+        screenshot("piano-osmd-long-vertical-pan.png")
+        adb("shell","input","swipe",str(midx),str(box[1]+35),str(midx),str(box[3]-35),"500")
+        time.sleep(.5)
+        print("PASS: native-scale long score supports vertical touch navigation "+json.dumps(pan),flush=True)
+    else:
+        # Keep the evidence set complete; the JSON says no vertical pan was
+        # required because this particular emulator viewport fit the score.
+        screenshot("piano-osmd-long-vertical-pan.png")
     print("PASS: scaled 78-measure OSMD graphical notehead maps to native MIDI",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     long_play_point=tap_text(["Iniciar"],return_point=True,scroll=True)
@@ -902,3 +936,57 @@ if __name__=="__main__":
     },ensure_ascii=False,indent=2),encoding="utf-8")
     print("POC_CONTEXT_CHANGES "+json.dumps(context_states),flush=True)
     print("PASS: OSMD pinned context follows clef, key and time changes in Android playback",flush=True)
+    # Render a copyright-free debug fixture with dense engraving features so
+    # adaptive geometry is exercised beyond the two public-domain examples.
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("logcat","-c")
+    adb("shell","am","start","-S","-W","-n",
+        "br.org.pianolivre.opensource/br.org.pianolivre.MainActivity",
+        "--ez","engraving_complex_selftest","true")
+    complex_loaded=False
+    for attempt in range(30):
+        logs=adb("logcat","-d","-v","brief")
+        if "COMPLEX_FIXTURE_LOAD_OK title=Synthetic engraving geometry test measures=3" in logs:
+            complex_loaded=True;break
+        time.sleep(.5)
+    assert complex_loaded,"Synthetic complex MusicXML fixture did not load on Android"
+    complex_button=None
+    for attempt in range(8):
+        root=dump()
+        complex_button=next((n for n in root.iter("node")
+          if n.attrib.get("text")=="Partitura Livre"),None)
+        if complex_button is not None:break
+        time.sleep(.25)
+    assert complex_button is not None,"Synthetic fixture cannot open the OSMD proof"
+    complex_bounds=[int(v) for v in re.findall(r"\d+",complex_button.attrib["bounds"])]
+    adb("logcat","-c")
+    adb("shell","input","swipe",str((complex_bounds[0]+complex_bounds[2])//2),
+        str((complex_bounds[1]+complex_bounds[3])//2),
+        str((complex_bounds[0]+complex_bounds[2])//2),
+        str((complex_bounds[1]+complex_bounds[3])//2),"1100")
+    complex_proof=None
+    for attempt in range(30):
+        assert_running()
+        entries=[line for line in adb("logcat","-d","-v","brief").splitlines()
+                 if "POC_OSMD_READY {" in line]
+        if entries:
+            complex_proof=json.loads(entries[-1].split("POC_OSMD_READY ",1)[1].split(" @",1)[0])
+            break
+        time.sleep(.5)
+    assert complex_proof and complex_proof["measures"]==3 and complex_proof["graphicalNotes"]>=20,(
+      "Complex synthetic score did not produce the expected OSMD notes: "+json.dumps(complex_proof))
+    assert complex_proof["displayScale"]==1 and complex_proof["nativeStaffSpaceCssPx"]>0,(
+      "Complex score geometry was scaled or its staff spacing could not be measured")
+    assert complex_proof["midiMapping"]["matched"]>=10,(
+      "Synthetic score graphical heads did not reconcile with the native score model")
+    features=complex_proof["svgFeatureCounts"]
+    assert all(features.get(key,0)>0 for key in ("beams","ties","slurs","accidentals","dynamics","tuplets")),(
+      "Complex fixture lost required engraved symbols: "+json.dumps(features))
+    screenshot("piano-osmd-complex-synthetic.png")
+    Path("piano-osmd-complex-synthetic.json").write_text(json.dumps({
+      "fixture":"debug-only, synthetic and copyright-free MusicXML",
+      "coverage":["grand staff","chords","two voices","beams","accidentals","ties","slurs","dynamics/wedges","tuplets"],
+      "engraving":complex_proof,
+      "scope":"Android API 29 emulator; geometry and native-model reconciliation, not physical-device acceptance"
+    },ensure_ascii=False,indent=2),encoding="utf-8")
+    print("PASS: synthetic complex engraving geometry and note reconciliation",flush=True)
