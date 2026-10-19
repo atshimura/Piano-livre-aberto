@@ -1,0 +1,779 @@
+{
+  "validatedCodeSha": "0cc670c2513eea37202eb63e4cdfb734a2a07d5d",
+  "workflow": 39272746710,
+  "artifact": 12196097730,
+  "environment": "Android API29 emulator, same device with wm size overrides; not physical hardware",
+  "measurements": {
+    "piano-03c-complex": [
+      {
+        "keyboard": "closed",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 665.625,
+          "rawHeight": 195.89773559570312,
+          "width": 665.625,
+          "height": 195.89773559570312,
+          "webviewWidth": 738,
+          "viewportWidth": 738,
+          "viewportHeight": 220,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 6.089878845214844
+        }
+      },
+      {
+        "keyboard": "open",
+        "titleBar": false,
+        "controlsBar": false,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 665.625,
+          "rawHeight": 195.89773559570312,
+          "width": 665.625,
+          "height": 195.89773559570312,
+          "webviewWidth": 738,
+          "viewportWidth": 738,
+          "viewportHeight": 242,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 6.089878845214844
+        }
+      },
+      {
+        "keyboard": "restored",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 665.625,
+          "rawHeight": 195.89773559570312,
+          "width": 665.625,
+          "height": 195.89773559570312,
+          "webviewWidth": 738,
+          "viewportWidth": 738,
+          "viewportHeight": 220,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 6.089878845214844
+        }
+      }
+    ],
+    "piano-03c-context": [
+      {
+        "keyboard": "closed",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 880.9716186523438,
+          "rawHeight": 151.5,
+          "width": 880.9716186523438,
+          "height": 151.5,
+          "webviewWidth": 738,
+          "viewportWidth": 738,
+          "viewportHeight": 220,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 4
+        }
+      },
+      {
+        "keyboard": "open",
+        "titleBar": false,
+        "controlsBar": false,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 880.9716186523438,
+          "rawHeight": 151.5,
+          "width": 880.9716186523438,
+          "height": 151.5,
+          "webviewWidth": 738,
+          "viewportWidth": 738,
+          "viewportHeight": 242,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 4
+        }
+      },
+      {
+        "keyboard": "restored",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 880.9716186523438,
+          "rawHeight": 151.5,
+          "width": 880.9716186523438,
+          "height": 151.5,
+          "webviewWidth": 738,
+          "viewportWidth": 738,
+          "viewportHeight": 220,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 4
+        }
+      }
+    ],
+    "piano-03c-gymnopedie-tablet-display": [
+      {
+        "keyboard": "closed",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 7748.5966796875,
+          "rawHeight": 381.5909118652344,
+          "width": 7748.5966796875,
+          "height": 381.5909118652344,
+          "webviewWidth": 883,
+          "viewportWidth": 883,
+          "viewportHeight": 409,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 15.036000061035157
+        }
+      },
+      {
+        "keyboard": "open",
+        "titleBar": false,
+        "controlsBar": false,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 7748.5966796875,
+          "rawHeight": 381.5909118652344,
+          "width": 7748.5966796875,
+          "height": 381.5909118652344,
+          "webviewWidth": 883,
+          "viewportWidth": 883,
+          "viewportHeight": 431,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 15.036000061035157
+        }
+      },
+      {
+        "keyboard": "restored",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 7748.5966796875,
+          "rawHeight": 381.5909118652344,
+          "width": 7748.5966796875,
+          "height": 381.5909118652344,
+          "webviewWidth": 883,
+          "viewportWidth": 883,
+          "viewportHeight": 409,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 15.036000061035157
+        }
+      }
+    ],
+    "piano-03c-gymnopedie-taller": [
+      {
+        "keyboard": "closed",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 7748.5966796875,
+          "rawHeight": 381.5909118652344,
+          "width": 7748.5966796875,
+          "height": 381.5909118652344,
+          "webviewWidth": 738,
+          "viewportWidth": 690,
+          "viewportHeight": 351,
+          "simultaneous": false,
+          "verticalOverflow": 30.590911865234375,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 15.036000061035157
+        }
+      },
+      {
+        "keyboard": "open",
+        "titleBar": false,
+        "controlsBar": false,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 7748.5966796875,
+          "rawHeight": 381.5909118652344,
+          "width": 7748.5966796875,
+          "height": 381.5909118652344,
+          "webviewWidth": 738,
+          "viewportWidth": 690,
+          "viewportHeight": 373,
+          "simultaneous": false,
+          "verticalOverflow": 8.590911865234375,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 15.036000061035157
+        }
+      },
+      {
+        "keyboard": "restored",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 7748.5966796875,
+          "rawHeight": 381.5909118652344,
+          "width": 7748.5966796875,
+          "height": 381.5909118652344,
+          "webviewWidth": 738,
+          "viewportWidth": 690,
+          "viewportHeight": 351,
+          "simultaneous": false,
+          "verticalOverflow": 30.590911865234375,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 15.036000061035157
+        }
+      }
+    ],
+    "piano-03c-gymnopedie": [
+      {
+        "keyboard": "closed",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 7748.5966796875,
+          "rawHeight": 381.5909118652344,
+          "width": 7748.5966796875,
+          "height": 381.5909118652344,
+          "webviewWidth": 738,
+          "viewportWidth": 690,
+          "viewportHeight": 196,
+          "simultaneous": false,
+          "verticalOverflow": 185.59091186523438,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 15.036000061035157
+        }
+      },
+      {
+        "keyboard": "open",
+        "titleBar": false,
+        "controlsBar": false,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 7748.5966796875,
+          "rawHeight": 381.5909118652344,
+          "width": 7748.5966796875,
+          "height": 381.5909118652344,
+          "webviewWidth": 738,
+          "viewportWidth": 690,
+          "viewportHeight": 218,
+          "simultaneous": false,
+          "verticalOverflow": 163.59091186523438,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 15.036000061035157
+        }
+      },
+      {
+        "keyboard": "restored",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 7748.5966796875,
+          "rawHeight": 381.5909118652344,
+          "width": 7748.5966796875,
+          "height": 381.5909118652344,
+          "webviewWidth": 738,
+          "viewportWidth": 690,
+          "viewportHeight": 196,
+          "simultaneous": false,
+          "verticalOverflow": 185.59091186523438,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 15.036000061035157
+        }
+      }
+    ],
+    "piano-03c-ode": [
+      {
+        "keyboard": "closed",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 2103.4375,
+          "rawHeight": 136.5,
+          "width": 2103.4375,
+          "height": 136.5,
+          "webviewWidth": 738,
+          "viewportWidth": 738,
+          "viewportHeight": 196,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 4
+        }
+      },
+      {
+        "keyboard": "open",
+        "titleBar": false,
+        "controlsBar": false,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 2103.4375,
+          "rawHeight": 136.5,
+          "width": 2103.4375,
+          "height": 136.5,
+          "webviewWidth": 738,
+          "viewportWidth": 738,
+          "viewportHeight": 218,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 4
+        }
+      },
+      {
+        "keyboard": "restored",
+        "titleBar": true,
+        "controlsBar": true,
+        "geometry": {
+          "scale": 1,
+          "rawWidth": 2103.4375,
+          "rawHeight": 136.5,
+          "width": 2103.4375,
+          "height": 136.5,
+          "webviewWidth": 738,
+          "viewportWidth": 738,
+          "viewportHeight": 196,
+          "simultaneous": true,
+          "verticalOverflow": 0,
+          "nativeStaffSpaceCssPx": 10,
+          "staffSeparationSpaces": 4
+        }
+      }
+    ],
+    "piano-03c-tablet-display-mapping": {
+      "engine": "OpenSheetMusicDisplay bundled 1.9.8",
+      "mode": "horizontal",
+      "firstNoteViewport": {
+        "x": 556.2918445748927,
+        "y": 86.23272780510494,
+        "beat": 13,
+        "midiEstimate": 78
+      },
+      "secondNoteViewport": {
+        "x": 585.0417781199156,
+        "y": 76.23278938516286,
+        "beat": 14,
+        "midiEstimate": 81
+      },
+      "renderMs": 1238,
+      "svgNodes": 4927,
+      "width": 7749,
+      "height": 382,
+      "displayScale": 1,
+      "nativeSvgHeight": 381.5909118652344,
+      "measures": 78,
+      "firstEntries": [
+        {
+          "beat": 0,
+          "x": 15.987231,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 0,
+          "x": 12.716207999999998,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 1,
+          "x": 16.933673999999996,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 3,
+          "x": 25.656101,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 3,
+          "x": 23.760078,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 4,
+          "x": 27.060877333333334,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 6,
+          "x": 33.949971,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 6,
+          "x": 32.053948,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 7,
+          "x": 35.35474733333333,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 9,
+          "x": 42.24384099999999,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 9,
+          "x": 40.34781799999999,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 10,
+          "x": 43.64861733333333,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 12,
+          "x": 48.46197599999999,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 13,
+          "x": 52.116681173333326,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 14,
+          "x": 54.991674346666656,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 12,
+          "x": 48.64168799999999,
+          "y": 27.659325883001223
+        }
+      ],
+      "firstStaffOrigins": [
+        {
+          "staff": 1,
+          "y": 86.23325883001223
+        },
+        {
+          "staff": 2,
+          "y": 276.59325883001225
+        }
+      ],
+      "musicalAnchors": 188,
+      "graphicalNotes": 469,
+      "midiMapping": {
+        "graphicalNotes": 469,
+        "nativeEvents": 469,
+        "reasons": {
+          "invalidGraphical": 0,
+          "noNativeCandidate": 0,
+          "ambiguous": 0,
+          "beatDisagreement": 0
+        },
+        "samples": [],
+        "matched": 469,
+        "ambiguous": 0,
+        "unmatched": 0,
+        "unmatchedNative": 0,
+        "invalidNative": 0
+      },
+      "firstMusicalX": 159.87231,
+      "referenceOffset": 35.12769,
+      "webviewWidth": 883,
+      "viewportWidth": 883,
+      "viewportHeight": 409,
+      "viewportScrollHeight": 409,
+      "viewportMaxScrollTop": 0,
+      "nativeStaffSpaceCssPx": 10,
+      "staffSeparationSpaces": 15.036000061035157,
+      "svgFeatureCounts": {
+        "beams": 0,
+        "ties": 16,
+        "slurs": 10,
+        "accidentals": 0,
+        "dynamics": 50,
+        "tuplets": 0
+      }
+    },
+    "piano-03c-taller-mapping": {
+      "engine": "OpenSheetMusicDisplay bundled 1.9.8",
+      "mode": "horizontal",
+      "firstNoteViewport": {
+        "x": 556.2918445748927,
+        "y": 86.23272780510494,
+        "beat": 13,
+        "midiEstimate": 78
+      },
+      "secondNoteViewport": {
+        "x": 585.0417781199156,
+        "y": 76.23278938516286,
+        "beat": 14,
+        "midiEstimate": 81
+      },
+      "renderMs": 1153,
+      "svgNodes": 4927,
+      "width": 7749,
+      "height": 382,
+      "displayScale": 1,
+      "nativeSvgHeight": 381.5909118652344,
+      "measures": 78,
+      "firstEntries": [
+        {
+          "beat": 0,
+          "x": 15.987231,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 0,
+          "x": 12.716207999999998,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 1,
+          "x": 16.933673999999996,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 3,
+          "x": 25.656101,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 3,
+          "x": 23.760078,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 4,
+          "x": 27.060877333333334,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 6,
+          "x": 33.949971,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 6,
+          "x": 32.053948,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 7,
+          "x": 35.35474733333333,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 9,
+          "x": 42.24384099999999,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 9,
+          "x": 40.34781799999999,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 10,
+          "x": 43.64861733333333,
+          "y": 27.659325883001223
+        },
+        {
+          "beat": 12,
+          "x": 48.46197599999999,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 13,
+          "x": 52.116681173333326,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 14,
+          "x": 54.991674346666656,
+          "y": 8.623325883001224
+        },
+        {
+          "beat": 12,
+          "x": 48.64168799999999,
+          "y": 27.659325883001223
+        }
+      ],
+      "firstStaffOrigins": [
+        {
+          "staff": 1,
+          "y": 86.23325883001223
+        },
+        {
+          "staff": 2,
+          "y": 276.59325883001225
+        }
+      ],
+      "musicalAnchors": 188,
+      "graphicalNotes": 469,
+      "midiMapping": {
+        "graphicalNotes": 469,
+        "nativeEvents": 469,
+        "reasons": {
+          "invalidGraphical": 0,
+          "noNativeCandidate": 0,
+          "ambiguous": 0,
+          "beatDisagreement": 0
+        },
+        "samples": [],
+        "matched": 469,
+        "ambiguous": 0,
+        "unmatched": 0,
+        "unmatchedNative": 0,
+        "invalidNative": 0
+      },
+      "firstMusicalX": 159.87231,
+      "referenceOffset": 35.12769,
+      "webviewWidth": 738,
+      "viewportWidth": 690,
+      "viewportHeight": 351,
+      "viewportScrollHeight": 385,
+      "viewportMaxScrollTop": 34,
+      "nativeStaffSpaceCssPx": 10,
+      "staffSeparationSpaces": 15.036000061035157,
+      "svgFeatureCounts": {
+        "beams": 0,
+        "ties": 16,
+        "slurs": 10,
+        "accidentals": 0,
+        "dynamics": 50,
+        "tuplets": 0
+      }
+    }
+  },
+  "images": [
+    {
+      "name": "piano-03c-complex-closed.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 233072
+    },
+    {
+      "name": "piano-03c-complex-open.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 158069
+    },
+    {
+      "name": "piano-03c-complex-restored.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 233072
+    },
+    {
+      "name": "piano-03c-context-closed.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 195952
+    },
+    {
+      "name": "piano-03c-context-open.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 127034
+    },
+    {
+      "name": "piano-03c-context-restored.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 195963
+    },
+    {
+      "name": "piano-03c-gymnopedie-closed.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 205699
+    },
+    {
+      "name": "piano-03c-gymnopedie-open.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 140426
+    },
+    {
+      "name": "piano-03c-gymnopedie-restored.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 205699
+    },
+    {
+      "name": "piano-03c-gymnopedie-tablet-display-closed.png",
+      "width": 2560,
+      "height": 1600,
+      "bytes": 231426
+    },
+    {
+      "name": "piano-03c-gymnopedie-tablet-display-open.png",
+      "width": 2560,
+      "height": 1600,
+      "bytes": 169599
+    },
+    {
+      "name": "piano-03c-gymnopedie-tablet-display-restored.png",
+      "width": 2560,
+      "height": 1600,
+      "bytes": 231426
+    },
+    {
+      "name": "piano-03c-gymnopedie-taller-closed.png",
+      "width": 2160,
+      "height": 1440,
+      "bytes": 242567
+    },
+    {
+      "name": "piano-03c-gymnopedie-taller-open.png",
+      "width": 2160,
+      "height": 1440,
+      "bytes": 177446
+    },
+    {
+      "name": "piano-03c-gymnopedie-taller-restored.png",
+      "width": 2160,
+      "height": 1440,
+      "bytes": 242567
+    },
+    {
+      "name": "piano-03c-navigation.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 203659
+    },
+    {
+      "name": "piano-03c-ode-closed.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 205197
+    },
+    {
+      "name": "piano-03c-ode-open.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 135550
+    },
+    {
+      "name": "piano-03c-ode-restored.png",
+      "width": 2160,
+      "height": 1080,
+      "bytes": 205197
+    }
+  ],
+  "note": "simultaneous means full native SVG vertical envelope fits. Initial visible measures may show both pentagrams even when later global extremes require scrolling. verticalOverflow is geometric excess, not rounded DOM maximum scrollTop."
+}

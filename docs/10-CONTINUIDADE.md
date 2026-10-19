@@ -282,3 +282,8 @@ O teste de contexto no emulador passou: m1 `1/null/1`, m2 `2/2/2`, m3 `3/3/3`; r
 ### Estado completo da retomada — SHA `d1060ea`
 
 No SHA `d1060eac30b7116e47e82a990a9a3348d98cec89`, build `39160958903` e emulador `39160958918` passaram. O emulador conciliou 469/469 cabeças da Gymnopédie, manteve o toque gráfico, confirmou remapeamentos SVG `1→2` e `2→3` e rail m1 `1/null/1`, m2 `2/2/2`, m3 `3/3/3`. O upgrade para APK release não depurável preservou perfil, teclado e andamento após a fixture de upgrade ser reaplicada em cenário isolado. Artifact `12148742058` foi enviado (4,693,195 bytes). A próxima alteração adiciona um relatório pré-upload que valida assinatura PNG e dimensões das capturas esperadas, para comprovar nominalmente que as imagens comparativas estão presentes.
+
+
+## Tarefa 03C/20 — navegação e geometria responsiva
+
+Código validado `0cc670c2513eea37202eb63e4cdfb734a2a07d5d`, PR #46 ainda draft: build 39272746781 e emulador 39272746710 success. 03C concluída tecnicamente por botões de navegação vertical sem compressão, com testes de quatro partituras, teclado fechado/aberto e Gymnopédie em três displays. Abrir o guia recuperou 22 CSS px líquidos; em celular baixo a Gymnopédie ainda exige pan, em tablet 883×409/431 cabe integralmente. Ver seção final de 03C no documento 56 e docs/evidence/tarefa-03c/metrics.json. A aprovação editorial/física está pendente. Próxima tarefa é 04 (contexto fixo e texto expressivo), **não iniciada nesta entrega**. Não promover OSMD ao padrão, não mesclar PR nem publicar versão por estes resultados.

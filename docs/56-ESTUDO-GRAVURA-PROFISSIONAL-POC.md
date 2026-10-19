@@ -633,7 +633,7 @@ Implementação principal entrou no commit [`f819c77`](https://github.com/atshim
 
 ## Tarefa 03C/20 — Legibilidade e apresentação responsiva das duas pautas
 
-**Situação provisória: PARCIAL, implementação em validação.** Não confundir código ou teste DOM com aprovação Android/editorial. Não iniciar 04 nesta entrega.
+**Situação final: CONCLUÍDA tecnicamente no escopo da 03C, por melhoria de navegação vertical validada.** Build e emulador do código final `0cc670c` passaram, incluindo os três perfis. A aprovação editorial e física permanece pendente. Não houve ganho de simultaneidade na Gymnopédie em celular baixo. Não iniciar 04 nesta entrega. As subseções de validação provisória abaixo são histórico; a conclusão e tabela finais prevalecem.
 
 ### Diagnóstico e alternativas
 
@@ -688,3 +688,27 @@ No mesmo perfil Android da 03B, a área musical da Gymnopédie passou de 738×19
 Em `b077500`, [build 39271249068](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39271249068) passou; [emulador 39271249240](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39271249240) falhou ao aplicar `wm size` durante a Activity iniciada com extras de autotestes. Android recriou a Activity e repetiu `upgrade_selftest`, cujo arquivo temporário `files/imported/upgrade.mxl` já havia sido removido legitimamente no fluxo anterior. Não foi falha de fit/scroll/MIDI; o teste revelou contaminação do ensaio de configuração pelos extras iniciais. Os logs e artifact 12196400135 preservam a falha.
 
 Correção: novo `tests/emulator_responsive.py` executado **depois** de todos os testes UI existentes, com processos novos sem extras de autotestes, display configurado com app parado e restauração em `finally`. Cada perfil abre a Gymnopédie por UI, ativa a prévia e exige 469/469 antes das medições teclado fechado/aberto/restaurado. Testes de atualização, lifecycle e seus critérios permanecem intactos; não houve mudança em Java nem supressão de asserção.
+
+
+### Conclusão técnica e medições finais
+
+Código validado: `0cc670c2513eea37202eb63e4cdfb734a2a07d5d`. [Build 39272746781 — success](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39272746781) e [emulador 39272746710 — success](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39272746710). Todos os testes anteriores permaneceram ativos. Atualização release não depurável, lifecycle/foreground, playback/relógio, mãos, loop, toque, Espera, contexto, resize e teclado passaram. Gymnopédie **469/469**, complexa **27/27**, ambas sem ambiguidades/ausências. Cada perfil adicional também exigiu 469/469. Contratos JS 73, OpticalTimeMap 160 e novo DOM 24 cenários aprovados no workflow. Não houve benchmark novo de fluidez nem validação física.
+
+Artifact final [12196097730](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39272746710/artifacts/12196097730). São **19 capturas específicas da 03C**, além das capturas de regressão; verificadas assinatura PNG/dimensões. Inspecionadas Gymnopédie teclado aberto, navegação inferior, tablet fechado/aberto, perfil alto aberto, Ode, complexa e contexto. As capturas de perfis adicionais medem 2160×1440 e 2560×1600 pixels físicos; métricas abaixo são CSS px. JSONs originais, mapas dos perfis e inventário das 19 PNGs foram preservados em [`docs/evidence/tarefa-03c/metrics.json`](evidence/tarefa-03c/metrics.json).
+
+| Perfil Gymnopédie / teclado | Viewport musical CSS | Escala / espaço entre linhas | Gravura / separação | Excedente geométrico vertical | Classificação |
+|---|---|---|---|---:|---|
+| Celular baixo / fechado | 690×196 | 1 / 10 px | 381,591 px / 15,036 espaços | 185,591 px | necessita navegação vertical |
+| Celular baixo / aberto | 690×218 | 1 / 10 px | iguais | 163,591 px | necessita navegação vertical |
+| Maior altura / fechado | 690×351 | 1 / 10 px | iguais | 30,591 px | envelope musical global parcialmente visível |
+| Maior altura / aberto | 690×373 | 1 / 10 px | iguais | 8,591 px | envelope global ainda exige navegação |
+| Display de tablet / fechado | 883×409 | 1 / 10 px | iguais | 0 | duas pautas e envelope vertical integralmente visíveis |
+| Display de tablet / aberto | 883×431 | 1 / 10 px | iguais | 0 | duas pautas e envelope vertical integralmente visíveis |
+
+Fechar o guia restaurou exatamente alturas 196, 351 e 409 respectivamente e as duas barras; quando o SVG cabe, a faixa lateral some e a largura integral é restituída. Em todos os perfis, abrir o teclado recuperou 22 px líquidos. Ode, complexa e contexto foram testadas no perfil baixo com os dois estados, conforme tabela anterior, e mantiveram ambas as pautas completas. Os dois perfis adicionais exercitaram a Gymnopédie; não se afirma matriz completa de quatro partituras × três displays.
+
+**Critério de simultaneidade conservador:** o campo `simultaneous` exige que a altura nativa inteira do sistema horizontal caiba. No perfil de 373 px, as duas pautas do início estão visíveis na captura, mas os extremos verticais de outros compassos ainda excedem 8,591 px. Não se declara sistema integralmente visível nesse caso. A necessidade de rolagem decorre do envelope global, não de todas as janelas musicais individualmente.
+
+**Antes/depois no mesmo ambiente:** escala 1, espaço 10 px, altura 381,591 e distância 15,036 espaços não mudaram. A Gymnopédie passou de gesto isolado a gesto + botões, com largura útil 738→690 e altura 196→196. Rolagem DOM máxima fechada 189→189 px. O excedente geométrico 185,591 não inclui todo arredondamento/overflow DOM; não é usado como sinônimo de scrollTop máximo. Não existe baseline 03B dedicado aos dois displays maiores ou ao teclado aberto: os números desses cenários descrevem a 03C e não um ganho causal frente à 03B.
+
+Conclusão: a melhoria comprovada é de navegação, com controles externos à música, tamanho preservado e funcionamento musical mantido. A simultaneidade fica disponível quando a altura permite; não foi resolvida integralmente para celular baixo. Não foram observadas colisões novas nas capturas inspecionadas, mas isso não certifica todo o repertório nem aprova editorialmente todos os símbolos. O recorte expressivo e o contexto durante pan vertical continuam na 04; posicionamento da etiqueta, na 08. A validação Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 permanece pendente. Prévia experimental, versão 0.9.46/code55 e padrão temporal preservados; sem merge, release ou APK público de distribuição.
