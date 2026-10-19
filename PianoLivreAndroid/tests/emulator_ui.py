@@ -50,6 +50,20 @@ def responsive_evidence(name):
     assert result[0]["geometry"]["viewportHeight"]==result[-1]["geometry"]["viewportHeight"], "Closing guide did not restore score height"
     Path("piano-03c-"+name+".json").write_text(json.dumps(result,indent=2),encoding="utf-8")
 
+def responsive_profiles():
+    # These are display overrides on the same emulator, not physical tablets.
+    original=adb("shell","wm","size")
+    previous=re.search(r"Override size: (\d+x\d+)",original)
+    try:
+        for label,size in (("taller","1440x2160"),("tablet-display","1600x2560")):
+            adb("shell","wm","size",size)
+            time.sleep(3)
+            assert_running()
+            responsive_evidence("gymnopedie-"+label)
+    finally:
+        adb("shell","wm","size",previous.group(1) if previous else "reset")
+        time.sleep(3)
+
 def dump():
     for retry in range(3):
         try:
@@ -736,6 +750,7 @@ if __name__=="__main__":
             original.append({"measure":measure_number,"graphicalMidi":anomaly.get("midiEstimate"),
                              "sourceNotes":notes[:12]})
         print("POC_LONG_ORIGINAL_XML "+json.dumps(original,ensure_ascii=False),flush=True)
+    assert long_proof["graphicalNotes"]==469 and long_proof["midiMapping"]["matched"]==469, "Gymnopédie must preserve all 469 written heads"
     assert long_proof["measures"]>=40, "Long-score fixture unexpectedly short"
     assert long_proof["displayScale"]==1, "Dense two-staff score was compressed below native OSMD scale"
     assert abs(long_proof["height"]-long_proof["nativeSvgHeight"])<=0.5, "OSMD native engraving height was altered"
@@ -807,6 +822,7 @@ if __name__=="__main__":
         screenshot("piano-03c-navigation.png")
         adb("shell","input","tap",str(rect[2]-round(24*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))),str(rect[1]+round(24*(rect[3]-rect[1])/long_proof["viewportHeight"])))
         time.sleep(.3)
+    responsive_profiles()
     print("PASS: scaled 78-measure OSMD graphical notehead maps to native MIDI",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     long_play_point=tap_text(["Iniciar"],return_point=True,scroll=True)
@@ -1019,6 +1035,7 @@ if __name__=="__main__":
       "Complex score geometry was scaled or its staff spacing could not be measured")
     assert complex_proof["midiMapping"]["matched"]>=10,(
       "Synthetic score graphical heads did not reconcile with the native score model")
+    assert complex_proof["graphicalNotes"]==27 and complex_proof["midiMapping"]["matched"]==27, "Synthetic score must preserve all 27 written heads"
     features=complex_proof["svgFeatureCounts"]
     synthetic=ET.parse("app/src/debug/assets/scores/engraving-complex-synthetic.musicxml").getroot()
     source_features={

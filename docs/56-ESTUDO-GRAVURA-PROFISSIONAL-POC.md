@@ -653,7 +653,7 @@ Arquivos: `notation.html`, `tests/emulator_ui.py`, novo `tests/VerticalNavigatio
 
 - Contratos existentes: 73 verificações aprovadas; OpticalTimeMap: 160, incluindo 12.000 âncoras. Auditoria pública aprovada.
 - Novo teste DOM executa 24 combinações de largura (738/1024), altura (196/300/500) e alturas representativas das quatro partituras, navegação, preservação de beat/escala e restauração de largura após maior altura. **É teste com DOM simulado, não renderização dessas partituras nem emulador/tablet.**
-- Novo teste Android registra `piano-03c-{ode,gymnopedie,complex,context}.json` e PNGs para guia fechado/aberto/restaurado; exige ocultação/restauração de ambas as barras e altura restaurada. Gymnopédie também exige toque real no botão inferior e captura `piano-03c-navigation.png`. Workflows arquivam esses arquivos.
+- Novo teste Android registra `piano-03c-{ode,gymnopedie,complex,context}.json` e PNGs para guia fechado/aberto/restaurado; exige ocultação/restauração de ambas as barras e altura restaurada. Gymnopédie também exercita perfis de display mais alto (`wm size 1440x2160`) e representativo de tablet (`1600x2560`), com restauração do display original; são overrides no mesmo emulador, não aparelhos distintos. Exige ainda toque real no botão inferior e captura `piano-03c-navigation.png`. Workflows arquivam esses arquivos.
 - Falta executar e inspecionar CI do novo commit, capturas e reconciliação 469/469 e 27/27. Não reutilizar os resultados de 03B como comprovação nova.
 - Ambiente local sem adb/Gradle/Chrome instalado. Instalação de Chromium falhou com arquivo de download inválido; não houve ensaio visual local nem build Android local.
 
