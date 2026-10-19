@@ -585,3 +585,47 @@ Verificados tanto em propriedades do objeto real `osmd.EngravingRules` quanto na
 - Na HEAD inicial, [build 39249363432](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39249363432) e [emulador 39249363490](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39249363490) estavam **success**. São resultados anteriores ao commit desta entrega, não testes novos da sonda nem prova do commit documental posterior. Não foi iniciado build Android deliberadamente.
 - Limites: browser/fontes diferentes do Android; upstream não transpilado; caixas sem stroke; ausência de cobertura representativa de vigas, letras e importações adversariais; atribuição de expressões por X aproximada; nenhum ensaio de redução de parâmetros, benchmark, APK ou hardware. Essas limitações não impedem a conclusão da **coleta quantitativa**, mas impedem afirmar compressão segura ou ganho visual.
 - Aplicativo, contratos, versão 0.9.46/code55, XML/MIDI e dados preservados. Sem merge, release ou acesso ao repositório privado. PR #46 deve permanecer aberto em draft. Texto “Lent et douloureux” e tooltip não foram corrigidos. **03B e 04/20 não iniciadas.**
+
+## Tarefa 03B/20 — geometria vertical adaptativa (19/10/2026)
+
+**Situação: CONCLUÍDA no escopo da Tarefa 03B, em prévia experimental.** Build e emulador passaram para o código final do SHA `7618d72bc1d59952be6e7f889552c4ab724dc3c4`; capturas e JSONs foram inspecionados. PR #46 permanece draft e a apresentação OSMD não se tornou padrão do Estudo. A intervenção segue a evidência da 03A.1: a Gymnopédie tem picos reais do skyline/bottomline e cerca de 1,126 espaços de folga geométrica mínima em caixas musicais opostas com projeções X sobrepostas. Não era seguro reduzir a distância calculada pelo OSMD.
+
+### Estratégia e escopo
+
+`fitOpticalSvg()` preserva a largura e altura nativas do SVG, define escala uniforme `1.0` e não altera `viewBox`, `EngravingRules`, MusicXML nem o layout interno. Quando a altura nativa excede a área da prévia, `#viewport` permite gesto vertical. A movimentação horizontal continua dirigida pelo mapa óptico/relógio; a rolagem vertical não muda beat, cursor, eventos MIDI, posição das cabeças ou colunas. Fora do topo, a faixa duplicada de contexto é ocultada para não sugerir alinhamento incorreto; o tooltip de toque é ocultado durante a rolagem e a identificação reabre ao tocar outra cabeça. Ao voltar ao topo a faixa é redesenhada. O OSMD 1.9.8 continua offline e a prévia permanece opcional.
+
+Arquivos funcionais/testes: `PianoLivreAndroid/app/src/main/assets/notation.html`, `PianoLivreAndroid/app/src/main/java/br/org/pianolivre/MainActivity.java` (seleção de fixture só em build debug), `PianoLivreAndroid/tests/EngravingProofContractTest.js`, `PianoLivreAndroid/tests/emulator_ui.py` e `.github/workflows/emulator.yml`. Nova fixture original e sem conteúdo de terceiros: `PianoLivreAndroid/app/src/debug/assets/scores/engraving-complex-synthetic.musicxml`; não é empacotada no APK público. Contém grand staff, acorde, vozes, vigas, acidentes explícitos, ties, slur, dinâmicas/cunhas, notas pontuadas e quiáltera.
+
+### Comparação Android antes/depois
+
+Gymnopédie, Ode e mudanças de contexto foram medidas no mesmo Android API 29 emulador, viewport CSS 738×196 (contexto: 738×220), baseline do workflow 39251809096 e nova captura desta tarefa. A altura nativa OSMD não muda: o ganho vem de deixar de reduzi-la. `staffSpace` é a distância entre linhas adjacentes; `staffGap` é a distância entre a última linha superior e a primeira linha inferior, em espaços de pauta.
+
+| Partitura / grandeza | Antes | Depois | Evidência / leitura |
+|---|---:|---:|---|
+| Gymnopédie — altura nativa | 381,591 CSS px | 381,591 CSS px | SVG nativo preservado |
+| Gymnopédie — altura CSS / escala | 188 px / 0,492674 | 382 px / 1,000000 | mesma viewport; excedente rolável |
+| Gymnopédie — espaço entre linhas | ~4,927 CSS px | 10 CSS px | derivado da escala antiga × medida nativa do WebView; símbolos ~2,03× maiores |
+| Gymnopédie — distância interstaff | 15,036 espaços | 15,036 espaços | sem compressão |
+| Gymnopédie — separação interstaff exibida | ~74,08 CSS px | ~150,36 CSS px | escala multiplicada pela mesma distância normalizada |
+| Gymnopédie — rolagem vertical máxima | 0 px | 189 CSS px | gesto revelou a pauta inferior sem rerender |
+| Gymnopédie — cabeças / correspondência | 469 gráficas | 469/469 conciliadas | 0 ambíguas/não conciliadas; toque mapeado |
+| Ode — altura nativa / escala | 136,5 px / 1,000000 | 136,5 px / 1,000000 | não foi redimensionada nem ampliada |
+| Ode — espaço / distância entre pautas | 10 CSS px / 4 espaços | 10 CSS px / 4 espaços | sem espaçamento adicional |
+| Fixture complexa — altura nativa / escala | 195,898 px / 1,000000¹ | 195,898 px / 1,000000 | fixture nova, sem screenshot baseline arquivado |
+| Fixture complexa — espaço / distância entre pautas | 10 CSS px / 6,090 espaços¹ | 10 CSS px / 6,090 espaços | acordes, vozes e expressões preservados |
+| Fixture complexa — cabeças / correspondência | 27 gráficas¹ | 27/27 conciliadas | 0 ambíguas ou ausentes |
+| Mudanças de contexto — altura nativa / escala | 151,5 px / 1,000000 | 151,5 px / 1,000000 | 19/19 cabeças e contexto 1→2→3 |
+| Mudanças de contexto — espaço / distância entre pautas | 10 CSS px / 4 espaços | 10 CSS px / 4 espaços | geometria interna inalterada |
+
+¹ Sem screenshot anterior da fixture complexa. A estimativa antiga aplica `min(1,(viewport−8)/nativeHeight)` à altura nativa medida, que também dá 1 neste viewport; não é uma execução baseline nem comparação visual. Nos outros três casos foram usados JSONs anteriores do emulador e novas capturas. A altura final é arredondada no JSON; o teste tolera 0,5 CSS px diante de `nativeSvgHeight` fracionária.
+
+**Leitura visual:** as capturas reais Android mostram a Gymnopédie a escala nativa; o gesto vertical revela a pauta inferior e oculta o tooltip que antes cobria notas. A fixture mostra acorde, sustenido/bemol, vigas, ties, slur, dinâmica/cunha e algarismos de quiáltera. Os contadores DOM identificam beams/ties/slurs/dynamics, mas não os acidentes nem os números de quiáltera, que o OSMD converte em caminhos sem classe semântica. Para esses símbolos, o contrato verifica os dados MusicXML e a captura renderizada é inspecionada; zero no seletor CSS não é tratado como ausência. “Lent et douloureux” continua parcialmente atrás da faixa esquerda fixa, problema anterior documentado em 03A.1, não introduzido por esta tarefa.
+
+### Testes, artefatos e limitações
+
+- [Build/JVM/JS/MusicXML/MIDI e APK de teste — success](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39264341639); job de publicação pública pulado. `EngravingProofContractTest.js`: 73 verificações; `OpticalTimeMapTest.js`: 160; testes temporais, claves, spanners, notação avançada e ornamentos; `verify_public_snapshot.py`; sintaxe Python/XML.
+- [Emulador Android — success](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39264341640): regressões de interface e playback, resize/teclado guia, toque na cabeça, mãos, Gymnopédie 469/469, rolagem vertical (189 px máximos, `noteTipVisible=false`), fixture de contexto e sintética 27/27. `POC_COMPLEX_GEOMETRY`: altura nativa 195,898 px, espaço 10 px, separação 6,090 espaços, 4 vigas, 2 ties, 1 slur e 4 símbolos de dinâmica. O XML fonte da fixture contém 2 acidentes explícitos, 2 marcações de quiáltera, 3 time-modifications e 10 beams.
+- Artifact [PianoLivre-public-emulator-evidence](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39264341640/artifacts/12192182408), ID `12192182408`: 37 arquivos, incluindo 17 PNGs reais de 2160×1080, `piano-osmd-long.png`, `piano-osmd-long-vertical-pan.png`, `piano-osmd-long-tap.png`, `piano-osmd-context-changes.png`, `piano-osmd-complex-synthetic.png` e JSONs. Captura Gymnopédie baseline: artifact 12186590129, workflow 39251809096. Pixels comparados somente dentro do WebView Android, sem misturar com o Chrome de 03A.1.
+- Limites: Android API 29 emulador, sem aparelho físico. Resize por teclado guia foi exercitado; Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 pendentes. Em altura curta, o usuário rola para alternar pautas, em vez de vê-las simultaneamente. Revisão editorial física, legibilidade sustentada, gestos reais, desempenho em partituras/importações grandes, polifonia adversarial e clipping da expressão à esquerda continuam pendentes.
+
+Implementação principal entrou no commit [`f819c77`](https://github.com/atshimura/Piano-livre-aberto/commit/f819c77bb10df85862bff0dd282dd5f151bd4956), “Tarefa 03B/20 — geometria vertical adaptativa”; correções limitadas de arredondamento, fixture e visibilidade/medição foram adicionadas em commits seguintes até a HEAD `7618d72`. Esta seção documental será versionada no mesmo PR. Renderizador temporal, interpretação MusicXML/MIDI, perfis, biblioteca, histórico e dados não mudaram. Sem merge, release, APK público, alteração de `main` ou início da Tarefa 04.
