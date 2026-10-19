@@ -438,7 +438,8 @@
   if(svg===opticalCueSvg&&key===opticalCueKey)return;
   opticalCueSvg=svg;opticalCueKey=key;
   console.log('POC_HAND_CUES '+JSON.stringify({hand:opticalHand,
-   beat:beat,count:heads.length,staffs:heads.map(n=>n.staff)}));
+   beat:beat,count:heads.length,staffs:heads.map(n=>n.staff),
+   midis:heads.map(n=>n.nativeEvent?n.nativeEvent.midi:null)}));
   let overlay=svg.querySelector('#piano-optical-study-cues');
   if(!overlay){
    overlay=document.createElementNS('http://www.w3.org/2000/svg','g');
@@ -769,6 +770,23 @@
          semantics plus the archived rendered screenshot for those symbols. */
       tuplets:svg?svg.querySelectorAll('[class*="tuplet"]').length:0};
      console.log('POC_OSMD_READY '+JSON.stringify(proof));
+     // Bound, read-only source/head evidence for the synthetic task-05 fixture.
+     // Never infer voices from pixels or promote the experiment to production.
+     if(xml.indexOf('<work-title>Synthetic polyphony fidelity test</work-title>')>=0){
+      const r=svg.getBoundingClientRect(),box=svg.viewBox.baseVal;
+      const heads=optical.notes.slice(0,64).map(function(n){
+       const e=n.nativeEvent;
+       return {beat:n.beat,staff:n.staff,measure:n.measure,
+        voiceId:n.voiceId,midiEstimate:n.midiEstimate,
+        status:n.mappingStatus,reason:n.mappingReason||null,
+        x:Math.round(r.left+(n.x-box.x)*r.width/box.width),
+        y:Math.round(r.top+(n.y-box.y)*r.height/box.height),
+        midi:e?e.midi:null,voice:e?e.voice:null,
+        length:e?e.length:null,attack:e?e.playbackAttack:null,
+        xmlNoteIndex:e?e.xmlNoteIndex:null};
+      });
+      console.log('POC_POLYPHONY_HEADS '+JSON.stringify(heads));
+     }
      console.log('POC_NOT_PRODUCTION_READY: optical beat-to-x interpolation is experimental; note hit mapping, visual clipping and performance remain unvalidated');
     }
     if(!freeLayout&&!studyProof&&svg){

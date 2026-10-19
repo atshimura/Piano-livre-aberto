@@ -75,6 +75,7 @@ jobs:
             adb logcat -d -v brief | grep 'XML_INPUT_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'HISTORY_ACTIVITY_SELFTEST_PASS'
             python3 tests/emulator_ui.py
+            python3 tests/emulator_polyphony.py
             python3 tests/emulator_responsive.py
             python3 tests/emulator_release.py
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
@@ -100,6 +101,12 @@ jobs:
               "piano-osmd-context-end.png",
               "piano-osmd-context-changes.png",
               "piano-osmd-complex-synthetic.png",
+              "piano-osmd-polyphony-triad.png",
+              "piano-osmd-polyphony-adjacent.png",
+              "piano-osmd-polyphony-unison.png",
+              "piano-osmd-polyphony-both-staves.png",
+              "piano-osmd-polyphony-guide-open.png",
+              "piano-osmd-polyphony-guide-restored.png",
               "piano-release.png",
           ]
           report = []
@@ -159,6 +166,8 @@ jobs:
             PianoLivreAndroid/piano-osmd-context-changes.png
             PianoLivreAndroid/piano-osmd-complex-synthetic.png
             PianoLivreAndroid/piano-osmd-complex-synthetic.json
+            PianoLivreAndroid/piano-osmd-polyphony-*
+            PianoLivreAndroid/piano-polyphony-matrix.json
             PianoLivreAndroid/piano-osmd-context-changes.json
             PianoLivreAndroid/piano-visual-evidence.json
             PianoLivreAndroid/piano-osmd-context-load-probe.txt

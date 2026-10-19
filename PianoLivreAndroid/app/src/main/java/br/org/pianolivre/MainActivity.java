@@ -130,7 +130,9 @@ public class MainActivity extends Activity {
      &&getIntent().getBooleanExtra("engraving_context_selftest",false);
   boolean complexEngravingSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("engraving_complex_selftest",false);
-  if(!contextSelfTest&&!complexEngravingSelfTest&&!previous.isEmpty())loadScore(previous,false);
+  boolean polyphonySelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("engraving_polyphony_selftest",false);
+  if(!contextSelfTest&&!complexEngravingSelfTest&&!polyphonySelfTest&&!previous.isEmpty())loadScore(previous,false);
   handler.post(ticker);
   if(contextSelfTest){
    android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_INTENT accepted previousPath="+previous);
@@ -149,6 +151,15 @@ public class MainActivity extends Activity {
     if(score==null||!fixture.equals(currentFile))
      android.util.Log.e("PianoLivreContext","COMPLEX_FIXTURE_LOAD_FAILED currentFile="+currentFile+" score="+(score==null?"null":score.title));
     else android.util.Log.i("PianoLivreContext","COMPLEX_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size());
+   });
+  }
+  if(polyphonySelfTest){
+   handler.post(()->{
+    String fixture="scores/engraving-polyphony-synthetic.musicxml";
+    loadScore(fixture,true);
+    if(score==null||!fixture.equals(currentFile))
+     android.util.Log.e("PianoLivrePolyphony","POLYPHONY_FIXTURE_LOAD_FAILED currentFile="+currentFile);
+    else android.util.Log.i("PianoLivrePolyphony","POLYPHONY_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size()+" attacks="+score.events.size());
    });
   }
   if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
