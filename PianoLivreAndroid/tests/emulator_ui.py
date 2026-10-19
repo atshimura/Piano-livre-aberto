@@ -50,20 +50,6 @@ def responsive_evidence(name):
     assert result[0]["geometry"]["viewportHeight"]==result[-1]["geometry"]["viewportHeight"], "Closing guide did not restore score height"
     Path("piano-03c-"+name+".json").write_text(json.dumps(result,indent=2),encoding="utf-8")
 
-def responsive_profiles():
-    # These are display overrides on the same emulator, not physical tablets.
-    original=adb("shell","wm","size")
-    previous=re.search(r"Override size: (\d+x\d+)",original)
-    try:
-        for label,size in (("taller","1440x2160"),("tablet-display","1600x2560")):
-            adb("shell","wm","size",size)
-            time.sleep(3)
-            assert_running()
-            responsive_evidence("gymnopedie-"+label)
-    finally:
-        adb("shell","wm","size",previous.group(1) if previous else "reset")
-        time.sleep(3)
-
 def dump():
     for retry in range(3):
         try:
@@ -822,7 +808,6 @@ if __name__=="__main__":
         screenshot("piano-03c-navigation.png")
         adb("shell","input","tap",str(rect[2]-round(24*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))),str(rect[1]+round(24*(rect[3]-rect[1])/long_proof["viewportHeight"])))
         time.sleep(.3)
-    responsive_profiles()
     print("PASS: scaled 78-measure OSMD graphical notehead maps to native MIDI",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     long_play_point=tap_text(["Iniciar"],return_point=True,scroll=True)

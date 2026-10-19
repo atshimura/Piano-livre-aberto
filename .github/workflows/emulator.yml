@@ -75,6 +75,7 @@ jobs:
             adb logcat -d -v brief | grep 'XML_INPUT_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'HISTORY_ACTIVITY_SELFTEST_PASS'
             python3 tests/emulator_ui.py
+            python3 tests/emulator_responsive.py
             python3 tests/emulator_release.py
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
       - name: Verify captured Android visual evidence

@@ -669,3 +669,22 @@ Arquivos: `notation.html`, `tests/emulator_ui.py`, novo `tests/VerticalNavigatio
 | Teclado aberto / fechado | sem tabela comparativa dedicada | testes acrescentados, resultados pendentes |
 
 A melhoria visa **navegação**, não ganho de visualização simultânea em altura insuficiente. A escala 1 permanece por preservar uma geometria já validada em 03B; não é afirmada como única solução responsiva possível. Não se alterou a experiência padrão: faixa apenas na prévia experimental. Não há nova aprovação editorial, prova de ausência de colisões por captura nem validação física Realme/Lenovo/Yamaha. A 04 continua responsável por contexto fixo durante rolagem e texto “Lent et douloureux”; a 08, etiqueta de notas. A conclusão técnica depende da CI e evidências novas.
+
+### Primeira validação Android e correção do ensaio de perfis
+
+Código funcional `3ddb50e`: [build 39270958758](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39270958758) e [emulador 39270958845](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39270958845) **success**. Artifact [12196095709](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39270958845/artifacts/12196095709), 54 arquivos, inclui capturas/JSONs teclado fechado, aberto e restaurado das quatro partituras. Inspecionadas capturas Gymnopédie com teclado e navegação: os botões ocupam faixa própria; a pauta inferior é alcançada sem comprimir símbolos. Texto expressivo atrás do rail é pendência anterior da 04, preservada. Sem aprovação editorial integral.
+
+| Partitura | Altura útil fechado → aberto → restaurado (CSS px) | Escala | Gravura (CSS px) | Duas pautas / navegação |
+|---|---|---|---|---|
+| Gymnopédie | 196 → 218 → 196 | 1 | 381,591 | exige navegação nos três estados |
+| Ode | 196 → 218 → 196 | 1 | 136,5 | duas pautas integralmente visíveis |
+| Complexa | 220 → 242 → 220 | 1 | 195,898 | duas pautas integralmente visíveis |
+| Contexto | 220 → 242 → 220 | 1 | 151,5 | duas pautas integralmente visíveis |
+
+**Abrir o teclado recuperou 22 CSS px líquidos**, já descontada sua própria altura. As duas barras e o header desapareceram e retornaram nos testes. Não existe baseline anterior dedicado ao teclado aberto para atribuir esse ganho à 03C: é comportamento nativo anterior, agora medido.
+
+No mesmo perfil Android da 03B, a área musical da Gymnopédie passou de 738×196 para **690×196**, reservando 48 px laterais sem perder altura. Altura 381,591, espaço 10 px, separação 15,036 espaços e escala 1 permaneceram iguais; a rolagem real máxima continuou 189 px. O campo `verticalOverflow` registra excedente geométrico de 185,591; não confundir com scrollHeight arredondado/extensão real de 189. No teclado aberto, excedente geométrico 163,591. Não houve ganho de simultaneidade na Gymnopédie deste perfil; houve botão de navegação funcional adicional ao gesto.
+
+Em `b077500`, [build 39271249068](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39271249068) passou; [emulador 39271249240](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39271249240) falhou ao aplicar `wm size` durante a Activity iniciada com extras de autotestes. Android recriou a Activity e repetiu `upgrade_selftest`, cujo arquivo temporário `files/imported/upgrade.mxl` já havia sido removido legitimamente no fluxo anterior. Não foi falha de fit/scroll/MIDI; o teste revelou contaminação do ensaio de configuração pelos extras iniciais. Os logs e artifact 12196400135 preservam a falha.
+
+Correção: novo `tests/emulator_responsive.py` executado **depois** de todos os testes UI existentes, com processos novos sem extras de autotestes, display configurado com app parado e restauração em `finally`. Cada perfil abre a Gymnopédie por UI, ativa a prévia e exige 469/469 antes das medições teclado fechado/aberto/restaurado. Testes de atualização, lifecycle e seus critérios permanecem intactos; não houve mudança em Java nem supressão de asserção.
