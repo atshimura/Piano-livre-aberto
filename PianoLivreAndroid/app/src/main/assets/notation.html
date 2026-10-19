@@ -167,6 +167,7 @@
   const safetyInset=4;
   const availableHeight=Math.max(1,viewportHeight-safetyInset*2);
   const scale=availableHeight/baseHeight;
+  svg.dataset.opticalAvailableHeight=String(availableHeight);
   opticalDisplayScale=scale;
   svg.style.width=(baseWidth*scale)+'px';
   svg.style.height=(baseHeight*scale)+'px';
@@ -714,6 +715,7 @@
        height:svg?Math.round(svg.getBoundingClientRect().height):0,
        displayScale:opticalDisplayScale,
        nativeSvgHeight:svg?Number(svg.dataset.opticalNativeHeight):0,
+       availableHeight:Number(svg&&svg.dataset.opticalAvailableHeight||0),
        measures:columns.length,firstEntries:samples.slice(0,16),
        firstStaffOrigins:(columns[0]||[]).map(function(measure,staffIndex){
         const p=measure&&measure.PositionAndShape&&measure.PositionAndShape.AbsolutePosition;
