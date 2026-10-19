@@ -631,3 +631,22 @@ O artifact Android do head `e7a8367` tem 63 arquivos, incluindo 18 capturas 03D 
 **Antes/depois frente à 03C:** para Gymnopédie no perfil baixo, viewport musical fechado 690×196 → 738×196 CSS px (remoção da faixa lateral de navegação), escala 1 → 0,492674, altura SVG 381,591 → 188 CSS px exibidos, e rolagem vertical DOM máxima 189 → 0. A separação entre pautas permanece em 15,036 espaços. A pauta superior e inferior ficam simultaneamente visíveis sem pan vertical; o custo é redução uniforme do tamanho, que é mais pronunciada no perfil baixo.
 
 A conclusão é técnica e limitada ao fluxo experimental OSMD no emulador. Não houve teste físico em Realme 7 5G, Lenovo Tab M9 ou Yamaha P-45 nem aceite editorial de legibilidade. A prévia continua opt-in; o modo temporal padrão, funcionamento offline, dados e versão pública 0.9.46/code55 permanecem inalterados. PR #46 continua aberto em draft; sem merge, release ou APK público. A tarefa 04 é a próxima etapa recomendada e não foi iniciada.
+
+
+## Tarefa 04/20 — contexto musical fixo e correções editoriais (implementação inicial, validação pendente)
+
+**Situação: PARCIAL.** Branch experimental do PR #46; não integrar à `main` nem publicar release. O código da Tarefa 03D permanece responsável pelo encaixe proporcional das duas pautas, com rolagem vertical proibida.
+
+### Diagnóstico e intervenção
+
+O trilho de contexto era uma camada HTML posicionada acima do SVG original com fundo branco opaco (`background:#fff`) e altura total da gravura. Dessa forma, além das claves/armaduras/compassos que se pretendia fixar, a região podia ocultar indicações editoriais acima ou abaixo das linhas, especialmente a expressão **“Lent et douloureux”** da Gymnopédie nº 1. O posicionamento musical das cabeças não deve ser alterado para contornar essa falha.
+
+Alteração em `PianoLivreAndroid/app/src/main/assets/notation.html`: o fundo de toda a faixa passou a transparente. A máscara branca é agora construída a partir das cinco linhas de cada pauta do SVG do próprio OSMD, com coordenadas verticais calculadas por `getBBox()` e extensão horizontal ajustada ao fim dos símbolos contextuais ativos. Os glifos continuam sendo clonados do OSMD, e a atualização de contexto existente por pauta/compasso foi mantida. Não há exceção textual ou de título de música.
+
+Em `PianoLivreAndroid/tests/EngravingProofContractTest.js` foram adicionadas três verificações estáticas que impedem o retorno do fundo opaco, exigem máscara baseada nas linhas nativas e conferem o ajuste da largura ao conteúdo contextual. **Esses testes não substituem inspeção de imagens reais nem asseguram ausência de sobreposição dentro da faixa das cinco linhas.** Se símbolos musicais ou textos cruzarem a máscara, será necessário um tratamento editorial adicional sem alterar tempos, notas ou a gravura original.
+
+### Validação obrigatória ainda pendente
+
+Reexecutar build/JS/JVM, emulador e analisar visualmente capturas do novo commit, incluindo Gymnopédie no início (frase expressiva integral), Ode à Alegria, fixture de mudanças de clave/armadura/compasso e fixture complexa. Conferir início, compassos posteriores, retorno, pausa, Espera, loop, coordenadas de toque e teclado guia fechado/aberto/restaurado. Exigir os perfis baixo, alto e tablet, confirmação de duas pautas simultâneas, fator uniforme e `viewportMaxScrollTop=0`. Não usar a aprovação histórica da Tarefa 03D como substituto de evidência da Tarefa 04. Testes físicos Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 seguem pendentes.
+
+**Sem aceite editorial e visual, não declarar a Tarefa 04 CONCLUÍDA, nem iniciar a Tarefa 05.**
