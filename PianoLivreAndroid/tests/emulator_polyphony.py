@@ -120,9 +120,13 @@ def main():
     screenshot("piano-osmd-polyphony-adjacent.png")
     # Move clock across sustaining notes and unisons, without extra MIDI attacks.
     tap_text(["Contínuo"],exact=True,scroll=True)
-    tap_text(["Iniciar"],scroll=True)
+    # Avoid a slow UIAutomator dump during active playback: on a four-measure
+    # fixture it may consume the entire remaining score before locating Pause.
+    pause_point=tap_text(["Iniciar"],return_point=True,scroll=True)
     time.sleep(2.4)
-    tap_text(["Pausar"],scroll=True)
+    adb("shell","input","tap",*pause_point)
+    time.sleep(.35)
+    assert_running()
     screenshot("piano-osmd-polyphony-unison.png")
     tap_text(["Início"],scroll=True)
     screenshot("piano-osmd-polyphony-both-staves.png")
