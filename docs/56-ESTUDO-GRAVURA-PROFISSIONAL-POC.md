@@ -393,3 +393,28 @@ Em \`notation.html\`, função \`fitOpticalSvg\` (linhas 150–170 da HEAD inici
 5. Não comparar valores absolutos de pixels entre aparelhos sem densidade, zoom e dimensões de viewport; usar \`e\` e captura do mesmo compasso. Na próxima tarefa, caso autorizada, focalizar caixas SVG e diagnóstico de altura/colisões antes de escolher parâmetros; preservar timeline óptica e associação de notas.
 
 **Verificações nesta tarefa:** leitura documental e de código na branch indicada; abertura de PNG e inspeção de linhas em duas janelas X; cruzamento dos registros JSON; cálculo independente da fórmula; revisão para restringir a alteração a este Markdown. Não se executaram testes Gradle, Android/emulador ou em hardware: esta tarefa é estritamente documental e não modifica binários. Os resultados históricos da Action não são apresentados como nova execução. O PR #46 deve permanecer *draft* e não integrado; nenhuma tarefa 03/20 é iniciada.
+
+ 
+## Tarefa 03/20 — tentativa controlada de correção vertical (19/10/2026)
+
+**Situação provisória: PARCIAL, aguardando evidência independente de escala/colisão.** Branch exclusiva do PR #46; implementação experimental em `PianoLivreAndroid/app/src/main/assets/notation.html`, commit `c3b55c768ad389501c5d90d528a325f5f1115b76`. Sem alterações de MusicXML, MIDI, motor temporal, dependências, versão ou dados.
+
+### Diagnóstico e alteração aplicada
+
+A função `fitOpticalSvg()` normalizava a altura completa do SVG pelo viewport: `(viewport.clientHeight-8)/baseHeight`, comprimindo a Gymnopédie a 0,492674 com 381,59 CSS px nativos em área útil de 188 CSS px. A correção experimental verifica `svg.getBBox()` **antes** da primeira escala, mede o intervalo vertical ocupado pelos elementos desenhados e, exclusivamente se todo esse conteúdo estiver contido no `viewBox` original, recorta apenas **margens exteriores comprovadamente vazias**. Preserva dez unidades SVG de proteção em cima/embaixo, mantém a largura do `viewBox`, reduz a altura CSS nativa proporcionalmente e recalcula a escala uniforme. Se as caixas estiverem inválidas ou houver conteúdo além do `viewBox`, preserva a geometria anterior. Emite `POC_VERTICAL_TRIM` ou `POC_VERTICAL_TRIM_SKIP`. Não altera a distância entre pautas, nenhum elemento da gravura nem a semântica musical.
+
+**Limite central:** a investigação original não comprovou que as grandes distâncias **internas** entre pautas eram vazias; por segurança não foram comprimidas. O eventual ganho só pode vir das margens *externas* livres, que ainda precisam de medição na nova execução. Não se afirma previamente melhoria positiva nem ausência de defeitos. O recorte de “Lent et douloureux” e o tooltip continuam pendentes, pois a correção exigiria determinar caixas de colisão e offsets reais, evitando deslocamento arbitrário.
+
+### Critérios comparativos e verificações
+
+| Parâmetro | Antes (artefato 12149460909) | Depois |
+|---|---|---|
+| Gymnopédie: altura SVG nativa | 381,59 CSS px | **a medir** em `POC_VERTICAL_TRIM` + `POC_SVG_FIT` |
+| Gymnopédie: escala CSS | 0,492674 | **a medir** |
+| Gymnopédie: espaçamento de pauta | ~13,5 px | **a medir** na captura PNG nova |
+| Ode: escala CSS | 1,0 | **a revalidar** |
+| Colisões/recortes/legibilidade | P1 escala; P2 expressão e etiqueta | **sem novo aceite visual** |
+
+A nova alteração foi registrada no PR sem merge. Workflows acionados no commit de código: [build/testes 39247393371](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39247393371) e [emulador 39247393326](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39247393326); a conclusão deles precisa ser verificada **nesse SHA**. Não reutilizar 469/469 da execução antiga como prova atual. Testes físicos Realme 7 5G / Lenovo Tab M9 / Yamaha P-45 ainda não realizados. Sem novas capturas verificadas, os critérios de conclusão da Tarefa 03 não estão preenchidos; não avançar à Tarefa 04.
+
+**Recomendação:** verificar evidência de trim e PNG pós-commit, corrigir regressões se identificadas; caso o trim seja insuficiente, estudar os limites individuais dos SVG das duas pautas, dinâmicas e ligaduras antes de escolher compressão interstaff segura.
