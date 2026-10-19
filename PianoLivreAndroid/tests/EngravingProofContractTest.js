@@ -156,6 +156,7 @@ ok(html.includes("svg.style.width=(baseWidth*scale)+'px'")&&
  html.includes("score.style.height=(baseHeight*scale)+'px'")&&
  html.includes("svg.dataset.opticalAvailableHeight=String(availableHeight)")&&
  html.includes("availableHeight:Number(svg&&svg.dataset.opticalAvailableHeight||0)")&&
+ html.includes("viewportMaxScrollTop:getComputedStyle(viewport).overflowY==='hidden'?0:")&&
  html.includes("verticalOverflow:Math.max(0,baseHeight*scale-viewportHeight)"),
  "Uniform fit and its evidence must preserve the entire native SVG envelope inside the available height");
 ok(html.includes("viewportMaxScrollTop")&&html.includes("nativeStaffSpaceCssPx")&&

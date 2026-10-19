@@ -8,7 +8,8 @@ for(const width of [690,883])for(const height of [196,218,351,373,409,431])for(c
  const viewport={clientWidth:width,clientHeight:height,scrollHeight:height,scrollTop:0,scrollWidth:width};
  const document={getElementById:id=>elements[id],documentElement:{clientWidth:width,clientHeight:height},body:{}};
  const svg={dataset:{opticalNativeWidth:'12000',opticalNativeHeight:String(native)},style:{},querySelectorAll:()=>[]};
- const ctx=vm.createContext({viewport,document,console:{log(){}},studyProof:true,seekBeat:17,opticalDisplayScale:1,osmdRenderedWidth:width});
+ const fitLogs=[];
+ const ctx=vm.createContext({viewport,document,console:{log(...args){fitLogs.push(args)}},getComputedStyle:()=>({overflowY:'hidden'}),studyProof:true,seekBeat:17,opticalDisplayScale:1,osmdRenderedWidth:width});
  vm.runInContext(source('fitOpticalSvg'),ctx);
  ctx.fitOpticalSvg(svg);
  const expected=(height-8)/native;
@@ -20,6 +21,9 @@ for(const width of [690,883])for(const height of [196,218,351,373,409,431])for(c
  assert.ok(native*expected<=height-8+1e-8,'all native SVG content fits within safety inset');
  assert.equal(viewport.scrollTop,0,'fit never changes vertical position');
  assert.equal(viewport.scrollHeight,height,'vertical overflow is not introduced by the score fit');
+ const fit=JSON.parse(fitLogs.at(-1)[0].replace('POC_SVG_FIT ',''));
+ assert.equal(fit.viewportMaxScrollTop,0,'fit evidence reports no reachable vertical scrolling');
+ assert.ok(Math.abs(fit.availableHeight-(height-8))<1e-12,'fit evidence records measured height minus safety inset');
  // A second measurement models guide open/close or WebView height changes.
  viewport.clientHeight=height+22;document.documentElement.clientHeight=height+22;
  ctx.fitOpticalSvg(svg);

@@ -198,6 +198,7 @@
   console.log('POC_SVG_FIT '+JSON.stringify({scale:scale,rawWidth:baseWidth,
    rawHeight:baseHeight,width:baseWidth*scale,height:baseHeight*scale,
    webviewWidth:document.documentElement.clientWidth,viewportWidth:viewport.clientWidth,viewportHeight:viewportHeight,availableHeight:availableHeight,safetyInsetCssPx:safetyInset,simultaneous:baseHeight*scale<=viewportHeight,verticalOverflow:Math.max(0,baseHeight*scale-viewportHeight),
+   viewportMaxScrollTop:getComputedStyle(viewport).overflowY==='hidden'?0:Math.max(0,viewport.scrollHeight-viewport.clientHeight),
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
  function alignOpticalScore(beat){
   opticalReferenceX=Math.min(viewport.clientWidth*.4,
