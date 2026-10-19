@@ -174,7 +174,7 @@
   const score=document.getElementById('score');
   score.style.width=(baseWidth*scale)+'px';
   score.style.height=(baseHeight*scale)+'px';
-  let staffSpace=0,staffGapSpaces=0;
+  let staffSpace=0,staffGapSpaces=0,nativeStaffSpace=0;
   const stafflines=Array.from(svg.querySelectorAll('g.staffline')).slice(0,2);
   const lineSets=stafflines.map(function(staffline){
    const measure=Array.from(staffline.children).find(function(node){
@@ -186,10 +186,11 @@
   });
   if(lineSets[0]&&lineSets[0].length>=5){
    try{const a=lineSets[0][0].getBBox(),b=lineSets[0][1].getBBox();
-    staffSpace=Math.abs((b.y+b.height/2)-(a.y+a.height/2))*scale;
-    if(lineSets[1]&&lineSets[1].length>=1&&staffSpace>0){
+    nativeStaffSpace=Math.abs((b.y+b.height/2)-(a.y+a.height/2));
+    staffSpace=nativeStaffSpace*scale;
+    if(lineSets[1]&&lineSets[1].length>=1&&nativeStaffSpace>0){
      const upper=lineSets[0][4].getBBox(),lower=lineSets[1][0].getBBox();
-     staffGapSpaces=((lower.y+lower.height/2)-(upper.y+upper.height/2))/staffSpace;
+     staffGapSpaces=((lower.y+lower.height/2)-(upper.y+upper.height/2))/nativeStaffSpace;
     }
    }catch(e){}
   }

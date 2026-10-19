@@ -33,4 +33,15 @@ for(const width of [690,883])for(const height of [196,218,351,373,409,431])for(c
 assert.match(html,/overflow-y:hidden/);
 assert.match(html,/touch-action:pan-x/);
 assert.doesNotMatch(html,/optical-navigation|navigateVertically|vertical-navigation/);
+function staffline(positions){return {children:[{classList:{contains:name=>name==='vf-measure'},children:positions.map(y=>({tagName:'path',getBBox:()=>({y,height:0})}))}]};}
+for(const height of [196,351,409]){
+ const elements={score:{style:{}}},viewport={clientWidth:738,clientHeight:height,scrollHeight:height,scrollTop:0,scrollWidth:738};
+ const document={getElementById:id=>elements[id],documentElement:{clientWidth:738,clientHeight:height},body:{}};
+ const svg={dataset:{opticalNativeWidth:'12000',opticalNativeHeight:'381.591'},style:{},
+  querySelectorAll:()=>[staffline([100,110,120,130,140]),staffline([290,300,310,320,330])]};
+ const ctx=vm.createContext({viewport,document,console:{log(){}},getComputedStyle:()=>({overflowY:'hidden'}),studyProof:true,seekBeat:0,opticalDisplayScale:1,osmdRenderedWidth:738});
+ vm.runInContext(source('fitOpticalSvg'),ctx);ctx.fitOpticalSvg(svg);
+ assert.ok(Math.abs(Number(svg.dataset.opticalStaffSpaceCss)-10*((height-8)/381.591))<1e-10,'staff-line spacing scales with SVG');
+ assert.ok(Math.abs(Number(svg.dataset.opticalStaffGapSpaces)-15)<1e-10,'dimensionless staff separation remains invariant across fit scales');
+}
 console.log('PROPORTIONAL_SCORE_FIT_PASS scenarios='+cases+' (mock DOM; Android rendering verified separately)');
