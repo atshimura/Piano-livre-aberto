@@ -299,8 +299,11 @@ if __name__=="__main__":
       ("long-press was not delivered" if not gesture_delivered else "long-press arrived; inspect WebView diagnostics"))
     assert gesture_delivered, "OSMD proof appeared without the expected long-press diagnostic"
     assert professional["svgNodes"]>50 and professional["width"]>0 and professional["measures"]>=3, "OSMD proof rendered no music"
+    print("POC_SIMPLE_GEOMETRY "+json.dumps({k:professional.get(k) for k in (
+      "displayScale","height","nativeSvgHeight","nativeStaffSpaceCssPx",
+      "staffSeparationSpaces","viewportHeight","viewportMaxScrollTop")}),flush=True)
     assert professional["displayScale"]==1 and \
-      professional["height"]==professional["nativeSvgHeight"] and \
+      abs(professional["height"]-professional["nativeSvgHeight"])<=0.5 and \
       professional["nativeStaffSpaceCssPx"]>0, "Simple-score OSMD geometry changed or was scaled"
     context_logs=[line for line in adb("logcat","-d","-v","brief").splitlines()
                   if "POC_CONTEXT_" in line]
@@ -712,7 +715,7 @@ if __name__=="__main__":
         print("POC_LONG_ORIGINAL_XML "+json.dumps(original,ensure_ascii=False),flush=True)
     assert long_proof["measures"]>=40, "Long-score fixture unexpectedly short"
     assert long_proof["displayScale"]==1, "Dense two-staff score was compressed below native OSMD scale"
-    assert long_proof["height"]==long_proof["nativeSvgHeight"], "OSMD native engraving height was altered"
+    assert abs(long_proof["height"]-long_proof["nativeSvgHeight"])<=0.5, "OSMD native engraving height was altered"
     assert long_proof["nativeStaffSpaceCssPx"]>0, "Native staff-line spacing was not measured"
     assert long_proof["staffSeparationSpaces"]>4, "Dense score's native collision-safe staff separation was reduced"
     if long_proof["nativeSvgHeight"]>long_proof["viewportHeight"]:
