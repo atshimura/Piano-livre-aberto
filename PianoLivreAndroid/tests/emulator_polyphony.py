@@ -98,9 +98,19 @@ def main():
     # Actual ADB taps in the WebView: two different adjacent notes in the
     # same three-head chord and one note in the lower staff.
     clicked=[]
+    # Android input taps are physical screen pixels; the recorded SVG centers
+    # are CSS/WebView coordinates. Reuse the established UI WebView conversion.
+    webviews=[n for n in dump().iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
+    assert webviews,"Android WebView bounds unavailable for polyphony taps"
+    bounds=[int(v) for v in re.findall(r"\d+",webviews[0].attrib.get("bounds",""))]
+    assert len(bounds)==4,"Android WebView physical bounds invalid"
+    w,h=bounds[2]-bounds[0],bounds[3]-bounds[1]
     for target in (triad[0],triad[1],next(n for n in heads if n["beat"]==0 and n["staff"]==2 and n["midi"]==48)):
         prior=len(records("POC_NOTE_TAP "))
-        adb("shell","input","tap",str(target["x"]),str(target["y"]))
+        x=bounds[0]+round(target["x"]*w/proof.get("webviewWidth",proof["viewportWidth"]))
+        y=bounds[1]+round(target["y"]*h/proof["viewportHeight"])
+        assert bounds[0]<=x<bounds[2] and bounds[1]<=y<bounds[3],("Target outside WebView",target)
+        adb("shell","input","tap",str(x),str(y))
         time.sleep(.7)
         taps=records("POC_NOTE_TAP ")
         assert len(taps)>prior,("Touch not recognized",target)
