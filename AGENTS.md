@@ -38,3 +38,7 @@ A fonte de versão é `gradle.properties` aplicada por `settings.gradle`. Abra o
 
 ## Critérios para passagem entre sessões
 Confira `main`, PRs e runs atuais; preserve os invariantes acima; verifique catálogo/manifesto de direitos/validador; rode testes; atualize docs relevantes e registre PR, commit, resultados e pendências de hardware. O projeto deve permanecer utilizável por outra pessoa ou IA sem acesso ao repositório privado.
+
+## Resiliência de sessões e checkpoints
+
+Como sessões de chat/Work podem ser interrompidas, seguir obrigatoriamente [o protocolo de retomada segura](docs/RETOMADA-SEGURA.md). O GitHub é o registro do trabalho, não a conversa: usar unidade de trabalho limitada, commits pequenos e checkpoint com SHA completo, testes e próxima ação no PR. Ao retomar, verificar o estado real dos commits/Actions antes de repetir comandos; não presumir que a execução continua em segundo plano. Esta regra não autoriza merge de PR draft nem dispensa testes físicos.
