@@ -424,3 +424,62 @@ A nova alteração foi registrada no PR sem merge. Workflows acionados no commit
 **Estado final: PARCIAL; implementação experimental revertida.** No commit [`c3b55c7`](https://github.com/atshimura/Piano-livre-aberto/commit/c3b55c768ad389501c5d90d528a325f5f1115b76), a tentativa de aparar margens exteriores por `svg.getBBox()` foi rejeitada pelo teste de contrato `EngravingProofContractTest.js` (linha 149), que registra explicitamente **“Failed crop experiment is not left in the OSMD rendering path”**. O [workflow 39247393371](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39247393371) falhou no passo de teste JavaScript OSMD; os testes JVM anteriores passaram, mas os passos posteriores, inclusive montagem de APK, foram pulados. A rejeição indica uma restrição técnica preexistente que não deve ser contornada alterando o teste sem prova de segurança. Não há comprovação de ganho de escala nem captura antes/depois válida. O [emulador 39247393326](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39247393326) foi disparado no SHA experimental e não deve ser tomado como aceite sem conclusão verificada.
 
 O commit [`bb33cb7`](https://github.com/atshimura/Piano-livre-aberto/commit/bb33cb781f6bf02a3c843dba28b5bd31d2418fe4) **restaurou integralmente `notation.html` à versão inicial** da Tarefa 03, preservando o contrato e a funcionalidade OSMD anteriores. Nenhuma correção visual é reivindicada. Não foram alteradas as decisões do teste e não foram iniciadas tarefas posteriores. A próxima tentativa dentro da **própria Tarefa 03** deverá identificar restrições existentes sobre `getBBox`/recorte, medir com sondas não mutantes de grupos SVG e procurar opções seguras de arranjo vertical **antes** de modificar a geometria. Texto expressivo e etiqueta continuam pendentes.
+
+
+## Tarefa 03A/20 — diagnóstico vertical aprofundado, sem mutação da gravura (19/10/2026)
+
+**Resultado: PARCIAL quanto a medições por elemento; investigação estática e comparativa concluída.** Esta seção distingue evidências anteriores (Tarefa 02), relações aritméticas derivadas e medições SVG por glifo que não foram obtidas nesta execução. Não se altera o aplicativo, os testes, o MusicXML nem o SVG de produção. Nenhum ganho visual é reivindicado.
+
+### 1. Restrição técnica de recorte: constatação versus risco
+
+O contrato real está em [PianoLivreAndroid/tests/EngravingProofContractTest.js](../PianoLivreAndroid/tests/EngravingProofContractTest.js). Sua asserção é literal: \`ok(!html.includes("svg.getBBox()"),"Failed crop experiment is not left in the OSMD rendering path")\`. Trata-se de um **guardrail estático de regressão**: impede reintroduzir essa chamada textual no caminho HTML após o recuo da Tarefa 03. Não é ensaio geométrico, não demonstra que todo uso de caixas SVG seja incorreto e não é prova experimental de corrupção de coordenadas. Já existiam chamadas de \`getBBox()\` em nós individuais no trilho de contexto; o veto específico é à expressão de recorte do SVG inteiro. O contrato permanece intacto. A falha comprovada é a violação dessa asserção pelo commit \`c3b55c7\`, revertida em \`bb33cb7\`; não há no histórico uma falha visual de glifos causada pelo recorte que tenha sido efetivamente medida.
+
+**Riscos inferidos, ainda não observados após recorte:** alterar \`viewBox\` ou dimensões nativas pode deslocar os fatores \`viewBox/getBoundingClientRect\` usados no hit-test; desacoplar a posição gráfica dos anéis, contexto fixo e cursor; esconder extremos de ligaduras, textos, dinâmica e mudanças de clave, sobretudo durante rolagem/resize; causar divergência entre a cabeça selecionada e o evento MIDI escrito conciliado. A correspondência musical \`OpticalTimeMap.reconcile\` é independente do recorte, mas sua projeção para pixels/toques depende da transformação SVG correta. Qualquer proposta deve preservar invariantes de projeção e verificar cliques em ambas as pautas e em trechos extremos. Nenhum desses riscos é aqui apresentado como defeito reproduzido.
+
+### 2. Método e medidas reproduzíveis disponíveis
+
+A fonte quantificada continua sendo o artefato real do emulador documentado na Tarefa 02 (run 39161693531, artefato 12149460909), não uma nova sonda DOM nesta tarefa. A amostra é uma janela de 2160×1080 px. Seja \`e\` a distância entre linhas adjacentes de uma mesma pauta, em **pixels da captura**. Seja \`H\` a altura CSS completa do SVG *antes* de \`fitOpticalSvg()\`; o fator é \`s=min(1,max(0,05,(viewportHeight-8)/H))\`. Para Gymnopédie, \`s=188/381,5909≈0,492674\`. Esse fator opera nas dimensões CSS, não autoriza substituir diretamente coordenadas absolutas de modelo OSMD ou SVG por pixels da captura. Para um ponto no SVG, a transformação correta inclui \`viewBox\`, tamanho CSS efetivamente renderizado, posição da WebView, offset de rolagem e transformações ancestrais. Em caso de \`getBBox()\`, conferir \`getCTM()\` ou equivalente, stroke, clip, fontes carregadas e caminhos/textos transformados; a união de caixas locais não garante a totalidade dos pixels visíveis.
+
+| Grandeza | Gymnopédie, 78 compassos | Ode, 16 compassos | Natureza |
+|---|---:|---:|---|
+| SVG nativo, altura CSS | 381,5909 | 136,5 | medido anteriormente por logs |
+| Viewport, altura / reserva | 196 / 8 CSS px | 196 / 8 CSS px | medido anteriormente / código |
+| Altura após fit | 188 CSS px | aproximadamente 137 CSS px | medido anteriormente |
+| Fator uniforme de fit | 0,492674 | 1,0 | confirmado por código e logs |
+| Centros pauta superior, PNG | 532,5–586,5 px | 461–571 px | medição raster anterior |
+| Centros pauta inferior, PNG | 790,5–844,5 px | 681–791 px | medição raster anterior |
+| Intervalo \`e\` | 13,5 px | 27,5 px | derivado dos centros |
+| Distância entre pautas (5ª linha superior à 1ª inferior) | 204 px ≈15,11e | 110 px =4,0e | derivado; **não é vazio livre** |
+| Deslocamento entre 1ª linha superior e 1ª linha inferior | 258 px ≈19,11e | 220 px =8,0e | derivado da captura |
+| Origens registradas OSMD (pauta superior → inferior) | 86,233 → 276,593 | 16,5 → 96,5 | logs em unidades do modelo; conversão não aferida |
+| Margem externa superior/inferior **sem qualquer glifo** | ND / ND | ND / ND | não medido |
+| Menor \`y\`/maior \`y\` de texto, slur, dinâmica, haste e acidentes | ND | ND | não medido |
+| Ocupação efetiva da faixa entre as pautas | ND | ND | não medido |
+| Separação mínima editorial segura | ND | ND | não demonstrada |
+
+**Cálculo adicional verificável:** se hipoteticamente a Gymnopédie pudesse ter altura nativa de 300 CSS px *sem perda de conteúdo*, a fórmula daria \`s=188/300≈0,627\`. Este é apenas exemplo de sensibilidade, **não recomendação**, porque não há evidência de que 81,59 CSS px sejam dispensáveis. A diferença de separação Gymnopédie/Ode no raster é 94 px, mas a comparação entre partituras com conteúdo diferente não identifica espaço removível. A razão das alturas de pauta (54/110≈0,491) acompanha a escala e não mede colisões.
+
+### 3. Diagnóstico da faixa entre pautas
+
+É demonstrável que a Gymnopédie exibida possui separação entre pentagramas desproporcional à Ode: 15,11e contra 4e. Não é demonstrável que 11,11e sejam supérfluos; as dinâmicas, hastes e ligaduras podem ocupar a região. Tampouco se pode atribuir essa separação exclusivamente a margens, regras nativas OSMD ou um compasso extremo: faltam as caixas de conteúdo e a distribuição longitudinal ao longo dos 78 compassos. A captura em x≈1400 mede **um corte** do sistema horizontal, enquanto uma regra de afastamento pode resultar de extremos em outros compassos. Não extrapolar a vacância observada numa coluna para todo o sistema.
+
+### 4. Comparação e alternativas para a Tarefa 03B
+
+| Alternativa | Benefício plausível | Risco/contrato | Evidência exigida antes de implementar |
+|---|---|---|---|
+| **A — configurações nativas do OSMD/EngravingRules** | OSMD recalcula arranjo e caixas de símbolos de forma coordenada | opções e comportamento da versão 1.9.8 ainda não auditados; colisões se folgas inadequadas | identificar propriedades realmente presentes no bundle instalado; comparar limites globais com diversas partituras e alterações de clave/dinâmica |
+| **B — espaçamento interstaff gerido pelo motor** | atacar diretamente os ~15,11e visuais | possível colisão de símbolos entre pautas e efeito transversal em todo o sistema | caixas por elemento, por compasso/pauta, interseção vertical e folga musical justificada |
+| **C — margens externas sem recorte do \`viewBox\`** | aproveitar espaço periférico sem mudar semântica musical | contrato veda a tentativa \`svg.getBBox()\`; CSS/viewport também podem ocultar glifos/textos | provar margens externas em coordenadas comuns, textos e strokes inclusive, sem modificar caminho de produção |
+| **D — área útil do aplicativo** | aumento de tamanho sem alterar geometria musical | interferência no teclado guia, controles, telas menores e posições de toque | medir WebView real em configurações com e sem teclado; testar responsividade e overlays |
+
+**Diretriz para 03B, não autorização de implementação nesta etapa:** começar por uma sonda geométrica temporária de leitura, fora de \`notation.html\`, registrando \`viewBox\`, caixas transformadas de cada pauta/grupo por categorias (stafflines, noteheads, stems, beams, ties/slurs, textos/dinâmicas, claves e armaduras), strokes e limites extremos ao longo dos 78 compassos, e repetir na Ode e numa terceira fixture existente. Capturar valores por compasso em coordenadas homogêneas, calcular intervalo ocupado entre pautas e mínima folga segura **antes** de escolher qualquer parâmetro. O procedimento pode ser executado em browser/emulador de investigação, sem adicionar dependência ao APK nem alterar o contrato. Uma proposta por regras nativas OSMD é preliminarmente mais defensável do que alterar \`viewBox\` externamente, porém **não está validada como segura**. Caso não se obtenham as caixas completas, não realizar a compressão.
+
+### 5. Verificações, rastreabilidade e limitações
+
+- \`notation.html\` consultado na branch, contendo \`fitOpticalSvg\` apenas com redimensionamento CSS uniforme e mantendo o \`viewBox\` original; o blob lido era \`87d6a1df84abc197a232c4d7c49828f465a1158e\`.
+- \`EngravingProofContractTest.js\` lido integralmente: a asserção negativa de \`svg.getBBox()\` foi localizada; os contratos **não foram editados**.
+- Workflow histórico da HEAD documental \`d4e784f71f3c5dd830e1ea0f6f698cfd6df3f629\`: [build 39247653311](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39247653311) **success**, incluindo teste isolado OSMD, e [emulador 39247653203](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39247653203) **success**. Workflow experimental [39247393371](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39247393371) falhou no contrato. Estes são **testes históricos, não novos testes da Tarefa 03A**.
+- Não houve coleta nova de \`getBBox\` dos glifos, inspeção global de 78 compassos, validação de configurações \`EngravingRules\`, screenshot nova, benchmark, execução local de Gradle/Node ou teste físico. Logo não foi quantificada margem recuperável, nem demonstrada separação mínima livre de colisões.
+- Permanecem sem correção a legenda “Lent et douloureux” encoberta à esquerda e o tooltip sobre a pauta. PR #46 deve continuar **aberto em draft**, sem merge; Tarefas 03B e 04 não iniciadas.
+
+**Conclusão técnica:** a causa imediata da miniaturização é o ajuste de altura global \`188/381,5909\`; a causa editorial do excesso de altura é **indeterminada**. A investigação estática caracteriza a restrição e a ordem das medições restantes, mas não satisfaz o critério da Tarefa 03A de caixas individuais verificadas. Não declarar correção segura, nem conclusão plena de 03A.
