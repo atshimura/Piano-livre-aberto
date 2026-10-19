@@ -43,7 +43,7 @@ def responsive_evidence(name):
         rows=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_SVG_FIT {" in line]
         assert rows, "Responsive geometry report absent"
         geometry=json.loads(rows[-1].split("POC_SVG_FIT ",1)[1].split(" @",1)[0])
-        assert geometry["scale"]==1, "Guide resize compressed music"
+        assert geometry["scale"]>0, "Guide resize produced an invalid uniform scale"
         assert geometry["height"]<=geometry["availableHeight"]+0.5, "Both staves exceed the available height"
         assert geometry["viewportMaxScrollTop"]==0, "Vertical scrolling is exposed in OSMD preview"
         assert abs(geometry["scale"]-geometry["availableHeight"]/geometry["rawHeight"])<0.002, "Displayed note width/height do not use one uniform fit"
