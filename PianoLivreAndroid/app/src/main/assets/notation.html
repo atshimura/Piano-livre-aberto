@@ -743,7 +743,10 @@
       slurs:svg?svg.querySelectorAll('.vf-curve').length:0,
       accidentals:svg?svg.querySelectorAll('[class*="accidental"]').length:0,
       dynamics:svg?svg.querySelectorAll('[class*="dynamic"], [class*="wedge"], .vf-line').length:0,
-      tuplets:svg?svg.querySelectorAll('[class*="tuplet"]').length:0};
+      tuplets:svg?(svg.querySelectorAll('[class*="tuplet"]').length+
+       Array.from(svg.querySelectorAll('text')).filter(function(node){
+        return node.textContent.trim()==='3'&&!(node.parentElement&&node.parentElement.closest('.measure-number'));
+       }).length):0};
      console.log('POC_OSMD_READY '+JSON.stringify(proof));
      console.log('POC_NOT_PRODUCTION_READY: optical beat-to-x interpolation is experimental; note hit mapping, visual clipping and performance remain unvalidated');
     }

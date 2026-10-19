@@ -984,13 +984,23 @@ if __name__=="__main__":
     assert complex_proof["midiMapping"]["matched"]>=10,(
       "Synthetic score graphical heads did not reconcile with the native score model")
     features=complex_proof["svgFeatureCounts"]
-    assert all(features.get(key,0)>0 for key in ("beams","ties","slurs","accidentals","dynamics","tuplets")),(
-      "Complex fixture lost required engraved symbols: "+json.dumps(features))
     screenshot("piano-osmd-complex-synthetic.png")
-    Path("piano-osmd-complex-synthetic.json").write_text(json.dumps({
+    complex_evidence={
       "fixture":"debug-only, synthetic and copyright-free MusicXML",
       "coverage":["grand staff","chords","two voices","beams","accidentals","ties","slurs","dynamics/wedges","tuplets"],
       "engraving":complex_proof,
       "scope":"Android API 29 emulator; geometry and native-model reconciliation, not physical-device acceptance"
-    },ensure_ascii=False,indent=2),encoding="utf-8")
+    }
+    Path("piano-osmd-complex-synthetic.json").write_text(json.dumps(
+      complex_evidence,ensure_ascii=False,indent=2),encoding="utf-8")
+    print("POC_COMPLEX_GEOMETRY "+json.dumps({
+      "nativeSvgHeight":complex_proof["nativeSvgHeight"],
+      "displayScale":complex_proof["displayScale"],
+      "nativeStaffSpaceCssPx":complex_proof["nativeStaffSpaceCssPx"],
+      "staffSeparationSpaces":complex_proof["staffSeparationSpaces"],
+      "graphicalNotes":complex_proof["graphicalNotes"],
+      "midiMapping":complex_proof["midiMapping"],"svgFeatureCounts":features
+    }),flush=True)
+    assert all(features.get(key,0)>0 for key in ("beams","ties","slurs","accidentals","dynamics","tuplets")),(
+      "Complex fixture lost required engraved symbols: "+json.dumps(features))
     print("PASS: synthetic complex engraving geometry and note reconciliation",flush=True)

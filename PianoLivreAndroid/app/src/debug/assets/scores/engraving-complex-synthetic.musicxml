@@ -16,7 +16,7 @@
       <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
         <notations><slur type="start" number="1"/></notations></note>
       <note><chord/><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
-      <note><pitch><step>D</step><alter>1</alter><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">begin</beam></note>
+      <note><pitch><step>D</step><alter>1</alter><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff><accidental>sharp</accidental><beam number="1">begin</beam></note>
       <note><pitch><step>F</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">end</beam></note>
       <note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><tie type="start"/><notations><tied type="start"/><slur type="stop" number="1"/></notations></note>
       <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
@@ -47,7 +47,7 @@
       <note><pitch><step>F</step><alter>1</alter><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification><staff>1</staff><beam number="1">begin</beam><notations><tuplet type="start" number="1"/></notations></note>
       <note><pitch><step>G</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification><staff>1</staff><beam number="1">continue</beam></note>
       <note><pitch><step>A</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification><staff>1</staff><beam number="1">end</beam><notations><tuplet type="stop" number="1"/></notations></note>
-      <note><pitch><step>B</step><alter>-1</alter><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">begin</beam></note>
+      <note><pitch><step>B</step><alter>-1</alter><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff><accidental>flat</accidental><beam number="1">begin</beam></note>
       <note><pitch><step>A</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">continue</beam></note>
       <note><pitch><step>G</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff><beam number="1">end</beam></note>
       <direction placement="below"><direction-type><wedge type="stop" number="2"/></direction-type><staff>1</staff></direction>
