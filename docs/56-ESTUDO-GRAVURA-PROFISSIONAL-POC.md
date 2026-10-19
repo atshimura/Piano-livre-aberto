@@ -650,3 +650,7 @@ Em `PianoLivreAndroid/tests/EngravingProofContractTest.js` foram adicionadas tr�
 Reexecutar build/JS/JVM, emulador e analisar visualmente capturas do novo commit, incluindo Gymnopédie no início (frase expressiva integral), Ode à Alegria, fixture de mudanças de clave/armadura/compasso e fixture complexa. Conferir início, compassos posteriores, retorno, pausa, Espera, loop, coordenadas de toque e teclado guia fechado/aberto/restaurado. Exigir os perfis baixo, alto e tablet, confirmação de duas pautas simultâneas, fator uniforme e `viewportMaxScrollTop=0`. Não usar a aprovação histórica da Tarefa 03D como substituto de evidência da Tarefa 04. Testes físicos Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 seguem pendentes.
 
 **Sem aceite editorial e visual, não declarar a Tarefa 04 CONCLUÍDA, nem iniciar a Tarefa 05.**
+
+### Verificação do commit de implementação
+
+No commit `06fda5e3d6363e51274815dbb3ef8fa108b45263`, o GitHub Actions de compilação, regressões JVM/JS e APK [39321825741](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39321825741) terminou com `success`. O workflow de emulador [39321825761](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39321825761) estava `in_progress` na última consulta desta sessão; não há aprovação de evidência visual ou da correção expressiva nesta atualização. Nenhum teste físico foi feito.
