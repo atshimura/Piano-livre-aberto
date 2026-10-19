@@ -785,7 +785,11 @@
         length:e?e.length:null,attack:e?e.playbackAttack:null,
         xmlNoteIndex:e?e.xmlNoteIndex:null};
       });
-      console.log('POC_POLYPHONY_HEADS '+JSON.stringify(heads));
+      for(let i=0;i<heads.length;i+=8){
+       console.log('POC_POLYPHONY_HEADS_CHUNK '+JSON.stringify({
+        part:i/8,total:Math.ceil(heads.length/8),heads:heads.slice(i,i+8)
+       }));
+      }
      }
      console.log('POC_NOT_PRODUCTION_READY: optical beat-to-x interpolation is experimental; note hit mapping, visual clipping and performance remain unvalidated');
     }

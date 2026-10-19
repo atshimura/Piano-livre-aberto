@@ -61,7 +61,10 @@ def main():
     for _ in range(45):
         assert_running()
         proof=latest("POC_OSMD_READY ")
-        heads=latest("POC_POLYPHONY_HEADS ")
+        pieces=records("POC_POLYPHONY_HEADS_CHUNK ")
+        by_part={item["part"]:item for item in pieces}
+        if by_part and len(by_part)>=pieces[-1]["total"]:
+            heads=[h for i in range(pieces[-1]["total"]) for h in by_part[i]["heads"]]
         if proof is not None and heads is not None:break
         time.sleep(.5)
     assert proof and heads,"Actual OSMD polyphony proof or graphical heads missing"
