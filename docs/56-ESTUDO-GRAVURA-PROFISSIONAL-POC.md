@@ -483,3 +483,105 @@ A fonte quantificada continua sendo o artefato real do emulador documentado na T
 - Permanecem sem correção a legenda “Lent et douloureux” encoberta à esquerda e o tooltip sobre a pauta. PR #46 deve continuar **aberto em draft**, sem merge; Tarefas 03B e 04 não iniciadas.
 
 **Conclusão técnica:** a causa imediata da miniaturização é o ajuste de altura global \`188/381,5909\`; a causa editorial do excesso de altura é **indeterminada**. A investigação estática caracteriza a restrição e a ordem das medições restantes, mas não satisfaz o critério da Tarefa 03A de caixas individuais verificadas. Não declarar correção segura, nem conclusão plena de 03A.
+
+## Tarefa 03A.1/20 — Coleta geométrica instrumentada
+
+**Situação: CONCLUÍDA no escopo de investigação geométrica; nenhuma correção implementada.** HEAD de partida confirmada `6435255d93d4cc782a54274851003b1c4f77f4c0`, PR #46 aberto em draft. Foram lidos AGENTS, README, continuidade, histórico deste documento, HTML de notação, contrato e preparação do bundle antes de criar evidências. O resultado desta seção é novo e não reutiliza medidas raster das tarefas anteriores. Não conclui a Tarefa 03, o item 1.2 ou o aceite editorial.
+
+### Método e proveniência
+
+Sonda externa de leitura com Playwright/Chrome for Testing **131.0.6778.204**, Linux, viewport **738×196 CSS px**. Renderizou as fontes MXL originais da biblioteca (Gymnopédie/Ode) e a fixture debug `engraving-context-change.musicxml`, sem modificá-las, com as opções existentes de `notation.html`: SVG, `compacttight`, horizontal único, títulos/compositor/nomes desativados, sem novas quebras XML ou cursor. **Todas as medidas das duas pautas ao longo dos 78/16/3 compassos foram percorridas**, não uma janela extrapolada. Foram coletadas 2.418/394/134 folhas geométricas respectivamente, incluindo textos e curvas fora dos grupos de compasso.
+
+O bundle foi localizado na tarefa Gradle `prepareOfflineNotation`: OSMD **1.9.8** fixado em URL jsDelivr, convertido pelo build via esbuild 0.25.10 para chrome60 e empacotado offline. A sonda usou o **mesmo upstream 1.9.8 antes dessa conversão**, não um asset extraído de APK. Hash SHA256 do upstream e das fontes XML constam em [geometry.json](evidence/tarefa-03a1/geometry.json). Nenhuma dependência foi incorporada ao aplicativo. A versão antiga do WebView não foi reproduzida.
+
+Cada folha foi medida por `getBBox()` e seus quatro cantos convertidos ao SVG raiz pela composição da inversa da matriz da raiz com a matriz de tela do elemento. A operação não altera DOM, viewBox ou parâmetros. São caixas geométricas, sem espessura de traço; coordenadas de modelos, SVG e CSS estão separadas. Outra execução abriu o **HTML de produção inalterado**, serviu o upstream apenas pela interceptação do navegador e registrou o fit/contexto em [production-check.json](evidence/tarefa-03a1/production-check.json). Essa execução não enviou eventos MIDI: seus logs de reconciliação não são teste musical.
+
+Instrumentos, reprodução e limitações: [README da evidência](evidence/tarefa-03a1/README.md), [probe.cjs](evidence/tarefa-03a1/probe.cjs), [production-check.cjs](evidence/tarefa-03a1/production-check.cjs), [summarize.py](evidence/tarefa-03a1/summarize.py) e [summary.json](evidence/tarefa-03a1/summary.json). Uma repetição com o script arquivado confirmou os números da primeira execução. Nenhum APK/compilação Android foi necessário.
+
+### Novas medidas e unidades
+
+Nesta configuração, **1 espaço entre linhas = 10 unidades SVG = 1 unidade do modelo OSMD**. Os cinco centros são uniformes; não confundir esses números com pixels de captura Android. Valores arredondados abaixo a 0,001; dados originais preservam precisão completa.
+
+| Grandeza nova | Gymnopédie, 78 compassos | Ode, 16 compassos | Fixture, 3 compassos |
+|---|---:|---:|---:|
+| ViewBox, largura × altura, SVG | 7748,596 × 383,495 | 2103,438 × 136,500 | 880,973 × 151,500 |
+| Altura CSS nativa lida no DOM | 383,484 | 136,500 | 151,500 |
+| Centros das cinco linhas superiores, SVG | 86,233; 96,233; 106,233; 116,233; 126,233 | 16,500; 26,500; 36,500; 46,500; 56,500 | mesmos centros da Ode |
+| Centros das cinco linhas inferiores, SVG | 278,495; 288,495; 298,495; 308,495; 318,495 | 96,500; 106,500; 116,500; 126,500; 136,500 | mesmos centros da Ode |
+| Entre a última linha superior e a primeira inferior, SVG | **152,261** | **40,000** | **40,000** |
+| Mesmo intervalo em espaços de pauta | **15,226** | **4,000** | **4,000** |
+| Entre primeiras linhas das pautas, SVG | 192,261 | 80,000 | 80,000 |
+| União de todas as folhas: mínimo Y → máximo Y, SVG | 1,199 → 383,495 | −0,500 → 137,500 | −0,500 → 151,500 |
+| Margem geométrica superior / inferior ao viewBox, SVG | 1,199 / ~0,000 | −0,500 / −1,000 | −0,500 / ~0,000 |
+| Escala calculada e confirmada no log de fit do HTML | **0,490242** | **1,000000** | **1,000000** |
+| Altura CSS final no HTML existente | 188,000 | 136,500 | 151,500 |
+| Cabeças de notas, excluídas pausas pelo modelo | 469 | 81 | 19 |
+
+A escala acima é `min(1,188/alturaCSSnativa)`; não foi escolhida pela sonda. A CTM raiz do render primário da Gymnopédie é aproximadamente `[0,99997358,0,0,0,99997358,0,10113735,0]`; a razão difere ligeiramente de 1 por arredondamento CSS e preservação de aspecto. No HTML após fit, a CTM completa, incluindo translação, está no JSON adicional; usar essa matriz para projetar no viewport, sem somar coordenadas do modelo a CSS.
+
+**Comparação histórica, sem misturar execuções:** 381,5909 CSS px / 0,492674 eram medidas do Android WebView; **383,484375 CSS px / 0,490241617** são as novas medidas deste Chrome. A pauta superior permanece em 86,233 SVG, mas a inferior foi medida aqui em 278,495 SVG, contra origem equivalente anterior próxima de 276,593. Há variação de ambiente/fontes/backend. Isso não é regressão de código: nenhum arquivo funcional mudou. O novo resultado não substitui uma futura medição no WebView real.
+
+### Ocupação vertical quantitativa da Gymnopédie
+
+| Categoria / pauta | Folhas medidas | Y mínimo → máximo, SVG | Observação |
+|---|---:|---:|---|
+| Cabeças de notas superiores | 152 | 71,010 → 151,484 | pausas excluídas via `isRestFlag` e ID VexFlow |
+| Cabeças de notas inferiores | 317 | 238,272 → 353,745 | total das duas pautas: 469 |
+| Hastes superiores | 134 | 61,233 → 181,233 | extremos em grupos 39 e 37 |
+| Hastes inferiores | 154 | 208,495 → **383,495** | extremo inferior em grupos **22 e 61** |
+| Linhas suplementares superiores | 14 | 76,233 → 146,233 | não inclui stroke |
+| Linhas suplementares inferiores | 203 | 248,495 → 348,495 | extensão confirma notas fora do pentagrama |
+| Slurs superiores (`vf-curve`) | 10 | **6,358** → 86,233 | arcos amplos consomem a região acima da pauta |
+| Ties superiores (`vf-stavetie`) | 16 | 83,233 → 139,233 | folhas, não número de ligações musicais |
+| Textos superiores | 35 | **1,199** → **201,593** | expressão, dinâmica e números de origem XML |
+| Textos inferiores | 2 | **193,694** → 219,695 | dois sinais `f`, aproximados por faixa X |
+| Cunhas/linhas superiores (`vf-line`) | 50 | 148,033 → **197,233** | ocupam substancialmente o espaço interno |
+
+As 557 folhas sob `vf-notehead` incluem 88 pausas; não foram apresentadas como 557 notas. IDs do modelo permitem separar as 469 cabeças reais. Não há grupos `vf-beam` identificados nessas três renderizações; **não foi obtida cobertura representativa de vigas**. Demais classes/textos estão integralmente no JSON. Elementos fora de `vf-measure` são relacionados a pautas e intervalos X; sua atribuição musical exata pode exigir o modelo de expressão.
+
+**Extremos exteriores:** o menor Y geométrico pertence ao texto `46` perto de X=7601,051; a primeira linha superior em Y=86,233 não representa 86 unidades de margem vazia. O slur `vf-auto5409-slur` chega a Y=6,358, abrangendo X≈6850,896…7681,697. Os limites inferiores são hastes `vf-auto2602-stem` (grupo 22) e `vf-auto4846-stem` (grupo 61). A margem geométrica superior é apenas 1,199 e a inferior praticamente zero, **antes de stroke**: não existe evidência de grande margem externa recuperável ou de recorte seguro.
+
+### Faixa entre pautas e causa do afastamento
+
+O intervalo de **15,226 espaços entre pentagramas** não é uma faixa vazia. Na projeção global Y, textos superiores chegam a 201,593 enquanto textos inferiores começam em 193,694: as projeções se sobrepõem, embora em X distintos. Portanto nem sequer há uma faixa horizontal inteira de vazio demonstrada pela união global desses símbolos.
+
+Comparando somente caixas de elementos musicais de pautas opostas cujos intervalos X se sobrepõem, a menor folga encontrada foi **11,261 SVG = 1,126 espaços**. Exemplo auditável: folha **908**, segmento de cunha superior em X≈3356,973…3491,729 e Y≈191,233…197,233, e folha **1597**, haste inferior do grupo **35**, em X≈3468,073 e Y≈208,495…268,495. Há ocorrências equivalentes diante de hastes dos grupos **36, 72 e 74**. A caixa da cunha é um envelope retangular: sua folga não equivale à distância exata entre contornos. Stroke de 1,2/1,5, antialiasing e critérios editoriais não entram nessa conta. **Não se recomenda remover 11,261 SVG.**
+
+Foi também lido o skyline/bottomline do próprio OSMD: **2310 amostras por pauta**, com `SamplingUnit=3`. O algoritmo nativo em `MusicSystemBuilder.optimizeDistanceBetweenStaffLines` considera, em cada índice, o bottomline superior e uma vizinhança de ±6 amostras do skyline inferior. A maior exigência medida foi **18,226125 unidades do modelo**, em índices **2108–2110**, X≈**7046,667…7053,333 SVG**, próximo do grupo **72**. Componentes: bottomline superior **11,326125** e skyline inferior **−6,9**. Somando a folga nativa de **1,0**, o resultado é **19,226125**, **exatamente a diferença de origens do modelo**: 27,849451−8,623326. Convertido a SVG e descontados os 4 espaços de altura da pauta superior, reproduz os **152,261 SVG** entre pentagramas.
+
+Há ainda um pico próximo do grupo **36**, X≈3563,333, exigindo **18,0** antes da folga. Assim, o máximo global é localizado, mas não é a única região exigente; corrigir ou retirar um único extremo não prova que a pauta poderá ser reduzida a 4 espaços. A associação índice→grupo é geométrica, não prova de qual objeto individual foi responsável pelo pixel que alimentou o skyline. Os dados por compasso permitem aprofundar essa atribuição sem novo palpite global.
+
+**Controles:** Ode e fixture têm máximo skyline calculado de **6,4**; somada folga 1,0 → 7,4. O piso nativo `StaffHeight+MinimumStaffLineDistance = 4+4 = 8` prevalece, e as origens realmente distam **8 espaços**. As regras efetivas são iguais entre as partituras, enquanto o conteúdo/linhas de ocupação diferem. O backend preferido registrado foi 1 na Gymnopédie e 0 nos controles, seleção automática existente do motor; a parcela da diferença numérica entre ambientes causada pelo backend não foi isolada.
+
+### Parâmetros nativos confirmados na versão 1.9.8
+
+Verificados tanto em propriedades do objeto real `osmd.EngravingRules` quanto na fonte **da tag 1.9.8**, sem presumir APIs de versões posteriores: [EngravingRules.ts](https://github.com/opensheetmusicdisplay/opensheetmusicdisplay/blob/1.9.8/src/MusicalScore/Graphical/EngravingRules.ts), [MusicSystemBuilder.ts](https://github.com/opensheetmusicdisplay/opensheetmusicdisplay/blob/1.9.8/src/MusicalScore/Graphical/MusicSystemBuilder.ts), [SkyBottomLineCalculator.ts](https://github.com/opensheetmusicdisplay/opensheetmusicdisplay/blob/1.9.8/src/MusicalScore/Graphical/SkyBottomLineCalculator.ts). Valores abaixo são **efetivos em compacttight**, não necessariamente defaults da classe.
+
+| Propriedade / valor efetivo | Efeito possível / limite | Risco a verificar em 03B |
+|---|---|---|
+| `BetweenStaffDistance=2.5` | afastamento inicial entre pautas do mesmo instrumento | otimização skyline pode substituir o valor; diminuir sozinho não demonstra ganho |
+| `StaffDistance=3.5` | afastamento inicial entre instrumentos diferentes | não é a alavanca específica deste piano de duas pautas |
+| `MinimumStaffLineDistance=4` com `StaffHeight=4` | piso de 8 espaços entre primeiras linhas | explica os controles, mas não limita a Gymnopédie: skyline exige mais |
+| `MinSkyBottomDistBetweenStaves=1` | folga adicionada à exigência skyline/bottomline | diminuir retira proteção de colisões; nesta coleta a soma é a restrição ativa |
+| `PageTopMarginNarrow=0`, `PageBottomMargin=0`, `PageTopMargin=5` | margem do modo compacto versus normal | já não há reserva externa relevante comprovada; não resolve slurs/textos acima |
+| `MinimumDistanceBetweenSystems`, `MinSkyBottomDistBetweenSystems=1` | organização de múltiplos sistemas | não confundir com separação interna do sistema horizontal único |
+| `WedgeVerticalMargin=0.5` | folga de cunhas de dinâmica | pode afetar conteúdo que participa do limite; auditar crescendo/decrescendo e hastes |
+| `DynamicExpressionMaxDistance=2`, `DynamicExpressionSpacer=0.5` | posicionamento/espaço de dinâmicas | pode mover colisões para outra expressão; não foi variado |
+| `SlurNoteHeadYOffset=0.5`, `SlurStemXOffset=0.3`, `SlurPlacementUseSkyBottomLine=false` | ancoragem/colocação de slurs; não simples margem de página | preservar ligação correta, arcos e cabeças em todo o trecho |
+| `LabelMarginBorderFactor=0.1`, `LyricsYMarginToBottomLine=0.2`, alturas de texto na classe | reservas de texto/letras | alterar tamanho/reserva pode prejudicar legibilidade; fixture sem letras não valida esse caso |
+
+**Nenhuma regra foi alterada ou ensaiada com valores alternativos.** A existência da propriedade e sua participação estática não provam que a alteração seja editorialmente segura. A fonte mostra que o motor pode substituir distâncias iniciais pelo envelope de ocupação, justificando investigar expressões/skyline antes de tentar números arbitrários.
+
+### Recomendação objetiva para 03B
+
+1. Reproduzir a sonda no bundle transpilado/WebView Android e comparar os pontos críticos **35/36/72/74**, as hastes extremas **22/61** e o slur final; atribuir os máximos de skyline às expressões correspondentes, sem editar MusicXML.
+2. Avaliar, em experimento isolado com o motor, posicionamento nativo de cunhas/dinâmicas antes de reduzir a folga entre pautas. Investigar se o envelope reservado excede a tinta visível, preservando margem editorial e todos os símbolos. **Não há evidência para prometer ganho substancial apenas com `BetweenStaffDistance`.**
+3. Qualquer proposta deverá comparar caixas/contornos com strokes, screenshots do sistema completo e janelas início/meio/fim, polifonia, ligaduras, vigas e textos; validar novo render, hit-test nas duas pautas, rail, cursores, resize e reconciliação MIDI. Não declarar distância mínima segura com estes dados.
+4. Se o conteúdo realmente exigir a altura, investigar a área útil/tamanho de apresentação como alternativa de produto em etapa própria. Nenhuma alteração da interface é executada aqui.
+
+### Verificações, estado de CI e limitações
+
+- Executado nesta tarefa: sonda geométrica completa, repetição do instrumento arquivado, leitura adicional do HTML de produção e derivação quantitativa; `EngravingProofContractTest.js` **PASS, 68 verificações**, sem edição do teste. Scripts/JSON passaram conferência de sintaxe e consistência. Comparação de árvore confirma alterações restritas a este documento e `docs/evidence/tarefa-03a1/`.
+- Na HEAD inicial, [build 39249363432](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39249363432) e [emulador 39249363490](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39249363490) estavam **success**. São resultados anteriores ao commit desta entrega, não testes novos da sonda nem prova do commit documental posterior. Não foi iniciado build Android deliberadamente.
+- Limites: browser/fontes diferentes do Android; upstream não transpilado; caixas sem stroke; ausência de cobertura representativa de vigas, letras e importações adversariais; atribuição de expressões por X aproximada; nenhum ensaio de redução de parâmetros, benchmark, APK ou hardware. Essas limitações não impedem a conclusão da **coleta quantitativa**, mas impedem afirmar compressão segura ou ganho visual.
+- Aplicativo, contratos, versão 0.9.46/code55, XML/MIDI e dados preservados. Sem merge, release ou acesso ao repositório privado. PR #46 deve permanecer aberto em draft. Texto “Lent et douloureux” e tooltip não foram corrigidos. **03B e 04/20 não iniciadas.**
