@@ -445,7 +445,9 @@
    overlay=document.createElementNS('http://www.w3.org/2000/svg','g');
    overlay.setAttribute('id','piano-optical-study-cues');
    overlay.setAttribute('pointer-events','none');
-   svg.appendChild(overlay);
+   // Behind musical ink: close chord rings must never cover their heads,
+   // displaced seconds, accidentals or stems.
+   svg.insertBefore(overlay,svg.firstChild);
   }
   // Android WebView on supported devices may be Chromium 74; SVGElement.
   // replaceChildren() is not available there. Use the DOM Level 1 API.
@@ -457,8 +459,8 @@
    ring.setAttribute('rx','11');ring.setAttribute('ry','8');
    ring.setAttribute('fill','none');
    ring.setAttribute('stroke',n.staff===1?'#158078':'#225da6');
-   ring.setAttribute('stroke-opacity','.65');
-   ring.setAttribute('stroke-width','3');
+   ring.setAttribute('stroke-opacity','.45');
+   ring.setAttribute('stroke-width','2');
    overlay.appendChild(ring);
   }
  }
