@@ -941,6 +941,28 @@ if __name__=="__main__":
         "Measure 3 did not advance its changed clef, key signature and time signature: "+
         json.dumps(context_states))
     screenshot("piano-osmd-context-changes.png")
+    # Regression 04: a backward musical seek must restore the original
+    # clef/key/time context, not leave the most recent measure pinned.
+    adb("logcat","-c")
+    tap_text(["Início"],scroll=True)
+    returned=False
+    for attempt in range(12):
+        logs=adb("logcat","-d","-v","brief")
+        states=[]
+        for line in logs.splitlines():
+            if "POC_CONTEXT_RAIL_STATE {" in line:
+                try:
+                    states.append(json.loads(line.split("POC_CONTEXT_RAIL_STATE ",1)[1].split(" @",1)[0]))
+                except (ValueError, IndexError):
+                    pass
+        returned=any(state["measure"]==1 and
+          all(staff["clef"]==1 and staff["time"]==1 and staff["key"] is None
+              for staff in state["staffSources"]) for state in states)
+        if returned:break
+        time.sleep(.4)
+    assert returned,"Backward seek to beginning did not restore both staff contexts"
+    screenshot("piano-osmd-context-return.png")
+    print("PASS: OSMD context returns to measure 1 for both staves",flush=True)
     responsive_evidence("context")
     Path("piano-osmd-context-changes.json").write_text(json.dumps({
       "fixture":"debug-only three-measure MusicXML; 4/4 C, 3/4 D with C-clef, 6/8 E-flat with G-clef",
