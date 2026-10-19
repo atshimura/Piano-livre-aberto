@@ -3,19 +3,30 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const html=fs.readFileSync('app/src/main/assets/notation.html','utf8');
 function source(name){const start=html.indexOf(' function '+name+'('),end=html.indexOf('\n function ',start+1);return html.slice(start,end)}
 let cases=0;
-for(const width of [738,1024])for(const height of [196,300,500])for(const native of [381.591,136.5,195.898,151.5]){
- const elements=Object.fromEntries(['score','optical-up','optical-down','optical-position','optical-note-tip'].map(id=>[id,{style:{},addEventListener(){}}]));
- const classes=new Set();
- const viewport={clientWidth:width,clientHeight:height,scrollHeight:Math.ceil(native),scrollTop:0};
- const document={getElementById:id=>elements[id],documentElement:{clientWidth:width,clientHeight:height},body:{classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);viewport.clientWidth=width-(on?48:0)}}}};
+for(const width of [690,883])for(const height of [196,218,351,373,409,431])for(const native of [381.591,136.5,195.898,151.5]){
+ const elements={score:{style:{}}};
+ const viewport={clientWidth:width,clientHeight:height,scrollHeight:height,scrollTop:0,scrollWidth:width};
+ const document={getElementById:id=>elements[id],documentElement:{clientWidth:width,clientHeight:height},body:{}};
  const svg={dataset:{opticalNativeWidth:'12000',opticalNativeHeight:String(native)},style:{},querySelectorAll:()=>[]};
  const ctx=vm.createContext({viewport,document,console:{log(){}},studyProof:true,seekBeat:17,opticalDisplayScale:1,osmdRenderedWidth:width});
- vm.runInContext(source('updateVerticalNavigation')+source('navigateVertically')+source('fitOpticalSvg'),ctx);
+ vm.runInContext(source('fitOpticalSvg'),ctx);
  ctx.fitOpticalSvg(svg);
- assert.equal(classes.has('vertical-navigation'),native>height);
- assert.equal(viewport.clientHeight,height);assert.equal(svg.style.height,native+'px');assert.equal(ctx.opticalDisplayScale,1);
- if(native>height){ctx.navigateVertically(1);assert.ok(viewport.scrollTop>0);assert.equal(ctx.seekBeat,17);assert.equal(elements['optical-note-tip'].style.display,'none');ctx.navigateVertically(-1);assert.equal(viewport.scrollTop,0);}
- document.documentElement.clientHeight=600;viewport.clientHeight=600;ctx.fitOpticalSvg(svg);
- assert.equal(classes.has('vertical-navigation'),false);assert.equal(viewport.clientWidth,width);cases++;
+ const expected=(height-8)/native;
+ assert.ok(Math.abs(ctx.opticalDisplayScale-expected)<1e-12,'largest uniform scale for '+width+'x'+height+' and '+native);
+ assert.ok(Math.abs(parseFloat(svg.style.height)-native*expected)<1e-8,'complete SVG height scaled proportionally');
+ assert.ok(Math.abs(parseFloat(svg.style.width)-12000*expected)<1e-8,'complete SVG width uses the same scale');
+ assert.equal(parseFloat(elements.score.style.height),parseFloat(svg.style.height));
+ assert.equal(ctx.seekBeat,17,'visual fit does not change musical beat');
+ assert.ok(native*expected<=height-8+1e-8,'all native SVG content fits within safety inset');
+ assert.equal(viewport.scrollTop,0,'fit never changes vertical position');
+ assert.equal(viewport.scrollHeight,height,'vertical overflow is not introduced by the score fit');
+ // A second measurement models guide open/close or WebView height changes.
+ viewport.clientHeight=height+22;document.documentElement.clientHeight=height+22;
+ ctx.fitOpticalSvg(svg);
+ assert.ok(Math.abs(ctx.opticalDisplayScale-((height+14)/native))<1e-12,'height resize recomputes from immutable native geometry');
+ cases++;
 }
-console.log('VERTICAL_NAVIGATION_PASS scenarios='+cases+' (mock DOM; not rendered scores)');
+assert.match(html,/overflow-y:hidden/);
+assert.match(html,/touch-action:pan-x/);
+assert.doesNotMatch(html,/optical-navigation|navigateVertically|vertical-navigation/);
+console.log('PROPORTIONAL_SCORE_FIT_PASS scenarios='+cases+' (mock DOM; Android rendering verified separately)');

@@ -144,22 +144,21 @@ ok(bridge.includes("if(disposed||freeLayout||!htmlReady||!scoreRendered||pending
 ok(html.includes("POC_RESIZE_HEIGHT_ONLY"),"Height-only guide resize must avoid full OSMD render");
 ok(html.includes("osmdRenderedWidth===viewport.clientWidth"),"Width changes must still trigger OSMD re-layout");
 ok(html.includes("osmdRenderedHeight=viewport.clientHeight"),"Track rendered viewport height for guide toggles");
-ok(html.includes("function fitOpticalSvg(svg)"),"Two-staff SVG geometry must follow the available display area");
+ok(html.includes("function fitOpticalSvg(svg)")&&html.includes("const availableHeight=Math.max(1,viewportHeight-safetyInset*2)")&&html.includes("const scale=availableHeight/baseHeight"),"Two-staff SVG must use the largest uniform fit for the measured display area");
 ok(html.includes("optical.timeline.xAt(beat)*opticalDisplayScale"),"Musical x movement must honor optical display zoom");
 ok(html.includes("svg.dataset.opticalNativeHeight"),"Height resize must retain original OSMD drawing metrics");
-ok(html.includes("body.preview #viewport{overflow-x:hidden;overflow-y:auto")&&
- html.includes("touch-action:pan-y"),
- "Tall OSMD scores must remain vertically touch-scrollable while playback owns horizontal movement");
-ok(html.includes("const scale=1;")&&html.includes("svg.style.width=baseWidth+'px'")&&
- html.includes("svg.style.height=baseHeight+'px'")&&
- html.includes("score.style.height=baseHeight+'px'")&&
- html.includes("verticalOverflow:Math.max(0,baseHeight-viewport.clientHeight)"),
- "Vertical fit must preserve native OSMD geometry and expose overflow instead of shrinking staff spaces");
-ok(html.includes("viewport.addEventListener('scroll'")&&html.includes("POC_VERTICAL_SCROLL")&&
- html.includes("viewportMaxScrollTop")&&html.includes("nativeStaffSpaceCssPx")&&
- html.includes("noteTipVisible")&&html.includes("document.getElementById('optical-note-tip').style.display='none'")&&
- html.includes("if(viewport.scrollTop>1){rail.style.display='none';return;}"),
- "Vertical scrolling, native geometry, context rail and note-tip visibility must remain observable and coherent");
+ok(html.includes("body.preview #viewport{overflow-x:auto;overflow-y:hidden")&&
+ html.includes("touch-action:pan-x")&&!html.includes("optical-navigation")&&
+ !html.includes("navigateVertically"),
+ "OSMD preview must have no vertical gesture or dedicated navigation controls");
+ok(html.includes("svg.style.width=(baseWidth*scale)+'px'")&&
+ html.includes("svg.style.height=(baseHeight*scale)+'px'")&&
+ html.includes("score.style.height=(baseHeight*scale)+'px'")&&
+ html.includes("verticalOverflow:Math.max(0,baseHeight*scale-viewportHeight)"),
+ "Uniform fit must preserve the entire native SVG envelope inside the available height");
+ok(html.includes("viewportMaxScrollTop")&&html.includes("nativeStaffSpaceCssPx")&&
+ html.includes("staffSeparationSpaces"),
+ "Preview evidence must report vertical overflow and scaled music geometry");
 ok(activity.includes("engraving_complex_selftest")&&
  activity.includes("scores/engraving-complex-synthetic.musicxml")&&
  activity.includes("FLAG_DEBUGGABLE"),

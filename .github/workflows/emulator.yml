@@ -92,7 +92,7 @@ jobs:
               "piano-osmd-poc-wait.png",
               "piano-temporal-long.png",
               "piano-osmd-long.png",
-              "piano-osmd-long-vertical-pan.png",
+              "piano-osmd-long-no-vertical-scroll.png",
               "piano-osmd-long-tap.png",
               "piano-osmd-long-moving.png",
               "piano-osmd-context-start.png",
@@ -153,7 +153,7 @@ jobs:
             PianoLivreAndroid/piano-osmd-poc-wait.png
             PianoLivreAndroid/piano-temporal-long.png
             PianoLivreAndroid/piano-osmd-long.png
-            PianoLivreAndroid/piano-osmd-long-vertical-pan.png
+            PianoLivreAndroid/piano-osmd-long-no-vertical-scroll.png
             PianoLivreAndroid/piano-osmd-long-tap.png
             PianoLivreAndroid/piano-osmd-long-moving.png
             PianoLivreAndroid/piano-osmd-context-changes.png
@@ -168,7 +168,7 @@ jobs:
             PianoLivreAndroid/piano-osmd-context-failure.png
             PianoLivreAndroid/piano-osmd-context-failure-window.xml
             PianoLivreAndroid/piano-osmd-context-failure-diagnostics.txt
-            PianoLivreAndroid/piano-03c-*
+            PianoLivreAndroid/piano-03d-*
             PianoLivreAndroid/piano-osmd-long.json
             PianoLivreAndroid/piano-engraving-poc.json
             PianoLivreAndroid/piano-free-reading.png

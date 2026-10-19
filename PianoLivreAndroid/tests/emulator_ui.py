@@ -44,11 +44,14 @@ def responsive_evidence(name):
         assert rows, "Responsive geometry report absent"
         geometry=json.loads(rows[-1].split("POC_SVG_FIT ",1)[1].split(" @",1)[0])
         assert geometry["scale"]==1, "Guide resize compressed music"
-        screenshot("piano-03c-"+name+"-"+state+".png")
+        assert geometry["height"]<=geometry["availableHeight"]+0.5, "Both staves exceed the available height"
+        assert geometry["viewportMaxScrollTop"]==0, "Vertical scrolling is exposed in OSMD preview"
+        assert abs(geometry["scale"]-geometry["availableHeight"]/geometry["rawHeight"])<0.002, "Displayed note width/height do not use one uniform fit"
+        screenshot("piano-03d-"+name+"-"+state+".png")
         result.append({"keyboard":state,"titleBar":title_visible,"controlsBar":controls_visible,
                        "geometry":geometry})
     assert result[0]["geometry"]["viewportHeight"]==result[-1]["geometry"]["viewportHeight"], "Closing guide did not restore score height"
-    Path("piano-03c-"+name+".json").write_text(json.dumps(result,indent=2),encoding="utf-8")
+    Path("piano-03d-"+name+".json").write_text(json.dumps(result,indent=2),encoding="utf-8")
 
 def dump():
     for retry in range(3):
@@ -324,9 +327,10 @@ if __name__=="__main__":
     print("POC_SIMPLE_GEOMETRY "+json.dumps({k:professional.get(k) for k in (
       "displayScale","height","nativeSvgHeight","nativeStaffSpaceCssPx",
       "staffSeparationSpaces","viewportHeight","viewportMaxScrollTop")}),flush=True)
-    assert professional["displayScale"]==1 and \
-      abs(professional["height"]-professional["nativeSvgHeight"])<=0.5 and \
-      professional["nativeStaffSpaceCssPx"]>0, "Simple-score OSMD geometry changed or was scaled"
+    assert professional["height"]<=professional["availableHeight"]+0.5 and \
+      abs(professional["displayScale"]-professional["availableHeight"]/professional["nativeSvgHeight"])<0.002 and \
+      professional["nativeStaffSpaceCssPx"]>0 and professional["viewportMaxScrollTop"]==0, \
+      "Simple-score OSMD did not fit proportionally or allowed vertical scrolling"
     context_logs=[line for line in adb("logcat","-d","-v","brief").splitlines()
                   if "POC_CONTEXT_" in line]
     Path("piano-osmd-context-probe.txt").write_text("\n".join(context_logs)+"\n",encoding="utf-8")
@@ -738,17 +742,16 @@ if __name__=="__main__":
         print("POC_LONG_ORIGINAL_XML "+json.dumps(original,ensure_ascii=False),flush=True)
     assert long_proof["graphicalNotes"]==469 and long_proof["midiMapping"]["matched"]==469, "Gymnopédie must preserve all 469 written heads"
     assert long_proof["measures"]>=40, "Long-score fixture unexpectedly short"
-    assert long_proof["displayScale"]==1, "Dense two-staff score was compressed below native OSMD scale"
-    assert abs(long_proof["height"]-long_proof["nativeSvgHeight"])<=0.5, "OSMD native engraving height was altered"
+    assert long_proof["height"]<=long_proof["availableHeight"]+0.5, "Complete OSMD score exceeds the available display height"
+    assert abs(long_proof["displayScale"]-long_proof["availableHeight"]/long_proof["nativeSvgHeight"])<0.002, "OSMD score was not uniformly fitted to the measured WebView"
+    assert long_proof["viewportMaxScrollTop"]==0, "OSMD preview exposes vertical scrolling"
     assert long_proof["nativeStaffSpaceCssPx"]>0, "Native staff-line spacing was not measured"
     assert long_proof["staffSeparationSpaces"]>4, "Dense score's native collision-safe staff separation was reduced"
-    if long_proof["nativeSvgHeight"]>long_proof["viewportHeight"]:
-        assert long_proof["viewportMaxScrollTop"]>0, "Tall score has no vertical navigation range"
     assert long_proof["graphicalNotes"]>=50 and long_proof["svgNodes"]>=1000, "Long-score engraving incomplete"
     assert long_proof["midiMapping"]["matched"]==long_proof["graphicalNotes"], "Each written Gymnopédie notehead must reconcile, including tied continuations"
     screenshot("piano-osmd-long.png")
     responsive_evidence("gymnopedie")
-    # Native-scale SVG geometry must preserve notehead hit targets on Android.
+    # Uniformly scaled SVG geometry must preserve notehead hit targets on Android.
     long_head=long_proof.get("firstNoteViewport")
     assert long_head and long_head.get("midiEstimate") is not None, "Long score has no testable upper-staff notehead"
     views=[n for n in dump().iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
@@ -768,46 +771,15 @@ if __name__=="__main__":
     assert chosen_note["staff"]==1 and chosen_note["nativeMidi"]==long_head["midiEstimate"] and chosen_note["mapped"], "Native-scale notehead did not match native MusicXML/MIDI"
     assert chosen_note.get("writtenName") and chosen_note.get("xmlNoteIndex") is not None, "Scaled notehead lost its original MusicXML notation"
     screenshot("piano-osmd-long-tap.png")
-    # If the landscape viewport is shorter than the native long score, prove
-    # touch panning reaches the lower staff and returns without a rerender.
-    if long_proof["viewportMaxScrollTop"]>0:
-        view=next((n for n in dump().iter("node")
-                   if n.attrib.get("class")=="android.webkit.WebView"),None)
-        assert view,"Long-score vertical pan cannot locate WebView bounds"
-        box=[int(v) for v in re.findall(r"\d+",view.attrib.get("bounds",""))]
-        midx=(box[0]+box[2])//2
-        start_count=adb("logcat","-d","-v","brief").count("POC_VERTICAL_SCROLL {")
-        adb("shell","input","swipe",str(midx),str(box[3]-35),str(midx),str(box[1]+35),"500")
-        pan=None
-        for attempt in range(12):
-            rows=[line for line in adb("logcat","-d","-v","brief").splitlines()
-                  if "POC_VERTICAL_SCROLL {" in line]
-            if len(rows)>start_count:
-                try:pan=json.loads(rows[-1].split("POC_VERTICAL_SCROLL ",1)[1].split(" @",1)[0])
-                except ValueError:pass
-                if pan and pan["top"]>0:break
-            time.sleep(.25)
-        assert pan and pan["top"]>0,"Vertical touch pan did not reveal overflow content"
-        assert not pan.get("noteTipVisible",True),"Note identification tooltip obscures the score after vertical pan"
-        screenshot("piano-osmd-long-vertical-pan.png")
-        adb("shell","input","swipe",str(midx),str(box[1]+35),str(midx),str(box[3]-35),"500")
-        time.sleep(.5)
-        print("PASS: native-scale long score supports vertical touch navigation "+json.dumps(pan),flush=True)
-    else:
-        # Keep the evidence set complete; the JSON says no vertical pan was
-        # required because this particular emulator viewport fit the score.
-        screenshot("piano-osmd-long-vertical-pan.png")
-    if long_proof["viewportMaxScrollTop"]>0:
-        nav_before=adb("logcat","-d","-v","brief").count("POC_VERTICAL_NAV {")
-        adb("shell","input","tap",str(rect[2]-round(24*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))),str(rect[3]-round(24*(rect[3]-rect[1])/long_proof["viewportHeight"])))
-        time.sleep(.4)
-        nav_rows=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_VERTICAL_NAV {" in line]
-        assert len(nav_rows)>nav_before, "Vertical navigation button did not receive touch"
-        nav=json.loads(nav_rows[-1].split("POC_VERTICAL_NAV ",1)[1].split(" @",1)[0])
-        assert nav["after"]>nav["before"] and nav["scale"]==1, "Navigation failed to reveal lower music"
-        screenshot("piano-03c-navigation.png")
-        adb("shell","input","tap",str(rect[2]-round(24*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))),str(rect[1]+round(24*(rect[3]-rect[1])/long_proof["viewportHeight"])))
-        time.sleep(.3)
+    # A vertical swipe is intentionally ignored: both piano staves stay fixed
+    # together while playback remains free to move the score horizontally.
+    midx=(rect[0]+rect[2])//2
+    adb("shell","input","swipe",str(midx),str(rect[3]-35),str(midx),str(rect[1]+35),"500")
+    time.sleep(.4)
+    no_vertical_scroll=long_proof["viewportMaxScrollTop"]==0 and long_proof["height"]<=long_proof["availableHeight"]+0.5
+    assert no_vertical_scroll,"Long score does not keep both staves in the measured viewport"
+    screenshot("piano-osmd-long-no-vertical-scroll.png")
+    print("PASS: complete two-staff score fits and vertical scroll is disabled",flush=True)
     print("PASS: scaled 78-measure OSMD graphical notehead maps to native MIDI",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     long_play_point=tap_text(["Iniciar"],return_point=True,scroll=True)
@@ -834,7 +806,7 @@ if __name__=="__main__":
     assert_running()
     tap_text(["Biblioteca"],scroll=True)
     assert_running()
-    print("PASS emulator UI: library, music, study mode, playback, navigation",flush=True)
+    print("PASS emulator UI: library, music, study mode, playback, horizontal movement and vertical fit",flush=True)
     # Exercise genuinely changing score context on Android, using a fixture
     # that exists only in the debug source set and is loaded only by this flag.
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
@@ -1016,8 +988,10 @@ if __name__=="__main__":
         time.sleep(.5)
     assert complex_proof and complex_proof["measures"]==3 and complex_proof["graphicalNotes"]>=20,(
       "Complex synthetic score did not produce the expected OSMD notes: "+json.dumps(complex_proof))
-    assert complex_proof["displayScale"]==1 and complex_proof["nativeStaffSpaceCssPx"]>0,(
-      "Complex score geometry was scaled or its staff spacing could not be measured")
+    assert complex_proof["height"]<=complex_proof["availableHeight"]+0.5 and \
+      abs(complex_proof["displayScale"]-complex_proof["availableHeight"]/complex_proof["nativeSvgHeight"])<0.002 and \
+      complex_proof["nativeStaffSpaceCssPx"]>0 and complex_proof["viewportMaxScrollTop"]==0,(
+      "Complex score did not fit proportionally or its staff spacing/vertical lock could not be verified")
     assert complex_proof["midiMapping"]["matched"]>=10,(
       "Synthetic score graphical heads did not reconcile with the native score model")
     assert complex_proof["graphicalNotes"]==27 and complex_proof["midiMapping"]["matched"]==27, "Synthetic score must preserve all 27 written heads"

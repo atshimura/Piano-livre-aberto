@@ -12,15 +12,9 @@
  body.free #viewport{overflow:auto;scroll-behavior:auto}
  body.free #score{width:153.846%;min-height:100%;transform:scale(0.65);transform-origin:top left}
  /* Research-only proof: preserve the existing Estudo renderer by default. */
- body.preview #viewport{overflow-x:hidden;overflow-y:auto;scroll-behavior:auto;overscroll-behavior:contain;touch-action:pan-y}
+ body.preview #viewport{overflow-x:auto;overflow-y:hidden;scroll-behavior:auto;overscroll-behavior-x:contain;touch-action:pan-x}
  body.preview #score{width:100%;height:100%;min-height:0;transform:none;padding:0;overflow:visible}
  body.preview #score svg{overflow:visible}
- body.preview.vertical-navigation #viewport{width:calc(100% - 48px)}
- #optical-navigation{display:none;position:absolute;right:0;top:0;bottom:0;width:48px;box-sizing:border-box;border-left:1px solid #c7d7d1;background:#f5faf8;flex-direction:column;align-items:center;justify-content:space-between;font:11px system-ui;color:#234e43}
- body.preview.vertical-navigation #optical-navigation{display:flex}
- #optical-navigation button{width:46px;min-height:48px;border:0;background:#e3efe9;color:#164b40;font:22px system-ui}
- #optical-navigation button:disabled{opacity:.35}
- #optical-navigation output{writing-mode:vertical-rl;padding:4px 0}
  #optical-reference{display:none;position:absolute;top:0;bottom:0;width:2px;background:#0c8a78;opacity:0.9;pointer-events:none;z-index:4}
  body.preview #optical-reference{display:block}
  #optical-context-rail{display:none;position:absolute;left:0;overflow:hidden;background:#fff;pointer-events:none;z-index:5}
@@ -34,7 +28,7 @@
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
 <script src="temporal-notation.js"></script>
 <script src="optical-time-map.js"></script></head>
-<body><div id="viewport"><div id="score"></div></div><nav id="optical-navigation" aria-label="Navegação vertical da partitura"><button id="optical-up" aria-label="Subir na partitura">↑</button><output id="optical-position" aria-live="off"></output><button id="optical-down" aria-label="Descer na partitura">↓</button></nav><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
+<body><div id="viewport"><div id="score"></div></div><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
 <script>
 (function(){
  'use strict';
@@ -47,40 +41,6 @@
  let opticalHand=0,opticalCueKey='',opticalCueSvg=null;
  let opticalContextState=null,opticalContextMeasure=-1;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
- let lastLoggedVerticalPan=-2;
- viewport.addEventListener('scroll',function(){
-  updateVerticalNavigation();
-  const top=viewport.scrollTop;
-  if(studyProof&&Math.abs(top-lastLoggedVerticalPan)>=2){
-   lastLoggedVerticalPan=top;
-   console.log('POC_VERTICAL_SCROLL '+JSON.stringify({top:top,
-    max:Math.max(0,viewport.scrollHeight-viewport.clientHeight),
-    noteTipVisible:getComputedStyle(document.getElementById('optical-note-tip')).display!=='none'}));
-  }
-  const rail=document.getElementById('optical-context-rail');
-  if(studyProof&&top>1){rail.style.display='none';
-   document.getElementById('optical-note-tip').style.display='none';}
-  else if(studyProof&&rail.style.display==='none')paintOpticalContext(seekBeat,true);
- },{passive:true});
- // A separate gutter avoids covering music. Only presentation scroll changes.
- function updateVerticalNavigation(){
-  const max=Math.max(0,viewport.scrollHeight-viewport.clientHeight),top=viewport.scrollTop;
-  document.getElementById('optical-up').disabled=top<=1;
-  document.getElementById('optical-down').disabled=top>=max-1;
-  document.getElementById('optical-position').textContent=top<=1?'Topo':top>=max-1?'Base':'Entre pautas';
- }
- function navigateVertically(direction){
-  if(!studyProof)return;
-  const previous=viewport.scrollTop;
-  viewport.scrollTop=Math.max(0,Math.min(viewport.scrollHeight-viewport.clientHeight,
-   previous+direction*viewport.clientHeight*.8));
-  document.getElementById('optical-note-tip').style.display='none';
-  updateVerticalNavigation();
-  console.log('POC_VERTICAL_NAV '+JSON.stringify({before:previous,after:viewport.scrollTop,
-   beat:seekBeat,scale:opticalDisplayScale}));
- }
- document.getElementById('optical-up').addEventListener('click',function(){navigateVertically(-1);});
- document.getElementById('optical-down').addEventListener('click',function(){navigateVertically(1);});
  function inform(s){message.textContent=s;message.style.display='block';}
  function atBeat(beat,smooth){
   if(freeLayout)return;
@@ -188,8 +148,8 @@
   document.getElementById('optical-context-rail').innerHTML='';
  }
  /** Preserve OSMD's native engraving geometry and MusicXML note identity.
-  * When a two-staff score is taller than the viewport, vertical scrolling
-  * exposes the complete system instead of shrinking noteheads and staff spaces.
+  * Fit the complete two-staff SVG uniformly into the measured WebView height.
+  * The 4 CSS px inset on each side protects antialiasing and stroke edges.
   */
  function fitOpticalSvg(svg){
   if(!svg||!studyProof)return;
@@ -202,15 +162,17 @@
    svg.dataset.opticalNativeWidth=String(baseWidth);
    svg.dataset.opticalNativeHeight=String(baseHeight);
   }
-  document.body.classList.toggle('vertical-navigation',baseHeight>document.documentElement.clientHeight);
   osmdRenderedWidth=viewport.clientWidth;
-  const scale=1;
+  const viewportHeight=viewport.clientHeight;
+  const safetyInset=4;
+  const availableHeight=Math.max(1,viewportHeight-safetyInset*2);
+  const scale=availableHeight/baseHeight;
   opticalDisplayScale=scale;
-  svg.style.width=baseWidth+'px';
-  svg.style.height=baseHeight+'px';
+  svg.style.width=(baseWidth*scale)+'px';
+  svg.style.height=(baseHeight*scale)+'px';
   const score=document.getElementById('score');
-  score.style.width=baseWidth+'px';
-  score.style.height=baseHeight+'px';
+  score.style.width=(baseWidth*scale)+'px';
+  score.style.height=(baseHeight*scale)+'px';
   let staffSpace=0,staffGapSpaces=0;
   const stafflines=Array.from(svg.querySelectorAll('g.staffline')).slice(0,2);
   const lineSets=stafflines.map(function(staffline){
@@ -232,10 +194,9 @@
   }
   svg.dataset.opticalStaffSpaceCss=String(staffSpace);
   svg.dataset.opticalStaffGapSpaces=String(staffGapSpaces);
-  updateVerticalNavigation();
   console.log('POC_SVG_FIT '+JSON.stringify({scale:scale,rawWidth:baseWidth,
    rawHeight:baseHeight,width:baseWidth*scale,height:baseHeight*scale,
-   webviewWidth:document.documentElement.clientWidth,viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight,simultaneous:baseHeight<=viewport.clientHeight,verticalOverflow:Math.max(0,baseHeight-viewport.clientHeight),
+   webviewWidth:document.documentElement.clientWidth,viewportWidth:viewport.clientWidth,viewportHeight:viewportHeight,availableHeight:availableHeight,safetyInsetCssPx:safetyInset,simultaneous:baseHeight*scale<=viewportHeight,verticalOverflow:Math.max(0,baseHeight*scale-viewportHeight),
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
  function alignOpticalScore(beat){
   opticalReferenceX=Math.min(viewport.clientWidth*.4,
@@ -763,7 +724,8 @@
        firstMusicalX:optical.timeline.xAt(start||0),referenceOffset:opticalOffset,
        webviewWidth:document.documentElement.clientWidth,viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight};
      proof.viewportScrollHeight=viewport.scrollHeight;
-     proof.viewportMaxScrollTop=Math.max(0,viewport.scrollHeight-viewport.clientHeight);
+     proof.viewportMaxScrollTop=getComputedStyle(viewport).overflowY==='hidden'
+      ?0:Math.max(0,viewport.scrollHeight-viewport.clientHeight);
      proof.nativeStaffSpaceCssPx=Number(svg&&svg.dataset.opticalStaffSpaceCss||0);
      proof.staffSeparationSpaces=Number(svg&&svg.dataset.opticalStaffGapSpaces||0);
      proof.svgFeatureCounts={

@@ -32,10 +32,12 @@ try:
                 ready=json.loads(rows[-1].split('POC_OSMD_READY ',1)[1].split(' @',1)[0]);break
             time.sleep(.5)
         assert ready and ready['graphicalNotes']==469 and ready['midiMapping']['matched']==469,'Display profile lost written heads'
-        assert ready['displayScale']==1,'Display profile shrank music'
-        Path('piano-03c-'+label+'-mapping.json').write_text(json.dumps(ready,indent=2),encoding='utf-8')
+        assert ready['viewportMaxScrollTop']==0,'Display profile exposes vertical score scrolling'
+        assert ready['height']<=ready['availableHeight']+0.5,'Both staves do not fit the display profile'
+        assert abs(ready['displayScale']-ready['availableHeight']/ready['nativeSvgHeight'])<0.002,'Display profile used non-uniform scale'
+        Path('piano-03d-'+label+'-mapping.json').write_text(json.dumps(ready,indent=2),encoding='utf-8')
         responsive_evidence('gymnopedie-'+label)
-        print('PASS: independent responsive display '+label+' size='+size,flush=True)
+        print('PASS: proportional two-staff fit on independent responsive display '+label+' size='+size,flush=True)
 finally:
     adb('shell','am','force-stop',PACKAGE)
     adb('shell','wm','size',previous.group(1) if previous else 'reset')
