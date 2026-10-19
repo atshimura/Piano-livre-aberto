@@ -47,10 +47,12 @@
   if(studyProof&&Math.abs(top-lastLoggedVerticalPan)>=2){
    lastLoggedVerticalPan=top;
    console.log('POC_VERTICAL_SCROLL '+JSON.stringify({top:top,
-    max:Math.max(0,viewport.scrollHeight-viewport.clientHeight)}));
+    max:Math.max(0,viewport.scrollHeight-viewport.clientHeight),
+    noteTipVisible:getComputedStyle(document.getElementById('optical-note-tip')).display!=='none'}));
   }
   const rail=document.getElementById('optical-context-rail');
-  if(studyProof&&top>1)rail.style.display='none';
+  if(studyProof&&top>1){rail.style.display='none';
+   document.getElementById('optical-note-tip').style.display='none';}
   else if(studyProof&&rail.style.display==='none')paintOpticalContext(seekBeat,true);
  },{passive:true});
  function inform(s){message.textContent=s;message.style.display='block';}

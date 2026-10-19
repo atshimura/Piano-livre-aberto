@@ -157,8 +157,9 @@ ok(html.includes("const scale=1;")&&html.includes("svg.style.width=baseWidth+'px
  "Vertical fit must preserve native OSMD geometry and expose overflow instead of shrinking staff spaces");
 ok(html.includes("viewport.addEventListener('scroll'")&&html.includes("POC_VERTICAL_SCROLL")&&
  html.includes("viewportMaxScrollTop")&&html.includes("nativeStaffSpaceCssPx")&&
+ html.includes("noteTipVisible")&&html.includes("document.getElementById('optical-note-tip').style.display='none'")&&
  html.includes("if(viewport.scrollTop>1){rail.style.display='none';return;}"),
- "Vertical scrolling, native geometry and context-rail visibility must remain observable and coherent");
+ "Vertical scrolling, native geometry, context rail and note-tip visibility must remain observable and coherent");
 ok(activity.includes("engraving_complex_selftest")&&
  activity.includes("scores/engraving-complex-synthetic.musicxml")&&
  activity.includes("FLAG_DEBUGGABLE"),

@@ -763,6 +763,7 @@ if __name__=="__main__":
                 if pan and pan["top"]>0:break
             time.sleep(.25)
         assert pan and pan["top"]>0,"Vertical touch pan did not reveal overflow content"
+        assert not pan.get("noteTipVisible",True),"Note identification tooltip obscures the score after vertical pan"
         screenshot("piano-osmd-long-vertical-pan.png")
         adb("shell","input","swipe",str(midx),str(box[1]+35),str(midx),str(box[3]-35),"500")
         time.sleep(.5)
