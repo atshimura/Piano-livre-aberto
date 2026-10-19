@@ -342,3 +342,54 @@ No SHA `d1060eac30b7116e47e82a990a9a3348d98cec89`, build `39160958903` e emulado
 **Prioridade máxima: tamanho útil da pauta da Gymnopédie sem perda do contexto musical.** Na próxima tarefa **separada**, investigar quantitativamente de onde vêm os ~381,59 px nativos (margens, distância das pautas, áreas reservadas para dinâmicas/ligaduras, alcance de notas) e prototipar **apenas se houver espaço comprovadamente seguro** uma escala/altura mais legível, comparando novos PNG com os mesmos compassos e uma captura de zoom/viewport equivalente. Incluir no aceite da próxima tarefa o texto “Lent et douloureux” não cortado e tooltip fora da área crítica de leitura. Preservar glifos/identidade dos eventos, contexto fixo, relógio MIDI, mapa óptico, dados do usuário e o modo temporal original. **Não começar essa experiência nesta Tarefa 01.**
 
 **Verificações desta Tarefa 01:** integridade dos 15 PNG (assinatura/abertura, bytes e dimensões), metadados da Gymnopédie, leitura visual lado a lado e links das duas execuções concluídas na HEAD anterior ao commit. Alteração **somente em Markdown**, sem modificação de fonte, gradle/versionCode, assets musicais, APK ou `main`. A revisão documental pede conferência de Markdown, links/evidências e escopo do diff; **não exige recompilação nem execução do emulador por si só**. Se o push disparar CI, reportar seu estado no SHA documental e não reaproveitar os resultados anteriores como execução desse novo commit. Yamaha P-45, Realme 7 5G e Lenovo Tab M9 seguem sem aceite físico.
+
+
+## Tarefa 02/20 — avaliação quantitativa da geometria editorial (19/10/2026)
+
+**Natureza:** documentação e medição; nenhuma alteração visual, funcional, de dependência ou versão. HEAD inicial do PR #46: \`056ccbba39ce66df24ca0c1e28f57c76a998b493\`; PR aberto em *draft*, sem merge. Consultados \`AGENTS.md\`, \`README.md\`, \`docs/10-CONTINUIDADE.md\`, documento 56 e \`PianoLivreAndroid/app/src/main/assets/notation.html\`. Evidência original: [run 39161693531, artefato 12149460909](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39161693531/artifacts/12149460909), 34 arquivos, incluindo 15 PNG de 2160×1080 e JSON de captura. *O run é anterior ao presente commit documental; não é teste da nova HEAD.*
+
+### Método, unidades e amostras
+
+Foram confrontados os registros \`piano-osmd-long.json\`, \`piano-engraving-poc.json\`, \`piano-visual-evidence.json\` e as capturas reais \`piano-osmd-long.png\`, \`piano-temporal-long.png\`, \`piano-osmd-long-tap.png\`, \`piano-osmd-long-moving.png\`, \`piano-osmd-poc.png\` e \`piano-engraved.png\`. A análise prioriza Gymnopédie (78 compassos), com Ode à Alegria (16 compassos) como controle. Para medir pauta, foi examinada a distribuição de pixels escuros nas colunas x=1000–1150 e 1400–1500 das imagens originais, fora das claves: picos horizontais contínuos indicam as linhas; coordenadas são **pixels da captura**, não CSS px nem dp. Tolerância estimada ~1 px para centros das linhas, decorrente de antialiasing/espessura; o método não é um detector validado de contornos de glifos. Unidade relativa \`e\` = distância entre linhas adjacentes da **mesma** pauta. Para comparar tamanhos físicos, seria preciso conhecer densidade efetiva e escala de apresentação de cada aparelho; todas as imagens deste artefato vêm do mesmo emulador.
+
+### Tabela quantitativa (M = medido em PNG/JSON, C = calculado, ND = não determinado)
+
+| Propriedade | Gymnopédie OSMD | Gymnopédie temporal | Ode OSMD | Tipo/evidência |
+|---|---:|---:|---:|---|
+| Resolução da captura | 2160×1080 px | 2160×1080 px | 2160×1080 px | M, manifesto + PNG |
+| Centros das cinco linhas da pauta superior (x≈1400) | y≈532,5; 546; 559,5; 573; 586,5 px | y≈506; 530; 554; 579; 603 px | y≈461; 488; 516; 543; 571 px | M, PNG; ±1 px |
+| Espaço \`e\` médio | ~13,5 px | ~24,25 px | ~27,5 px | C, quatro intervalos |
+| Altura das cinco linhas (1ª→5ª) | ~54 px = 4e | ~97 px = 4e | ~110 px = 4e | M/C |
+| Centros das cinco linhas da pauta inferior (x≈1400) | y≈790,5; 803,5; 817,5; 831; 844,5 px | y≈730; 755; 779; 803; 828 px | y≈681; 708; 736; 763; 791 px | M, PNG; ±1 px |
+| Entre os limites internos das pautas (última linha superior→primeira inferior) | ~204 px ≈ 15,1e | ~127 px ≈ 5,24e | ~110 px ≈ 4,0e | C, regiões livres entre linhas; **não** equivalem a espaço totalmente disponível para notas |
+| Origem da pauta inferior menos origem superior (modelo OSMD) | 276,593−86,233 = 190,36 unidades registradas de Y | ND | 96,5−16,5 = 80 unidades registradas de Y | M no JSON, em coordenadas do SVG/modelo; não equiparar diretamente a px do PNG |
+| Escala SVG CSS | 0,4926742073 | não se aplica | 1,0 | M, JSON |
+| Altura SVG nativa→exibida | 381,5909→188 CSS px | ND | 136,5→137 CSS px (arred.) | M, JSON |
+| Viewport OSMD | 738×196 CSS px | ND | 738×196 CSS px | M, JSON |
+| Largura SVG exibida | 3818 CSS px | ND | 2103 CSS px | M, JSON |
+| Compassos / nós SVG / render inicial | 78 / 4927 / 921 ms | ND | 16 / 879 / 317 ms | M, execução prévia do emulador |
+| Proporção \`e\` OSMD Gymnopédie/Ode | ~0,49 | — | referência 1,0 | C, PNG; consistente com 0,4927 |
+| Proporção \`e\` OSMD Gymnopédie/temporal | ~0,56 | referência 1,0 | — | C, PNG; motores e bases tipográficas diferentes |
+
+**Medições não confiáveis nesta amostra:** largura/altura da cabeça de nota isolada, espessura/altura das claves e acidentes, distância entre sistemas musicais (layout horizontal de um sistema), margens físicas de celular/tablet e área livre para símbolos expressivos. Estimativas visuais de glifos por imagem raster sem segmentar as hastes, linhas e ligaduras seriam falsamente precisas. Devem ser obtidas em investigação futura via \`getBBox()\`/caixas SVG por glifo, com transformação SVG→viewport explicitada e capturas com mesma seção/zoom. As linhas oferecem um padrão reprodutível em \`e\`, mas **não** há nesta tarefa cota editorial universal validada para tamanho mínimo de cabeça de nota/clave/acidente.
+
+### Escala e causa comprovada no código
+
+Em \`notation.html\`, função \`fitOpticalSvg\` (linhas 150–170 da HEAD inicial), a altura nativa é salva em \`svg.dataset.opticalNativeHeight\`, e a escala da prévia é literalmente \`Math.min(1, Math.max(0.05, (viewport.clientHeight-8)/baseHeight))\`. Para \`viewportHeight=196\` e \`nativeSvgHeight=381,5909119\`, o cálculo \`188/381,5909119=0,4926742\` reproduz **exatamente** o fator do JSON. Largura e altura CSS do SVG são multiplicadas por essa mesma escala. A extensão horizontal total **não entra diretamente** na fórmula; os 78 compassos afetam principalmente a largura (3818 CSS px exibidos), enquanto notas extremas, distâncias entre pautas, ligaduras, dinâmicas e limites verticais do SVG podem aumentar sua altura e, consequentemente, comprimir globalmente os glifos. Não há nesta amostra prova de qual elemento isolado causou o excesso de altura; tampouco existe relação causal demonstrada entre o número 78 e a redução. A medida musical \`e\` da Gymnopédie OSMD (~13,5 px) é ~49% da Ode OSMD (~27,5 px), consistente com a escala; esta comparação é de capturas do mesmo emulador. **A dimensão de símbolos fica indevidamente acoplada à altura global da gravura**, mesmo quando o usuário está lendo somente uma janela horizontal de 738 CSS px.
+
+### Recortes, sobreposições e geometrias não demonstradas
+
+- **Confirmado, P1 — redução:** detalhes da Gymnopédie OSMD são cerca de metade do tamanho linear da Ode OSMD na captura de mesma resolução; aceitar tal tamanho em hardware físico demanda ensaio de leitura e toque.
+- **Confirmado, P2 — recorte de texto:** \`piano-osmd-long.png\` e \`piano-osmd-long-moving.png\` mostram o começo de “Lent et douloureux” ausente no limite esquerdo da região musical, junto à faixa fixa. A largura do fragmento cortado em px **não foi determinada** com segurança sem caixa de texto SVG e transformação/recorte do DOM; o MusicXML não foi diagnosticado como defeituoso.
+- **Confirmado, P2 — tooltip:** \`piano-osmd-long-tap.png\`/ \`piano-osmd-long-moving.png\` mostram a etiqueta “Fá♯5 · compasso 5 · pauta 1 · MIDI conferido” ocupando visualmente a região da pauta superior e ocultando grafia; medir área de interseção exata exigiria caixas da etiqueta e dos glifos no viewport.
+- **Não confirmado:** colisão inequívoca de cabeça/haste/acidente, vigas defeituosas, ligaduras semanticamente incorretas ou truncamento de notas em todos os 78 compassos. A distância de ~204 px entre limites das pautas **não é margem dispensável**: arcos, dinâmicas, acordes e hastes inferiores/superiores ocupam parte desse espaço.
+
+### Critérios editoriais e orientação *sem implementar*
+
+1. Tomar \`e\` como unidade de normalização; verificar cinco linhas uniformes, claves ancoradas G4/F3 e glifos com proporções internas estáveis. Comparar a mesma passagem e zoom/viewport em revisões futuras.
+2. Inspecionar limites reais de conteúdo por pauta: caixas de cabeças, hastes, acidentes, dinâmicas, ligaduras e textos em coordenadas comuns. Reservar afastamento vertical conforme as caixas e evitar qualquer contato material, sem fixar redução arbitrária.
+3. Considerar aceitável uma escala somente após leitura confortável e toque preciso em celular/tablet físicos, mantendo conteúdo textual e os dois pentagramas íntegros; não adotar o teto de viewport como único requisito.
+4. Garantir que o texto de expressão tenha caixa integral visível diante da faixa esquerda fixa e em movimento, com deslocamento/recorte documentado. Posicionar o tooltip fora das caixas musicais ocupadas ou aplicar comportamento de ocultação sem obstrução.
+5. Não comparar valores absolutos de pixels entre aparelhos sem densidade, zoom e dimensões de viewport; usar \`e\` e captura do mesmo compasso. Na próxima tarefa, caso autorizada, focalizar caixas SVG e diagnóstico de altura/colisões antes de escolher parâmetros; preservar timeline óptica e associação de notas.
+
+**Verificações nesta tarefa:** leitura documental e de código na branch indicada; abertura de PNG e inspeção de linhas em duas janelas X; cruzamento dos registros JSON; cálculo independente da fórmula; revisão para restringir a alteração a este Markdown. Não se executaram testes Gradle, Android/emulador ou em hardware: esta tarefa é estritamente documental e não modifica binários. Os resultados históricos da Action não são apresentados como nova execução. O PR #46 deve permanecer *draft* e não integrado; nenhuma tarefa 03/20 é iniciada.
