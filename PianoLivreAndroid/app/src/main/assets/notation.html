@@ -17,7 +17,7 @@
  body.preview #score svg{overflow:visible}
  #optical-reference{display:none;position:absolute;top:0;bottom:0;width:2px;background:#0c8a78;opacity:0.9;pointer-events:none;z-index:4}
  body.preview #optical-reference{display:block}
- #optical-context-rail{display:none;position:absolute;left:0;overflow:hidden;background:#fff;pointer-events:none;z-index:5}
+ #optical-context-rail{display:none;position:absolute;left:0;overflow:hidden;background:transparent;pointer-events:none;z-index:5}
  #optical-context-rail svg{position:absolute;left:0;top:0;overflow:hidden}
  body.preview #optical-context-rail{display:block}
  #optical-wait{display:none;position:absolute;bottom:8px;left:8px;width:142px;padding:7px 10px;border:1px solid #92b7ad;border-radius:7px;background:rgba(255,255,255,.96);color:#164b40;z-index:10;font:12px system-ui;pointer-events:none;box-shadow:0 1px 4px #0002}
@@ -263,6 +263,26 @@
     copy.setAttribute('transform','translate(-20 0)');
     lineGroup.appendChild(copy);
    });
+   // Mask only the five-line staff band, not the entire SVG height.
+   // Above/below-staff expressive text must remain visible as the score moves.
+   // These coordinates come from OSMD staff paths, not hand-tuned text offsets.
+   const staffPaths=Array.from(first.children).filter(function(node){
+    return node.tagName.toLowerCase()==='path';
+   }).slice(0,5);
+   if(staffPaths.length===5){
+    try{
+     const boxes=staffPaths.map(function(path){return path.getBBox();});
+     const top=Math.min.apply(null,boxes.map(function(box){return box.y;}));
+     const bottom=Math.max.apply(null,boxes.map(function(box){return box.y+box.height;}));
+     const matte=document.createElementNS('http://www.w3.org/2000/svg','rect');
+     matte.setAttribute('x',String(viewBox.x));
+     matte.setAttribute('y',String(top));
+     matte.setAttribute('width','180');
+     matte.setAttribute('height',String(bottom-top));
+     matte.setAttribute('fill','#fff');
+     lineGroup.insertBefore(matte,lineGroup.firstChild);
+    }catch(e){console.log('POC_CONTEXT_MATTE_SKIP '+e.message);}
+   }
    overlay.appendChild(lineGroup);
    const symbolMeasures=[];
    function contextAt(measureNumber){
@@ -381,6 +401,12 @@
    const time=symbols.time;
    const slots={clef:25,key:clef?25+clef.width+10:61,
     time:key?Math.max(66,61+key.width+15):66};
+   // Keep the matte within the full contextual glyph run; no fixed-width
+   // blank strip over directions, dynamics or technique markings.
+   const end=Math.max(clef?slots.clef+clef.width:0,
+    key?slots.key+key.width:0,time?slots.time+time.width:0);
+   const matte=lines.querySelector('rect');
+   if(matte)matte.setAttribute('width',String(Math.max(0,end+4-state.viewBox.x)));
    ['clef','key','time'].forEach(function(kind){
     const symbol=symbols[kind];
     if(!symbol)return;
