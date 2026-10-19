@@ -167,6 +167,7 @@ jobs:
             PianoLivreAndroid/piano-osmd-context-failure.png
             PianoLivreAndroid/piano-osmd-context-failure-window.xml
             PianoLivreAndroid/piano-osmd-context-failure-diagnostics.txt
+            PianoLivreAndroid/piano-03c-*
             PianoLivreAndroid/piano-osmd-long.json
             PianoLivreAndroid/piano-engraving-poc.json
             PianoLivreAndroid/piano-free-reading.png

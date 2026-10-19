@@ -629,3 +629,43 @@ Gymnopédie, Ode e mudanças de contexto foram medidas no mesmo Android API 29 e
 - Limites: Android API 29 emulador, sem aparelho físico. Resize por teclado guia foi exercitado; Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 pendentes. Em altura curta, o usuário rola para alternar pautas, em vez de vê-las simultaneamente. Revisão editorial física, legibilidade sustentada, gestos reais, desempenho em partituras/importações grandes, polifonia adversarial e clipping da expressão à esquerda continuam pendentes.
 
 Implementação principal entrou no commit [`f819c77`](https://github.com/atshimura/Piano-livre-aberto/commit/f819c77bb10df85862bff0dd282dd5f151bd4956), “Tarefa 03B/20 — geometria vertical adaptativa”; correções limitadas de arredondamento, fixture e visibilidade/medição foram adicionadas em commits seguintes até a HEAD `7618d72`. Esta seção documental será versionada no mesmo PR. Renderizador temporal, interpretação MusicXML/MIDI, perfis, biblioteca, histórico e dados não mudaram. Sem merge, release, APK público, alteração de `main` ou início da Tarefa 04.
+
+
+## Tarefa 03C/20 — Legibilidade e apresentação responsiva das duas pautas
+
+**Situação provisória: PARCIAL, implementação em validação.** Não confundir código ou teste DOM com aprovação Android/editorial. Não iniciar 04 nesta entrega.
+
+### Diagnóstico e alternativas
+
+Leitura de AGENTS, README, continuidade, HTML, contratos, evidência 03A.1 e seção 03B realizada na HEAD `fc3e89592bd3c68fcd404cca916be2ba1200b2de`. A separação da Gymnopédie é limitada pelo conteúdo: o skyline documentado exige 19,226 espaços entre origens; a menor folga de caixas opostas é aproximadamente 1,126 espaços, sem stroke. Margens externas não oferecem reserva relevante. Portanto não se reduziram proteções de colisão, dinâmicas, slurs, hastes ou geometria OSMD. A escala anterior de ~0,493 já foi rejeitada por legibilidade; não se introduziu outro piso arbitrário de redução.
+
+A inspeção de `PianoScreens.setKeyboardOpen` confirma que abrir o guia oculta título, controles superiores e header, além de mostrar o teclado; fechar restaura esses componentes. Essa lógica nativa está preservada. Nenhuma hipótese de menor altura ao abrir o teclado foi adotada. Os testes novos exigem medições reais dos dois estados e retorno.
+
+### Melhoria implementada
+
+Quando a altura nativa excede a altura do WebView, a prévia reserva uma faixa lateral de 48 CSS px com botões acessíveis Subir/Descer e estado Topo/Entre pautas/Base. A faixa não consome altura nem cobre música. O custo é menor janela horizontal, mantendo a navegação horizontal musical existente. O passo vertical de 80% mantém sobreposição de contexto; não representa escala mínima musical. As extremidades desabilitam seus botões. Toque esconde a etiqueta e altera somente scrollTop: não busca beat, não modifica MIDI/MusicXML, não muda escala, não comprime pentagramas. O gesto vertical continua disponível. Quando a gravura cabe, a faixa desaparece e a largura integral retorna.
+
+`fitOpticalSvg` continua preservando escala 1 e registra largura total do WebView, largura musical útil, altura, escala, altura nativa e se o SVG inteiro cabe. A largura total é usada pelo teste ADB para converter coordenadas CSS, evitando confundir a faixa reservada com mudança de escala. A comparação de resize considera a largura musical após reservar/remover a faixa.
+
+Arquivos: `notation.html`, `tests/emulator_ui.py`, novo `tests/VerticalNavigationTest.js`, workflows build/emulator e este documento. Sem alteração de versão pública, renderizador padrão, dados, interpretações musicais ou ocultação nativa das barras.
+
+### Verificação e evidências
+
+- Contratos existentes: 73 verificações aprovadas; OpticalTimeMap: 160, incluindo 12.000 âncoras. Auditoria pública aprovada.
+- Novo teste DOM executa 24 combinações de largura (738/1024), altura (196/300/500) e alturas representativas das quatro partituras, navegação, preservação de beat/escala e restauração de largura após maior altura. **É teste com DOM simulado, não renderização dessas partituras nem emulador/tablet.**
+- Novo teste Android registra `piano-03c-{ode,gymnopedie,complex,context}.json` e PNGs para guia fechado/aberto/restaurado; exige ocultação/restauração de ambas as barras e altura restaurada. Gymnopédie também exige toque real no botão inferior e captura `piano-03c-navigation.png`. Workflows arquivam esses arquivos.
+- Falta executar e inspecionar CI do novo commit, capturas e reconciliação 469/469 e 27/27. Não reutilizar os resultados de 03B como comprovação nova.
+- Ambiente local sem adb/Gradle/Chrome instalado. Instalação de Chromium falhou com arquivo de download inválido; não houve ensaio visual local nem build Android local.
+
+### Comparação quantitativa e limites atuais
+
+| Indicador | Antes (03B Android, histórico) | Depois (03C) |
+|---|---|---|
+| Gymnopédie viewport musical | 738×196 CSS px | Medição Android pendente |
+| Escala / espaço entre linhas | 1 / 10 CSS px | Código preserva 1; medição pendente |
+| Altura nativa / separação | 381,591 px / 15,036 espaços | Geometria não alterada; confirmação pendente |
+| Navegação explícita | gesto vertical | botões + gesto; teste Android pendente |
+| Duas pautas completas em altura curta | não | não se promete ganho de simultaneidade |
+| Teclado aberto / fechado | sem tabela comparativa dedicada | testes acrescentados, resultados pendentes |
+
+A melhoria visa **navegação**, não ganho de visualização simultânea em altura insuficiente. A escala 1 permanece por preservar uma geometria já validada em 03B; não é afirmada como única solução responsiva possível. Não se alterou a experiência padrão: faixa apenas na prévia experimental. Não há nova aprovação editorial, prova de ausência de colisões por captura nem validação física Realme/Lenovo/Yamaha. A 04 continua responsável por contexto fixo durante rolagem e texto “Lent et douloureux”; a 08, etiqueta de notas. A conclusão técnica depende da CI e evidências novas.

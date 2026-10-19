@@ -28,6 +28,28 @@ def screenshot(name):
     adb("shell", "screencap", "-p", "/sdcard/"+name)
     adb("pull", "/sdcard/"+name, name)
 
+def responsive_evidence(name):
+    """Measure actual WebView bounds with native bars in both guide states."""
+    result=[]
+    for state in ("closed", "open", "restored"):
+        if state=="open":tap_text(["Teclado guia"],scroll=True)
+        if state=="restored":tap_text(["Ocultar teclado"],scroll=True)
+        time.sleep(.8)
+        labels=[n.attrib.get("text", "") for n in dump().iter("node")]
+        title_visible="Partitura Livre" in labels
+        controls_visible="Espera" in labels
+        assert title_visible==(state!="open"), "Guide did not hide/restore title bar"
+        assert controls_visible==(state!="open"), "Guide did not hide/restore controls bar"
+        rows=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_SVG_FIT {" in line]
+        assert rows, "Responsive geometry report absent"
+        geometry=json.loads(rows[-1].split("POC_SVG_FIT ",1)[1].split(" @",1)[0])
+        assert geometry["scale"]==1, "Guide resize compressed music"
+        screenshot("piano-03c-"+name+"-"+state+".png")
+        result.append({"keyboard":state,"titleBar":title_visible,"controlsBar":controls_visible,
+                       "geometry":geometry})
+    assert result[0]["geometry"]["viewportHeight"]==result[-1]["geometry"]["viewportHeight"], "Closing guide did not restore score height"
+    Path("piano-03c-"+name+".json").write_text(json.dumps(result,indent=2),encoding="utf-8")
+
 def dump():
     for retry in range(3):
         try:
@@ -344,6 +366,7 @@ if __name__=="__main__":
     assert "POC_LAYER software" in adb("logcat","-d","-v","brief"), "Preview did not isolate software SVG diagnostic"
     time.sleep(2)
     screenshot("piano-osmd-poc.png")
+    responsive_evidence("ode")
     # Select each native hand without changing the MusicXML or piano key guide.
     for hand_name,hand_index in [("Direita",1),("Esquerda",2),("Ambas",0)]:
         tap_text([hand_name],exact=True,scroll=True)
@@ -373,7 +396,7 @@ if __name__=="__main__":
     bounds=[int(v) for v in re.findall(r"\d+",webviews[0].attrib.get("bounds",""))]
     assert len(bounds)==4, "Invalid WebView geometry"
     w,h=bounds[2]-bounds[0],bounds[3]-bounds[1]
-    nx=bounds[0]+round(first["x"]*w/professional["viewportWidth"])
+    nx=bounds[0]+round(first["x"]*w/professional.get("webviewWidth",professional["viewportWidth"]))
     ny=bounds[1]+round(first["y"]*h/professional["viewportHeight"])
     assert bounds[0]<=nx<bounds[2] and bounds[1]<=ny<bounds[3], "Mapped notehead outside visible WebView"
     adb("shell","input","tap",str(nx),str(ny))
@@ -416,7 +439,7 @@ if __name__=="__main__":
     time.sleep(.7)
     second=professional.get("secondNoteViewport")
     assert second and second.get("beat",0)>first["beat"], "No later matched upper-staff note for loop"
-    lx=bounds[0]+round(second["x"]*w/professional["viewportWidth"])
+    lx=bounds[0]+round(second["x"]*w/professional.get("webviewWidth",professional["viewportWidth"]))
     ly=bounds[1]+round(second["y"]*h/professional["viewportHeight"])
     assert bounds[0]<=lx<bounds[2] and bounds[1]<=ly<bounds[3], "Second notehead outside WebView"
     tap_text(["Trecho ↻"],exact=True,scroll=True)
@@ -723,6 +746,7 @@ if __name__=="__main__":
     assert long_proof["graphicalNotes"]>=50 and long_proof["svgNodes"]>=1000, "Long-score engraving incomplete"
     assert long_proof["midiMapping"]["matched"]==long_proof["graphicalNotes"], "Each written Gymnopédie notehead must reconcile, including tied continuations"
     screenshot("piano-osmd-long.png")
+    responsive_evidence("gymnopedie")
     # Native-scale SVG geometry must preserve notehead hit targets on Android.
     long_head=long_proof.get("firstNoteViewport")
     assert long_head and long_head.get("midiEstimate") is not None, "Long score has no testable upper-staff notehead"
@@ -730,7 +754,7 @@ if __name__=="__main__":
     assert views, "Long-score WebView geometry unavailable"
     rect=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
     assert len(rect)==4, "Invalid scaled WebView dimensions"
-    xx=rect[0]+round(long_head["x"]*(rect[2]-rect[0])/long_proof["viewportWidth"])
+    xx=rect[0]+round(long_head["x"]*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))
     yy=rect[1]+round(long_head["y"]*(rect[3]-rect[1])/long_proof["viewportHeight"])
     assert rect[0]<=xx<rect[2] and rect[1]<=yy<rect[3], "Scaled graphical notehead outside screen"
     previous_hits=adb("logcat","-d","-v","brief").count("POC_NOTE_TAP {")
@@ -772,6 +796,17 @@ if __name__=="__main__":
         # Keep the evidence set complete; the JSON says no vertical pan was
         # required because this particular emulator viewport fit the score.
         screenshot("piano-osmd-long-vertical-pan.png")
+    if long_proof["viewportMaxScrollTop"]>0:
+        nav_before=adb("logcat","-d","-v","brief").count("POC_VERTICAL_NAV {")
+        adb("shell","input","tap",str(rect[2]-round(24*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))),str(rect[3]-round(24*(rect[3]-rect[1])/long_proof["viewportHeight"])))
+        time.sleep(.4)
+        nav_rows=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_VERTICAL_NAV {" in line]
+        assert len(nav_rows)>nav_before, "Vertical navigation button did not receive touch"
+        nav=json.loads(nav_rows[-1].split("POC_VERTICAL_NAV ",1)[1].split(" @",1)[0])
+        assert nav["after"]>nav["before"] and nav["scale"]==1, "Navigation failed to reveal lower music"
+        screenshot("piano-03c-navigation.png")
+        adb("shell","input","tap",str(rect[2]-round(24*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))),str(rect[1]+round(24*(rect[3]-rect[1])/long_proof["viewportHeight"])))
+        time.sleep(.3)
     print("PASS: scaled 78-measure OSMD graphical notehead maps to native MIDI",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     long_play_point=tap_text(["Iniciar"],return_point=True,scroll=True)
@@ -933,6 +968,7 @@ if __name__=="__main__":
         "Measure 3 did not advance its changed clef, key signature and time signature: "+
         json.dumps(context_states))
     screenshot("piano-osmd-context-changes.png")
+    responsive_evidence("context")
     Path("piano-osmd-context-changes.json").write_text(json.dumps({
       "fixture":"debug-only three-measure MusicXML; 4/4 C, 3/4 D with C-clef, 6/8 E-flat with G-clef",
       "engraving":context_ready,"railStates":context_states,
@@ -995,6 +1031,7 @@ if __name__=="__main__":
         "Synthetic fixture lost written engraving features: "+json.dumps(source_features))
     time.sleep(2.5)  # Let the non-musical WebView toast clear before visual review.
     screenshot("piano-osmd-complex-synthetic.png")
+    responsive_evidence("complex")
     complex_evidence={
       "fixture":"debug-only, synthetic and copyright-free MusicXML",
       "coverage":["grand staff","chords","two voices","beams","accidentals","ties","slurs","dynamics/wedges","tuplets"],
