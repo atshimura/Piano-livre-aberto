@@ -178,4 +178,11 @@ ok(complexFixture.includes("Synthetic engraving geometry test")&&
 ok(!html.includes("svg.getBBox()"),"Failed crop experiment is not left in the OSMD rendering path");
 ok(html.includes("displayScale:opticalDisplayScale"),"Piano score proof reports actual visual scaling");
 ok(html.includes("Math.abs(viewport.scrollLeft-target)>=0.5"),"WebView skips redundant subpixel scroll updates");
+ok(html.includes("#optical-context-rail{display:none;position:absolute;left:0;overflow:hidden;background:transparent"),"Context rail cannot paint an opaque full-height block over expressive indications");
+ok(html.includes("staffPaths.map(function(path){return path.getBBox();})")&&
+ html.includes("matte.setAttribute('y',String(top))")&&
+ html.includes("matte.setAttribute('height',String(bottom-top))"),"Rail matte must follow native OSMD staff lines rather than the whole SVG");
+ok(html.includes("if(matte)matte.setAttribute('width'")&&
+ html.includes("key?slots.key+key.width:0")&&html.includes("time?slots.time+time.width:0"),
+ "Rail matte must cover only the active contextual glyph sequence");
 console.log("OSMD_POC_CONTRACT_PASS checks="+checks);
