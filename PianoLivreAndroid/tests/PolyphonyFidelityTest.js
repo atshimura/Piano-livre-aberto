@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs");
-const Map=require("../app/src/main/assets/optical-time-map.js");
+const OpticalTimeMap=require("../app/src/main/assets/optical-time-map.js");
 const xml=fs.readFileSync("app/src/debug/assets/scores/engraving-polyphony-synthetic.musicxml","utf8");
 // Small independent reader for the deliberately restricted authored test XML.
 // Neither OSMD nor Score.java nor OpticalTimeMap supplies this oracle.
@@ -49,10 +49,10 @@ for(let mi=1;mi<=4;mi++)for(let staff=1;staff<=2;staff++){
  }
  graph.measureList[mi-1][staff-1]={staffEntries:entries};
 }
-const mapped=Map.fromGraphical(graph);
+const mapped=OpticalTimeMap.fromGraphical(graph);
 assert.equal(mapped.notes.length,30,"Mock OSMD extracts every head");
 const native=expected.map((e,index)=>({...e,xmlNoteIndex:index,sourcePart:0}));
-let report=Map.reconcile(mapped.notes,native);
+let report=OpticalTimeMap.reconcile(mapped.notes,native);
 assert.deepEqual([report.matched,report.ambiguous,report.unmatched,report.unmatchedNative],[30,0,0,0],
  "All independently counted notes must reconcile");
 for(const n of mapped.notes){
@@ -61,32 +61,32 @@ for(const n of mapped.notes){
  assert.equal(n.staff,e.staff);assert.equal(n.measure,e.measure);
  assert.equal(n.voiceId,e.voice);assert.equal(e.sourcePart,0);
 }
-const triad=Map.nextCueHeads(mapped.notes,0,1);
+const triad=OpticalTimeMap.nextCueHeads(mapped.notes,0,1);
 assert.equal(triad.filter(n=>n.nativeEvent.voice==="1").length,3,
  "Highlight all three heads of an upper-staff chord");
-assert.equal(Map.nextCueHeads(mapped.notes,0,0).length,7,
+assert.equal(OpticalTimeMap.nextCueHeads(mapped.notes,0,0).length,7,
  "Highlight both simultaneous staves and the sustained upper second voice");
-assert.equal(Map.nextCueHeads(mapped.notes,0,2).length,3,
+assert.equal(OpticalTimeMap.nextCueHeads(mapped.notes,0,2).length,3,
  "Highlight lower staff without inferring hand by pitch");
 const upper=triad.filter(n=>n.nativeEvent.voice==="1");
-assert.equal(Map.hitTest(mapped.notes,upper[0].x,upper[0].y)?.nativeEvent.midi,72);
-assert.equal(Map.hitTest(mapped.notes,upper[1].x,upper[1].y)?.nativeEvent.midi,74);
+assert.equal(OpticalTimeMap.hitTest(mapped.notes,upper[0].x,upper[0].y)?.nativeEvent.midi,72);
+assert.equal(OpticalTimeMap.hitTest(mapped.notes,upper[1].x,upper[1].y)?.nativeEvent.midi,74);
 const lower=mapped.notes.find(n=>n.staff===2);
-assert.equal(Map.hitTest(mapped.notes,lower.x,lower.y)?.staff,2);
+assert.equal(OpticalTimeMap.hitTest(mapped.notes,lower.x,lower.y)?.staff,2);
 const tied=mapped.notes.find(n=>n.nativeEvent.playbackAttack===false);
-assert(tied && !Map.nextCueHeads(mapped.notes,12,1).includes(tied),
+assert(tied && !OpticalTimeMap.nextCueHeads(mapped.notes,12,1).includes(tied),
  "Tied continuation never cues an attack");
 const missingOneUnison=mapped.notes.filter((n)=>!(n.beat===4&&n.staff===1&&n.midiEstimate===67&&n.voiceId==="2"))
  .map(n=>({...n}));
-report=Map.reconcile(missingOneUnison,native);
+report=OpticalTimeMap.reconcile(missingOneUnison,native);
 assert.equal(report.matched,28);assert.equal(report.ambiguous,1);
 assert.equal(report.unmatchedNative,2);
 assert(!missingOneUnison.find(n=>n.beat===4&&n.staff===1&&n.midiEstimate===67).nativeEvent,
  "Engraved collapsed unison is unresolved, never arbitrarily assigned");
 const withoutVoices=mapped.notes.map(n=>({...n,voiceId:null}));
-report=Map.reconcile(withoutVoices,native);
+report=OpticalTimeMap.reconcile(withoutVoices,native);
 assert.equal(report.matched,28);assert.equal(report.ambiguous,2,
  "Two unlabeled unison heads remain ambiguous");
-assert.equal(Map.hitTest([{x:1,y:2},{x:1,y:2}],1,2),null,
+assert.equal(OpticalTimeMap.hitTest([{x:1,y:2},{x:1,y:2}],1,2),null,
  "Coincident heads cannot be attributed from a tap");
 console.log("POLYPHONY_FIDELITY_JS_PASS source=30 graphical=30 native=30 attacks=29 ambiguousCollapsed=1");
