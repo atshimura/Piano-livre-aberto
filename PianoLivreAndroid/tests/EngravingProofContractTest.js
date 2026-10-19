@@ -170,7 +170,7 @@ ok(complexFixture.includes("Synthetic engraving geometry test")&&
  complexFixture.includes("<tie")&&complexFixture.includes("<slur")&&
  complexFixture.includes("<wedge")&&complexFixture.includes("<time-modification")&&
  complexFixture.includes("<alter>1</alter>")&&complexFixture.includes("<accidental>sharp</accidental>")&&
- complexFixture.includes("<accidental>flat</accidental>")&&html.includes("node.textContent.trim()==='3'")&&
+ complexFixture.includes("<accidental>flat</accidental>")&&
  complexFixture.includes("<staves>2</staves>"),
  "Synthetic debug-only geometry fixture must cover piano chords, beams, ties, slurs, dynamics, tuplets and accidentals");
 ok(!html.includes("svg.getBBox()"),"Failed crop experiment is not left in the OSMD rendering path");

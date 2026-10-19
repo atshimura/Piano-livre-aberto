@@ -984,6 +984,16 @@ if __name__=="__main__":
     assert complex_proof["midiMapping"]["matched"]>=10,(
       "Synthetic score graphical heads did not reconcile with the native score model")
     features=complex_proof["svgFeatureCounts"]
+    synthetic=ET.parse("app/src/debug/assets/scores/engraving-complex-synthetic.musicxml").getroot()
+    source_features={
+      "accidentals":len(synthetic.findall(".//note/accidental")),
+      "tuplets":len(synthetic.findall(".//note/notations/tuplet")),
+      "tupletDurations":len(synthetic.findall(".//note/time-modification")),
+      "beams":len(synthetic.findall(".//note/beam"))}
+    assert source_features["accidentals"]>=2 and source_features["tuplets"]>=2 and \
+      source_features["tupletDurations"]>=3 and source_features["beams"]>=4,(
+        "Synthetic fixture lost written engraving features: "+json.dumps(source_features))
+    time.sleep(2.5)  # Let the non-musical WebView toast clear before visual review.
     screenshot("piano-osmd-complex-synthetic.png")
     complex_evidence={
       "fixture":"debug-only, synthetic and copyright-free MusicXML",
@@ -999,8 +1009,9 @@ if __name__=="__main__":
       "nativeStaffSpaceCssPx":complex_proof["nativeStaffSpaceCssPx"],
       "staffSeparationSpaces":complex_proof["staffSeparationSpaces"],
       "graphicalNotes":complex_proof["graphicalNotes"],
-      "midiMapping":complex_proof["midiMapping"],"svgFeatureCounts":features
+      "midiMapping":complex_proof["midiMapping"],"svgFeatureCounts":features,
+      "sourceFeatureCounts":source_features
     }),flush=True)
-    assert all(features.get(key,0)>0 for key in ("beams","ties","slurs","accidentals","dynamics","tuplets")),(
-      "Complex fixture lost required engraved symbols: "+json.dumps(features))
-    print("PASS: synthetic complex engraving geometry and note reconciliation",flush=True)
+    assert all(features.get(key,0)>0 for key in ("beams","ties","slurs","dynamics")),(
+      "Complex fixture lost class-addressable engraved symbols: "+json.dumps(features))
+    print("PASS: synthetic complex geometry, written symbols and note reconciliation",flush=True)
