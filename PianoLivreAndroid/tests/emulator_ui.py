@@ -943,14 +943,18 @@ if __name__=="__main__":
     screenshot("piano-osmd-context-changes.png")
     # Regression 04: a backward musical seek must restore the original
     # clef/key/time context, not leave the most recent measure pinned.
-    adb("logcat","-c")
+    # Preserve earlier POC_SVG_FIT records: responsive_evidence consumes them.
+    baseline_logs=adb("logcat","-d","-v","brief")
+    baseline_states=sum("POC_CONTEXT_RAIL_STATE {" in line
+                        for line in baseline_logs.splitlines())
     tap_text(["Início"],scroll=True)
     returned=False
     for attempt in range(12):
         logs=adb("logcat","-d","-v","brief")
         states=[]
-        for line in logs.splitlines():
-            if "POC_CONTEXT_RAIL_STATE {" in line:
+        rail_lines=[line for line in logs.splitlines()
+                    if "POC_CONTEXT_RAIL_STATE {" in line]
+        for line in rail_lines[baseline_states:]:
                 try:
                     states.append(json.loads(line.split("POC_CONTEXT_RAIL_STATE ",1)[1].split(" @",1)[0]))
                 except (ValueError, IndexError):
