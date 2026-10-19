@@ -13,6 +13,7 @@
 - [08 — Decisões](08-DECISOES.md): histórico funcional (ler à luz do AGENTS atual).
 - [09 — Segurança e licenças](09-SEGURANCA-LICENCAS.md): prevenção e restrições.
 - [10 — Continuidade](10-CONTINUIDADE.md): instruções para desenvolvedor/IA.
+- [Retomada segura entre sessões](RETOMADA-SEGURA.md): checkpoints, recuperação após travamentos e prompt curto para agentes.
 - [11 — Manual de teste](11-MANUAL-DE-USO-BETA.md): uso do APK público.
 - [Assinatura pública](ASSINATURA.md): criação local e GitHub Secrets.
 - [Licenças das partituras](LICENCAS-PARTITURAS.md): inventário de redistribuição.
