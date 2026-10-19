@@ -161,36 +161,6 @@
    svg.dataset.opticalNativeWidth=String(baseWidth);
    svg.dataset.opticalNativeHeight=String(baseHeight);
   }
-  // Tarefa 03/20: trim only *provably empty* outer SVG margins.
-  // Do not move staves, expressions, ties, dynamics or note geometry. The
-  // bounding box covers all rendered marks, not just the notehead groups.
-  // Keep an unmodified SVG when its bounds cannot be established reliably.
-  const viewBox=svg.viewBox&&svg.viewBox.baseVal;
-  if(viewBox&&viewBox.width>0&&viewBox.height>0&&!svg.dataset.opticalTrimChecked){
-   svg.dataset.opticalTrimChecked='yes';
-   try{
-    const bounds=svg.getBBox();
-    const yMin=Math.min(viewBox.y,bounds.y);
-    const yMax=Math.max(viewBox.y+viewBox.height,bounds.y+bounds.height);
-    const contentTop=bounds.y,contentBottom=bounds.y+bounds.height;
-    // A full staff space on both sides protects antialiasing and strokes.
-    const guard=10;
-    const trimmedTop=Math.max(yMin,contentTop-guard);
-    const trimmedBottom=Math.min(yMax,contentBottom+guard);
-    const newHeight=trimmedBottom-trimmedTop;
-    if(Number.isFinite(newHeight)&&newHeight>0&&
-       newHeight<viewBox.height&&bounds.width>0&&
-       contentTop>=viewBox.y&&contentBottom<=viewBox.y+viewBox.height){
-     const density=baseHeight/viewBox.height;
-     baseHeight=newHeight*density;
-     svg.setAttribute('viewBox',[viewBox.x,trimmedTop,viewBox.width,newHeight].join(' '));
-     svg.dataset.opticalNativeHeight=String(baseHeight);
-     console.log('POC_VERTICAL_TRIM '+JSON.stringify({originalHeight:viewBox.height,
-      contentTop:contentTop,contentBottom:contentBottom,trimmedTop:trimmedTop,
-      trimmedBottom:trimmedBottom,nativeHeight:baseHeight}));
-    }else console.log('POC_VERTICAL_TRIM_SKIP bounds-or-margins');
-   }catch(error){console.log('POC_VERTICAL_TRIM_SKIP '+error.message);}
-  }
   const scale=Math.min(1,Math.max(0.05,(viewport.clientHeight-8)/baseHeight));
   opticalDisplayScale=scale;
   svg.style.width=(baseWidth*scale)+'px';
