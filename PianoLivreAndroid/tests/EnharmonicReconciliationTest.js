@@ -12,3 +12,13 @@ const gn={sourceNote:{halfTone:73,Pitch:{FundamentalNote:2,Octave:3,AccidentalHa
 const graphic={measureList:[[{staffEntries:[{getAbsoluteTimestamp:()=>({RealValue:0}),PositionAndShape:{AbsolutePosition:{x:10,y:5}},graphicalVoiceEntries:[{parentVoiceEntry:{ParentVoice:{VoiceId:1}},notes:[gn]}]}]}]]};
 const got=T.fromGraphical(graphic).notes[0];A.equal(got.writtenStep,'D');A.equal(got.writtenOctave,6);A.equal(got.writtenAlter,-1);
 A.equal(got.midiEstimate,85);console.log('ENHARMONIC_RECONCILIATION_PASS');
+
+const drift=[1/3,1/3,1/3,.4,.4,.4,.4,.4,1].reduce((a,b)=>a+b,0)-4;
+A.ok(drift<0&&drift> -1e-12);
+const nativeZero={beat:drift,staff:1,measure:1,midi:60,length:1/3,voice:'2'};
+const graphicalZero={beat:0,staff:1,measure:1,midiEstimate:60};
+r=T.reconcile([graphicalZero],[nativeZero]);A.equal(r.matched,1,'Fractional backup roundoff is not an invalid musical event');
+A.equal(graphicalZero.nativeEvent.beat,drift,'Native beat is preserved exactly, never shifted for engraving');
+A.equal(nativeZero.beat,drift,'Native input is not mutated');
+r=T.reconcile([{...graphicalZero}],[{...nativeZero,beat:-.0001}]);A.equal(r.invalidNative,1,'Meaningful negative time remains invalid');
+console.log('FRACTIONAL_BACKUP_RECONCILIATION_PASS drift='+drift);

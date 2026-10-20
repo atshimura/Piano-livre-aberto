@@ -151,7 +151,10 @@
   for(let i=0;i<events.length;i++){
    const e=events[i];
    if(!e||![e.beat,e.midi,e.staff,e.measure,e.length].every(Number.isFinite)
-       ||e.beat<0||e.length<0||!Number.isInteger(e.midi)
+       // A valid fractional voice followed by MusicXML backup can yield
+       // -4.44e-16 at written beat zero in the native double parser.
+       // Accept arithmetic noise only; never rewrite the native event time.
+       ||e.beat< -1e-9||e.length<0||!Number.isInteger(e.midi)
        ||!Number.isInteger(e.staff)||!Number.isInteger(e.measure)){
     invalidNative++;continue;
    }
