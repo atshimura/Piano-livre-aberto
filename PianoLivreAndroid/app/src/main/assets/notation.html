@@ -27,7 +27,8 @@
 </style>
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
 <script src="temporal-notation.js"></script>
-<script src="optical-time-map.js"></script></head>
+<script src="optical-time-map.js"></script>
+<script src="engraving-audit.js"></script></head>
 <body><div id="viewport"><div id="score"></div></div><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
 <script>
 (function(){
@@ -738,6 +739,11 @@
       y:svgRect.top+(nextHead.y-vb.y)*svgRect.height/vb.height,
       beat:nextHead.beat,midiEstimate:nextHead.midiEstimate
      }:null;
+     if(xml.indexOf('<work-title>Task06 ')>=0){
+      const audit=EngravingAudit.inspect(graphic);
+      audit.forEach(function(row,index){console.log('POC_NOTATION06_NOTE '+JSON.stringify({index:index,note:row}));});
+      console.log('POC_NOTATION06_END '+JSON.stringify({count:audit.length}));
+     }
      const proof={engine:'OpenSheetMusicDisplay bundled 1.9.8',mode:'horizontal',
        firstNoteViewport:firstHeadViewport,secondNoteViewport:nextHeadViewport,
        renderMs:Math.round(performance.now()-proofStarted),

@@ -132,7 +132,10 @@ public class MainActivity extends Activity {
      &&getIntent().getBooleanExtra("engraving_complex_selftest",false);
   boolean polyphonySelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("engraving_polyphony_selftest",false);
-  if(!contextSelfTest&&!complexEngravingSelfTest&&!polyphonySelfTest&&!previous.isEmpty())loadScore(previous,false);
+  String notation06=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     ?getIntent().getStringExtra("engraving_notation06_selftest"):null;
+  boolean notation06SelfTest=notation06!=null&&java.util.Arrays.asList("accidentals","beams","tuplets","grace","adversarial").contains(notation06);
+  if(!contextSelfTest&&!complexEngravingSelfTest&&!polyphonySelfTest&&!notation06SelfTest&&!previous.isEmpty())loadScore(previous,false);
   handler.post(ticker);
   if(contextSelfTest){
    android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_INTENT accepted previousPath="+previous);
@@ -151,6 +154,14 @@ public class MainActivity extends Activity {
     if(score==null||!fixture.equals(currentFile))
      android.util.Log.e("PianoLivreContext","COMPLEX_FIXTURE_LOAD_FAILED currentFile="+currentFile+" score="+(score==null?"null":score.title));
     else android.util.Log.i("PianoLivreContext","COMPLEX_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size());
+   });
+  }
+  if(notation06SelfTest){
+   final String fixture="scores/engraving-"+notation06+"-06.musicxml";
+   handler.post(()->{
+    loadScore(fixture,true);
+    if(score==null||!fixture.equals(currentFile))android.util.Log.e("PianoLivreNotation06","NOTATION06_LOAD_FAILED");
+    else android.util.Log.i("PianoLivreNotation06","NOTATION06_LOAD_OK written="+score.writtenEvents.size()+" attacks="+score.events.size());
    });
   }
   if(polyphonySelfTest){
