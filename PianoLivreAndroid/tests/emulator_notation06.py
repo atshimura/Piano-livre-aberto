@@ -58,6 +58,8 @@ def run(name,label):
  assert sum(n['grace'] for n in rows)==graces,(name,'Missing ornament heads',rows)
  assert all(n['headBox'] and n['headBox'][2]>0 for n in rows),'SVG head unresolved by audit; inspect raw model and image before classifying engraving'
  assert proof['viewportMaxScrollTop']==0 and proof['height']<=proof['availableHeight']+.5
+ ink=proof['sourceInkEnvelope']
+ assert ink['viewBoxTop']<=ink['top'] and ink['viewBoxBottom']>=ink['bottom'],('Musical ink outside viewport',ink)
  # Directions are explicit in the authored source: no heuristic voice inference.
  assert all(n['stem']==( -1 if n['voice'] in ('2','5') else 1) for n in main if n['length']<4),(name,'Explicit stem direction',main)
  if name=='beams':

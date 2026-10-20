@@ -45,3 +45,24 @@ for(const height of [196,351,409]){
  assert.ok(Math.abs(Number(svg.dataset.opticalStaffGapSpaces)-15)<1e-10,'dimensionless staff separation remains invariant across fit scales');
 }
 console.log('PROPORTIONAL_SCORE_FIT_PASS scenarios='+cases+' (mock DOM; Android rendering verified separately)');
+
+// An actual-ink envelope may exceed BOTH declared SVG edges. A declared-height
+// fit alone passes all old scenarios but cuts a tuplet number above y=0.
+for(const ink of [{y:-12,height:230},{y:8,height:220},{y:-5,height:150}]){
+ const elements={score:{style:{}}},viewport={clientWidth:738,clientHeight:220};
+ const document={getElementById:id=>elements[id],documentElement:{clientWidth:738}};
+ const vb={x:0,y:0,width:1000,height:206};
+ const svg={dataset:{},style:{},viewBox:{baseVal:vb},getBoundingClientRect:()=>({width:1000,height:206}),
+  getBBox:()=>ink,querySelectorAll:()=>[],setAttribute(k,v){if(k==='viewBox'){const n=v.split(' ').map(Number);Object.assign(vb,{x:n[0],y:n[1],width:n[2],height:n[3]});}}};
+ const ctx=vm.createContext({viewport,document,console:{log(){}},getComputedStyle:()=>({overflowY:'hidden'}),studyProof:true,seekBeat:7,opticalDisplayScale:1});
+ vm.runInContext(source('fitOpticalSvg'),ctx);ctx.fitOpticalSvg(svg);
+ assert.ok(vb.y<=0&&vb.y+vb.height>=206,'declared native SVG is retained as a superset, never cropped');
+ assert.ok(vb.y<=ink.y-4&&vb.y+vb.height>=ink.y+ink.height+4,'all external musical ink included, with antialiasing margin');
+ assert.ok(Math.abs(parseFloat(svg.style.width)/vb.width-parseFloat(svg.style.height)/vb.height)<1e-12,'enlarged viewBox preserves isotropic glyph geometry');
+ const top=(ink.y-vb.y)*ctx.opticalDisplayScale,bottom=(ink.y+ink.height-vb.y)*ctx.opticalDisplayScale;
+ assert.ok(top>=0&&bottom<=220,'source ink lies within actual visible score height');
+ const originalHeight=svg.dataset.opticalNativeHeight;ctx.fitOpticalSvg(svg);
+ assert.equal(svg.dataset.opticalNativeHeight,originalHeight,'repeated resize cannot grow the envelope cumulatively');
+ assert.equal(ctx.seekBeat,7,'envelope fitting never shifts the musical clock');
+}
+console.log('MUSICAL_INK_ENVELOPE_PASS cases=3');

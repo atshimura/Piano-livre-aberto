@@ -160,6 +160,21 @@
    const rect=svg.getBoundingClientRect();
    baseWidth=rect.width;baseHeight=rect.height;
    if(!(baseWidth>0&&baseHeight>0))throw Error('OSMD sem tamanho SVG válido');
+   // OSMD may engrave tuplet numerals above its declared viewBox. Include
+   // actual ink before scaling: changing only CSS height clips those glyphs.
+   // Native note coordinates and all musical events remain untouched.
+   const vb=svg.viewBox&&svg.viewBox.baseVal;
+   if(vb&&vb.height>0&&typeof svg.getBBox==='function'){
+    const ink=svg.getBBox(),unitsToCss=baseHeight/vb.height;
+    if(![ink.y,ink.height].every(Number.isFinite))throw Error('Envelope musical inválido');
+    const top=Math.min(vb.y,ink.y-4);
+    const bottom=Math.max(vb.y+vb.height,ink.y+ink.height+4);
+    const envelopeHeight=bottom-top;
+    svg.dataset.opticalInkTop=String(ink.y);
+    svg.dataset.opticalInkBottom=String(ink.y+ink.height);
+    svg.setAttribute('viewBox',[vb.x,top,vb.width,envelopeHeight].join(' '));
+    baseHeight=envelopeHeight*unitsToCss;
+   }
    svg.dataset.opticalNativeWidth=String(baseWidth);
    svg.dataset.opticalNativeHeight=String(baseHeight);
   }
@@ -765,6 +780,8 @@
      proof.viewportScrollHeight=viewport.scrollHeight;
      proof.viewportMaxScrollTop=getComputedStyle(viewport).overflowY==='hidden'
       ?0:Math.max(0,viewport.scrollHeight-viewport.clientHeight);
+     proof.sourceInkEnvelope={top:Number(svg.dataset.opticalInkTop),bottom:Number(svg.dataset.opticalInkBottom),
+      viewBoxTop:svg.viewBox.baseVal.y,viewBoxBottom:svg.viewBox.baseVal.y+svg.viewBox.baseVal.height};
      proof.nativeStaffSpaceCssPx=Number(svg&&svg.dataset.opticalStaffSpaceCss||0);
      proof.staffSeparationSpaces=Number(svg&&svg.dataset.opticalStaffGapSpaces||0);
      proof.svgFeatureCounts={

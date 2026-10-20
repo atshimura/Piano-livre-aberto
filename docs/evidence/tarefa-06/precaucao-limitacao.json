@@ -1,0 +1,18 @@
+{
+  "head": "9c8aa488e572c1a092b84b5a6048a7adc5dfb22b",
+  "run": 39425475303,
+  "artifact": 12265433991,
+  "source": "accidental cautionary=yes parentheses=yes natural at beat 13",
+  "actualModifiers": [
+    {
+      "category": "accidentals",
+      "type": "n",
+      "index": 0,
+      "cautionary": false
+    }
+  ],
+  "screenshotInspected": "piano-notation06-accidentals-late-low.png",
+  "observed": "natural sign present; parentheses absent",
+  "upstreamReader": "https://github.com/opensheetmusicdisplay/opensheetmusicdisplay/blob/1.9.8/src/MusicalScore/ScoreIO/VoiceGenerator.ts",
+  "assessment": "Reader handles accidental value but does not propagate cautionary/parentheses attributes in this path; no engine update or manual redraw attempted."
+}

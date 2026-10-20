@@ -175,7 +175,11 @@ ok(complexFixture.includes("Synthetic engraving geometry test")&&
  complexFixture.includes("<accidental>flat</accidental>")&&
  complexFixture.includes("<staves>2</staves>"),
  "Synthetic debug-only geometry fixture must cover piano chords, beams, ties, slurs, dynamics, tuplets and accidentals");
-ok(!html.includes("svg.getBBox()"),"Failed crop experiment is not left in the OSMD rendering path");
+ok(html.includes("Math.min(vb.y,ink.y-4)")&&
+ html.includes("Math.max(vb.y+vb.height,ink.y+ink.height+4)")&&
+ html.includes("baseHeight=envelopeHeight*unitsToCss")&&
+ html.includes("sourceInkEnvelope"),
+ "Ink-aware fit must enlarge the original viewBox, never crop its native envelope");
 ok(html.includes("displayScale:opticalDisplayScale"),"Piano score proof reports actual visual scaling");
 ok(html.includes("Math.abs(viewport.scrollLeft-target)>=0.5"),"WebView skips redundant subpixel scroll updates");
 ok(html.includes("#optical-context-rail{display:none;position:absolute;left:0;overflow:hidden;background:transparent"),"Context rail cannot paint an opaque full-height block over expressive indications");
