@@ -768,3 +768,11 @@ Primeiro commit: 716cabf4c22183ffa31e58b9776610656c814438. Build [39424976030](h
 - Correção do registro ambiental inicial: há **JRE17, sem javac**, e não um JDK local completo. A comprovação JVM/Android é dos Actions identificados.
 
 Regras de fonte consultadas para instrumentação: código oficial da tag 1.9.8, `src/Common/DataObjects/Pitch.ts` (octave XML = Octave + 3; AccidentalHalfTones), `src/MusicalScore/Graphical/VexFlow/VexFlowGraphicalNote.ts` (vfnote/getNoteheadSVGs/getStemSVG) e `src/MusicalScore/Graphical/EngravingRules.ts`. Não foi atualizada a dependência nem adicionado serviço ao app.
+
+### Segunda execução: enarmonia aprovada, ruído fracionário identificado
+
+Emulador [39425475303](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39425475303), código 9c8aa488: acidentes **22/22**, vigas **11/11** no perfil baixo/teclado fechado, aberto e restaurado. A falha posterior na fixture de quiálteras foi `invalidNative=2`: a sequência exata 3×(1/3) + 5×0,4 + 1, seguida de backup 4 no parser double, deixa `−4,440892098500626e−16` em vez de zero. A aritmética foi reproduzida isoladamente e o diagnóstico antigo rejeitou a nota como beat negativo. Não é alteração rítmica da fonte nem glifo ausente.
+
+Correção: somente o validador de reconciliação passa a tolerar resíduo negativo menor que 10⁻⁹ beat junto ao zero. **Não se altera nem arredonda Score.events/writtenEvents, duração, MIDI ou o beat recebido.** O teste exige que o valor original e a entrada permaneçam exatamente iguais e continua recusando tempo negativo significativo (−0,0001). Novo teste e regressões JS passaram. Validação Android dessa correção ainda necessária.
+
+Artefato intermediário 12265433991 baixado. Capturas efetivamente abertas: `piano-03d-notation06-accidentals-low-closed.png`, `piano-notation06-accidentals-late-low.png`, `piano-03d-notation06-beams-low-closed.png`. Observados quatro pares enarmônicos, ♯/♭/♮/𝄪/𝄫, acorde de segundas em linhas suplementares, vigas de dois níveis, separação de grupos e hastes opostas. Ambas as pautas visíveis, sem etiqueta. O bequadro de precaução aparece, porém **não há parênteses visíveis** nessa imagem; atributo XML não prova suporte editorial a parênteses. Não se declara suporte a essa convenção sem investigação. Capturas de quiálteras e graça ainda não examinadas.
