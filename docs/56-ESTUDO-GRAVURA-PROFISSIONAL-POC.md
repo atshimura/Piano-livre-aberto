@@ -683,3 +683,62 @@ A falha intermediária do emulador 39324004724 ocorreu **após o próprio teste 
 **Métricas verificadas** no emulador: Gymnopédie `469/469` cabeças reconciliadas, fixture complexa `27/27`; `viewportMaxScrollTop=0` nos três estados do teclado e nos perfis de altura utilizados; fator de escala único por cenário, pautas simultâneas, barras superiores ocultadas e restauradas. Foram exercitados modo Espera, loop, andamento, toque, teclado guia e regressões gerais pelo workflow. A faixa usa os glifos nativos OSMD, contexto por pauta e máscara calculada a partir das cinco linhas, sem substituição do modo temporal nem alteração de eventos musicais.
 
 **Limites:** validação abrangente de todos os MusicXML possíveis, contextos que mudam dentro de um compasso e mudanças divergentes entre as duas pautas exigem futuros testes especializados; não são apresentados como comprovados para todo o repertório. Nenhuma captura prova a inexistência universal de colisões. Os testes em aparelho físico Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 não foram realizados. A prévia OSMD permanece opcional, sem merge, nova release nem mudança da versão pública. A Tarefa 05/20 permanece fora desta execução; pode ser planejada separadamente a partir desta entrega técnica.
+
+
+## Tarefa 05/20 — Fidelidade de acordes e polifonia
+
+### Auditoria de encerramento — 20/10/2026
+
+**Situação: CONCLUÍDA TECNICAMENTE quanto à identidade musical, acordes, vozes, uníssonos e ligadura nos casos examinados; ressalva de sobreposição transitória da etiqueta de toque.** Não constitui certificação editorial universal. A Tarefa 06 não foi iniciada. PR #46 aberto em draft; OSMD opcional, renderizador temporal padrão, main e versão pública preservados.
+
+Objetivo: confrontar o MusicXML autoral com eventos escritos, cabeças OSMD e ataques de execução, verificando identidades, e não somente contagens. O mecanismo de reconciliação, distinção writtenEvents/events, seleção por pauta, relógio, Espera e guia já existia. A lacuna era cobertura adversarial e comprovação em WebView real. Nesta auditoria não foi necessário modificar o código nem repetir emulador/compilação: os dois workflows existentes foram consultados diretamente e associados ao código auditado.
+
+### Implementações existentes e correções verificadas
+
+- a2d8d40: fixture autoral debug-only engraving-polyphony-synthetic.musicxml, quatro compassos 4/4, testes PolyphonyFidelityTest.java e .js. Inclui acorde C5/D5/E5 com segundas adjacentes, F5/G5, acorde inferior C3/E3/G3, vozes sustentadas/independentes, uníssono G4 com durações distintas e G5 ligado entre compassos.
+- a3706d3: integração JVM/JS nos Actions, carga Android isolada por flag debug e emulator_polyphony.py; diagnóstico das cabeças e destaques simultâneos.
+- 0dadf81: teste JS deixou de sombrear o Map nativo.
+- aa98ef6: diagnóstico de 30 cabeças fracionado em registros para não exceder logcat.
+- c442abc: coordenadas CSS convertidas para pixels físicos ADB a partir dos limites da WebView.
+- 59e9ee8: anéis de destaque inseridos antes da tinta musical, traço 2 e opacidade 0,45, evitando encobrir cabeças próximas.
+- 1e21db2: pausa do ensaio curto usa coordenada física previamente localizada, evitando que UIAutomator consuma o restante da reprodução.
+
+### Correspondência musical, vozes e uníssonos
+
+O oráculo JVM enumera independentemente os 30 eventos escritos por beat, pauta, voz, altura, duração e ataque/continuação, verificando parte original e índice da nota fonte. Vozes superiores 1/2 e inferiores 5/6 preservam durações próprias; G4 do segundo compasso tem duas vozes, duração 2 e 1, sem fundi-las. A voz sustentada superior do primeiro compasso dura 4 beats enquanto o acorde e as notas da outra voz avançam.
+
+O teste JS extrai um oráculo restrito da fixture, simula o modelo gráfico, exige identidade por beat/pauta/compasso/altura/voz e testa destaques e hit-test. É teste unitário com mock, não prova isolada de renderização. No emulador, o Counter das identidades beat/pauta/MIDI/voz/duração/ataque é comparado à fonte; nesta execução todas as 30 cabeças foram verificadas, sem faltantes, inválidas ou ambíguas. A identidade não foi inferida só da igualdade de totais.
+
+No OSMD real examinado, as duas cabeças de G4 aparecem deslocadas horizontalmente, com figuras/durações diferentes. O teste JS também simula uníssono colapsado (28 correspondências seguras e uma cabeça ambígua, dois eventos nativos sem atribuição), perda das vozes (duas cabeças ambíguas) e cabeças coincidentes (hit-test retorna null). Não se inventa uma identidade quando a estrutura deixa de distinguir as vozes. Não foi realizado toque ADB específico no uníssono; os três toques comprovados estão descritos abaixo.
+
+**MusicXML/MIDI:** 30 notas escritas = 30 cabeças gráficas reconciliadas; 29 eventos de ataque. A continuação de G5 no beat 12 permanece em Score.writtenEvents, com playbackAttack=false, e não produz novo ataque em Score.events/Espera. O ataque iniciado no beat 11 se prolonga por 3 beats; fim do score no beat 16. Não houve captura elétrica MIDI nem Yamaha físico nesta auditoria; a semântica é comprovada pelo modelo JVM e pelas regressões de reprodução MIDI existentes.
+
+### Interação e inspeção visual efetiva
+
+Artefato [12229834809](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39344297545/artifacts/12229834809), baixado e aberto nesta auditoria. Capturas examinadas individualmente:
+
+| Captura | Observação |
+|---|---|
+| piano-osmd-polyphony-triad.png | C5/D5/E5 completos, segundas deslocadas, acorde inferior e nota sustentada; anéis atrás da grafia. |
+| piano-osmd-polyphony-adjacent.png | Acordes preservados e etiqueta Dó3 após toque; a etiqueta cobre temporariamente parte da pauta inferior. |
+| piano-osmd-polyphony-unison.png | G4 com cabeças mínima/semínima deslocadas e vozes independentes; etiqueta do toque anterior ainda sobre parte da pauta inferior. |
+| piano-osmd-polyphony-both-staves.png | Retorno ao início com ambas as pautas e destaques simultâneos. |
+| piano-osmd-polyphony-guide-open.png | Teclas das duas mãos, ambas as pautas; barras superiores ocultas. |
+| piano-osmd-polyphony-guide-restored.png | Guia fechado, barras e escala restaurados, duas pautas presentes. |
+
+Os anéis não ocultam as cabeças. A fixture não contém acidentes: estas seis capturas não certificam destaque sobre acidentes complexos. A sobreposição da etiqueta transitória é uma limitação observada, não foi omitida nem corrigida nesta entrega documental; seu posicionamento já consta do escopo editorial posterior (Tarefa 08). Não se afirma ausência total de sobreposições. A ressalva não invalida a identidade das cabeças, os acordes ou o encaixe das pautas; permanece pendência editorial antes de promover a prévia ao modo padrão.
+
+piano-polyphony-matrix.json comprova três toques ADB: MIDI 72/Dó5/pauta 1, 74/Ré5/pauta 1 e 48/Dó3/pauta 2. Não se afirma que todas as cabeças tenham sido tocadas. Destaques iniciais: direita 4, esquerda 3, ambas 7, incluindo a voz superior sustentada. piano-03d-polyphony.json registra escala 1,225433526 → 1,352601156 → 1,225433526, viewport 220 → 242 → 220 CSS px, altura exibida 212 → 234 → 212, separação invariável 4,4 espaços, rolagem vertical máxima zero e barras true/false/true. Os extremos horizontais continuam acessíveis pelo movimento horizontal, sem rolagem vertical.
+
+### Testes, vínculo exato e regressões
+
+Código auditado: **1e21db2a1affaada81771cccb8b432f2bcceebb5**. Os Actions de pull_request fizeram checkout do merge sintético **c01b032e0e7c94bd0ffcf08dbb7fb60ca0e1504b**, que integra essa HEAD à main **15cafe3c8da7c67b9752d14ba0fb6f8f6141177d**. Não confundir esse checkout de teste com merge efetivo do PR.
+
+- [Build 39344297440 — success](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39344297440): POLYPHONY_FIDELITY_JVM_PASS written=30 attacks=29 unisonVoices=2 tieContinuation=1; POLYPHONY_FIDELITY_JS_PASS source=30 graphical=30 native=30 attacks=29 ambiguousCollapsed=1. OSMD contrato 76 verificações, encaixe proporcional 48 cenários mock, mapa óptico 160 verificações/12.000 âncoras. MusicXML Java/JS: 10 peças, 1.487 ataques/alturas/pautas. Reconhecimento, calibração de acordes, reprodução MIDI, teclado e expressão aprovados; APK debug/release compilados como testes de PR. Assinatura permanente/distribuição/publicação de beta foram puladas, conforme gates.
+- [Emulador 39344297545 — success](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39344297545): API29 WebView real, 30/30 identidades, 0 ambiguidades, três toques, teclado responsivo, contexto/retorno, Espera, loop, relógio, lifecycle e upgrade. JSONs confirmam Gymnopédie 469/469 e complexa 27/27, sem faltantes/ambiguidades. Geometria 03D e regressões 04 continuam na suíte.
+
+Esta entrega altera somente documentação. Os resultados acima são do código inalterado da HEAD auditada, não uma alegação de nova execução Android para o commit documental. A verificação do diff deve assegurar ausência de alterações em app, testes, workflows e versão antes de reutilizar essas evidências.
+
+### Limitações e continuidade
+
+Não houve teste físico Realme 7 5G, Lenovo Tab M9 ou Yamaha P-45. Sem certificação de todos os MusicXML, acidentes complexos, quiálteras, grace ou todos os uníssonos; as ambiguidades estruturais continuam conservadoras. A etiqueta de toque pode sobrepor temporariamente notas. Inspeção amostral e emulador não certificam legibilidade universal, latência USB ou toda a superfície de interação. Sem merge, release, APK de distribuição ou alteração da versão pública. Próximo passo recomendado: planejar/executar a Tarefa 06/20 na sequência autorizada; não iniciada nesta conversa.
