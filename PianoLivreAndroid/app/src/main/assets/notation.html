@@ -28,7 +28,8 @@
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
 <script src="temporal-notation.js"></script>
 <script src="optical-time-map.js"></script>
-<script src="engraving-audit.js"></script></head>
+<script src="engraving-audit.js"></script>
+<script src="engraving-conventions.js"></script></head>
 <body><div id="viewport"><div id="score"></div></div><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
 <script>
 (function(){
@@ -652,6 +653,11 @@
    Promise.resolve(osmd.load(xml)).then(function(){
     if(ticket!==generation)return;
     if(studyProof)console.log('POC_OSMD_LOAD_RESOLVED');
+    if(studyProof&&xml.indexOf('parentheses')>=0){
+     const sourceDoc=new DOMParser().parseFromString(xml,'application/xml');
+     console.log('POC_ACCIDENTAL_CONVENTIONS '+JSON.stringify(
+      EngravingConventions.apply(sourceDoc,osmd.graphic,Array.isArray(nativeEvents)?nativeEvents:[])));
+    }
     // Keep OSMD at its default internal zoom; apply a CSS transform to the entire grand staff.
     osmd.render();
     if(studyProof)console.log('POC_OSMD_RENDER_RESOLVED');

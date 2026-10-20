@@ -62,6 +62,11 @@ def run(name,label):
  assert ink['viewBoxTop']<=ink['top'] and ink['viewBoxBottom']>=ink['bottom'],('Musical ink outside viewport',ink)
  # Directions are explicit in the authored source: no heuristic voice inference.
  assert all(n['stem']==( -1 if n['voice'] in ('2','5') else 1) for n in main if n['length']<4),(name,'Explicit stem direction',main)
+ if name=='accidentals':
+  convention=latest('POC_ACCIDENTAL_CONVENTIONS ')
+  assert convention=={'requested':1,'applied':1,'unresolved':0},('Parenthesized accidental metadata not resolved',convention)
+  caution=[n for n in main if n['beat']==13 and n['staff']==1]
+  assert len(caution)==1 and any(m.get('type')=='n' and m.get('cautionary') is True for m in caution[0]['modifiers']), 'Explicit parenthesized natural lost after native layout'
  if name=='beams':
   assert [n['beamNotes'] for n in main if n['voice']=='1'][:4]==[4]*4,'Primary semiquaver group lost'
  if name=='tuplets':
