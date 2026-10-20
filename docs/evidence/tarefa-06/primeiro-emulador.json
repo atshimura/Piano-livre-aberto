@@ -1,0 +1,11 @@
+{
+  "run": 39424976204,
+  "head": "716cabf4c22183ffa31e58b9776610656c814438",
+  "result": "failure",
+  "failure": "accidentals: 20 matched, 2 ambiguous at beat 12, staff 1, voice 1, MIDI 85 (C-sharp6/D-flat6)",
+  "classification": "reconciliation/instrumentation; not proof of missing engraved accidentals",
+  "beforeFailure": {"gymnopedieMatched":469,"complexMatched":27,"polyphonyMatched":30,"polyphonyAdbTaps":3},
+  "fixUnderValidation": "9c8aa488e572c1a092b84b5a6048a7adc5dfb22b",
+  "artifact": 12265602488,
+  "newTask06Screenshots": 0
+}

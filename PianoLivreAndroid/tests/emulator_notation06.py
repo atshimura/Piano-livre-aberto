@@ -49,12 +49,14 @@ def run(name,label):
  rows=[n['note'] for n in records('POC_NOTATION06_NOTE ')]
  end=latest('POC_NOTATION06_END ')
  assert end and end['count']==len(rows),'Incomplete audit log'
+ Path('piano-notation06-'+name+'-'+label+'-raw.json').write_text(json.dumps({'proof':proof,'notes':rows},indent=2),encoding='utf-8')
+ screenshot('piano-notation06-'+name+'-'+label+'-initial.png')
  mapping=proof['midiMapping']
  assert mapping['matched']==count and mapping['unmatchedNative']==mapping['unmatched']==mapping['ambiguous']==0,(name,mapping)
  main=[n for n in rows if not n['grace']]
  assert Counter(signature(n) for n in main)==oracle(root),(name,'OSMD source identities or durations differ',main)
  assert sum(n['grace'] for n in rows)==graces,(name,'Missing ornament heads',rows)
- assert all(n['headBox'] and n['headBox'][2]>0 for n in rows),'Unrendered graphical head'
+ assert all(n['headBox'] and n['headBox'][2]>0 for n in rows),'SVG head unresolved by audit; inspect raw model and image before classifying engraving'
  assert proof['viewportMaxScrollTop']==0 and proof['height']<=proof['availableHeight']+.5
  # Directions are explicit in the authored source: no heuristic voice inference.
  assert all(n['stem']==( -1 if n['voice'] in ('2','5') else 1) for n in main if n['length']<4),(name,'Explicit stem direction',main)
@@ -68,7 +70,10 @@ def run(name,label):
  if name=='accidentals':
   tap_text(['Contínuo'],exact=True,scroll=True)
   pause=tap_text(['Iniciar'],return_point=True,scroll=True)
-  time.sleep(7.4);adb('shell','input','tap',*pause);time.sleep(.3)
+  time.sleep(5.0);adb('shell','input','tap',*pause);time.sleep(.3)
+  screenshot('piano-notation06-accidentals-double-'+label+'.png')
+  adb('shell','input','tap',*pause)
+  time.sleep(2.4);adb('shell','input','tap',*pause);time.sleep(.3)
   screenshot('piano-notation06-accidentals-late-'+label+'.png')
  Path('piano-notation06-'+name+'-'+label+'.json').write_text(json.dumps({'proof':proof,'notes':rows,'sourceMain':count,'sourceGrace':graces},indent=2),encoding='utf-8')
  print('NOTATION06_WEBVIEW_PASS '+name+' '+label,flush=True)
@@ -78,7 +83,12 @@ def main():
   for label,size in [('low',None),('taller','1440x2160'),('tablet','1600x2560')]:
    adb('shell','am','force-stop',PACKAGE)
    if size:adb('shell','wm','size',size)
-   for name in ['accidentals','beams','tuplets','grace','adversarial']:run(name,label)
+   for name in ['accidentals','beams','tuplets','grace','adversarial']:
+    try:run(name,label)
+    except Exception:
+     Path('piano-notation06-'+name+'-'+label+'-failure.log').write_text(adb('logcat','-d','-v','brief'),encoding='utf-8')
+     screenshot('piano-notation06-'+name+'-'+label+'-failure.png')
+     raise
  finally:
   adb('shell','am','force-stop',PACKAGE);adb('shell','wm','size',previous.group(1) if previous else 'reset')
 if __name__=='__main__':main()

@@ -9,7 +9,7 @@
    (m.staffEntries||[]).forEach(function(entry){
     const time=entry.getAbsoluteTimestamp();
     (entry.graphicalVoiceEntries||[]).forEach(function(voice){(voice.notes||[]).forEach(function(gn){
-     const src=gn.sourceNote;if(!src||src.isRestFlag)return;
+     const src=gn.sourceNote;if(!src||src.isRestFlag||rows.length>=96)return;
      const vf=gn.vfnote&&gn.vfnote[0],idx=gn.vfnote&&gn.vfnote[1];
      const modifiers=vf&&vf.getModifiers?vf.getModifiers():[];
      const pitch=src.Pitch;
