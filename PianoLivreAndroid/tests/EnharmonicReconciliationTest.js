@@ -1,0 +1,14 @@
+'use strict';
+const A=require('node:assert/strict'),T=require('../app/src/main/assets/optical-time-map.js');
+const n=(step,alter)=>({beat:0,staff:1,measure:1,midiEstimate:85,voiceId:'1',writtenStep:step,writtenAlter:alter,writtenOctave:6});
+const e=(step,alter)=>({beat:0,staff:1,measure:1,midi:85,length:1,voice:'1',step,alter,octave:6});
+let heads=[n('C',1),n('D',-1)];
+let r=T.reconcile(heads,[e('D',-1),e('C',1)]);
+A.equal(r.matched,2,'Two simultaneous enharmonic spellings in one voice must identify their own XML events');
+A.equal(heads[0].nativeEvent.step,'C');A.equal(heads[1].nativeEvent.step,'D');
+r=T.reconcile([n('C',1),n('C',1)],[e('C',1),e('C',1)]);A.equal(r.ambiguous,2,'Repeated same voice/spelling remains ambiguous');
+r=T.reconcile([n('C',1)],[e('D',-1)]);A.equal(r.matched,0,'MIDI equality cannot override a conflicting source spelling');
+const gn={sourceNote:{halfTone:73,Pitch:{FundamentalNote:2,Octave:3,AccidentalHalfTones:-1}},PositionAndShape:{AbsolutePosition:{x:10,y:5}}};
+const graphic={measureList:[[{staffEntries:[{getAbsoluteTimestamp:()=>({RealValue:0}),PositionAndShape:{AbsolutePosition:{x:10,y:5}},graphicalVoiceEntries:[{parentVoiceEntry:{ParentVoice:{VoiceId:1}},notes:[gn]}]}]}]]};
+const got=T.fromGraphical(graphic).notes[0];A.equal(got.writtenStep,'D');A.equal(got.writtenOctave,6);A.equal(got.writtenAlter,-1);
+A.equal(got.midiEstimate,85);console.log('ENHARMONIC_RECONCILIATION_PASS');

@@ -144,6 +144,19 @@
         <duration>240</duration>
       </backup>
       <note>
+        <grace slash="no" />
+        <pitch>
+          <step>B</step>
+          <alter>-1</alter>
+          <octave>2</octave>
+        </pitch>
+        <voice>5</voice>
+        <type>eighth</type>
+        <accidental>flat</accidental>
+        <stem>up</stem>
+        <staff>2</staff>
+      </note>
+      <note>
         <pitch>
           <step>C</step>
           <octave>3</octave>

@@ -20,6 +20,8 @@
       voice:String(voice.parentVoiceEntry.ParentVoice.VoiceId),
       grace:!!src.IsGraceNote,graceSlash:!!voice.GraceSlash,
       midi:src.halfTone+12,length:src.Length&&src.Length.RealValue*4,
+      writtenStep:pitch?({0:'C',2:'D',4:'E',5:'F',7:'G',9:'A',11:'B'})[pitch.FundamentalNote]:null,
+      writtenOctave:pitch?pitch.Octave+3:null,writtenAlter:pitch?pitch.AccidentalHalfTones:null,
       vfpitch:gn.vfpitch&&gn.vfpitch.slice(0,2),
       sourcePitch:pitch?{fundamental:pitch.FundamentalNote,octave:pitch.Octave,accidental:pitch.Accidental}:null,
       stem:vf&&vf.getStemDirection?vf.getStemDirection():null,

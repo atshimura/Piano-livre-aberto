@@ -28,7 +28,7 @@ def inspect(path):
   assert all(v==4 for v in ends.values()),(path,'incomplete/overfilled voice',ends)
  return root,main,graces
 if __name__=='__main__':
- expected={'accidentals':(22,0),'beams':(11,0),'tuplets':(14,0),'grace':(6,4),'adversarial':(12,1)}
+ expected={'accidentals':(22,0),'beams':(11,0),'tuplets':(14,0),'grace':(6,5),'adversarial':(12,1)}
  for name,counts in expected.items():
   root,main,grace=inspect(Path('app/src/debug/assets/scores')/('engraving-'+name+'-06.musicxml'))
   assert (main,grace)==counts,(name,main,grace)

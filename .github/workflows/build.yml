@@ -129,6 +129,7 @@ jobs:
           node tests/VerticalNavigationTest.js
           node tests/OpticalTimeMapTest.js
           node tests/PolyphonyFidelityTest.js
+          node tests/EnharmonicReconciliationTest.js
           node --check app/src/main/assets/optical-time-map.js
       - name: Test proportional score layout (JavaScript)
         run: |

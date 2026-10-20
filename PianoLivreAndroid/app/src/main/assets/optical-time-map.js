@@ -70,7 +70,13 @@
       if(!src||src.isRestFlag||src.IsGraceNote)continue;
       const gp=gn.PositionAndShape&&gn.PositionAndShape.AbsolutePosition;
       const pitch=src.halfTone;
+      // OSMD 1.9.8 Pitch uses octave 1 for MusicXML octave 4.
+      // Keep spelling separate from sounding MIDI, including enharmonic chords.
+      const written=src.Pitch,steps={0:'C',2:'D',4:'E',5:'F',7:'G',9:'A',11:'B'};
       notes.push({beat:beat,staff:staffIndex+1,measure:measureIndex+1,
+       writtenStep:written?steps[written.FundamentalNote]:null,
+       writtenAlter:written&&Number.isFinite(written.AccidentalHalfTones)?written.AccidentalHalfTones:null,
+       writtenOctave:written&&Number.isInteger(written.Octave)?written.Octave+3:null,
        voiceId:Number.isInteger(sourceVoiceId)&&sourceVoiceId>=0?String(sourceVoiceId):null,
        x:gp&&Number.isFinite(gp.x)?gp.x*10:x,
        y:gp&&Number.isFinite(gp.y)?gp.y*10:null,
@@ -174,7 +180,9 @@
     octave:e.event.octave,xmlNoteIndex:e.event.xmlNoteIndex};
    n.mappingStatus="matched";matched++;
   }
-  const reasons={invalidGraphical:0,noNativeCandidate:0,ambiguous:0,beatDisagreement:0};
+  const reasons={invalidGraphical:0,noNativeCandidate:0,ambiguous:0,beatDisagreement:0,spellingDisagreement:0};
+  const spelling=n=>writtenPitch(n?{step:n.writtenStep,alter:n.writtenAlter,octave:n.writtenOctave}:null);
+  const nativeSpelling=e=>writtenPitch(e.event);
   const samples=[];
   function flag(n,reason){
    n.mappingReason=reason;
@@ -202,25 +210,28 @@
     // Resolve polyphonic unisons only with an exact, bijective source voice ID.
     // One engraved head for two native voices cannot be distinguished.
     if(graphNotes.length>1&&graphNotes.length===native.length){
+     const withSpelling=graphNotes.every(n=>spelling(n)!==null)&&native.every(e=>nativeSpelling(e)!==null);
+     const nativeIdentity=e=>String(e.event.voice)+(withSpelling?':'+nativeSpelling(e):'');
+     const graphicalIdentity=n=>String(n.voiceId)+(withSpelling?':'+spelling(n):'');
      const byVoice=new Map();let reliable=true;
      for(const e of native){
-      const v=String(e.event.voice);
-      if(!/^[0-9]+$/.test(v)||byVoice.has(v)){reliable=false;break;}
+      const v=nativeIdentity(e);
+      if(!/^[0-9]+$/.test(String(e.event.voice))||byVoice.has(v)){reliable=false;break;}
       byVoice.set(v,e);
      }
      if(reliable){
       const paired=new Set();
       for(const n of graphNotes){
        if(n.voiceId===null||!/^[0-9]+$/.test(String(n.voiceId))||
-          paired.has(n.voiceId)||!byVoice.has(n.voiceId)||
-          Math.abs(n.beat-byVoice.get(n.voiceId).event.beat)>0.001){
+          paired.has(graphicalIdentity(n))||!byVoice.has(graphicalIdentity(n))||
+          Math.abs(n.beat-byVoice.get(graphicalIdentity(n)).event.beat)>0.001){
         reliable=false;break;
        }
-       paired.add(n.voiceId);
+       paired.add(graphicalIdentity(n));
       }
      }
      if(reliable){
-      for(const n of graphNotes)assign(n,byVoice.get(n.voiceId));
+      for(const n of graphNotes)assign(n,byVoice.get(graphicalIdentity(n)));
       continue;
      }
     }
@@ -233,6 +244,9 @@
    }
    const n=graphNotes[0],e=native[0];
    if(Math.abs(n.beat-e.event.beat)>0.001){flag(n,"beatDisagreement");continue;}
+   if(spelling(n)!==null&&nativeSpelling(e)!==null&&spelling(n)!==nativeSpelling(e)){
+    flag(n,"spellingDisagreement");continue;
+   }
    assign(n,e);
   }
   return {graphicalNotes:notes.length,nativeEvents:events.length,

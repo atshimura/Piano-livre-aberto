@@ -4,12 +4,12 @@ import json,time,re
 from pathlib import Path
 from collections import Counter
 import xml.etree.ElementTree as ET
-from emulator_ui import adb,dump,responsive_evidence,assert_running
+from emulator_ui import adb,dump,responsive_evidence,assert_running,tap_text,screenshot
 from emulator_polyphony import records,latest
 from complex_notation_source_test import inspect
 PACKAGE='br.org.pianolivre.opensource'
 def signature(n):
- return (n['measure'],n['staff'],n['voice'],round(n['beat'],6),n['midi'],round(n['length'],6))
+ return (n['measure'],n['staff'],n['voice'],round(n['beat'],6),n['midi'],round(n['length'],6),n['writtenStep'],n['writtenOctave'],n['writtenAlter'])
 def oracle(root):
  rows=[]
  for mi,m in enumerate(root.findall('.//part/measure')):
@@ -25,7 +25,7 @@ def oracle(root):
    p=n.find('pitch')
    if p is not None:
     rows.append({'measure':mi+1,'staff':int(n.findtext('staff')),'voice':n.findtext('voice'),
-     'beat':mi*4+onset/60,'length':dur/60,
+     'beat':mi*4+onset/60,'length':dur/60,'writtenStep':p.findtext('step'),'writtenOctave':int(p.findtext('octave')),'writtenAlter':int(p.findtext('alter','0')),
      'midi':12*(int(p.findtext('octave'))+1)+dict(C=0,D=2,E=4,F=5,G=7,A=9,B=11)[p.findtext('step')]+int(p.findtext('alter','0'))})
  return Counter(signature(n) for n in rows)
 def run(name,label):
@@ -65,6 +65,11 @@ def run(name,label):
   assert any(n['tuplet'] and n['tuplet']['count']==5 for n in main),'Quintuplet model missing'
  # No note taps: transient task08 label cannot obscure acceptance screenshots.
  responsive_evidence('notation06-'+name+'-'+label)
+ if name=='accidentals':
+  tap_text(['Contínuo'],exact=True,scroll=True)
+  pause=tap_text(['Iniciar'],return_point=True,scroll=True)
+  time.sleep(7.4);adb('shell','input','tap',*pause);time.sleep(.3)
+  screenshot('piano-notation06-accidentals-late-'+label+'.png')
  Path('piano-notation06-'+name+'-'+label+'.json').write_text(json.dumps({'proof':proof,'notes':rows,'sourceMain':count,'sourceGrace':graces},indent=2),encoding='utf-8')
  print('NOTATION06_WEBVIEW_PASS '+name+' '+label,flush=True)
 def main():
