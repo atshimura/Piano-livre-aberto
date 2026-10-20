@@ -1,0 +1,281 @@
+{
+  "sourceWritten": 30,
+  "sourceAttacks": 29,
+  "osmdGraphical": 30,
+  "mapping": {
+    "graphicalNotes": 30,
+    "nativeEvents": 30,
+    "reasons": {
+      "invalidGraphical": 0,
+      "noNativeCandidate": 0,
+      "ambiguous": 0,
+      "beatDisagreement": 0,
+      "spellingDisagreement": 0
+    },
+    "samples": [],
+    "matched": 30,
+    "ambiguous": 0,
+    "unmatched": 0,
+    "unmatchedNative": 0,
+    "invalidNative": 0
+  },
+  "verifiedHeads": 30,
+  "ambiguousHeads": [],
+  "actualAdbTaps": [
+    {
+      "expected": {
+        "beat": 0,
+        "staff": 1,
+        "measure": 1,
+        "voiceId": "1",
+        "midiEstimate": 72,
+        "status": "matched",
+        "reason": null,
+        "x": 216,
+        "y": 69,
+        "midi": 72,
+        "voice": "1",
+        "length": 1,
+        "attack": true,
+        "xmlNoteIndex": 3
+      },
+      "tap": {
+        "beat": 0,
+        "staff": 1,
+        "midiEstimate": 72,
+        "nativeMidi": 72,
+        "mapped": true,
+        "status": "matched",
+        "sourceEventIndex": 0,
+        "writtenName": "Dó5",
+        "xmlNoteIndex": 3,
+        "playbackAttack": true,
+        "x": 103.13151886451048,
+        "y": 53.37735849056604
+      }
+    },
+    {
+      "expected": {
+        "beat": 0,
+        "staff": 1,
+        "measure": 1,
+        "voiceId": "1",
+        "midiEstimate": 74,
+        "status": "matched",
+        "reason": null,
+        "x": 216,
+        "y": 63,
+        "midi": 74,
+        "voice": "1",
+        "length": 1,
+        "attack": true,
+        "xmlNoteIndex": 5
+      },
+      "tap": {
+        "beat": 0,
+        "staff": 1,
+        "midiEstimate": 74,
+        "nativeMidi": 74,
+        "mapped": true,
+        "status": "matched",
+        "sourceEventIndex": 1,
+        "writtenName": "Ré5",
+        "xmlNoteIndex": 5,
+        "playbackAttack": true,
+        "x": 103.13151886451048,
+        "y": 48.22641509433962
+      }
+    },
+    {
+      "expected": {
+        "beat": 0,
+        "staff": 2,
+        "measure": 1,
+        "voiceId": "5",
+        "midiEstimate": 48,
+        "status": "matched",
+        "reason": null,
+        "x": 213,
+        "y": 178,
+        "midi": 48,
+        "voice": "5",
+        "length": 4,
+        "attack": true,
+        "xmlNoteIndex": 21
+      },
+      "tap": {
+        "beat": 0,
+        "staff": 2,
+        "midiEstimate": 48,
+        "nativeMidi": 48,
+        "mapped": true,
+        "status": "matched",
+        "sourceEventIndex": 4,
+        "writtenName": "Dó3",
+        "xmlNoteIndex": 21,
+        "playbackAttack": true,
+        "x": 99.69754106409856,
+        "y": 146.95283018867926
+      }
+    }
+  ],
+  "geometry": {
+    "engine": "OpenSheetMusicDisplay bundled 1.9.8",
+    "mode": "horizontal",
+    "firstNoteViewport": {
+      "x": 216.42530401384155,
+      "y": 68.72527472527473,
+      "beat": 0,
+      "midiEstimate": 72
+    },
+    "secondNoteViewport": {
+      "x": 288.42958335727224,
+      "y": 51.252747252747255,
+      "beat": 1,
+      "midiEstimate": 77
+    },
+    "renderMs": 401,
+    "svgNodes": 280,
+    "width": 685,
+    "height": 212,
+    "displayScale": 1.164835164835165,
+    "nativeSvgHeight": 182,
+    "availableHeight": 212,
+    "measures": 4,
+    "firstEntries": [
+      {
+        "beat": 0,
+        "x": 10.349663999999999,
+        "y": 3.9
+      },
+      {
+        "beat": 1,
+        "x": 16.53119142,
+        "y": 3.9
+      },
+      {
+        "beat": 2,
+        "x": 19.171830840000002,
+        "y": 3.9
+      },
+      {
+        "beat": 0,
+        "x": 10.016916,
+        "y": 12.3
+      },
+      {
+        "beat": 4,
+        "x": 26.554933679999998,
+        "y": 3.9
+      },
+      {
+        "beat": 5,
+        "x": 28.31785918,
+        "y": 3.9
+      },
+      {
+        "beat": 6,
+        "x": 32.30752868,
+        "y": 3.9
+      },
+      {
+        "beat": 4,
+        "x": 25.621273679999998,
+        "y": 12.3
+      },
+      {
+        "beat": 5,
+        "x": 28.497571179999998,
+        "y": 12.3
+      },
+      {
+        "beat": 6,
+        "x": 31.10570468,
+        "y": 12.3
+      },
+      {
+        "beat": 8,
+        "x": 36.020147679999994,
+        "y": 3.9
+      },
+      {
+        "beat": 9,
+        "x": 39.229068139999995,
+        "y": 3.9
+      },
+      {
+        "beat": 10,
+        "x": 41.9016606,
+        "y": 3.9
+      },
+      {
+        "beat": 11,
+        "x": 44.57425306,
+        "y": 3.9
+      },
+      {
+        "beat": 8,
+        "x": 36.28831168,
+        "y": 12.3
+      },
+      {
+        "beat": 12,
+        "x": 48.746845519999994,
+        "y": 3.9
+      }
+    ],
+    "firstStaffOrigins": [
+      {
+        "staff": 1,
+        "y": 39
+      },
+      {
+        "staff": 2,
+        "y": 123
+      }
+    ],
+    "musicalAnchors": 13,
+    "graphicalNotes": 30,
+    "midiMapping": {
+      "graphicalNotes": 30,
+      "nativeEvents": 30,
+      "reasons": {
+        "invalidGraphical": 0,
+        "noNativeCandidate": 0,
+        "ambiguous": 0,
+        "beatDisagreement": 0,
+        "spellingDisagreement": 0
+      },
+      "samples": [],
+      "matched": 30,
+      "ambiguous": 0,
+      "unmatched": 0,
+      "unmatchedNative": 0,
+      "invalidNative": 0
+    },
+    "firstMusicalX": 103.49663999999999,
+    "referenceOffset": 95.87204571428573,
+    "webviewWidth": 738,
+    "viewportWidth": 738,
+    "viewportHeight": 220,
+    "viewportScrollHeight": 220,
+    "viewportMaxScrollTop": 0,
+    "sourceInkEnvelope": {
+      "top": -1,
+      "bottom": 173,
+      "viewBoxTop": -5,
+      "viewBoxBottom": 177
+    },
+    "nativeStaffSpaceCssPx": 11.64835164835165,
+    "staffSeparationSpaces": 4.4,
+    "svgFeatureCounts": {
+      "beams": 0,
+      "ties": 1,
+      "slurs": 0,
+      "accidentals": 0,
+      "dynamics": 0,
+      "tuplets": 0
+    }
+  },
+  "limitation": "API29 emulator; images require human inspection; physical hardware pending"
+}

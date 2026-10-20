@@ -1,0 +1,187 @@
+{
+  "title": "Gymnopédie nº 1",
+  "source": "authorized MXL already bundled in app; Android API29 emulator",
+  "osmd": {
+    "engine": "OpenSheetMusicDisplay bundled 1.9.8",
+    "mode": "horizontal",
+    "firstNoteViewport": {
+      "x": 303.3063134334909,
+      "y": 42.791207718925556,
+      "beat": 13,
+      "midiEstimate": 78
+    },
+    "secondNoteViewport": {
+      "x": 317.25194595964894,
+      "y": 37.94056665532816,
+      "beat": 14,
+      "midiEstimate": 81
+    },
+    "renderMs": 1644,
+    "svgNodes": 4927,
+    "width": 3759,
+    "height": 188,
+    "displayScale": 0.48506709340570936,
+    "nativeSvgHeight": 387.57525001341844,
+    "availableHeight": 188,
+    "measures": 78,
+    "firstEntries": [
+      {
+        "beat": 0,
+        "x": 15.987231,
+        "y": 8.623325883001224
+      },
+      {
+        "beat": 0,
+        "x": 12.716207999999998,
+        "y": 27.659325883001223
+      },
+      {
+        "beat": 1,
+        "x": 16.933673999999996,
+        "y": 27.659325883001223
+      },
+      {
+        "beat": 3,
+        "x": 25.656101,
+        "y": 8.623325883001224
+      },
+      {
+        "beat": 3,
+        "x": 23.760078,
+        "y": 27.659325883001223
+      },
+      {
+        "beat": 4,
+        "x": 27.060877333333334,
+        "y": 27.659325883001223
+      },
+      {
+        "beat": 6,
+        "x": 33.949971,
+        "y": 8.623325883001224
+      },
+      {
+        "beat": 6,
+        "x": 32.053948,
+        "y": 27.659325883001223
+      },
+      {
+        "beat": 7,
+        "x": 35.35474733333333,
+        "y": 27.659325883001223
+      },
+      {
+        "beat": 9,
+        "x": 42.24384099999999,
+        "y": 8.623325883001224
+      },
+      {
+        "beat": 9,
+        "x": 40.34781799999999,
+        "y": 27.659325883001223
+      },
+      {
+        "beat": 10,
+        "x": 43.64861733333333,
+        "y": 27.659325883001223
+      },
+      {
+        "beat": 12,
+        "x": 48.46197599999999,
+        "y": 8.623325883001224
+      },
+      {
+        "beat": 13,
+        "x": 52.116681173333326,
+        "y": 8.623325883001224
+      },
+      {
+        "beat": 14,
+        "x": 54.991674346666656,
+        "y": 8.623325883001224
+      },
+      {
+        "beat": 12,
+        "x": 48.64168799999999,
+        "y": 27.659325883001223
+      }
+    ],
+    "firstStaffOrigins": [
+      {
+        "staff": 1,
+        "y": 86.23325883001223
+      },
+      {
+        "staff": 2,
+        "y": 276.59325883001225
+      }
+    ],
+    "musicalAnchors": 188,
+    "graphicalNotes": 469,
+    "midiMapping": {
+      "graphicalNotes": 469,
+      "nativeEvents": 469,
+      "reasons": {
+        "invalidGraphical": 0,
+        "noNativeCandidate": 0,
+        "ambiguous": 0,
+        "beatDisagreement": 0,
+        "spellingDisagreement": 0
+      },
+      "samples": [],
+      "matched": 469,
+      "ambiguous": 0,
+      "unmatched": 0,
+      "unmatchedNative": 0,
+      "invalidNative": 0
+    },
+    "firstMusicalX": 159.87231,
+    "referenceOffset": 50.5099254149857,
+    "webviewWidth": 738,
+    "viewportWidth": 738,
+    "viewportHeight": 196,
+    "viewportScrollHeight": 196,
+    "viewportMaxScrollTop": 0,
+    "sourceInkEnvelope": {
+      "top": 2.015625,
+      "bottom": 381.59326171875,
+      "viewBoxTop": -1.984375,
+      "viewBoxBottom": 385.59326171875
+    },
+    "nativeStaffSpaceCssPx": 4.850670934057094,
+    "staffSeparationSpaces": 15.036000061035157,
+    "svgFeatureCounts": {
+      "beams": 0,
+      "ties": 16,
+      "slurs": 10,
+      "accidentals": 0,
+      "dynamics": 50,
+      "tuplets": 0
+    }
+  },
+  "callbackSamples": [
+    {
+      "reason": "pause",
+      "frames": 124,
+      "intervals": 123,
+      "meanCallbackGapMs": 44.18,
+      "maxCallbackGapMs": 170.4,
+      "slowGapsOver50Ms": 37,
+      "svgNodes": 878,
+      "scrollWidth": 2822,
+      "scrollViewport": 738
+    },
+    {
+      "reason": "pause",
+      "frames": 121,
+      "intervals": 120,
+      "meanCallbackGapMs": 27.97,
+      "maxCallbackGapMs": 111.6,
+      "slowGapsOver50Ms": 15,
+      "svgNodes": 4929,
+      "scrollWidth": 3809,
+      "scrollViewport": 738
+    }
+  ],
+  "caution": "rAF callback timing does not establish composited frames or physical-device fluency."
+}

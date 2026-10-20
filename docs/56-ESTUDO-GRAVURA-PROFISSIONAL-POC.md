@@ -745,9 +745,9 @@ Não houve teste físico Realme 7 5G, Lenovo Tab M9 ou Yamaha P-45. Sem certific
 
 ## Tarefa 06/20 — Acidentes, hastes, vigas, quiálteras e notas de graça
 
-Em execução; **PARCIAL, sem aceite visual**. Base 0d529794b116b663032a4741a6dd705c2a6629e9. Diagnóstico anterior às modificações: [evidence/tarefa-06/diagnostico-inicial.md](evidence/tarefa-06/diagnostico-inicial.md). A fixture complexa antiga contém durações inconsistentes com a tercina escrita; permanece intacta como regressão histórica, sem servir de oráculo temporal.
+**Estado final: CONCLUÍDA TECNICAMENTE no escopo validado; ver o encerramento ao fim desta seção.** As subseções intermediárias abaixo preservam o histórico de auditoria/correções. Base 0d529794b116b663032a4741a6dd705c2a6629e9. Diagnóstico anterior às modificações: [evidence/tarefa-06/diagnostico-inicial.md](evidence/tarefa-06/diagnostico-inicial.md). A fixture complexa antiga contém durações inconsistentes com a tercina escrita; permanece intacta como regressão histórica, sem servir de oráculo temporal.
 
-Cinco fixtures autorais debug-only `engraving-{accidentals,beams,tuplets,grace,adversarial}-06.musicxml` usam divisions=60 e expectativas independentes: 22/11/14/6/12 notas principais e 0/0/0/4/1 notas de graça. Acidentes incluem os quatro pares enarmônicos, duplos sinais, cancelamentos, precaução e segundas próximas às linhas suplementares. Vigas incluem colcheias, semicolcheias, pausas e vozes opostas. Quiálteras usam 3:2 e 5:4, números/colchetes e duas vozes; durações exatas, sem alterar beats para obter desenhos. Grace inclui barra, grupo com vigas, acidente e proximidade de acorde. Ainda falta ampliar graça em vozes diferentes e agrupamentos convencionais sem vigas explícitas.
+Cinco fixtures autorais debug-only `engraving-{accidentals,beams,tuplets,grace,adversarial}-06.musicxml` usam divisions=60 e expectativas independentes: 22/11/14/6/12 notas principais e 0/0/0/5/1 notas de graça. Acidentes incluem os quatro pares enarmônicos, duplos sinais, cancelamentos, precaução e segundas próximas às linhas suplementares. Vigas incluem colcheias, semicolcheias, pausas e vozes opostas. Quiálteras usam 3:2 e 5:4, números/colchetes e duas vozes; durações exatas, sem alterar beats para obter desenhos. Grace inclui barra, grupo com vigas, acidente e proximidade de acorde. A graça foi ampliada para outra voz/pauta; agrupamentos convencionais sem vigas explícitas permanecem uma limitação de cobertura.
 
 `complex_notation_source_test.py` confere frações exatas e fechamento de vozes; passou localmente nas cinco amostras. `ComplexNotationFidelityTest.java` enumera alturas, beats, comprimentos e grafias independentemente do OSMD; sua execução depende de CI (local contém JRE17, sem javac). `engraving-audit.js` apenas lê objetos OSMD/VexFlow já renderizados, incluindo modificadores, tuplet, hastes e caixas SVG; não desenha nem altera eventos. Carga por extra Android limitada a cinco nomes em builds debug. `emulator_notation06.py` compara identidades/durações, registra objetos e captura três estados de teclado em três displays para cinco amostras. A inclusão em workflow ainda não constitui aprovação.
 
@@ -794,3 +794,61 @@ A limitação do leitor XML não significa que o VexFlow empacotado seja incapaz
 `engraving-conventions.js` lê apenas os metadados `<accidental parentheses="yes">` do XML original. A localização usa `sourcePart`, compasso e `xmlNoteIndex` já enviados pelo parser Java, conferindo adicionalmente grafia, oitava, pauta e voz. A associação ao objeto gráfico exige beat/pauta/voz/altura/grafia; duplicatas e identidades incompletas são recusadas. Somente o modificador nativo correspondente recebe `setAsCautionary()` antes de `osmd.render()`. Não há reescrita de XML, mutação de eventos, novos ataques, sobreposição de glifos ou monkey-patch do motor.
 
 `AccidentalConventionsTest.js` passou: aplicação nativa uma vez, ausência de mutação do evento e recusa de cinco identidades ausentes/conflitantes/ambíguas. O emulador agora exige `requested=1, applied=1, unresolved=0` e verifica que o bequadro do beat 13 continua `cautionary=true` **após** o layout, além da inspeção real dos parênteses. Essa solução ainda é uma hipótese de integração a ser comprovada pela nova WebView; a limitação não está marcada como resolvida antes dessa prova. Grace parenthesizada e fontes cujos índices/vozes não possam ser conciliados permanecem conservadoras, sem identidade inventada.
+
+### Tarefa 06/20 — encerramento técnico validado (20/10/2026)
+
+**CONCLUÍDA TECNICAMENTE no escopo das cinco amostras autorais, das regressões e dos perfis Android examinados.** Esta conclusão substitui os estados intermediários PARCIAL/em execução acima. Não é certificação universal de MusicXML nem teste físico. A Tarefa 07 não foi iniciada. PR #46 permanece aberto em draft; OSMD 1.9.8 segue opt-in, temporal padrão, versão pública code55 preservada, sem merge, release ou distribuição de APK.
+
+**Código validado:** `dac8ba628e715141ffbb8fee9f37271ea1798592`. Os Actions fizeram checkout do merge sintético `e2c53d9dfffd20efed0c8407c08a75ca6c491930` desse código com a main `15cafe3c8da7c67b9752d14ba0fb6f8f6141177d`; não foi merge efetivo do PR.
+
+- [Build 39431579603 — success](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39431579603): JVM, JS, MusicXML/MIDI, novos testes editoriais e APKs debug/release de teste; gates de publicação/assinatura permanente da main ignorados conforme workflow.
+- [Emulador 39431579898 — success](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39431579898): Android API29/WebView real, quinze cenários editoriais, 45 estados de teclado, regressões gerais, upgrade e release não depurável.
+- [Artefato final 12269751553](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39431579898/artifacts/12269751553). O artefato expira; doze PNGs originais e os relatórios por cenário foram preservados em [evidence/tarefa-06/validated](evidence/tarefa-06/validated). Duas imagens anteriores ao ajuste do envelope ficam em `before-envelope/`, vinculadas ao código 10466ba.
+- [Matriz final e resultados](evidence/tarefa-06/final-matrix.json), [nomes e SHA256 das 58 capturas examinadas](evidence/tarefa-06/visual-inspection-manifest.json) e [referência musical independente](evidence/tarefa-06/matriz-editorial.md).
+
+#### Resultado por classe musical
+
+| Fixture | Principais conciliadas / ataques nativos | Graça gráfica separada | Resultado nos três displays |
+|---|---:|---:|---|
+| accidentals | 22 / 22 | 0 | ♯, ♭, ♮, 𝄪, 𝄫; quatro pares enarmônicos; cancelamentos; acorde C♯6/D♭6/E♭6 e precaução entre parênteses aprovados |
+| beams | 11 / 11 | 0 | Hastes XML opostas, quatro semicolcheias com dois níveis, duas colcheias e pausa separando grupos aprovados |
+| tuplets | 14 / 14 | 0 | 3:2 e 5:4, duas vozes, tercina com viga sem colchete e quiálteras com colchete; números completos, proporções e onsets aprovados |
+| grace | 6 / 6 | 5 | Barra na primeira, grupo de duas sem barra/vigas duplas, graça sem barra antes de acorde, acidente e voz/pauta inferior aprovados |
+| adversarial | 12 / 12 | 1 | Acidentes, tercina, vigas primárias/secundárias parciais, graça e polifonia simultâneas aprovados |
+
+Total por display: **65 cabeças principais + 6 ornamentais**, não 71 ataques. As cinco fixtures passaram no XSD oficial 3.1 e na igualdade racional entre `<duration>`, tipo/dot e `<time-modification>`. O oráculo JVM enumera alturas/tempos/grafias independentemente do OSMD. O teste WebView confronta as identidades completas (compasso, pauta, voz, beat, MIDI, comprimento e grafia), não somente totais. Nos quinze cenários, `matched` coincide com a fonte; `unmatched`, `unmatchedNative`, `ambiguous` e `invalidNative` são zero.
+
+**Já funcionava:** desenho OSMD de acidentes comuns/duplos, hastes, vigas explícitas, números/colchetes de quiálteras e graça; exclusão conservadora de grace dos ataques e da reconciliação principal. Não se redesenharam esses elementos.
+
+**Implementado nesta tarefa:** fixtures/oráculos/probes; reconciliação bijetiva por grafia para enarmonia simultânea na mesma voz; aceitação de ruído aritmético negativo de até 10⁻⁹ junto a zero sem mudar o evento; envelope vertical pela união da caixa original e tinta, impedindo o recorte real dos números; ponte de metadados para parênteses explícitos por `setAsCautionary()` nativo antes do layout.
+
+**Precaução resolvida no caso auditado:** a execução real verificou `requested=1, applied=1, unresolved=0`, modificador `type=n, cautionary=true` após layout. As três capturas `piano-notation06-accidentals-late-{low,taller,tablet}.png` mostram visualmente `(♮)` antes de F5, separado da cabeça. A pendência registrada no JSON histórico `precaucao-limitacao.json` é diagnóstico anterior, não o estado final. Não houve alteração de fonte XML, eventos, motor empacotado ou desenho manual.
+
+#### Inspeção visual efetiva e envelope
+
+Foram examinadas **58 PNGs reais do artefato final**: as 45 `piano-03d-notation06-{accidentals,beams,tuplets,grace,adversarial}-{low,taller,tablet}-{closed,open,restored}.png` em quinze montagens locais de inspeção que incluem cada imagem inteira; as seis `piano-notation06-accidentals-{double,late}-{low,taller,tablet}.png` diretamente; e sete regressões diretamente: `piano-03d-gymnopedie-closed.png`, `piano-03d-gymnopedie-open.png`, `piano-03d-gymnopedie-taller-closed.png`, `piano-03d-gymnopedie-tablet-display-closed.png`, `piano-osmd-context-return.png`, `piano-osmd-polyphony-triad.png`, `piano-osmd-complex-synthetic.png`. Regiões críticas dos números e da graça também foram abertas/ampliadas. Montagens/crops são auxiliares de inspeção, não capturas de emulador fabricadas; os PNGs retidos são os originais.
+
+Observados números 3/5 completos e separados de vigas/colchetes, graça reduzida e anterior às principais, barras/bandeirolas/vigas coerentes, sinais separados nas segundas em linhas suplementares e hastes independentes. Não foi observada colisão relevante nova nessas amostras. A borda superior dos glifos de quiáltera estava em `y=-1,2343466` no SVG; a nova união passa a iniciar em `y=-5,2343464`, incluindo margem e também a borda inferior. Não se moveu a nota ou o beat para corrigir aparência.
+
+Todos os quinze cenários mantiveram ambas as pautas, escala uniforme e `viewportMaxScrollTop=0` nos três estados. A abertura do guia removeu as duas barras superiores, e o fechamento restaurou barras e altura. O movimento horizontal foi exercitado até os acidentes dos compassos 3/4. O contexto permaneceu fixo e retornou ao compasso inicial na regressão própria. As imagens de aceitação não têm etiqueta de toque ativa.
+
+#### Regressões e testes
+
+- Gymnopédie **469/469** cabeças; “Lent et douloureux” integral nas quatro vistas examinadas, sem máscara branca sobre a expressão. Cursor atravessa texto em algumas posições, como já observado na tarefa anterior; não se afirma revisão editorial universal do cursor.
+- Complexa histórica **27/27**, dinâmica/ligaduras/acidentes mantidos. Sua tercina com durações inconsistentes permanece intacta e não foi usada como prova temporal; a nova fixture válida fornece essa comprovação.
+- Polifonia **30/30 cabeças, 29 ataques**, uníssono com duas vozes e continuação sem novo ataque. Três toques ADB preservados. Não houve teste ADB dedicado em todas as cabeças novas.
+- Ode à Alegria, mudanças de contexto/retorno, relógio, movimento, mãos, teclado, Espera, loop, lifecycle, importações/backups e upgrade/release passaram no workflow final.
+- JS: contrato 76, mapa óptico 160/12.000 âncoras, polifonia, encaixe proporcional 48 cenários anteriores + três de envelope externo, enarmonia/ruído fracionário, convenções de acidentes, testes temporais de ornamentos/ligaduras e demais regressões do build. Mocks não foram usados como substituto da WebView/imagens.
+- `Score.java`, `WaitRecognizer.java`, `MidiPlayback.java` e `gradle.properties` permanecem sem alterações frente à base da tarefa. Nenhum pitch, beat, duração, pauta, voz ou evento de execução foi reescrito para corrigir gravura.
+
+#### Commits e falhas intermediárias
+
+`716cabf` — commit principal, fixtures/probes/testes; `9c8aa48` — reconciliação enarmônica e graça inferior; `b047ba7` — diagnóstico/capturas intermediárias; `20d69ad` — documentação do ruído fracionário (não contém a aplicação de código); `10466ba` — aplicação efetiva da tolerância e teste de preservação; `821460a` — envelope real e teste anti-recorte; `dac8ba6` — parênteses nativos antes do layout. Esta entrega final posterior adiciona somente documentação/evidências, não é apresentada como nova execução de código Android.
+
+Os runs 39424976204 (20/22, duas ambiguidades) e 39425475303/39426880678/39427402274 (resíduo fracionário, dois eventos rejeitados) falharam por causas diagnosticadas e corrigidas; não se reduziram as contagens esperadas. O verde 39427719079 não bastou: a revisão visual descobriu o recorte dos números, corrigido/validado em 39430286552 e novamente em 39431579898. A proibição estática do experimento antigo de crop foi trocada pela proteção mais forte de incluir simultaneamente caixa original e tinta real; não foi permitido cortar o envelope para encaixar.
+
+#### Limitações e continuidade
+
+Sem teste físico no Realme 7 5G, Lenovo Tab M9 ou Yamaha P-45; sem medição elétrica de MIDI/latência USB. Não há interpretação temporal inventada de grace, nem certificação universal de MusicXML, todos os acidentes editoriais, tuplets aninhadas ou transposição. O uso conservador de metadados para parênteses só foi aceito na amostra com identidade original completa; graça parenthesizada e identidades não conciliáveis não são apresentadas como suportadas. Agrupamento automático sem `<beam>` não foi habilitado/certificado. A legibilidade física do perfil baixo permanece sujeita ao aceite do usuário. Etiqueta temporária sobre a pauta continua reservada à **Tarefa 08**.
+
+**Decisão:** a Tarefa 06 está tecnicamente encerrada nesse escopo. A Tarefa 07 pode ser iniciada em execução separada quando solicitada, mas não foi iniciada aqui. Nenhum merge, release, mudança de assinatura/licença/versão pública, promoção de OSMD ao padrão ou acesso ao histórico privado ocorreu.

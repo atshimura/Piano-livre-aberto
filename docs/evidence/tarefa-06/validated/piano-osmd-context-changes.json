@@ -1,0 +1,209 @@
+{
+  "fixture": "debug-only three-measure MusicXML; 4/4 C, 3/4 D with C-clef, 6/8 E-flat with G-clef",
+  "engraving": {
+    "engine": "OpenSheetMusicDisplay bundled 1.9.8",
+    "mode": "horizontal",
+    "firstNoteViewport": {
+      "x": 237.82203976475208,
+      "y": 93.68214775622182,
+      "beat": 0,
+      "midiEstimate": 60
+    },
+    "secondNoteViewport": {
+      "x": 283.3164204511204,
+      "y": 80.38800705467372,
+      "beat": 1,
+      "midiEstimate": 64
+    },
+    "renderMs": 486,
+    "svgNodes": 270,
+    "width": 1171,
+    "height": 212,
+    "displayScale": 1.329414070154811,
+    "nativeSvgHeight": 159.46875,
+    "availableHeight": 212,
+    "measures": 3,
+    "firstEntries": [
+      {
+        "beat": 0,
+        "x": 9.748752,
+        "y": 1.65
+      },
+      {
+        "beat": 1,
+        "x": 13.170911839999999,
+        "y": 1.65
+      },
+      {
+        "beat": 2,
+        "x": 16.593071679999994,
+        "y": 1.65
+      },
+      {
+        "beat": 3,
+        "x": 20.01523152,
+        "y": 1.65
+      },
+      {
+        "beat": 0,
+        "x": 9.748752,
+        "y": 9.65
+      },
+      {
+        "beat": 2,
+        "x": 16.593071679999994,
+        "y": 9.65
+      },
+      {
+        "beat": 4,
+        "x": 33.60659136,
+        "y": 1.65
+      },
+      {
+        "beat": 5,
+        "x": 37.961246026666664,
+        "y": 1.65
+      },
+      {
+        "beat": 6,
+        "x": 44.11772469333334,
+        "y": 1.65
+      },
+      {
+        "beat": 4,
+        "x": 33.606591359999996,
+        "y": 9.65
+      },
+      {
+        "beat": 5.5,
+        "x": 40.739485359999996,
+        "y": 9.65
+      },
+      {
+        "beat": 7,
+        "x": 60.31911536,
+        "y": 1.65
+      },
+      {
+        "beat": 7.5,
+        "x": 64.89781792,
+        "y": 1.65
+      },
+      {
+        "beat": 8,
+        "x": 69.93042448,
+        "y": 1.65
+      },
+      {
+        "beat": 8.5,
+        "x": 73.90912703999999,
+        "y": 1.65
+      },
+      {
+        "beat": 9,
+        "x": 78.4878296,
+        "y": 1.65
+      }
+    ],
+    "firstStaffOrigins": [
+      {
+        "staff": 1,
+        "y": 16.5
+      },
+      {
+        "staff": 2,
+        "y": 96.5
+      }
+    ],
+    "musicalAnchors": 14,
+    "graphicalNotes": 19,
+    "midiMapping": {
+      "graphicalNotes": 19,
+      "nativeEvents": 19,
+      "reasons": {
+        "invalidGraphical": 0,
+        "noNativeCandidate": 0,
+        "ambiguous": 0,
+        "beatDisagreement": 0,
+        "spellingDisagreement": 0
+      },
+      "samples": [],
+      "matched": 19,
+      "ambiguous": 0,
+      "unmatched": 0,
+      "unmatchedNative": 0,
+      "invalidNative": 0
+    },
+    "firstMusicalX": 97.48751999999999,
+    "referenceOffset": 108.2225483676269,
+    "webviewWidth": 738,
+    "viewportWidth": 738,
+    "viewportHeight": 220,
+    "viewportScrollHeight": 220,
+    "viewportMaxScrollTop": 0,
+    "sourceInkEnvelope": {
+      "top": 0.03125,
+      "bottom": 151.5,
+      "viewBoxTop": -3.96875,
+      "viewBoxBottom": 155.5
+    },
+    "nativeStaffSpaceCssPx": 13.294140701548109,
+    "staffSeparationSpaces": 4,
+    "svgFeatureCounts": {
+      "beams": 0,
+      "ties": 0,
+      "slurs": 0,
+      "accidentals": 0,
+      "dynamics": 0,
+      "tuplets": 0
+    }
+  },
+  "railStates": [
+    {
+      "measure": 1,
+      "staffSources": [
+        {
+          "clef": 1,
+          "key": null,
+          "time": 1
+        },
+        {
+          "clef": 1,
+          "key": null,
+          "time": 1
+        }
+      ]
+    },
+    {
+      "measure": 2,
+      "staffSources": [
+        {
+          "clef": 2,
+          "key": 2,
+          "time": 2
+        },
+        {
+          "clef": 2,
+          "key": 2,
+          "time": 2
+        }
+      ]
+    },
+    {
+      "measure": 3,
+      "staffSources": [
+        {
+          "clef": 3,
+          "key": 3,
+          "time": 3
+        },
+        {
+          "clef": 3,
+          "key": 3,
+          "time": 3
+        }
+      ]
+    }
+  ],
+  "scope": "Android emulator only; context symbols advance from source measures 1 to 3"
+}
