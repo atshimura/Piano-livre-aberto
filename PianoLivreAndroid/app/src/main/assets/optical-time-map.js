@@ -20,7 +20,7 @@
   });
   for(let i=1;i<stops.length;i++){
    if(stops[i].x+0.01<stops[i-1].x)
-    throw Error("OSMD coordinates move backwards; score may contain system breaks");
+    throw Error("OSMD coordinates move backwards; score may contain system breaks: "+JSON.stringify({previous:stops[i-1],current:stops[i]}));
    if(stops[i].x<stops[i-1].x)stops[i].x=stops[i-1].x;
   }
   function xAt(beat){

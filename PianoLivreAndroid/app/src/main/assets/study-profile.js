@@ -34,8 +34,10 @@
   cachedXml=xml;cached=profile;return profile;
  }
  function presentation(xml,profile){
-  if(!profile.hiddenTypes.length)return xml;
+  // Printed page/system breaks are layout hints, not musical content.
+  // A horizontal Study copy must not inherit them from the full reading view.
   const doc=new DOMParser().parseFromString(xml,'application/xml');
+  Array.from(doc.getElementsByTagName('print')).forEach(function(n){n.removeAttribute('new-system');n.removeAttribute('new-page');});
   profile.hiddenTypes.forEach(function(tag){if(tag==='lyric')Array.from(doc.getElementsByTagName(tag)).forEach(function(n){n.parentNode.removeChild(n);});});
   Array.from(doc.getElementsByTagName('words')).forEach(function(n){if(profile.hiddenTypes.indexOf(wordKind(n.textContent))>=0)n.parentNode.removeChild(n);});
   return new XMLSerializer().serializeToString(doc);
@@ -75,7 +77,14 @@
   return {alerts:alerts,clipped:clipped,overlaps:overlaps,annotationOverlaps:geometry.annotationOverlaps||0,inkClipped:!!geometry.inkClipped,renderedTextCount:geometry.renderedTextCount||0,staffSpace:geometry.staffSpace,
    suggestedSpacing:overlaps?1.5:1,limitations:['Bounding boxes are conservative; not glyph contours.','No independent musical reference; source errors cannot be certified.']};
  }
- const api={inspectSvg:inspectSvg,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
+ function summary(profile,analysis){
+  const names={'lyric':'letras de canto','words:note-names':'listas de solfejo','words:fingering-list':'listas de dedos'};
+  const alerts={'small-staff-space':'pauta pequena','adjacent-attack-overlap':'possível sobreposição de notas','notehead-clipping':'possível corte de notas','symbol-envelope-clipping':'possível corte de símbolos','text-note-overlap':'texto sobre notas','vertical-overflow':'altura insuficiente','native-mapping':'correspondência musical incompleta'};
+  let text=profile.hiddenTypes.length?'Estudo: '+profile.hiddenTypes.map(function(t){return names[t]||t;}).join(', ')+' ocultas. Consulte Partitura Livre. ':'';
+  if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
+  return text;
+ }
+ const api={summary:summary,inspectSvg:inspectSvg,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);

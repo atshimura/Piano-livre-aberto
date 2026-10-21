@@ -107,7 +107,7 @@ public final class NotationView extends WebView {
   loadScore(score,position,false);
  }
  public void loadScore(Score score,double position,boolean traditional){
-  freeLayout=traditional;engravingProof=!traditional;
+  rendererFailed=false;freeLayout=traditional;engravingProof=!traditional;
   if(getLayerType()!= (engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType))
    setLayerType(engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
   if(getLayerType()!=originalLayerType)setLayerType(originalLayerType,null);

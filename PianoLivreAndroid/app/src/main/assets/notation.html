@@ -873,9 +873,8 @@
     console.log('SCORE_DRAWN','zoom=',osmd.Zoom,'svg=',svg?svg.getBoundingClientRect().toJSON():null,
       'scroll=',viewport.scrollHeight,viewport.clientHeight);
     loaded=true;message.style.display='none';
-    if(window.AndroidNotation&&AndroidNotation.onPresentation)AndroidNotation.onPresentation(
-     (studyProfile&&studyProof&&studyProfile.hiddenTypes.length?'Estudo: anotações auxiliares ocultas ('+studyProfile.hiddenTypes.join(', ')+'). Consulte Partitura Livre. ':'')+
-     (studyProof&&studyAnalysis&&studyAnalysis.alerts.length?'Alertas de leitura: '+studyAnalysis.alerts.join(', '):''));
+    if(studyProof&&window.AndroidNotation&&AndroidNotation.onPresentation)
+     AndroidNotation.onPresentation(StudyProfile.summary(studyProfile,studyAnalysis));
     if(!freeLayout&&!studyProof&&osmd.cursor){osmd.cursor.reset();osmd.cursor.show();}
     if(window.AndroidNotation)AndroidNotation.onRendered();
     if(!freeLayout&&!studyProof)requestAnimationFrame(()=>setTimeout(()=>atBeat(seekBeat,true),150));
