@@ -25,7 +25,7 @@ A classificação pode mudar diante de defeitos observados pelo usuário. Não a
 
 ## 3. Três entregas do item 1.2 — partitura OSMD
 
-A **decisão de produto está tomada**: OSMD passa a **renderizador padrão do Estudo nas próximas versões de teste**; motor temporal anterior permanece acessível como alternativa. `Partitura Livre` convencional é outro modo, não um botão oculto para a troca.
+A **decisão de produto foi implementada na beta 0.9.47**: OSMD é o renderizador padrão do Estudo; o motor temporal anterior permanece acessível como alternativa. `Partitura Livre` convencional é outro modo, não um botão oculto para a troca.
 
 | Entrega | Objetivo e escopo delimitado | Critérios de aceite | Situação no momento do planejamento |
 |---|---|---|---|
@@ -54,7 +54,7 @@ Estas trilhas **não** exigem reabrir tarefas antigas já integradas. Dependênc
 | **D7 — Importações e compatibilidade** | XML/MXL, MIDI SMF 0/1 aproximado com arquivo fonte, validação/caminhos portáteis/backup presentes. Reforçar entradas adversariais e mensagem de limitações, verificar restauração e nomes em Android real | **P0** se perda/silêncio; restante **P1/P2** |
 | **D8 — Avaliação musical rigorosa** | Há concepção de avaliação separada da aprendizagem, mas faltam produto e calibração. Não somar nota global nem confundir tempo estudado com qualidade | **Decisão de escopo pendente**; não bloquear lançamento de Estudo competente nem criar métricas sem aprovação |
 
-**Pendências da [issue #34](https://github.com/atshimura/Piano-livre-aberto/issues/34)** são um backlog funcional, não prova de que as entregas recentes estejam ausentes; conferir código e docs 50–55 antes de novos commits. Por exemplo, catálogo, demonstração e prática sequencial estão na `main` 0.9.46, embora alguns checkboxes históricos sigam abertos.
+**Pendências da [issue #34](https://github.com/atshimura/Piano-livre-aberto/issues/34)** são um backlog funcional, não prova de que as entregas recentes estejam ausentes; conferir código e docs 50–55 antes de novos commits. Por exemplo, catálogo, demonstração e prática sequencial estão na `main` 0.9.47, embora alguns checkboxes históricos sigam abertos.
 
 ### Fluxo de aceitação — Laboratório Musical 1.0
 
