@@ -585,10 +585,23 @@ if __name__=="__main__":
     print("PASS: traditional free-reading score is visible without training controls",flush=True)
     tap_text(["Biblioteca"])
     time.sleep(1)
+    default_render_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     tap_text([DEFAULT_SCORE_TITLE])
     time.sleep(3)
     assert_running()
+    study_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert "OSMD · nova" in study_labels and "Anterior · temporal" in study_labels, \
+      "Renderer selectors missing after reopening Study"
+    assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>default_render_count, \
+      "Reopened Study did not select OSMD by default"
     print("PASS: selected music loads with interactive study controls",flush=True)
+    temporal_ready_before=adb("logcat","-d","-v","brief").count("TIMELINE_READY {")
+    tap_text(["Anterior · temporal"],exact=True,scroll=True)
+    for attempt in range(16):
+        if adb("logcat","-d","-v","brief").count("TIMELINE_READY {")>temporal_ready_before:break
+        time.sleep(.5)
+    assert adb("logcat","-d","-v","brief").count("TIMELINE_READY {")>temporal_ready_before, \
+      "Visible temporal alternative did not render after OSMD opened Study by default"
     tap_text(["Teclado guia"])
     time.sleep(.5)
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
