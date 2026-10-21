@@ -30,10 +30,20 @@ android {
       // PR/emulator builds use only the runner's disposable debug certificate.
       // Trusted main configures publicBeta exclusively from Actions Secrets.
       signingConfig = hasPublicSigning ? signingConfigs.publicBeta : signingConfigs.debug
+      manifestPlaceholders = [appLabel: 'Piano Livre', osmdDefault: 'false']
     }
     debug {
       applicationIdSuffix '.opensource'
       if (hasPublicSigning) signingConfig signingConfigs.publicBeta
+      manifestPlaceholders = [appLabel: 'Piano Livre', osmdDefault: 'false']
+    }
+    // Independent user-evaluation APK. It never replaces the open-beta install.
+    osmdTrial {
+      initWith debug
+      applicationIdSuffix '.osmdtest'
+      signingConfig signingConfigs.debug
+      matchingFallbacks = ['debug']
+      manifestPlaceholders = [appLabel: 'Piano Livre (OSMD)', osmdDefault: 'true']
     }
   }
   compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }

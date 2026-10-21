@@ -1,0 +1,12 @@
+{
+  "schema": "https://raw.githubusercontent.com/w3c/musicxml/v3.1/schema/musicxml.xsd",
+  "validation": "lxml XMLSchema: all five valid; exact fractions additionally tested",
+  "schemaSha256": "49ae9e34e04ba5b72004687994f70d598323eb3353eadb62faedcc9e9dc4bd7f",
+  "fixtures": {
+    "engraving-accidentals-06.musicxml": "61c19cafac6bf0c91af5fc7b8e08dc761aea694654a55bc2efccb59f4462d5b9",
+    "engraving-adversarial-06.musicxml": "a68b8927a8b92cdef05270f7d070368f2068456cc5202a5805c37b331a0495b9",
+    "engraving-beams-06.musicxml": "b68eccbaf281202bc7cb98d2d5b2de10369f2ec46ab6db65381063e8c4539e40",
+    "engraving-grace-06.musicxml": "e69ca59f590d62e61a5af385afee1d3621ee4e8464d4bdef1059b7a9d9f66f89",
+    "engraving-tuplets-06.musicxml": "b764622b414d7591c86f3c2386aadaabc8e5d90a65ceb7918564473a258187e6"
+  }
+}

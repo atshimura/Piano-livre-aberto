@@ -1,0 +1,128 @@
+[
+  {
+    "name": "gymnopedie-no-1-satie",
+    "geometry": {
+      "viewBox": "0 0 7748.596435199996 383.4945120309155",
+      "nativeWidth": "7748.59375",
+      "nativeHeight": "383.484375",
+      "cssWidth": "3798.68px",
+      "cssHeight": "188px",
+      "screenCTM": [
+        0.4902286646844413,
+        0,
+        0,
+        0.4902286646844413,
+        50.387705453983195,
+        0
+      ],
+      "staves": [
+        {
+          "id": "Piano0-1",
+          "box": [
+            10.200000762939453,
+            1.8412212133407593,
+            7709.59619140625,
+            200.87164306640625
+          ]
+        },
+        {
+          "id": "Piano0-2",
+          "box": [
+            20,
+            86.23326110839844,
+            7699.79638671875,
+            297.26123046875
+          ]
+        }
+      ]
+    },
+    "logs": [
+      "POC_SVG_FIT {\"scale\":0.49024161675426803,\"rawWidth\":7748.59375,\"rawHeight\":383.484375,\"width\":3798.6831275720165,\"height\":188,\"viewportHeight\":196}",
+      "POC_OSMD_READY {\"engine\":\"OpenSheetMusicDisplay bundled 1.9.8\",\"mode\":\"horizontal\",\"firstNoteViewport\":{\"x\":305.84057303879877,\"y\":42.2740153276247,\"beat\":13,\"midiEstimate\":78},\"secondNoteViewport\":null,\"renderMs\":609,\"svgNodes\":4926,\"width\":3799,\"height\":188,\"displayScale\":0.49024161675426803,\"nativeSvgHeight\":383.484375,\"measures\":78,\"firstEntries\":[{\"beat\":0,\"x\":15.987231,\"y\":8.623325883001224},{\"beat\":0,\"x\":12.716207999999998,\"y\":27.849451203091547},{\"beat\":1,\"x\":16.933673999999996,\"y\":27.849451203091547},{\"beat\":3,\"x\":25.656101,\"y\":8.623325883001224},{\"beat\":3,\"x\":23.760078,\"y\":27.849451203091547},{\"beat\":4,\"x\":27.060877333333334,\"y\":27.849451203091547},{\"beat\":6,\"x\":33.949971,\"y\":8.623325883001224},{\"beat\":6,\"x\":32.053948,\"y\":27.849451203091547},{\"beat\":7,\"x\":35.35474733333333,\"y\":27.849451203091547},{\"beat\":9,\"x\":42.24384099999999,\"y\":8.623325883001224},{\"beat\":9,\"x\":40.34781799999999,\"y\":27.849451203091547},{\"beat\":10,\"x\":43.64861733333333,\"y\":27.849451203091547},{\"beat\":12,\"x\":48.46197599999999,\"y\":8.623325883001224},{\"beat\":13,\"x\":52.116681173333326,\"y\":8.623325883001224},{\"beat\":14,\"x\":54.991674346666656,\"y\":8.623325883001224},{\"beat\":12,\"x\":48.64168799999999,\"y\":27.849451203091547}],\"firstStaffOrigins\":[{\"staff\":1,\"y\":86.23325883001223},{\"staff\":2,\"y\":278.4945120309155}],\"musicalAnchors\":188,\"graphicalNotes\":469,\"midiMapping\":{\"graphicalNotes\":469,\"nativeEvents\":0,\"reasons\":{\"invalidGraphical\":0,\"noNativeCandidate\":469,\"ambiguous\":0,\"beatDisagreement\":0},\"samples\":[{\"reason\":\"noNativeCandidate\",\"beat\":0,\"staff\":2,\"measure\":1,\"midiEstimate\":43,\"voiceId\":\"6\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":1,\"staff\":2,\"measure\":1,\"midiEstimate\":59,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":1,\"staff\":2,\"measure\":1,\"midiEstimate\":62,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":1,\"staff\":2,\"measure\":1,\"midiEstimate\":66,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":3,\"staff\":2,\"measure\":2,\"midiEstimate\":38,\"voiceId\":\"6\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":4,\"staff\":2,\"measure\":2,\"midiEstimate\":57,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":4,\"staff\":2,\"measure\":2,\"midiEstimate\":61,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":4,\"staff\":2,\"measure\":2,\"midiEstimate\":66,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":6,\"staff\":2,\"measure\":3,\"midiEstimate\":43,\"voiceId\":\"6\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":7,\"staff\":2,\"measure\":3,\"midiEstimate\":59,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":7,\"staff\":2,\"measure\":3,\"midiEstimate\":62,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":7,\"staff\":2,\"measure\":3,\"midiEstimate\":66,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":9,\"staff\":2,\"measure\":4,\"midiEstimate\":38,\"voiceId\":\"6\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":10,\"staff\":2,\"measure\":4,\"midiEstimate\":57,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":10,\"staff\":2,\"measure\":4,\"midiEstimate\":61,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":10,\"staff\":2,\"measure\":4,\"midiEstimate\":66,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":13,\"staff\":1,\"measure\":5,\"midiEstimate\":78,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":14,\"staff\":1,\"measure\":5,\"midiEstimate\":81,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":12,\"staff\":2,\"measure\":5,\"midiEstimate\":43,\"voiceId\":\"6\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":13,\"staff\":2,\"measure\":5,\"midiEstimate\":59,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]}],\"matched\":0,\"ambiguous\":0,\"unmatched\":469,\"unmatchedNative\":0,\"invalidNative\":0},\"firstMusicalX\":159.87231,\"referenceOffset\":50.3553504494153,\"viewportWidth\":738,\"viewportHeight\":196}"
+    ]
+  },
+  {
+    "name": "ode-to-joy-ludwig-van-beethoven",
+    "geometry": {
+      "viewBox": "0 0 2103.438256799999 136.5",
+      "nativeWidth": "2103.4375",
+      "nativeHeight": "136.5",
+      "cssWidth": "2103.44px",
+      "cssHeight": "136.5px",
+      "screenCTM": [
+        0.999999651797774,
+        0,
+        0,
+        0.999999651797774,
+        94.828125,
+        0.000023764801933644288
+      ],
+      "staves": [
+        {
+          "id": "Piano0-1",
+          "box": [
+            20,
+            3.299999952316284,
+            2064.438232421875,
+            68.45095825195312
+          ]
+        },
+        {
+          "id": "Piano0-2",
+          "box": [
+            20,
+            16.5,
+            2064.438232421875,
+            121
+          ]
+        }
+      ]
+    },
+    "logs": [
+      "POC_SVG_FIT {\"scale\":1,\"rawWidth\":2103.4375,\"rawHeight\":136.5,\"width\":2103.4375,\"height\":136.5,\"viewportHeight\":196}",
+      "POC_OSMD_READY {\"engine\":\"OpenSheetMusicDisplay bundled 1.9.8\",\"mode\":\"horizontal\",\"firstNoteViewport\":{\"x\":192.3156110546285,\"y\":56.5,\"beat\":0,\"midiEstimate\":64},\"secondNoteViewport\":null,\"renderMs\":135,\"svgNodes\":877,\"width\":2103,\"height\":137,\"displayScale\":1,\"nativeSvgHeight\":136.5,\"measures\":16,\"firstEntries\":[{\"beat\":0,\"x\":9.748752,\"y\":1.65},{\"beat\":1,\"x\":13.64517246,\"y\":1.65},{\"beat\":2,\"x\":17.00526492,\"y\":1.65},{\"beat\":3,\"x\":20.365357380000003,\"y\":1.65},{\"beat\":0,\"x\":10.016916,\"y\":9.65},{\"beat\":4,\"x\":25.22544984,\"y\":1.65},{\"beat\":5,\"x\":28.434370299999998,\"y\":1.65},{\"beat\":6,\"x\":31.10696276,\"y\":1.65},{\"beat\":7,\"x\":33.77955522,\"y\":1.65},{\"beat\":4,\"x\":25.49361384,\"y\":9.65},{\"beat\":8,\"x\":37.952147679999996,\"y\":1.65},{\"beat\":9,\"x\":41.16106814,\"y\":1.65},{\"beat\":10,\"x\":43.8336606,\"y\":1.65},{\"beat\":11,\"x\":46.50625306,\"y\":1.65},{\"beat\":8,\"x\":38.22031168,\"y\":9.65},{\"beat\":12,\"x\":50.678845519999996,\"y\":1.65}],\"firstStaffOrigins\":[{\"staff\":1,\"y\":16.5},{\"staff\":2,\"y\":96.5}],\"musicalAnchors\":63,\"graphicalNotes\":81,\"midiMapping\":{\"graphicalNotes\":81,\"nativeEvents\":0,\"reasons\":{\"invalidGraphical\":0,\"noNativeCandidate\":81,\"ambiguous\":0,\"beatDisagreement\":0},\"samples\":[{\"reason\":\"noNativeCandidate\",\"beat\":0,\"staff\":1,\"measure\":1,\"midiEstimate\":64,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":1,\"staff\":1,\"measure\":1,\"midiEstimate\":64,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":2,\"staff\":1,\"measure\":1,\"midiEstimate\":65,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":3,\"staff\":1,\"measure\":1,\"midiEstimate\":67,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":0,\"staff\":2,\"measure\":1,\"midiEstimate\":48,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":4,\"staff\":1,\"measure\":2,\"midiEstimate\":67,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":5,\"staff\":1,\"measure\":2,\"midiEstimate\":65,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":6,\"staff\":1,\"measure\":2,\"midiEstimate\":64,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":7,\"staff\":1,\"measure\":2,\"midiEstimate\":62,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":4,\"staff\":2,\"measure\":2,\"midiEstimate\":55,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":8,\"staff\":1,\"measure\":3,\"midiEstimate\":60,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":9,\"staff\":1,\"measure\":3,\"midiEstimate\":60,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":10,\"staff\":1,\"measure\":3,\"midiEstimate\":62,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":11,\"staff\":1,\"measure\":3,\"midiEstimate\":64,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":8,\"staff\":2,\"measure\":3,\"midiEstimate\":48,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":12,\"staff\":1,\"measure\":4,\"midiEstimate\":64,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":13,\"staff\":1,\"measure\":4,\"midiEstimate\":62,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":14,\"staff\":1,\"measure\":4,\"midiEstimate\":62,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":12,\"staff\":2,\"measure\":4,\"midiEstimate\":55,\"voiceId\":\"5\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":16,\"staff\":1,\"measure\":5,\"midiEstimate\":64,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]}],\"matched\":0,\"ambiguous\":0,\"unmatched\":81,\"unmatchedNative\":0,\"invalidNative\":0},\"firstMusicalX\":100.16916,\"referenceOffset\":94.83084,\"viewportWidth\":738,\"viewportHeight\":196}"
+    ]
+  },
+  {
+    "name": "engraving-context-change",
+    "geometry": {
+      "viewBox": "0 0 880.9731472 151.5",
+      "nativeWidth": "880.96875",
+      "nativeHeight": "151.5",
+      "cssWidth": "880.969px",
+      "cssHeight": "151.5px",
+      "screenCTM": [
+        0.9999950117307466,
+        0,
+        0,
+        0.9999950117307466,
+        97.5,
+        0.0003778613959482168
+      ],
+      "staves": [
+        {
+          "id": "Piano0-1",
+          "box": [
+            20,
+            1.8076800107955933,
+            841.97314453125,
+            69.94328308105469
+          ]
+        },
+        {
+          "id": "Piano0-2",
+          "box": [
+            20,
+            16.5,
+            841.97314453125,
+            135
+          ]
+        }
+      ]
+    },
+    "logs": [
+      "POC_SVG_FIT {\"scale\":1,\"rawWidth\":880.96875,\"rawHeight\":151.5,\"width\":880.96875,\"height\":151.5,\"viewportHeight\":196}",
+      "POC_OSMD_READY {\"engine\":\"OpenSheetMusicDisplay bundled 1.9.8\",\"mode\":\"horizontal\",\"firstNoteViewport\":{\"x\":194.98703370600137,\"y\":66.5,\"beat\":0,\"midiEstimate\":60},\"secondNoteViewport\":null,\"renderMs\":95,\"svgNodes\":268,\"width\":881,\"height\":152,\"displayScale\":1,\"nativeSvgHeight\":151.5,\"measures\":3,\"firstEntries\":[{\"beat\":0,\"x\":9.748752,\"y\":1.65},{\"beat\":1,\"x\":13.170911839999999,\"y\":1.65},{\"beat\":2,\"x\":16.593071679999994,\"y\":1.65},{\"beat\":3,\"x\":20.01523152,\"y\":1.65},{\"beat\":0,\"x\":9.748752,\"y\":9.65},{\"beat\":2,\"x\":16.593071679999994,\"y\":9.65},{\"beat\":4,\"x\":33.60659136,\"y\":1.65},{\"beat\":5,\"x\":37.961246026666664,\"y\":1.65},{\"beat\":6,\"x\":44.11772469333334,\"y\":1.65},{\"beat\":4,\"x\":33.606591359999996,\"y\":9.65},{\"beat\":5.5,\"x\":40.739485359999996,\"y\":9.65},{\"beat\":7,\"x\":60.31911536,\"y\":1.65},{\"beat\":7.5,\"x\":64.89781792,\"y\":1.65},{\"beat\":8,\"x\":69.93042448,\"y\":1.65},{\"beat\":8.5,\"x\":73.90912703999999,\"y\":1.65},{\"beat\":9,\"x\":78.4878296,\"y\":1.65}],\"firstStaffOrigins\":[{\"staff\":1,\"y\":16.5},{\"staff\":2,\"y\":96.5}],\"musicalAnchors\":14,\"graphicalNotes\":19,\"midiMapping\":{\"graphicalNotes\":19,\"nativeEvents\":0,\"reasons\":{\"invalidGraphical\":0,\"noNativeCandidate\":19,\"ambiguous\":0,\"beatDisagreement\":0},\"samples\":[{\"reason\":\"noNativeCandidate\",\"beat\":0,\"staff\":1,\"measure\":1,\"midiEstimate\":60,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":1,\"staff\":1,\"measure\":1,\"midiEstimate\":64,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":2,\"staff\":1,\"measure\":1,\"midiEstimate\":67,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":3,\"staff\":1,\"measure\":1,\"midiEstimate\":72,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":0,\"staff\":2,\"measure\":1,\"midiEstimate\":48,\"voiceId\":\"2\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":2,\"staff\":2,\"measure\":1,\"midiEstimate\":43,\"voiceId\":\"2\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":4,\"staff\":1,\"measure\":2,\"midiEstimate\":60,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":5,\"staff\":1,\"measure\":2,\"midiEstimate\":62,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":6,\"staff\":1,\"measure\":2,\"midiEstimate\":64,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":4,\"staff\":2,\"measure\":2,\"midiEstimate\":50,\"voiceId\":\"2\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":5.5,\"staff\":2,\"measure\":2,\"midiEstimate\":45,\"voiceId\":\"2\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":7,\"staff\":1,\"measure\":3,\"midiEstimate\":60,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":7.5,\"staff\":1,\"measure\":3,\"midiEstimate\":62,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":8,\"staff\":1,\"measure\":3,\"midiEstimate\":64,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":8.5,\"staff\":1,\"measure\":3,\"midiEstimate\":65,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":9,\"staff\":1,\"measure\":3,\"midiEstimate\":67,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":9.5,\"staff\":1,\"measure\":3,\"midiEstimate\":69,\"voiceId\":\"1\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":7,\"staff\":2,\"measure\":3,\"midiEstimate\":48,\"voiceId\":\"2\",\"nativeAtSameOnset\":[]},{\"reason\":\"noNativeCandidate\",\"beat\":8.5,\"staff\":2,\"measure\":3,\"midiEstimate\":43,\"voiceId\":\"2\",\"nativeAtSameOnset\":[]}],\"matched\":0,\"ambiguous\":0,\"unmatched\":19,\"unmatchedNative\":0,\"invalidNative\":0},\"firstMusicalX\":97.48751999999999,\"referenceOffset\":97.51248000000001,\"viewportWidth\":738,\"viewportHeight\":196}"
+    ]
+  }
+]

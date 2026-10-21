@@ -1,0 +1,68 @@
+[
+  {
+    "keyboard": "closed",
+    "titleBar": true,
+    "controlsBar": true,
+    "geometry": {
+      "scale": 1.9136957316438825,
+      "rawWidth": 402.9886474609375,
+      "rawHeight": 179.23434448242188,
+      "width": 771.1976545469374,
+      "height": 343,
+      "webviewWidth": 738,
+      "viewportWidth": 738,
+      "viewportHeight": 351,
+      "availableHeight": 343,
+      "safetyInsetCssPx": 4,
+      "simultaneous": true,
+      "verticalOverflow": 0,
+      "viewportMaxScrollTop": 0,
+      "nativeStaffSpaceCssPx": 19.136957316438824,
+      "staffSeparationSpaces": 4.4
+    }
+  },
+  {
+    "keyboard": "open",
+    "titleBar": false,
+    "controlsBar": false,
+    "geometry": {
+      "scale": 2.036440064285764,
+      "rawWidth": 402.9886474609375,
+      "rawHeight": 179.23434448242188,
+      "width": 820.6622271417847,
+      "height": 365,
+      "webviewWidth": 738,
+      "viewportWidth": 738,
+      "viewportHeight": 373,
+      "availableHeight": 365,
+      "safetyInsetCssPx": 4,
+      "simultaneous": true,
+      "verticalOverflow": 0,
+      "viewportMaxScrollTop": 0,
+      "nativeStaffSpaceCssPx": 20.36440064285764,
+      "staffSeparationSpaces": 4.4
+    }
+  },
+  {
+    "keyboard": "restored",
+    "titleBar": true,
+    "controlsBar": true,
+    "geometry": {
+      "scale": 1.9136957316438825,
+      "rawWidth": 402.9886474609375,
+      "rawHeight": 179.23434448242188,
+      "width": 771.1976545469374,
+      "height": 343,
+      "webviewWidth": 738,
+      "viewportWidth": 738,
+      "viewportHeight": 351,
+      "availableHeight": 343,
+      "safetyInsetCssPx": 4,
+      "simultaneous": true,
+      "verticalOverflow": 0,
+      "viewportMaxScrollTop": 0,
+      "nativeStaffSpaceCssPx": 19.136957316438824,
+      "staffSeparationSpaces": 4.4
+    }
+  }
+]

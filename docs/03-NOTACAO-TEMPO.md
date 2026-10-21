@@ -93,3 +93,7 @@ A pauta temporal agora conserva múltiplas marcas `<tuplet>` por nota, incluindo
 ## 0.9.10: grace e acidentes
 
 Notas de graça não consomem beats; usam um grupo SVG pequeno (67%), deslocado antes da nota principal com slash opcional. Acidentes simultâneos são arranjados por colunas verticais, removendo apenas glifos verdadeiramente duplicados, nunca sons diferentes. **Na 0.9.11, as vigas de execução ainda ignoram grace, mas há vigas/bandeirolas específicas dos ornamentos**; não há emissão MIDI de nota de graça por esse desenho. Consulte [doc 23](23-NOTAS-DE-GRACA-ACIDENTES-0.9.10.md).
+
+## Revisão editorial em 0.9.46 — problema não resolvido (PR #46 em pesquisa)
+
+A **regra vigente de proporcionalidade estrita** `x = origem + beats × pxPorBeat`, a pauta esquerda fixa e a posição do cursor continuam ativas na versão publicada. A comparação real `piano-engraved.png` versus `piano-free-reading.png` do Actions revelou símbolos artificiais no Estudo comparados com o OSMD da leitura tradicional. A prova de conceito OSMD horizontal por ativação expressa é apenas **visualmente exploratória** e **não é substituição**: sua geometria óptica não é linear e ainda não houve prova de hit-test, timeline, loop, sincronismo ou estabilidade de scores grandes. Ver diagnóstico completo e critérios de decisão em [doc 56](56-ESTUDO-GRAVURA-PROFISSIONAL-POC.md). Não marcar qualidade editorial como concluída pela CI.

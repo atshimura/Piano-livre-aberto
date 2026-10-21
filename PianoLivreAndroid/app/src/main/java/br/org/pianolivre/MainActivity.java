@@ -125,8 +125,54 @@ public class MainActivity extends Activity {
    prefs=getSharedPreferences("piano_midi_selftest",MODE_PRIVATE);prefs.edit().clear().commit();
   }
   midiManager=(MidiManager)getSystemService(MIDI_SERVICE);try{catalog=new JSONArray(readAsset("catalog.json"));}catch(Exception e){catalog=new JSONArray();}
-  buildUi();loadProfiles();setupMidi();String previous=prefs.getString("user_"+user+"_file","");if(!previous.isEmpty())loadScore(previous,false);
+  buildUi();loadProfiles();setupMidi();String previous=prefs.getString("user_"+user+"_file","");
+  boolean contextSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("engraving_context_selftest",false);
+  boolean complexEngravingSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("engraving_complex_selftest",false);
+  boolean polyphonySelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("engraving_polyphony_selftest",false);
+  String notation06=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     ?getIntent().getStringExtra("engraving_notation06_selftest"):null;
+  boolean notation06SelfTest=notation06!=null&&java.util.Arrays.asList("accidentals","beams","tuplets","grace","adversarial").contains(notation06);
+  if(!contextSelfTest&&!complexEngravingSelfTest&&!polyphonySelfTest&&!notation06SelfTest&&!previous.isEmpty())loadScore(previous,false);
   handler.post(ticker);
+  if(contextSelfTest){
+   android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_INTENT accepted previousPath="+previous);
+   handler.post(()->{
+    String fixture="scores/engraving-context-change.musicxml";
+    loadScore(fixture,true);
+    if(score==null||!fixture.equals(currentFile))
+     android.util.Log.e("PianoLivreContext","CONTEXT_FIXTURE_LOAD_FAILED currentFile="+currentFile+" score="+(score==null?"null":score.title));
+    else android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size());
+   });
+  }
+  if(complexEngravingSelfTest){
+   handler.post(()->{
+    String fixture="scores/engraving-complex-synthetic.musicxml";
+    loadScore(fixture,true);
+    if(score==null||!fixture.equals(currentFile))
+     android.util.Log.e("PianoLivreContext","COMPLEX_FIXTURE_LOAD_FAILED currentFile="+currentFile+" score="+(score==null?"null":score.title));
+    else android.util.Log.i("PianoLivreContext","COMPLEX_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size());
+   });
+  }
+  if(notation06SelfTest){
+   final String fixture="scores/engraving-"+notation06+"-06.musicxml";
+   handler.post(()->{
+    loadScore(fixture,true);
+    if(score==null||!fixture.equals(currentFile))android.util.Log.e("PianoLivreNotation06","NOTATION06_LOAD_FAILED");
+    else android.util.Log.i("PianoLivreNotation06","NOTATION06_LOAD_OK written="+score.writtenEvents.size()+" attacks="+score.events.size());
+   });
+  }
+  if(polyphonySelfTest){
+   handler.post(()->{
+    String fixture="scores/engraving-polyphony-synthetic.musicxml";
+    loadScore(fixture,true);
+    if(score==null||!fixture.equals(currentFile))
+     android.util.Log.e("PianoLivrePolyphony","POLYPHONY_FIXTURE_LOAD_FAILED currentFile="+currentFile);
+    else android.util.Log.i("PianoLivrePolyphony","POLYPHONY_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size()+" attacks="+score.events.size());
+   });
+  }
   if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("midi_selftest",false))handler.post(()->MidiSessionSelfTest.run(this));
  }
@@ -571,6 +617,7 @@ public class MainActivity extends Activity {
   if(selected<0||selected>2)return;
   stopPlayback();finishStudyWindow();
   currentHand=selected;scoreView.hand=selected;
+  if(screens!=null&&screens.notation!=null)screens.notation.setStudyHand(selected);
   if(score!=null)position=HandNavigation.nextPosition(score,position,selected,loopStart,loopEnd);
   if(routeCursor!=null)routeCursor.align(position);
   scoreView.playhead=position;scoreView.invalidate();

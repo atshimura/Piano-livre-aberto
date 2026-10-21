@@ -1,0 +1,24 @@
+{
+  "code": "821460a22d29fb761ca15d08748af61732322fd5",
+  "run": 39430286552,
+  "artifact": 12269040934,
+  "visualInspection": [
+    "piano-03d-notation06-tuplets-low-closed.png",
+    "piano-03d-notation06-adversarial-low-closed.png"
+  ],
+  "observation": "Full 3 and 5 with top margin, verified in enlarged crops; old clips were real despite green CI",
+  "ink": {
+    "tuplets": {
+      "top": -1.234346628189087,
+      "bottom": 206.9999978542328,
+      "viewBoxTop": -5.234346389770508,
+      "viewBoxBottom": 210.99999809265137
+    },
+    "adversarial": {
+      "top": -1.234346628189087,
+      "bottom": 169.9999978542328,
+      "viewBoxTop": -5.234346389770508,
+      "viewBoxBottom": 173.99999809265137
+    }
+  }
+}

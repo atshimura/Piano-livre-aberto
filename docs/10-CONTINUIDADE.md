@@ -4,6 +4,8 @@
 
 ## Ponto de retomada vigente
 
+**Pesquisa OSMD / PR #46 — Tarefa 06 encerrada tecnicamente em 20/10/2026:** código `dac8ba628e715141ffbb8fee9f37271ea1798592`, build [39431579603](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39431579603) e emulador [39431579898](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39431579898), ambos success. Cinco fixtures válidas, 65 notas principais + 6 ornamentais por display; 15 cenários/45 estados de teclado, 58 capturas examinadas. Enarmonia simultânea, resíduo fracionário, recorte de números e parênteses de precaução corrigidos/validados. Gymnopédie 469/469, complexa 27/27, polifonia 30/30 e 29 ataques mantidos. Evidências duráveis em `docs/evidence/tarefa-06/`; encerramento e limites em doc56. PR continua draft, temporal padrão, sem merge/release/versão nova; hardware e etiqueta da Tarefa 08 pendentes. Tarefa 07 elegível, mas NÃO iniciada.
+
 Etapas 1–5 encerradas no escopo técnico, sem aceite físico. Etapa 6 consolidou perfis/biblioteca/histórico, importação/backup e distribuição; consulte documentos 40–44. A versão está em gradle.properties e o registro final de commits/runs/Release nas issues #4/#11.
 
 Primeira ação: verificar main, PR #33 e seus checks, certificado e pré-release da versão atual. Não refazer #29–#32 se já integrados. Quando a sequência estiver aprovada e sem falha independente documentada, a próxima ação é executar o roteiro físico Realme/Lenovo/Yamaha de 40 e registrar o resultado em #11. Não declarar 1.0 nem eliminação das travadas físicas sem esse aceite. Correções independentes constatadas continuam autorizadas; não encerrar automaticamente por concluir uma versão.
@@ -165,3 +167,163 @@ Branch `feat/laboratorio-demonstracao-midi` reconciliada com `main` 0.9.44 sem r
 ## Retomada 0.9.46 — prática sequencial (PR #45)
 
 Branch `feat/laboratorio-pratica-sequencial` reconciliada por merge não destrutivo com a `main` 0.9.45. Preservados reconhecimento espontâneo/manual, catálogo, USB-MIDI/virtual e demonstração MIDI/cancelamento do PR #44. Escalas e arpejos avançam por ataque **novo, isolado** na ordem da altura MIDI; extras isoladas são indicadas sem bloquear e demora não penaliza. Notas repetidas exigem novo ataque; ataques simultâneos/sobrepostos e mistura com notas já mantidas no MIDI/virtual não fabricam ordenação. Reprodução de demonstração nunca avança prática. Busca, troca de exercício/modo, saída/pausa/desconexão cancelam estado; mão Ambas/Direita/Esquerda é referência, não inferência. Acordes/intervalos preservam a comparação por classes cromáticas. Sem migração de dados, serviços ou telemetria. Ver [55](55-LAB-PRATICA-SEQUENCIAL.md), teste JVM e emulador. Exigir CI no SHA da branch/merge e release assinada 0.9.46/code55. Faltam dedilhado, métricas rítmicas/metrônomo, calibração, histórico do Lab e testes físicos #11. Não declarar V1.
+
+## Prioridade de produto — pauta profissional no Estudo (pesquisa PR #46)
+
+**O usuário reprovou visualmente a pauta do Estudo**, apesar dos PRs de claves/hastes/vigas. Confirmado na `main` 0.9.46: estudo usa SVG manual `temporal-notation.js`, leitura livre usa OSMD 1.9.8. PR draft `research/estudo-gravura-osmd-poc` isola prévia OSMD horizontal via long-press, preserva a pauta temporal usual e prepara comparativos de screenshot/performance. **Não mesclar como solução final nem emitir 0.9.47**: ainda faltam mapeamento gráfico de notas/MIDI, cursor temporal com espaçamento óptico, hit-test, polyphony, long scores, revisão editorial, física e decisão do usuário sobre abandonar proporcionalidade **estrita**. Ver [56](56-ESTUDO-GRAVURA-PROFISSIONAL-POC.md), issue #34 e aceite #11. Biblioteca é outro problema, fora deste PR.
+
+
+## Retomada da prova de gravura OSMD (18/10/2026, PR #46 draft)
+
+A conversa que iniciou a pesquisa foi interrompida; o trabalho encontra-se integralmente no repositório aberto, branch `research/estudo-gravura-osmd-poc`. A HEAD inicial conferida nesta retomada foi `15edfe56bb2b40956ae7243ee1a310d8ef7e02da`, com build/emulador aprovados [39085951671](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39085951671) e [39085951669](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39085951669). Atenção: estas execuções NÃO validam novos commits.
+
+Após ler `AGENTS.md`, a arquitetura, a notação e o [diagnóstico 56](56-ESTUDO-GRAVURA-PROFISSIONAL-POC.md), a retomada acrescentou ao protótipo mapeamento conservador de cabeças OSMD para eventos MIDI do parser nativo, diagnósticos de correspondência/ambiguidade, atualização do hit-test após resize e sincronismo visual rAF contínuo com correção de fase. Foram ampliados JS, contrato e ensaio de toque no emulador. Confira o HEAD atual e os dois workflows do **mesmo SHA** antes de afirmar que passaram. Novos registros de execução devem ser adicionados ao PR #46; não usar logs antigos para declarar conclusão.
+
+Posteriormente, o PR recebeu uma **primeira seleção gráfica de loop por dois toques** em notas já cruzadas com o motor MIDI, usando o callback nativo existente, sem alterações de dados ou motor. O emulador ganhou cenário com registro `POC_LOOP_SELECTED` e captura `piano-osmd-poc-loop.png` quando executar. É experimental: não equivale à experiência com arrasto, alças e seleção de notas polifônicas.
+
+**Próximo trabalho independente:** revisar resultados de CI, corrigir falhas, depois completar interação de loop com arrasto/alças, preparo do Espera, filtragem de mãos, cursor sob mudanças de tempo, complexidade de vozes e testes de longa duração. Guardar capturas reais (pauta antiga, prévia estática e em movimento) para inspeção humana. O app normal continua na notação temporal antiga, o preview é opt-in, e o PR deve permanecer draft até qualidade editorial aceita e regressões funcionais comprovadas. Nenhum teste de hardware real foi feito nesta retomada. Não tocar no repositório privado.
+
+
+### Continuação do Espera na camada OSMD (18/10/2026)
+
+A prévia opt-in agora recebe os comandos já existentes de preparação/cancelamento do Espera e apresenta contador visual baseado na duração nativa configurada, sem tocar no relógio de execução MIDI, na seleção de mãos nem no arquivo original. A simulação do emulador testa `POC_WAIT_PREPARE`, `POC_WAIT_COMPLETE` e salva `piano-osmd-poc-wait.png`; o workflow inclui também `piano-osmd-poc-loop.png`. **Confira os dois workflows do commit final antes de declarar a interface aprovada**. Ainda pendem trajetória espacial preparatória, aceite editorial e ensaios físicos.
+
+### Estudo profissional — comparação longa e adaptação vertical (18/10/2026)
+
+A branch do [PR #46](https://github.com/atshimura/Piano-livre-aberto/pull/46) continuou **somente como protótipo opt-in**, após autorização do usuário para espaçamento óptico. A execução Android da `Gymnopédie nº 1` (partitura já incluída e autorizada, **78 compassos**) expôs falha editorial importante: SVG OSMD horizontal ~7749 × 382 CSS px sobre viewport de 196 px de altura, mostrando **apenas a pauta superior**, embora a CI estivesse verde. O novo código ajusta **somente a dimensão CSS do SVG da prévia**, preservando seu `viewBox`, alturas, eventos MusicXML originais, mapa nativo MIDI e ponte de identificação por toque. A escala resulta ~0,493, com SVG exibido ~3818 × 188 px e **ambas as pautas visíveis** no [emulador do commit anterior](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39125229195). O primeiro render da partitura longa levou ~1,30s; o monitor de callbacks JS observou média ~30,11ms, pico ~113ms e 22 intervalos acima de 50ms: ainda não significa FPS visual ou estabilidade em aparelho real.
+
+O modo Estudo **normal permanece no renderizador temporal anterior**, e a `main` na 0.9.46/code55. A troca de altura do teclado guia agora não faz regravação de todo SVG quando a largura permanece igual. Adicionado teste de toque real na primeira cabeça da pauta superior **após a escala CSS**, validando identificação pelo `Score.java`; verificar sucesso no **HEAD atual**, não atribuir os resultados do commit anterior ao cenário posterior. Capturas de comparativo da Gymnopédie e relatório OSMD constam como artefatos da CI (expiram em 3 dias). Para aceitar ainda faltam: tempo/scroll fluido em aparelho real, pauta/claves fixas à esquerda no novo motor, sobreposições, 14 cabeças sem correspondente nativo nessa Gymnopédie, notação de várias vozes, loop completo com alças, gestos de estudo e revisão editorial/hardware (#11). O usuário **não aprovou visualmente** a nova pauta nem autorizou novas dependências. Consulte [doc 56](56-ESTUDO-GRAVURA-PROFISSIONAL-POC.md); não integrar/publicar APK definitivo com estes limites.
+
+
+## Item 1.2 — gravura profissional: causa das 14 notas e representação dual (18/10/2026)
+
+O protótipo OSMD continua em `research/estudo-gravura-osmd-poc` / PR #46 draft, **sem mudança da apresentação padrão** na `main`. Os 14 itens da Gymnopédie não são ambiguidade de vozes: o relato `POC_LONG_MAPPING` do emulador [39132999090](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39132999090) indica 469 gráficas, 455 conciliadas, 14 `noNativeCandidate`, correspondentes a compassos com provável continuação de tie. Inspeção do código encontrou a causa estrutural: `Score.java` funde ties em um único ataque musical, mas o OSMD mostra cada cabeça escrita.
+
+**Correção de arquitetura em pesquisa:** `Score.writtenEvents` mantém uma cópia antes da fusão, distinguindo `playbackAttack`. `Score.events` permanece **inalterado como relógio/ataques/MIDI**; o bridge da prévia usa `writtenEvents`, preservando parte, pauta, compasso, voz, índice XML, grafia enharmônica, beat, duração e tie. JS apresenta nota exata e identifica continuação sem permitir novo ataque no início de loop. JVM testa dois segmentos escritos para um ataque de Fá♯ ligado; JS testa ambas as cabeças e associação conservadora por voz; emulador exige todas as 469 cabeças. **Consultar resultados definitivos dos workflows no SHA final, não assumir êxito antecipado.**
+
+O experimento separado de recorte `getBBox` foi revertido, pois não melhorou a altura visível da Gymnopédie e duas execuções intermediárias de emulador terminaram na tela inicial do Android após reprodução longa. O teste agora registra `dumpsys activity`/processo para diferenciar queda do aplicativo de variação do emulador. A escala antiga volta a ser referência até alternativa comprovada.
+
+**Ainda por fazer antes de concluir item 1.2:** confirmar CI e tela/capturas de todas as notas; contexto esquerdo de clave/armadura/fórmula fixo e correto nas mudanças; legibilidade sem escala excessivamente pequena; seleção de trecho por arrasto/alças e visualização por mãos/realce; estabilidade e fluidez sob partitura longa, rolagem, mudança de andamento, Espera, teclado aberto, retomada e loops; regressões ampliadas; aprovação editorial do usuário; testes físicos posteriores em Realme 7 5G, Lenovo Tab M9 e Yamaha P-45. Não mesclar PR, publicar nova beta ou marcar issue #34 completa sem atender os critérios técnicos e visuais. Não tocar no repositório histórico privado.
+
+
+## Retomada do item 1.2 — estado confirmado do PR #46 (18/10/2026)
+
+Repositório oficial `atshimura/Piano-livre-aberto`; branch `research/estudo-gravura-osmd-poc`; [PR #46](https://github.com/atshimura/Piano-livre-aberto/pull/46) aberto como **draft**. A retomada começou do head `f1d3dc1`; o problema do emulador foi reproduzido e diagnosticado antes de qualquer alteração musical: ADB entregava o toque prolongado; OSMD carregava e renderizava; Chromium 74 do Android WebView falhava em `SVGElement.replaceChildren()`. Troca por remoção DOM compatível corrigiu a causa no commit `42ef86d69460c17a0b50fad97692ea7cd48d06a0`.
+
+Actions do SHA `42ef86d`: [build, JVM/JS/MusicXML/MIDI](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39144872504) **success**; [emulador Android](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39144872440) **success**. A Gymnopédie de 78 compassos conciliou **469/469 cabeças**, sem ambiguidade/faltantes; Ode à Alegria 81/81. Passaram também toque gráfico, seleção de mãos, resize, scroll, loop experimental, preparação Espera, restauração do renderer temporal, longa duração/captura e regressões UI. Artefato do emulador: 26 arquivos, incluindo capturas antes/OSMD/referência, Gymnopédie, JSON e vídeo; disponibilidade do artefato por três dias.
+
+Medições longas: render 1.366 ms, SVG 4.927 nós, escala CSS 0,4927 e dimensão exibida 3818×188 CSS px em viewport 738×196. As duas pautas aparecem na captura, mas o aceite de legibilidade continua pendente. Intervalos rAF foram irregulares (médias registradas de 53,61 ms na Ode e 33,09 ms na Gymnopédie; picos 157/231 ms); **não chamar isso de FPS**. PSS consultado só no processo principal; renderer WebView possivelmente separado.
+
+**Próxima ação exata:** implementar/instrumentar contexto de clave, armadura e fórmula fixo à esquerda no scroll OSMD sem duplicar nem alterar a partitura MusicXML; executar emulador com captura de início/meio/fim; então avaliar o tamanho legível e colisões antes de expandir para o corpus musical adversarial. Manter o PR draft e `main` em 0.9.46/code55. Continuar a pesquisar as pendências documentadas em [56](56-ESTUDO-GRAVURA-PROFISSIONAL-POC.md); biblioteca compacta é tarefa separada. Hardware #11 e aceite visual do usuário continuam explicitamente pendentes.
+
+### Prova da árvore de instruções OSMD
+
+No SHA `c4b17f1`, build e emulador passaram com 469/469 cabeças. O SHA `1d7d2e0` incluiu o relatório no artefato e passou nos dois workflows, mas a linha Android continuava truncada. No SHA `dbb914c`, build e emulador passaram; o artefato (27 arquivos) incluiu o TXT completo com 24 registros JSON válidos abaixo de 3.500 caracteres, e Gymnopédie registrou 469/469. A revisão do relatório encontrou seleção errada de `POC_CONTEXT_NODES_2` (measure 2 da pauta superior, não a grave). O SHA seguinte muda a coleta para `staffline`→primeira `vf-measure` e exige que as duas primeiras sondagens sejam compasso 1 em `Piano0-1`/`Piano0-2`. A faixa fixa ainda não foi implementada. Depois, testar fixture MusicXML com alterações de clave/armadura/fórmula antes de declarar comportamento contextual.
+
+O SHA `f60fbc5d517f315b61645b63fc994f46a5ed255c` passou no build `39148592764` e emulador `39148592883`. O artefato `12143774284` contém 27 arquivos previstos, incluindo capturas e TXT de contexto. JSON longo: 78 compassos, 469/469 cabeças, 1.167 ms, 4.927 elementos e escala 0,4927. A prova foi corrigida: `POC_CONTEXT_NODES_1/2` agora representam `Piano0-1/1` e `Piano0-2/1`.
+
+**Estado do commit `4c5b654`:** build `39149525963` e emulador `39149525971` passaram. O artefato `12144024626` (27 arquivos) foi inspecionado e mostra Gymnopédie 78 compassos/469 de 469 cabeças, 1.287 ms de render, 4.927 nós e escala 0,4927. A faixa atualizou medidas 1→2→3, mas a captura em movimento confirmou claves duplicadas e posição fixa em aproximadamente 30% da tela. Portanto, passou a verificação funcional inicial e **falhou na posição editorial solicitada**.
+
+**Atualização após conclusão do SHA `286defc28c044ffaa3d648fa447def789d5ea809`:** build `39150432492` e emulador `39150432495` passaram. Artefato `12145276242`, 27 arquivos, foi baixado e inspecionado. Gymnopédie: 78 compassos, **469/469 cabeças**, 1.166 ms, 4.927 nós, escala 0,4927; a captura confirma o rail fixo à esquerda e o score se movendo. A legibilidade nessa escala continua pendente.
+
+**SHA `8fa2242e2fa85c4048954c1d9f0994d82e209c35`:** build `39151195201` passou na suíte completa, APKs debug/release e isolamento de distribuição. O emulador `39151195211` falhou somente ao procurar o título do fixture depois dos cenários anteriores; Gymnopédie manteve 469/469. Artefato `12145706113` tem 25 arquivos e a hierarquia final mostra aviso de sessão salva tentando abrir `imported/upgrade.mxl` ausente. Não há log que prove causalidade com o intent. Próxima revisão independente do teste: não carregar sessão anterior quando o intent de fixture debug estiver ativo, usar `am start -S`, registrar aceitação/carga e anexar screenshot, hierarquia, logs específicos e Activity se falhar.
+
+**SHA `87f1d77`:** build passou; o intent da fixture foi aceito e o título “Context changes test” apareceu. O emulador falhou ao procurar “Partitura Livre”; a hierarquia genérica do artefato incluía o rótulo, sem captura específica. **SHAs `f847824` e `94236b0`:** builds completos passaram (`39152801867`, `39153579431`). Em ambos, emulador passou Gymnopédie 469/469, toque de nota, rolagem, seleção de trecho, Espera, captura de movimento e retorno do segundo plano, depois falhou antes de abrir a prévia. Artefatos `12145823282` e `12145539015` incluem screenshot, XML e logs; a hierarquia e a mensagem de erro listam “Partitura Livre”. Causa encontrada: `next(..., None)` retornava corretamente o nó, mas `if context_button` tratava como ausente o `ElementTree.Element` folha, cujo valor booleano é falso quando não tem filhos. Não era falha do gesto, OSMD nem Unicode. O artefato `12145539015` confirmou que o rótulo bruto era exatamente “Partitura Livre” (U+0050...U+0065), normalizado como `partituralivre`; o erro era só a truthiness do nó folha. No SHA `0c87040`, a busca foi corrigida e a interface registrou “Tapped Partitura Livre”; a prova carregou e a execução chegou às mudanças de compasso. O emulador (`39154409349`) falhou na expectativa do compasso 2. O SHA `943e304` registrou estados tardios de outra pauta misturados ao fixture. Entre os eventos do fixture, a medida 2 mostrou origens `clef/key/time=2/2/2`, e a medida 3 `2/3/3`. O teste escolhia o primeiro evento de medida 2, antigo, e o fixture ainda mostra clave de origem 2 onde espera 3 no compasso 3. O próximo ajuste limpa logcat após comprovar renderização, seleciona estados pela origem esperada e mantém a asserção estrita da clave 3. Artefato `12146378167` inclui capturas início/meio/fim. A falha atual é de contexto musical, separada do seletor já corrigido. PR #46 continua draft.
+
+
+### Retomada do diagnóstico de contexto — SHA `ace0d0f`
+
+O build passou (`39156493985`) e o emulador falhou na verificação de clave no compasso 3. A captura de probes ainda misturou registros de partituras anteriores e não provou que o `POC_OSMD_READY` encontrado correspondia ao gesto da fixture. Os estados `1/null/1`, `2/2/2`, `2/3/3` não são atribuídos à fixture sem correlação. Artefato do emulador: `12147131689`. O commit seguinte exige `CONTEXT_FIXTURE_LOAD_OK` com três compassos, limpa logcat imediatamente antes do toque prolongado, exige novo `POC_OSMD_READY` e arquiva o inventário OSMD/SVG e estados antes das asserções. Nenhuma transição de contexto da fixture está validada neste ponto.
+
+
+### Fixture correlacionada — SHA `373972c`
+
+Build completo `39157236327` passou. O emulador `39157236347` confirmou a carga Java da fixture, limpou log antes do toque prolongado e encontrou um `POC_OSMD_READY` novo de 3 compassos. Assim, os estados são desta fixture: m1 `1/null/1`; m2 `2/2/2`; m3 `2/3/3` (origens de clave/armadura/compasso). Falha real confirmada: o rail não avança a clave de sol de retorno no m3. Artefato `12147393066` inclui JSON e probes pré-asserção. Próxima ação: imprimir esse probe no log do Actions para verificar os atributos OSMD de m3 e se o glifo clef aparece no SVG; corrigir o extrator/modelo sem reduzir a asserção.
+
+
+### Diagnóstico de contexto — SHA `2416e9d`
+
+O build `39157939341` passou; o emulador `39157939343` falhou somente na asserção de troca de clave do compasso 3. A suíte percorreu antes a Gymnopédie de 78 compassos e conciliou `469/469` cabeças escritas, sem ambiguidades ou divergências, e reconheceu toque real em nota. A clave da régua reportou origem 2 no compasso 3 apesar de a fixture declarar nova clave de sol; armadura e compasso reportaram origem 3. O arquivo de probe foi criado no diretório do projeto, mas o passo de log no workflow usou prefixos incompatíveis com o `working-directory`, então seus dados não apareceram no log. Próximo SHA corrige o caminho e registra os filhos SVG dos primeiros quatro compassos por pauta para identificar se a clave está ausente no modelo ou apenas no seletor. A falha e a asserção permanecem intactas.
+
+
+### Contrato do probe — SHA `e2e4ee1`
+
+Build `39158718398` falhou no contrato estático porque `POC_CONTEXT_NODES` agora armazena uma lista de compassos por pauta, enquanto a verificação ainda esperava um único nó de compasso. Os testes JVM anteriores passaram. O emulador `39158718300` está executando com o caminho corrigido do passo de diagnóstico. O SHA seguinte atualiza o contrato para exigir as duas pautas e os compassos até 4, sem alterar a asserção funcional da clave.
+
+
+### Ajuste do contrato da leitura do probe — SHA `95dcb01`
+
+Build `39158885775` alcançou o teste OSMD, mas falhou porque o contrato procurava a comparação antiga `measure == "1"`; o teste de UI passou a construir listas `first_measures` e `second_measures`. O contrato será atualizado para conferir a igualdade dos três primeiros compassos nas duas pautas. O emulador desse SHA segue ativo.
+
+
+### Probe limitado pelo tamanho do logcat — SHA `e2e4ee1`
+
+O emulador `39158718300` passou pelos fluxos principais, incluindo a Gymnopédie 469/469 e toque real, mas falhou antes da fixture porque a nova linha `POC_CONTEXT_NODES_1` ultrapassou o limite de registro do logcat. O próximo SHA limita o inventário a glifos de clave, armadura e fórmula de compasso nos quatro primeiros compassos de cada pauta, mantendo caixas SVG e o conteúdo da clave. Isso conserva a evidência necessária sem serializar os grupos de notas.
+
+
+### Restaurar saída dos probes limitados — SHA `88b4749`
+
+Build `39159267925` falhou no contrato de contexto porque a substituição que limitou os objetos SVG também removeu as linhas que os escreviam no log. O conteúdo resumido continua no código, mas não era emitido. O próximo SHA restaura os marcadores `POC_CONTEXT_SVG_ROOT` e `POC_CONTEXT_NODES_*` com apenas glifos de contexto, sem grupos de notas.
+
+
+### Causa da clave contextual localizada — SHA `117e044`
+
+O emulador `39159409919` confirmou fixture OSMD pronta (3 compassos, 19 cabeças) e preservou no modelo `InitiallyActiveClef`: compasso 2 = clave de dó (`clefType:2`), compasso 3 = clave de sol (`clefType:0`). O SVG VexFlow, porém, guarda a mudança de clave de dó ao fim do grupo SVG do compasso 1 (x=226.4, perto do limite 254.4) e a mudança para sol ao fim do grupo do compasso 2 (x=470.7, perto do limite 498.7); os compassos 3 não têm grupos `vf-clef`. Portanto a partitura fonte e o OSMD estão corretos, mas o extrator confundia grupo gráfico com compasso musical. O próximo SHA atribui glifos de clave junto à borda direita ao compasso seguinte, mantém o glifo OSMD original, registra os remapeamentos `1→2` e `2→3`, e exige o rail correto nos compassos 2 e 3.
+
+
+### Contrato de origem musical — SHA `8a317a4`
+
+Build `39160134890` falhou no contrato estático ao exigir `sourceMeasure:measureNumber`, a antiga equivalência entre grupo SVG e compasso. A lógica agora preenche `sourceMeasure` com o compasso musical seguinte quando o glifo está junto à borda direita. O teste do emulador no mesmo SHA segue em andamento; o próximo contrato verifica `sourceMeasure:targetMeasure` e o registro de remapeamentos.
+
+
+### Isolamento do teste de upgrade release — SHA `8a4e278`
+
+O teste de contexto no emulador passou: m1 `1/null/1`, m2 `2/2/2`, m3 `3/3/3`; remapeamentos SVG `1→2` e `2→3` confirmados. A etapa seguinte `emulator_release.py` falhou em `Ocultar teclado` porque `emulator_ui.py` havia alterado a mesma preferência sintética de upgrade e deixado uma partitura debug-only ativa. Corrigirei a contaminação do cenário usando um único construtor de preferências sintéticas e resemeando o estado determinístico antes da instalação do APK release, preservando as verificações de perfil, teclado e andamento.
+
+
+### Estado completo da retomada — SHA `d1060ea`
+
+No SHA `d1060eac30b7116e47e82a990a9a3348d98cec89`, build `39160958903` e emulador `39160958918` passaram. O emulador conciliou 469/469 cabeças da Gymnopédie, manteve o toque gráfico, confirmou remapeamentos SVG `1→2` e `2→3` e rail m1 `1/null/1`, m2 `2/2/2`, m3 `3/3/3`. O upgrade para APK release não depurável preservou perfil, teclado e andamento após a fixture de upgrade ser reaplicada em cenário isolado. Artifact `12148742058` foi enviado (4,693,195 bytes). A próxima alteração adiciona um relatório pré-upload que valida assinatura PNG e dimensões das capturas esperadas, para comprovar nominalmente que as imagens comparativas estão presentes.
+
+
+## Tarefa 03C/20 — navegação e geometria responsiva
+
+Código validado `0cc670c2513eea37202eb63e4cdfb734a2a07d5d`, PR #46 ainda draft: build 39272746781 e emulador 39272746710 success. 03C concluída tecnicamente por botões de navegação vertical sem compressão, com testes de quatro partituras, teclado fechado/aberto e Gymnopédie em três displays. Abrir o guia recuperou 22 CSS px líquidos; em celular baixo a Gymnopédie ainda exige pan, em tablet 883×409/431 cabe integralmente. Ver seção final de 03C no documento 56 e docs/evidence/tarefa-03c/metrics.json. A aprovação editorial/física está pendente. Próxima tarefa é 04 (contexto fixo e texto expressivo), **não iniciada nesta entrega**. Não promover OSMD ao padrão, não mesclar PR nem publicar versão por estes resultados.
+
+## Decisão funcional vigente — Tarefa 03D/20
+
+O usuário rejeitou definitivamente a rolagem vertical da partitura na prévia OSMD: as duas pautas do piano devem permanecer simultaneamente visíveis. A escala da gravura completa é recalculada automaticamente, de forma proporcional, pela altura CSS efetivamente disponível no WebView, incluindo mudanças ao abrir/fechar o teclado guia e redimensionar a tela. A navegação vertical e os botões introduzidos na 03C deixam de valer nessa prévia; o movimento horizontal sincronizado permanece. A prévia segue experimental e o renderizador temporal segue padrão. Estado de execução, commit, workflows e limitações da 03D devem ser lidos na seção final da tarefa no documento 56.
+
+### Tarefa 03D/20 — resultado técnico
+
+Código validado no head `e7a8367e92ea5180e88dac8f8fcb0ea472c0a1a4`; build `39296856369` e emulador `39296856406` success. Gymnopédie conciliou 469/469 cabeças, fixture complexa 27/27, sem ambiguidade/faltantes; quatro partituras passaram teclado fechado/aberto/restaurado. A escala uniforme mantém ambas as pautas visíveis nos perfis testados; rolagem vertical máxima 0. Corrigida e coberta por teste a medição invariável da separação entre pautas: 15,036 espaços na Gymnopédie em todas as escalas. Artifact Android [12210230462](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39296856406/artifacts/12210230462) contém 18 capturas 03D e JSONs; métricas finais no documento 56. A legibilidade no perfil baixo (4,927 CSS px por espaço entre linhas), aceite editorial e testes físicos Realme 7 5G/Lenovo Tab M9/Yamaha P-45 continuam pendentes. PR #46 fica draft; renderer temporal permanece padrão, main/versão pública inalterados. Próxima etapa recomendada: Tarefa 04/20 (contexto e texto expressivo); não iniciada.
+
+
+## Continuação do estudo de gravura — Tarefa 04/20 (19/10/2026)
+
+PR experimental #46, branch `research/estudo-gravura-osmd-poc`: o contexto musical fixo recebeu máscara restrita às linhas OSMD, eliminando o fundo opaco integral. A Gymnopédie mostra “Lent et douloureux” integralmente nas capturas de celular baixo/alto, teclado aberto/fechado e tablet do artefato [12220678144](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39321825761/artifacts/12220678144). A fixture contextual apresentou transições de claves/armaduras/compassos e a nova captura do retorno ao início foi inspecionada no [artefato 12222302435](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39325266308/artifacts/12222302435). Testes finais do código `25790ef9`: [build 39325266465](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39325266465) e [emulador 39325266308](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39325266308), ambos `success`. Gymnopédie 469/469, complexa 27/27, rolagem vertical zero, duas pautas e escala proporcional preservadas.
+
+A Tarefa 04 está **concluída tecnicamente nas amostras e perfis do emulador**, não constitui certificação editorial universal nem teste físico. Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 pendentes. Não integrar PR #46, não alterar `main` ou publicar release. Próxima tarefa planejável: 05/20, respeitando o escopo e aprovação independentes. Consultar `docs/56-ESTUDO-GRAVURA-PROFISSIONAL-POC.md` para detalhes e histórico.
+
+
+## Encerramento da Tarefa 05/20 — 20/10/2026
+
+Tarefa 05 concluída tecnicamente no escopo auditado de acordes/polifonia, com ressalva editorial: etiqueta transitória de toque cobre parte da pauta inferior em duas capturas (posicionamento reservado à Tarefa 08). Seção final do documento 56 prevalece sobre indicações históricas de que a 05 não iniciou. Código 1e21db2a1affaada81771cccb8b432f2bcceebb5; PR #46 permanece aberto em draft na branch research/estudo-gravura-osmd-poc.
+
+Verificados diretamente [build 39344297440](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39344297440) e [emulador 39344297545](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39344297545), ambos success; checkout dos Actions: merge sintético c01b032e0e7c94bd0ffcf08dbb7fb60ca0e1504b da HEAD acima com main 15cafe3c8da7c67b9752d14ba0fb6f8f6141177d. As seis capturas da 05 do [artefato 12229834809](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39344297545/artifacts/12229834809) foram abertas e examinadas. Fonte 30 notas escritas, 30 cabeças reconciliadas por identidade, 29 ataques (uma continuação ligada); uníssono com duas vozes preservado e cenários ambíguos cobertos conservadoramente em JS. Três toques reais ADB selecionaram MIDI 72, 74 e 48 nas pautas esperadas. Gymnopédie 469/469 e complexa 27/27; duas pautas, escala proporcional, rolagem vertical zero e barras ocultadas/restauradas pelo teclado preservadas.
+
+Entrega atual exclusivamente documental; código/testes/workflows/versão inalterados. Pode reutilizar os workflows acima para esse código conforme a ordem de encerramento. Próximo passo: Tarefa 06/20, não iniciada nesta conversa. Não promover OSMD ao padrão, integrar main ou publicar distribuição. Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 pendentes; sem certificação editorial universal. Consultar documento 56 para detalhes, commits e limites de cobertura.
+
+## Tarefa 06/20 — execução em andamento
+
+Base confirmada 0d529794b116b663032a4741a6dd705c2a6629e9; PR #46 aberto/draft. Diagnóstico e cinco fixtures debug-only adicionados; consulte seção Tarefa 06 em docs/56. Teste racional de fonte passou; testes JS de mapa/polifonia/contrato/ornamentos/spanners passaram. JVM, APK, WebView e revisão visual precisam de Actions do novo commit. Atenção: duration=2/divisions=4 na tercina da fixture complexa antiga não corresponde à duração de colcheia 3:2; não usar esse ritmo como referência. Não alterar arquivo antigo para mascarar divergência. Não iniciar 07 nem declarar conclusão antes de evidências.
+
+Build do primeiro commit 716cabf passou (run 39424976030). Correção posterior: grafia original desambigua enarmonia simultânea na mesma voz em OpticalTimeMap; duplicatas permanecem conservadoras. Não reutilizar build anterior para afirmar aprovação desta correção. Grace agora inclui outra voz/pauta (5 ornamentos, 6 ataques). Novas capturas devem incluir o fim da fixture de acidentes para alcançar duplos sinais e acorde denso.
+
+Tarefa 06: no emulador 39425475303 a enarmonia passou 22/22 e vigas 11/11; falhou depois por duas notas nativas com resíduo negativo de ponto flutuante junto ao beat zero na fixture de quiálteras. Correção limitada ao validador de reconciliação (tolerância 1e-9), preservando integralmente os eventos; teste comprova ausência de mutação e recusa de negativos significativos. Três imagens intermediárias de acidentes/vigas examinadas, bequadro de precaução sem parênteses visíveis. Não declarar conclusão nem suporte aos parênteses. Continuidade e links em docs/56.
+
+Atenção Tarefa 06: 10466ba passou build 39427718729 e emulador 39427719079, incluindo todos os 15 cenários, mas a revisão ampliada das PNGs encontrou números 3/5 recortados no topo. Não concluir pela CI verde. Correção de envelope real (união com getBBox, sem recortar a caixa original e sem deslocar notas) e regressões novas estão sendo validadas. Parênteses de precaução continuam sem suporte no caminho auditado. Tarefa 07 não iniciada.
+
+## Tarefa 06/20 — encerramento e próxima retomada
+
+CONCLUÍDA TECNICAMENTE nas amostras e emuladores auditados, código dac8ba628e715141ffbb8fee9f37271ea1798592. Consulte o encerramento do doc56: build 39431579603/emulador 39431579898 success, merge sintético e2c53d9dfffd20efed0c8407c08a75ca6c491930, artefato 12269751553, métricas e PNGs originais preservados. A limitação de parênteses registrada no diagnóstico inicial foi resolvida para a amostra com metadados completos usando o modificador nativo antes do layout; nenhuma fonte/evento foi reescrita. Falhas intermediárias e o recorte descoberto após CI verde estão documentados. Esta atualização final é documental, com código/testes/workflows/versão inalterados em relação ao SHA validado. Não retomar 03D–06 como se não estivessem auditadas; manter limites editoriais/físicos declarados e aguardar solicitação da Tarefa 07. PR #46 continua aberto em draft, sem merge ou distribuição pública.

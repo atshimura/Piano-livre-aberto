@@ -29,6 +29,38 @@ public class ScoreImportTest {
    reject(new String(xml).replace("<octave>4</octave>","<alter>0.5</alter><octave>4</octave>").getBytes(),"microtone.xml");
    reject(new String(xml).replace("<divisions>1</divisions>","<divisions>1</divisions><time><beats>3+2</beats><beat-type>8</beat-type></time>").getBytes(),"additive.xml");
    Score decimalAlter=Score.read(new ByteArrayInputStream(new String(xml).replace("<octave>4</octave>","<alter>-1.0</alter><octave>4</octave>").getBytes()),"integer-alter.xml");check(decimalAlter.events.get(0).midi==59,"integral decimal alteration retained");
+   String enharmonic="<score-partwise><part-list/><part id='P1'><measure number='1'>"+
+    "<attributes><divisions>1</divisions></attributes>"+
+    "<note><pitch><step>C</step><alter>1</alter><octave>4</octave></pitch><duration>1</duration></note>"+
+    "<note><pitch><step>D</step><alter>-1</alter><octave>4</octave></pitch><duration>1</duration></note>"+
+    "</measure></part></score-partwise>";
+   Score spelled=Score.read(new ByteArrayInputStream(enharmonic.getBytes("UTF-8")),"enharmonic.xml");
+   check(spelled.events.size()==2&&spelled.events.get(0).midi==61&&spelled.events.get(1).midi==61,
+    "enharmonic written pitches share MIDI pitch");
+   check("C".equals(spelled.events.get(0).writtenStep)&&spelled.events.get(0).writtenAlter==1&&
+    "D".equals(spelled.events.get(1).writtenStep)&&spelled.events.get(1).writtenAlter==-1&&
+    spelled.events.get(0).writtenOctave==4&&spelled.events.get(1).writtenOctave==4,
+    "MusicXML written spelling is preserved without MIDI guess");
+   check(spelled.events.get(0).sourceNoteIndex!=spelled.events.get(1).sourceNoteIndex,
+    "original XML note positions remain distinguishable");
+   String ties="<score-partwise><part-list/><part id='P1'>"+
+    "<measure number='1'><attributes><divisions>1</divisions><time><beats>1</beats><beat-type>4</beat-type></time></attributes>"+
+    "<note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>1</duration><tie type='start'/></note></measure>"+
+    "<measure number='2'><note><pitch><step>F</step><alter>1</alter><octave>4</octave></pitch><duration>1</duration><tie type='stop'/></note></measure>"+
+    "</part></score-partwise>";
+   Score tied=Score.read(new ByteArrayInputStream(ties.getBytes("UTF-8")),"tied.xml");
+   check(tied.events.size()==1&&tied.events.get(0).midi==66&&
+    tied.events.get(0).length==2.0,
+    "a tie continuation never adds a second MIDI attack");
+   check(tied.writtenEvents.size()==2&&
+    tied.writtenEvents.get(0).beat==0&&tied.writtenEvents.get(0).length==1&&
+    tied.writtenEvents.get(1).beat==1&&tied.writtenEvents.get(1).length==1,
+    "both original graphical note segments survive without mutated durations");
+   check(tied.writtenEvents.get(0).playbackAttack&&
+    !tied.writtenEvents.get(1).playbackAttack&&tied.writtenEvents.get(1).tieStop,
+    "tie continuation is a visible notehead, not a new sounding attack");
+
+
    String encoded="<?xml version='1.0' encoding='ISO-8859-1'?>"+new String(xml,"UTF-8").replace("<part-list/>","<work><work-title>Canção</work-title></work><part-list/>");
    check(Score.read(new ByteArrayInputStream(encoded.getBytes("ISO-8859-1")),"latin.xml").title.equals("Canção"),"declared Latin-1 title preserved");
    String utf16=encoded.replace("ISO-8859-1","UTF-16");

@@ -1,0 +1,173 @@
+{
+  "fixture": "debug-only, synthetic and copyright-free MusicXML",
+  "coverage": [
+    "grand staff",
+    "chords",
+    "two voices",
+    "beams",
+    "accidentals",
+    "ties",
+    "slurs",
+    "dynamics/wedges",
+    "tuplets"
+  ],
+  "engraving": {
+    "engine": "OpenSheetMusicDisplay bundled 1.9.8",
+    "mode": "horizontal",
+    "firstNoteViewport": {
+      "x": 199.34702832523539,
+      "y": 57.08332567789667,
+      "beat": 0,
+      "midiEstimate": 72
+    },
+    "secondNoteViewport": {
+      "x": 247.83189269907987,
+      "y": 51.915949814056574,
+      "beat": 1,
+      "midiEstimate": 75
+    },
+    "renderMs": 544,
+    "svgNodes": 316,
+    "width": 688,
+    "height": 212,
+    "displayScale": 1.0334807272017819,
+    "nativeSvgHeight": 205.1320304482157,
+    "availableHeight": 212,
+    "measures": 3,
+    "firstEntries": [
+      {
+        "beat": 0,
+        "x": 9.748752,
+        "y": 3.5
+      },
+      {
+        "beat": 1,
+        "x": 14.44021492,
+        "y": 3.5
+      },
+      {
+        "beat": 1.5,
+        "x": 17.04499438,
+        "y": 3.5
+      },
+      {
+        "beat": 2,
+        "x": 19.64977384,
+        "y": 3.5
+      },
+      {
+        "beat": 3,
+        "x": 23.05750876,
+        "y": 3.5
+      },
+      {
+        "beat": 0,
+        "x": 9.748752,
+        "y": 13.589878974875218
+      },
+      {
+        "beat": 1,
+        "x": 14.44021492,
+        "y": 13.589878974875218
+      },
+      {
+        "beat": 2,
+        "x": 19.64977384,
+        "y": 13.589878974875218
+      },
+      {
+        "beat": 3,
+        "x": 23.05750876,
+        "y": 13.589878974875218
+      },
+      {
+        "beat": 4,
+        "x": 27.965243679999997,
+        "y": 3.5
+      },
+      {
+        "beat": 5,
+        "x": 30.636403519999995,
+        "y": 3.5
+      },
+      {
+        "beat": 5.5,
+        "x": 32.87289543999999,
+        "y": 3.5
+      },
+      {
+        "beat": 6,
+        "x": 35.10938735999999,
+        "y": 3.5
+      },
+      {
+        "beat": 4,
+        "x": 27.965243679999997,
+        "y": 13.589878974875218
+      },
+      {
+        "beat": 5,
+        "x": 30.636403519999995,
+        "y": 13.589878974875218
+      },
+      {
+        "beat": 6,
+        "x": 35.10938735999999,
+        "y": 13.589878974875218
+      }
+    ],
+    "firstStaffOrigins": [
+      {
+        "staff": 1,
+        "y": 35
+      },
+      {
+        "staff": 2,
+        "y": 135.89878974875216
+      }
+    ],
+    "musicalAnchors": 15,
+    "graphicalNotes": 27,
+    "midiMapping": {
+      "graphicalNotes": 27,
+      "nativeEvents": 27,
+      "reasons": {
+        "invalidGraphical": 0,
+        "noNativeCandidate": 0,
+        "ambiguous": 0,
+        "beatDisagreement": 0,
+        "spellingDisagreement": 0
+      },
+      "samples": [],
+      "matched": 27,
+      "ambiguous": 0,
+      "unmatched": 0,
+      "unmatchedNative": 0,
+      "invalidNative": 0
+    },
+    "firstMusicalX": 97.48751999999999,
+    "referenceOffset": 98.6010214735334,
+    "webviewWidth": 738,
+    "viewportWidth": 738,
+    "viewportHeight": 220,
+    "viewportScrollHeight": 220,
+    "viewportMaxScrollTop": 0,
+    "sourceInkEnvelope": {
+      "top": -1.234346628189087,
+      "bottom": 195.89878630638123,
+      "viewBoxTop": -5.234346389770508,
+      "viewBoxBottom": 199.8987865447998
+    },
+    "nativeStaffSpaceCssPx": 10.33480727201782,
+    "staffSeparationSpaces": 6.089878845214844,
+    "svgFeatureCounts": {
+      "beams": 4,
+      "ties": 2,
+      "slurs": 1,
+      "accidentals": 0,
+      "dynamics": 4,
+      "tuplets": 0
+    }
+  },
+  "scope": "Android API 29 emulator; geometry and native-model reconciliation, not physical-device acceptance"
+}

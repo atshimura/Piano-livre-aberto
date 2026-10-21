@@ -107,13 +107,34 @@ public class Score {
  public int measures=0;
  public double durationBeats=0;
  public final ArrayList<Event> events=new ArrayList<>();
+ /** Original MusicXML note segments, including tie continuations; never used for MIDI attacks. */
+ public final ArrayList<Event> writtenEvents=new ArrayList<>();
  public static class Event {
   public double beat, length;
   public int midi, staff, voice, measure, velocity=80;
   public String voiceId;
+  /** Written pitch from MusicXML, independent of enharmonic MIDI spelling. */
+  public String writtenStep=null;
+  public int writtenOctave=Integer.MIN_VALUE;
+  public double writtenAlter=Double.NaN;
+  public int sourceNoteIndex=-1;
+  /** False when this written head continues an already sounding tied note. */
+  public boolean playbackAttack=true;
   private int sourcePart;private boolean velocityOverride;
+  /** Zero-based original MusicXML part index; not inferred from MIDI pitch. */
+  public int originalPartIndex(){return sourcePart;}
   public boolean tieStart, tieStop;
   public Event(double b,double l,int n,int s,int v,int m){beat=b;length=l;midi=n;staff=s;voice=v;voiceId=String.valueOf(v);measure=m;}
+ }
+ private static Event writtenCopy(Event e,boolean attack){
+  Event copy=new Event(e.beat,e.length,e.midi,e.staff,e.voice,e.measure);
+  copy.voiceId=e.voiceId;copy.sourcePart=e.sourcePart;
+  copy.velocity=e.velocity;copy.velocityOverride=e.velocityOverride;
+  copy.tieStart=e.tieStart;copy.tieStop=e.tieStop;
+  copy.writtenStep=e.writtenStep;copy.writtenAlter=e.writtenAlter;
+  copy.writtenOctave=e.writtenOctave;copy.sourceNoteIndex=e.sourceNoteIndex;
+  copy.playbackAttack=attack;
+  return copy;
  }
  private static String text(Element e,String tag,String def){NodeList n=e.getElementsByTagName(tag);return n.getLength()>0?n.item(0).getTextContent().trim():def;}
  private static int number(String s,int fallback){try{return Integer.parseInt(s.trim());}catch(Exception e){return fallback;}}
@@ -338,6 +359,8 @@ public class Score {
        int n=12*(number(text(pitch,"octave","4"),4)+1)+offset+(int)Math.rint(decimal(text(pitch,"alter","0"),0));lastMidi=n;
        int localStaff=number(text(el,"staff",pi==0?"1":"2"),1);int staff=splitHands?pi+1:localStaff;int voice=number(text(el,"voice","1"),1);
        Event ev=new Event(base+onset,dur,n,staff,voice,mi+1);ev.voiceId=text(el,"voice","1");ev.sourcePart=pi;
+       ev.writtenStep=step;ev.writtenOctave=number(text(pitch,"octave","4"),4);
+       ev.writtenAlter=decimal(text(pitch,"alter","0"),0);ev.sourceNoteIndex=ci;
        double noteDynamics=decimal(el.getAttribute("dynamics"),Double.NaN);
        if(Double.isFinite(noteDynamics)&&noteDynamics>=0){ev.velocity=velocity(noteDynamics);ev.velocityOverride=true;}
        NodeList ties=el.getElementsByTagName("tie");for(int ti=0;ti<ties.getLength();ti++){Element tie=(Element)ties.item(ti);if("start".equals(tie.getAttribute("type")))ev.tieStart=true;if("stop".equals(tie.getAttribute("type")))ev.tieStop=true;}
@@ -410,6 +433,9 @@ public class Score {
   for(Event e:score.events){
    String key=e.staff+":"+e.voiceId+":"+e.midi;
    Event prior=e.tieStop?sustained.get(key):null;
+   // Snapshot before merging/modifying length or tie flags, preserving the
+   // graphical segment without manufacturing an extra MIDI attack.
+   score.writtenEvents.add(writtenCopy(e,prior==null));
    if(prior!=null){
     prior.length=Math.max(prior.length,e.beat+e.length-prior.beat);
     if(!e.tieStart)sustained.remove(key);

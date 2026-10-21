@@ -1,0 +1,819 @@
+{
+  "proof": {
+    "engine": "OpenSheetMusicDisplay bundled 1.9.8",
+    "mode": "horizontal",
+    "firstNoteViewport": {
+      "x": 301.10380531725247,
+      "y": 139.51980188212178,
+      "beat": 0,
+      "midiEstimate": 72
+    },
+    "secondNoteViewport": {
+      "x": 355.1691127691515,
+      "y": 130.2474543057034,
+      "beat": 0.3333333333333333,
+      "midiEstimate": 74
+    },
+    "renderMs": 425,
+    "svgNodes": 167,
+    "width": 765,
+    "height": 401,
+    "displayScale": 1.8544695152836745,
+    "nativeSvgHeight": 216.23434448242188,
+    "availableHeight": 401,
+    "measures": 1,
+    "firstEntries": [
+      {
+        "beat": 0,
+        "x": 9.748752,
+        "y": 5.5
+      },
+      {
+        "beat": 0.3333333333333333,
+        "x": 12.664190019999998,
+        "y": 5.5
+      },
+      {
+        "beat": 0.6666666666666666,
+        "x": 15.043300039999997,
+        "y": 5.5
+      },
+      {
+        "beat": 1,
+        "x": 18.023322059999998,
+        "y": 5.5
+      },
+      {
+        "beat": 1.4,
+        "x": 22.31971328399999,
+        "y": 5.5
+      },
+      {
+        "beat": 1.8,
+        "x": 26.016104507999994,
+        "y": 5.5
+      },
+      {
+        "beat": 2.2,
+        "x": 29.71249573199999,
+        "y": 5.5
+      },
+      {
+        "beat": 2.6,
+        "x": 33.40888695599999,
+        "y": 5.5
+      },
+      {
+        "beat": 3,
+        "x": 36.50436618,
+        "y": 5.5
+      },
+      {
+        "beat": 0,
+        "x": 10.016916,
+        "y": 16.6
+      }
+    ],
+    "firstStaffOrigins": [
+      {
+        "staff": 1,
+        "y": 55
+      },
+      {
+        "staff": 2,
+        "y": 166
+      }
+    ],
+    "musicalAnchors": 9,
+    "graphicalNotes": 14,
+    "midiMapping": {
+      "graphicalNotes": 14,
+      "nativeEvents": 14,
+      "reasons": {
+        "invalidGraphical": 0,
+        "noNativeCandidate": 0,
+        "ambiguous": 0,
+        "beatDisagreement": 0,
+        "spellingDisagreement": 0
+      },
+      "samples": [],
+      "matched": 14,
+      "ambiguous": 0,
+      "unmatched": 0,
+      "unmatchedNative": 0,
+      "invalidNative": 0
+    },
+    "firstMusicalX": 100.16916,
+    "referenceOffset": 120.32038339530482,
+    "webviewWidth": 883,
+    "viewportWidth": 883,
+    "viewportHeight": 409,
+    "viewportScrollHeight": 409,
+    "viewportMaxScrollTop": 0,
+    "sourceInkEnvelope": {
+      "top": -1.234346628189087,
+      "bottom": 206.9999978542328,
+      "viewBoxTop": -5.234346389770508,
+      "viewBoxBottom": 210.99999809265137
+    },
+    "nativeStaffSpaceCssPx": 18.544695152836745,
+    "staffSeparationSpaces": 7.1,
+    "svgFeatureCounts": {
+      "beams": 1,
+      "ties": 0,
+      "slurs": 0,
+      "accidentals": 0,
+      "dynamics": 0,
+      "tuplets": 0
+    }
+  },
+  "notes": [
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 0,
+      "voice": "1",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 72,
+      "length": 0.3333333333333333,
+      "writtenStep": "C",
+      "writtenOctave": 5,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "cn/5",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 0,
+        "octave": 2,
+        "accidental": 2
+      },
+      "stem": 1,
+      "stemBox": [
+        102.74664306640625,
+        31.038358688354492,
+        0,
+        38.961639404296875
+      ],
+      "headBox": [
+        91.47840118408203,
+        64.7771224975586,
+        12.018241882324219,
+        10.473838806152344
+      ],
+      "groupBox": [
+        91.47840118408203,
+        64.7771224975586,
+        12.018241882324219,
+        10.473838806152344
+      ],
+      "svgId": "vf-auto1006",
+      "modifiers": [],
+      "beamNotes": 3,
+      "tuplet": {
+        "count": 3,
+        "occupied": 2,
+        "bracket": false,
+        "notes": 3
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 0,
+      "voice": "2",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 60,
+      "length": 0.3333333333333333,
+      "writtenStep": "C",
+      "writtenOctave": 4,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "cn/4",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 0,
+        "octave": 1,
+        "accidental": 2
+      },
+      "stem": -1,
+      "stemBox": [
+        92.22840118408203,
+        105,
+        0,
+        35
+      ],
+      "headBox": [
+        91.47840118408203,
+        99.7771224975586,
+        12.018241882324219,
+        10.473838806152344
+      ],
+      "groupBox": [
+        91.47840118408203,
+        99.7771224975586,
+        12.018241882324219,
+        42.222877502441406
+      ],
+      "svgId": "vf-auto1016",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": {
+        "count": 3,
+        "occupied": 2,
+        "bracket": true,
+        "notes": 3
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 0.3333333333333333,
+      "voice": "1",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 74,
+      "length": 0.3333333333333333,
+      "writtenStep": "D",
+      "writtenOctave": 5,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "dn/5",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 2,
+        "octave": 2,
+        "accidental": 2
+      },
+      "stem": 1,
+      "stemBox": [
+        131.8700714111328,
+        28.126014709472656,
+        0,
+        36.873985290527344
+      ],
+      "headBox": [
+        120.60183715820312,
+        59.77711868286133,
+        12.018234252929688,
+        10.47384262084961
+      ],
+      "groupBox": [
+        120.60183715820312,
+        59.77711868286133,
+        12.018234252929688,
+        10.47384262084961
+      ],
+      "svgId": "vf-auto1026",
+      "modifiers": [],
+      "beamNotes": 3,
+      "tuplet": {
+        "count": 3,
+        "occupied": 2,
+        "bracket": false,
+        "notes": 3
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 0.3333333333333333,
+      "voice": "2",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 62,
+      "length": 0.3333333333333333,
+      "writtenStep": "D",
+      "writtenOctave": 4,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "dn/4",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 2,
+        "octave": 1,
+        "accidental": 2
+      },
+      "stem": -1,
+      "stemBox": [
+        121.35183715820312,
+        100,
+        0,
+        35
+      ],
+      "headBox": [
+        120.60183715820312,
+        94.7771224975586,
+        12.018234252929688,
+        10.473838806152344
+      ],
+      "groupBox": [
+        120.60183715820312,
+        94.7771224975586,
+        12.018234252929688,
+        42.222877502441406
+      ],
+      "svgId": "vf-auto1036",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": {
+        "count": 3,
+        "occupied": 2,
+        "bracket": true,
+        "notes": 3
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 0.6666666666666666,
+      "voice": "1",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 76,
+      "length": 0.3333333333333333,
+      "writtenStep": "E",
+      "writtenOctave": 5,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "en/5",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 4,
+        "octave": 2,
+        "accidental": 2
+      },
+      "stem": 1,
+      "stemBox": [
+        155.63023376464844,
+        25.75,
+        0,
+        34.25
+      ],
+      "headBox": [
+        144.3619842529297,
+        54.77711868286133,
+        12.01824951171875,
+        10.47384262084961
+      ],
+      "groupBox": [
+        144.3619842529297,
+        54.77711868286133,
+        12.01824951171875,
+        10.47384262084961
+      ],
+      "svgId": "vf-auto1046",
+      "modifiers": [],
+      "beamNotes": 3,
+      "tuplet": {
+        "count": 3,
+        "occupied": 2,
+        "bracket": false,
+        "notes": 3
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 0.6666666666666666,
+      "voice": "2",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 64,
+      "length": 0.3333333333333333,
+      "writtenStep": "E",
+      "writtenOctave": 4,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "en/4",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 4,
+        "octave": 1,
+        "accidental": 2
+      },
+      "stem": -1,
+      "stemBox": [
+        145.1119842529297,
+        95,
+        0,
+        35
+      ],
+      "headBox": [
+        144.3619842529297,
+        89.7771224975586,
+        12.01824951171875,
+        10.473838806152344
+      ],
+      "groupBox": [
+        144.3619842529297,
+        89.7771224975586,
+        12.01824951171875,
+        42.222877502441406
+      ],
+      "svgId": "vf-auto1056",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": {
+        "count": 3,
+        "occupied": 2,
+        "bracket": true,
+        "notes": 3
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 1,
+      "voice": "1",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 72,
+      "length": 0.4,
+      "writtenStep": "C",
+      "writtenOctave": 5,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "cn/5",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 0,
+        "octave": 2,
+        "accidental": 2
+      },
+      "stem": 1,
+      "stemBox": [
+        179.390380859375,
+        35,
+        0,
+        35
+      ],
+      "headBox": [
+        168.1221466064453,
+        64.7771224975586,
+        12.018234252929688,
+        10.473838806152344
+      ],
+      "groupBox": [
+        168.1221466064453,
+        33,
+        20.169586181640625,
+        42.25096130371094
+      ],
+      "svgId": "vf-auto1066",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": {
+        "count": 5,
+        "occupied": 4,
+        "bracket": true,
+        "notes": 5
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 1,
+      "voice": "2",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 67,
+      "length": 3,
+      "writtenStep": "G",
+      "writtenOctave": 4,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "gn/4",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 7,
+        "octave": 1,
+        "accidental": 2
+      },
+      "stem": -1,
+      "stemBox": [
+        168.8721466064453,
+        85,
+        0,
+        35
+      ],
+      "headBox": [
+        168.1221466064453,
+        79.7771224975586,
+        12.018234252929688,
+        10.473838806152344
+      ],
+      "groupBox": [
+        168.1221466064453,
+        78,
+        19.018234252929688,
+        42
+      ],
+      "svgId": "vf-auto1076",
+      "modifiers": [
+        {
+          "category": "dots",
+          "index": 0
+        }
+      ],
+      "beamNotes": 0,
+      "tuplet": null
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 1.4,
+      "voice": "1",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 74,
+      "length": 0.4,
+      "writtenStep": "D",
+      "writtenOctave": 5,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "dn/5",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 2,
+        "octave": 2,
+        "accidental": 2
+      },
+      "stem": 1,
+      "stemBox": [
+        222.31715393066406,
+        30,
+        0,
+        35
+      ],
+      "headBox": [
+        211.04891967773438,
+        59.77711868286133,
+        12.018234252929688,
+        10.47384262084961
+      ],
+      "groupBox": [
+        211.04891967773438,
+        28,
+        20.169601440429688,
+        42.25096130371094
+      ],
+      "svgId": "vf-auto1085",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": {
+        "count": 5,
+        "occupied": 4,
+        "bracket": true,
+        "notes": 5
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 1.8,
+      "voice": "1",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 76,
+      "length": 0.4,
+      "writtenStep": "E",
+      "writtenOctave": 5,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "en/5",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 4,
+        "octave": 2,
+        "accidental": 2
+      },
+      "stem": 1,
+      "stemBox": [
+        259.2439270019531,
+        25,
+        0,
+        35
+      ],
+      "headBox": [
+        247.97569274902344,
+        54.77711868286133,
+        12.018234252929688,
+        10.47384262084961
+      ],
+      "groupBox": [
+        247.97569274902344,
+        23,
+        20.169601440429688,
+        42.25096130371094
+      ],
+      "svgId": "vf-auto1095",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": {
+        "count": 5,
+        "occupied": 4,
+        "bracket": true,
+        "notes": 5
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 2.2,
+      "voice": "1",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 77,
+      "length": 0.4,
+      "writtenStep": "F",
+      "writtenOctave": 5,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "fn/5",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 5,
+        "octave": 2,
+        "accidental": 2
+      },
+      "stem": 1,
+      "stemBox": [
+        296.17071533203125,
+        20,
+        0,
+        35
+      ],
+      "headBox": [
+        284.9024658203125,
+        49.77711868286133,
+        12.01824951171875,
+        10.47384262084961
+      ],
+      "groupBox": [
+        284.9024658203125,
+        18,
+        20.16961669921875,
+        42.25096130371094
+      ],
+      "svgId": "vf-auto1105",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": {
+        "count": 5,
+        "occupied": 4,
+        "bracket": true,
+        "notes": 5
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 2.6,
+      "voice": "1",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 79,
+      "length": 0.4,
+      "writtenStep": "G",
+      "writtenOctave": 5,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "gn/5",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 7,
+        "octave": 2,
+        "accidental": 2
+      },
+      "stem": 1,
+      "stemBox": [
+        333.09747314453125,
+        15,
+        0,
+        35
+      ],
+      "headBox": [
+        321.8292541503906,
+        44.77711868286133,
+        12.018218994140625,
+        10.47384262084961
+      ],
+      "groupBox": [
+        321.8292541503906,
+        13,
+        20.169586181640625,
+        42.25096130371094
+      ],
+      "svgId": "vf-auto1115",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": {
+        "count": 5,
+        "occupied": 4,
+        "bracket": true,
+        "notes": 5
+      }
+    },
+    {
+      "measure": 1,
+      "staff": 1,
+      "beat": 3,
+      "voice": "1",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 81,
+      "length": 1,
+      "writtenStep": "A",
+      "writtenOctave": 5,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "an/5",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 9,
+        "octave": 2,
+        "accidental": 2
+      },
+      "stem": 1,
+      "stemBox": [
+        370.0242614746094,
+        10,
+        0,
+        35
+      ],
+      "headBox": [
+        358.7560119628906,
+        39.77711868286133,
+        12.01824951171875,
+        10.47384262084961
+      ],
+      "groupBox": [
+        358.7560119628906,
+        10,
+        12.01824951171875,
+        40.25096130371094
+      ],
+      "svgId": "vf-auto1125",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": null
+    },
+    {
+      "measure": 1,
+      "staff": 2,
+      "beat": 0,
+      "voice": "5",
+      "grace": false,
+      "graceSlash": false,
+      "midi": 48,
+      "length": 4,
+      "writtenStep": "C",
+      "writtenOctave": 3,
+      "writtenAlter": 0,
+      "vfpitch": [
+        "cn/3",
+        null
+      ],
+      "sourcePitch": {
+        "fundamental": 0,
+        "octave": 0,
+        "accidental": 2
+      },
+      "stem": -1,
+      "stemBox": null,
+      "headBox": [
+        91.47840118408203,
+        185.77711486816406,
+        17.381515502929688,
+        10.473846435546875
+      ],
+      "groupBox": [
+        91.47840118408203,
+        185.77711486816406,
+        17.381515502929688,
+        10.473846435546875
+      ],
+      "svgId": "vf-auto1145",
+      "modifiers": [],
+      "beamNotes": 0,
+      "tuplet": null
+    }
+  ],
+  "sourceMain": 14,
+  "sourceGrace": 0
+}
