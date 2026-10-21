@@ -86,7 +86,10 @@ def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pas
             if len(box)==4:
                 if "Horizontal" in node.attrib.get("class",""):
                     y=str((box[1]+box[3])//2)
-                    adb("shell","input","swipe",str(box[2]-12),y,str(box[0]+12),y,"400")
+                    if any("osmd" in target.casefold() for target in targets):
+                        adb("shell","input","swipe",str(box[0]+12),y,str(box[2]-12),y,"400")
+                    else:
+                        adb("shell","input","swipe",str(box[2]-12),y,str(box[0]+12),y,"400")
                 else:
                     x=str((box[0]+box[2])//2)
                     adb("shell","input","swipe",x,str(box[3]-15),x,str(box[1]+15),"400")
