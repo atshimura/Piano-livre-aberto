@@ -222,10 +222,8 @@
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
  function refreshStudyAnalysis(svg){
   if(!svg||!studyProof||!osmd)return;
-  const vb=svg.viewBox.baseVal;
-  studyAnalysis=StudyProfile.assess(EngravingAudit.inspect(osmd.graphic,Infinity),{
-   bounds:[vb.x,vb.y,vb.width,vb.height],staffSpace:Number(svg.dataset.opticalStaffSpaceCss),
-   height:svg.getBoundingClientRect().height,availableHeight:viewport.clientHeight,mapping:opticalReconciliation});
+  studyAnalysis=StudyProfile.assess(EngravingAudit.inspect(osmd.graphic,Infinity),
+   Object.assign(StudyProfile.inspectSvg(svg),{availableHeight:viewport.clientHeight,mapping:opticalReconciliation}));
  }
  function alignOpticalScore(beat){
   opticalReferenceX=Math.min(viewport.clientWidth*.4,
@@ -701,10 +699,7 @@
      fitOpticalSvg(svg);
      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
      console.log('POC_MIDI_MAPPING '+JSON.stringify(opticalReconciliation));
-     studyAnalysis=StudyProfile.assess(EngravingAudit.inspect(graphic,Infinity),{
-      bounds:[svg.viewBox.baseVal.x,svg.viewBox.baseVal.y,svg.viewBox.baseVal.width,svg.viewBox.baseVal.height],
-      staffSpace:Number(svg.dataset.opticalStaffSpaceCss),height:svg.getBoundingClientRect().height,
-      availableHeight:viewport.clientHeight,mapping:opticalReconciliation});
+     refreshStudyAnalysis(svg);
      console.log('STUDY_ANALYSIS '+JSON.stringify({profile:studyProfile,geometry:studyAnalysis}));
      attachOpticalNoteTouch(svg);
      paintOpticalCues(start||0);

@@ -14,4 +14,6 @@ assert.equal(P.wordKind('5 3 4 5 1 2'),'words:fingering-list');
 assert.equal(P.wordKind('Lent et douloureux'),null);
 assert.equal(P.wordKind('Allegro'),null);
 assert.equal(P.wordKind('D A Bm F#m'),null,'chord text is preserved');
+assert(P.assess([],{inkClipped:true,annotationOverlaps:2}).alerts.includes('symbol-envelope-clipping'));
+assert(P.assess([],{annotationOverlaps:1}).alerts.includes('text-note-overlap'));
 console.log('STUDY_PROFILE_UNIT_PASS');

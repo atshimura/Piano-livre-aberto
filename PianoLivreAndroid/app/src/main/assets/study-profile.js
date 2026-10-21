@@ -40,6 +40,18 @@
   Array.from(doc.getElementsByTagName('words')).forEach(function(n){if(profile.hiddenTypes.indexOf(wordKind(n.textContent))>=0)n.parentNode.removeChild(n);});
   return new XMLSerializer().serializeToString(doc);
  }
+ function inspectSvg(svg){
+  const vb=svg.viewBox.baseVal,ink=svg.getBBox(),rect=svg.getBoundingClientRect();
+  const inkClipped=ink.x<vb.x-.5||ink.y<vb.y-.5||ink.x+ink.width>vb.x+vb.width+.5||ink.y+ink.height>vb.y+vb.height+.5;
+  const heads=Array.from(svg.querySelectorAll('.vf-notehead')).map(function(n){return n.getBoundingClientRect();}).sort(function(a,b){return a.left-b.left;});
+  let annotationOverlaps=0;
+  Array.from(svg.querySelectorAll('text')).forEach(function(n){
+   const t=n.getBoundingClientRect();
+   for(const h of heads){if(h.left>=t.right)break;if(h.right>t.left+.5&&Math.min(h.bottom,t.bottom)-Math.max(h.top,t.top)>.5){annotationOverlaps++;break;}}
+  });
+  return {inkClipped:inkClipped,annotationOverlaps:annotationOverlaps,renderedTextCount:svg.querySelectorAll('text').length,
+   bounds:[vb.x,vb.y,vb.width,vb.height],staffSpace:Number(svg.dataset.opticalStaffSpaceCss),height:rect.height};
+ }
  function assess(rows,geometry){
   const alerts=[];let overlaps=0,clipped=0;
   const bounds=geometry.bounds;
@@ -54,14 +66,16 @@
    if(a.staff===b.staff&&Math.abs(a.beat-b.beat)>1e-6&&Math.min(x[0]+x[2],y[0]+y[2])-Math.max(x[0],y[0])>.5&&Math.min(x[1]+x[3],y[1]+y[3])-Math.max(x[1],y[1])>.5)overlaps++;
   }
   if(clipped)alerts.push('notehead-clipping');
+  if(geometry.inkClipped)alerts.push('symbol-envelope-clipping');
+  if(geometry.annotationOverlaps)alerts.push('text-note-overlap');
   if(overlaps)alerts.push('adjacent-attack-overlap');
   if(geometry.staffSpace>0&&geometry.staffSpace<6)alerts.push('small-staff-space');
   if(geometry.mapping&&(geometry.mapping.unmatched||geometry.mapping.ambiguous))alerts.push('native-mapping');
   if(geometry.height>geometry.availableHeight+.5)alerts.push('vertical-overflow');
-  return {alerts:alerts,clipped:clipped,overlaps:overlaps,staffSpace:geometry.staffSpace,
+  return {alerts:alerts,clipped:clipped,overlaps:overlaps,annotationOverlaps:geometry.annotationOverlaps||0,inkClipped:!!geometry.inkClipped,renderedTextCount:geometry.renderedTextCount||0,staffSpace:geometry.staffSpace,
    suggestedSpacing:overlaps?1.5:1,limitations:['Bounding boxes are conservative; not glyph contours.','No independent musical reference; source errors cannot be certified.']};
  }
- const api={wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
+ const api={inspectSvg:inspectSvg,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);

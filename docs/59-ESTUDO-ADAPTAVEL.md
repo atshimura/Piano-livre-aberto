@@ -22,13 +22,15 @@ Valores implementados nesta branch, **não limites aprovados pelo usuário nem n
 | `adjacent-attack-overlap` | interseção das caixas de cabeças adjacentes na mesma pauta maior que 0,5 unidade SVG nos dois eixos, excluindo ataques simultâneos (diferença de beat até 1e-6) |
 | `notehead-clipping` | caixa de cabeça fora do viewBox ajustado por mais de 0,5 unidade SVG |
 | `vertical-overflow` | altura SVG maior que altura disponível em mais de 0,5 CSS px |
+| `symbol-envelope-clipping` | envelope SVG total excede o viewBox por mais de 0,5 unidade SVG |
+| `text-note-overlap` | caixa de texto intersecta cabeça de nota em mais de 0,5 CSS px (triagem conservadora) |
 | `native-mapping` | uma ou mais cabeças não reconciliadas ou ambíguas |
 
 Não há pontuação global de complexidade determinando o perfil. O cache é uma única entrada em memória, por igualdade exata do conteúdo XML e versão do analisador; mudança de conteúdo força nova análise. Geometria não é persistida e deve ser reavaliada em cada nova renderização. Nenhum schema, preferência, backup ou histórico é migrado. O custo adicional é local/offline; Playwright é usado somente nos testes de desenvolvimento.
 
 ## Limitações explícitas
 
-Caixas são aproximações de contornos; a inspeção de colisões de cabeças adjacentes não certifica todas as sobreposições de hastes, vigas, arcos ou textos. A densidade estrutural é diagnóstico, não prova de legibilidade. Mais de duas pautas, ornamentos e percursos MusicXML mantêm os limites dos importadores/renderizadores existentes. A gravura global ainda pode ficar pequena devido a extremos verticais distantes: não há segmentação local por janela nesta entrega. Falhas/alertas remanescentes requerem avaliação visual, temporal alternativo ou correção futura; não remover notas para acomodar a tela.
+Caixas são aproximações de contornos; a inspeção de colisões de cabeças adjacentes inclui triagem de textos sobre cabeças e envelope de todos os símbolos, mas não certifica todas as sobreposições de hastes, vigas ou arcos. A densidade estrutural é diagnóstico, não prova de legibilidade. Mais de duas pautas, ornamentos e percursos MusicXML mantêm os limites dos importadores/renderizadores existentes. A gravura global ainda pode ficar pequena devido a extremos verticais distantes: não há segmentação local por janela nesta entrega. Falhas/alertas remanescentes requerem avaliação visual, temporal alternativo ou correção futura; não remover notas para acomodar a tela.
 
 Não se detecta uma nota musicalmente errada no próprio MusicXML sem referência independente. Comparar XML, Java e OSMD prova consistência entre representações, não fidelidade à composição. Sem testes físicos Realme 7 5G, Lenovo Tab M9 ou Yamaha P-45; não conclui V1.
 
