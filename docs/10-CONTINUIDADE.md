@@ -4,7 +4,7 @@
 
 ## Ponto de retomada vigente
 
-**Etapa A — OSMD padrão (PR de entrega em preparação, 20/10/2026):** a próxima versão de teste do Estudo abre OSMD automaticamente; os controles visíveis `OSMD · nova` / `Anterior · temporal` alternam sem alterar posição musical ou dados. A entrega é limitada à promoção controlada do caminho OSMD já testado. Não iniciar a antiga Tarefa 07; não declarar 1.0 nem aceite físico. PR #46 permanece separado e não deve ser integrado em bloco.
+**Etapa A — OSMD padrão (PR #49, checks da branch aprovados em 21/10/2026):** a próxima versão de teste do Estudo abre OSMD automaticamente; os controles visíveis `OSMD · nova` / `Anterior · temporal` alternam sem alterar posição musical ou dados. Build e emulador passaram no SHA `2213f6f0777f1fff4cd59cd45751865449f21d88`: [build 39528005169](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39528005169), [emulador 39528005167](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39528005167). A assinatura do APK novo e a atualização binária da versão pública são verificadas somente após integrar na `main`; esta PR ainda não produz APK público. Não iniciar a antiga Tarefa 07; não declarar 1.0 nem aceite físico. PR #46 permanece separado e não foi integrado em bloco.
 
 Versão proposta: `0.9.47-open-beta`, `versionCode 56`, a partir da `main` `15cafe3c8da7c67b9752d14ba0fb6f8f6141177d` (`0.9.46-open-beta`, code 55). Pacote público confirmado: `br.org.pianolivre.opensource`. A publicação requer os checks do commit final, assinatura permanente no push confiável à `main` e validação Android do APK resultante. A fingerprint pública esperada está registrada em `docs/ASSINATURA.md`; não copiar nem expor os segredos.
 
@@ -13,7 +13,7 @@ A confirmação automática de CI e a prova no emulador não substituem testes f
 
 Etapas 1–5 encerradas no escopo técnico, sem aceite físico. Etapa 6 consolidou perfis/biblioteca/histórico, importação/backup e distribuição; consulte documentos 40–44. A versão está em gradle.properties e o registro final de commits/runs/Release nas issues #4/#11.
 
-Para a intervenção atual, concluir o PR da Etapa A, confirmar os Actions no SHA integrado, conferir assinatura/versão do APK e registrar a atualização em aparelho no documento 56. Após a avaliação do usuário, reorganizar o roadmap. O roteiro físico de Realme/Lenovo/Yamaha continua pendente e necessário para aceite em hardware; não declarar 1.0 sem esse aceite.
+Para a intervenção atual, integrar o PR #49 após os checks aprovados, confirmar os Actions no SHA integrado, conferir assinatura/versão do APK e registrar o teste de atualização no documento 56. Após a avaliação do usuário, reorganizar o roadmap. O roteiro físico de Realme/Lenovo/Yamaha continua pendente e necessário para aceite em hardware; não declarar 1.0 sem esse aceite.
 
 As seções por versão abaixo são histórico de execução: pendências nelas descritas podem ter sido resolvidas em versões posteriores. O estado verificado no GitHub e este ponto de retomada prevalecem.
 
