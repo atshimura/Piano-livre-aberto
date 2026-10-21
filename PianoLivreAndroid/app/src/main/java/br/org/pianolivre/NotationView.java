@@ -13,6 +13,7 @@ import android.webkit.WebResourceError;
 import android.view.View;
 import android.graphics.Color;
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 /**
  * Offline MusicXML score engraving, using the bundled BSD-licensed
@@ -33,9 +34,14 @@ public final class NotationView extends WebView {
  private boolean disposed=false;
  private long pendingWaitDeadline=0L;
  private boolean freeLayout=false;
+ // OSMD is the normal Study renderer; the temporal renderer remains selectable.
+ private boolean engravingProof=true;
+ private int studyHand=0;
+ private final int originalLayerType;
  public NotationView(Context c,Listener listener){
   super(c);
   callback=listener;
+  originalLayerType=getLayerType();
   setBackgroundColor(Color.WHITE);
   getSettings().setJavaScriptEnabled(true);
   getSettings().setAllowFileAccess(true);
@@ -78,6 +84,7 @@ public final class NotationView extends WebView {
     if(disposed)return;
     scoreRendered=true;Log.i("PianoLivreNotation","RENDERED_CALLBACK");
     setVisibility(View.VISIBLE);
+    sendStudyHand();
     callback.onRendered();
     sendPendingWaitPreparation();
    });}
@@ -97,7 +104,10 @@ public final class NotationView extends WebView {
   loadScore(score,position,false);
  }
  public void loadScore(Score score,double position,boolean traditional){
-  freeLayout=traditional;
+  freeLayout=traditional;engravingProof=!traditional;
+  if(getLayerType()!= (engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType))
+   setLayerType(engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
+  if(getLayerType()!=originalLayerType)setLayerType(originalLayerType,null);
   getSettings().setSupportZoom(traditional);
   getSettings().setBuiltInZoomControls(traditional);
   getSettings().setDisplayZoomControls(false);
@@ -111,7 +121,66 @@ public final class NotationView extends WebView {
   if(xml==null||xml.isEmpty()){callback.onError("A partitura não contém MusicXML");return;}
   // Proper JSON quoting prevents XML text being interpreted as JavaScript.
   Log.i("PianoLivreNotation","LOAD_XML "+xml.length());
-  evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+(freeLayout?"'free'":"'study'")+")",null);
+  String layout=freeLayout?"'free'":(engravingProof?"'engraving-poc'":"'study'");
+  String nativeEvents="null";
+  if(engravingProof){
+   java.util.List<Score.Event> graphicEvents=pendingScore.writtenEvents.isEmpty()
+      ?pendingScore.events:pendingScore.writtenEvents;
+   // Send the authoritative parsed events only to the opt-in experiment.
+   // No persistence or alteration of the musical playback model.
+   if(graphicEvents.size()>20000){
+    Log.w("PianoLivreNotation","POC_EVENT_LIMIT "+graphicEvents.size());
+   }else{
+    JSONArray serialized=new JSONArray();
+    for(Score.Event event:graphicEvents){
+     try{
+      JSONObject note=new JSONObject();
+      note.put("beat",event.beat);note.put("length",event.length);
+      note.put("midi",event.midi);note.put("staff",event.staff);
+      note.put("measure",event.measure);note.put("voice",event.voiceId);
+      note.put("sourcePart",event.originalPartIndex());
+      note.put("tieStart",event.tieStart);note.put("tieStop",event.tieStop);
+      note.put("playbackAttack",event.playbackAttack);
+      if(event.writtenStep!=null){
+       note.put("step",event.writtenStep);note.put("octave",event.writtenOctave);
+       if(Double.isFinite(event.writtenAlter))note.put("alter",event.writtenAlter);
+      }
+      if(event.sourceNoteIndex>=0)note.put("xmlNoteIndex",event.sourceNoteIndex);
+      serialized.put(note);
+     }catch(org.json.JSONException exception){
+      Log.w("PianoLivreNotation","POC_EVENT_SERIALIZATION",exception);
+     }
+    }
+    nativeEvents=serialized.toString();
+   }
+  }
+  evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+layout+","+nativeEvents+")",null);
+ }
+ /** Select the Study renderer without changing score data or native playback state. */
+ public boolean isEngravingProof(){return engravingProof;}
+ public void setEngravingProof(boolean enabled){
+  if(disposed||freeLayout||pendingScore==null||engravingProof==enabled)return;
+  engravingProof=enabled;scoreRendered=false;lastBeat=Double.NaN;
+  // Diagnostic only: distinguish GPU SVG tile clipping from musical data loss.
+  // Revert to the original WebView layer immediately on leaving the preview.
+  setLayerType(enabled?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
+  Log.i("PianoLivreNotation","POC_PROOF_DISPATCH enabled="+enabled+" htmlReady="+htmlReady+
+    " score="+pendingScore.title+" events="+(pendingScore.writtenEvents.isEmpty()
+      ?pendingScore.events.size():pendingScore.writtenEvents.size()));
+  Log.i("PianoLivreNotation","POC_LAYER "+(enabled?"software":"original"));
+  Log.i("PianoLivreNotation","POC_TOGGLE "+enabled);
+  setVisibility(View.INVISIBLE);
+  if(htmlReady)sendScore();else Log.e("PianoLivreNotation","POC_PROOF_BLOCKED htmlReady=false");
+ }
+ private void sendStudyHand(){
+  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered&&engravingProof)
+   evaluateJavascript("PianoNotation.studyHand("+studyHand+")",null);
+ }
+ public void setStudyHand(int hand){
+  if(hand<0||hand>2)return;
+  if(studyHand==hand)return;
+  studyHand=hand;
+  sendStudyHand();
  }
  public void seek(double beat,boolean animate,double bpm,boolean moving){
   pendingBeat=beat;
@@ -153,5 +222,7 @@ public final class NotationView extends WebView {
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
    evaluateJavascript("PianoNotation.clearLoop()",null);
  }
- public void dispose(){disposed=true;removeJavascriptInterface("AndroidNotation");destroy();}
+ public void dispose(){disposed=true;
+  if(getLayerType()!=originalLayerType)setLayerType(originalLayerType,null);
+  removeJavascriptInterface("AndroidNotation");destroy();}
 }

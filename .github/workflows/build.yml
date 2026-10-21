@@ -30,11 +30,19 @@ jobs:
       - name: Android SDK 35
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Task 06 exact source and native fidelity
+        run: |
+          python3 tests/complex_notation_source_test.py
+          mkdir -p build/score-tests
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java tests/ComplexNotationFidelityTest.java
+          java -cp build/score-tests ComplexNotationFidelityTest
       - name: Test MusicXML library (JVM)
         run: |
           mkdir -p build/score-tests
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java tests/ScoreSmokeTest.java
           java -cp build/score-tests ScoreSmokeTest
+          javac -cp build/score-tests -d build/score-tests tests/PolyphonyFidelityTest.java
+          java -cp build/score-tests PolyphonyFidelityTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/ScoreImport.java tests/ScoreImportTest.java
           java -Xmx512m -cp build/score-tests ScoreImportTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiFileImport.java app/src/main/java/br/org/pianolivre/MidiImportStorage.java tests/MidiFileImportTest.java
@@ -115,6 +123,15 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/StudyClock.java tests/StudyClockTest.java
           java -cp build/score-tests StudyClockTest
+      - name: Test isolated OSMD engraving research path (JavaScript)
+        run: |
+          node tests/EngravingProofContractTest.js
+          node tests/VerticalNavigationTest.js
+          node tests/OpticalTimeMapTest.js
+          node tests/PolyphonyFidelityTest.js
+          node tests/EnharmonicReconciliationTest.js
+          node tests/AccidentalConventionsTest.js
+          node --check app/src/main/assets/optical-time-map.js
       - name: Test proportional score layout (JavaScript)
         run: |
           node --check app/src/main/assets/temporal-notation.js

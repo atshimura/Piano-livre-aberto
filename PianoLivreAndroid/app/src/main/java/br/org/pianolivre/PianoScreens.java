@@ -19,7 +19,7 @@ class PianoScreens {
  final int navy=0xff101C31, ink=0xff172A44, muted=0xff57708A, blue=0xff286BCB, pale=0xffEEF4FA, teal=0xff0C8A78;
  ScrollView library;LinearLayout libraryInner,grid,studio,freeRoot,header,studyTitlebar;HorizontalScrollView studyControlsBar;TextView songTitle,modeNote,tempoLabel,freeTitle,waitFeedback;
  int feedbackSequence=0;
- Button[] modeButtons=new Button[3],handButtons=new Button[3];
+ Button[] modeButtons=new Button[3],handButtons=new Button[3],rendererButtons=new Button[2];
  Button playback,keyboardToggle,loopButton;
  boolean editingLoop=false;
  EditText librarySearch;Spinner libraryFilter;TextView libraryResult;
@@ -233,6 +233,16 @@ class PianoScreens {
   a.info=text("",11,muted,false);titlebar.addView(a.info,lp(203,-1));
   LinearLayout controls=row();controls.setPadding(d(10),0,d(10),0);controls.setBackgroundColor(0xffE8F0F9);
   studio.addView(controls,lp(-1,42));
+  controls.addView(text("PARTITURA",10,muted,true),lp(66,-1));
+  String[] rendererLabels={"OSMD · nova","Anterior · temporal"};
+  for(int i=0;i<rendererLabels.length;i++){
+   final int index=i;
+   rendererButtons[i]=compact(rendererLabels[i],false,()->selectStudyRenderer(index==0));
+   rendererButtons[i].setContentDescription(i==0?"OSMD — nova partitura":"Partitura anterior — renderizador temporal");
+   LinearLayout.LayoutParams rendererLp=lp(i==0?105:143,34);rendererLp.rightMargin=d(4);
+   controls.addView(rendererButtons[i],rendererLp);
+  }
+  addGap(controls,10);
   controls.addView(text("MODO",10,muted,true),lp(40,-1));
   String[] modes={"Espera","Contínuo","Demonstração"};
   for(int i=0;i<3;i++){final int idx=i;modeButtons[i]=compact(modes[i],false,()->{
@@ -355,6 +365,12 @@ class PianoScreens {
   },2400);
  }
  void updateSelections(){
+  for(int i=0;i<rendererButtons.length;i++){
+   if(rendererButtons[i]!=null){boolean on=(i==0)==(notation!=null&&notation.isEngravingProof());
+    rendererButtons[i].setBackground(bg(on?blue:Color.WHITE,12,on?0:0xffCCD9E8));
+    rendererButtons[i].setTextColor(on?Color.WHITE:ink);
+   }
+  }
   for(int i=0;i<3;i++){
    if(modeButtons[i]!=null){boolean on=a.mode==i;modeButtons[i].setBackground(bg(on?blue:Color.WHITE,12,on?0:0xffCCD9E8));modeButtons[i].setTextColor(on?Color.WHITE:ink);}
    if(handButtons[i]!=null){boolean on=a.currentHand==i;handButtons[i].setBackground(bg(on?teal:Color.WHITE,12,on?0:0xffCCD9E8));handButtons[i].setTextColor(on?Color.WHITE:ink);}
@@ -362,6 +378,14 @@ class PianoScreens {
   if(playback!=null)playback.setText(a.mode==0?(a.waitPreparing?"Preparando…":a.waitStarted?"♪ Esperando":"▶ Iniciar"):a.running?"❚❚  Pausar":"▶  Iniciar");
   if(keyboardToggle!=null&&a.scoreView!=null)keyboardToggle.setText(a.scoreView.showKeyboard?"Ocultar teclado":"Teclado guia");
   if(loopButton!=null)loopButton.setText(editingLoop?"Selecionando…":"Trecho ↻");
+ }
+ void selectStudyRenderer(boolean useOsmd){
+  if(notation==null||a.score==null||notation.isEngravingProof()==useOsmd)return;
+  // A renderer change is presentational: leave beat, playback, MusicXML,
+  // profile, and saved study data untouched.
+  notation.setEngravingProof(useOsmd);
+  updateSelections();
+  android.widget.Toast.makeText(a,useOsmd?"OSMD — nova partitura":"Partitura anterior — renderizador temporal",android.widget.Toast.LENGTH_SHORT).show();
  }
  void buildFree(){
   freeRoot=column();freeRoot.setBackgroundColor(Color.WHITE);freeRoot.setVisibility(View.GONE);
@@ -432,7 +456,9 @@ class PianoScreens {
  void displayScore(Score score,double beat){
   editingLoop=false;updateSelections();
   legacyFallback.setVisibility(View.VISIBLE);
+  notation.setStudyHand(a.currentHand);
   notation.loadScore(score,beat);
+  updateSelections(); // Every newly opened Study score starts in OSMD.
   virtualKeys.score=score;
   virtualKeys.playhead=beat;
   virtualKeys.hand=0;
