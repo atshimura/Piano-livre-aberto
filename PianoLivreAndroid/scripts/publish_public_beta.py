@@ -17,7 +17,7 @@ existing=subprocess.run(['gh','release','view',tag,'--repo',repo,'--json','targe
 if existing.returncode==0:
     if json.loads(existing.stdout)['targetCommitish']!=sha:raise RuntimeError('Version already published from another commit; increment version')
     print('This commit already has a prerelease; assets preserved');raise SystemExit(0)
-for attempt in range(40):
+for attempt in range(90):
     runs=json.loads(gh('api',f'repos/{repo}/commits/{sha}/check-runs?per_page=100'))['check_runs']
     selected=[next((r for r in runs if r['name']==name),None) for name in ['build','emulator']]
     if all(r and r['status']=='completed' and r['conclusion']=='success' for r in selected):break
