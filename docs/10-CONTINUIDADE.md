@@ -4,9 +4,16 @@
 
 ## Ponto de retomada vigente
 
+**Etapa A — OSMD padrão (PR #49, checks da branch aprovados em 21/10/2026):** a próxima versão de teste do Estudo abre OSMD automaticamente; os controles visíveis `OSMD · nova` / `Anterior · temporal` alternam sem alterar posição musical ou dados. Build e emulador passaram no SHA `2213f6f0777f1fff4cd59cd45751865449f21d88`: [build 39528005169](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39528005169), [emulador 39528005167](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39528005167). A assinatura do APK novo e a atualização binária da versão pública são verificadas somente após integrar na `main`; esta PR ainda não produz APK público. Não iniciar a antiga Tarefa 07; não declarar 1.0 nem aceite físico. PR #46 permanece separado e não foi integrado em bloco.
+
+Versão proposta: `0.9.47-open-beta`, `versionCode 56`, a partir da `main` `15cafe3c8da7c67b9752d14ba0fb6f8f6141177d` (`0.9.46-open-beta`, code 55). Pacote público confirmado: `br.org.pianolivre.opensource`. A publicação requer os checks do commit final, assinatura permanente no push confiável à `main` e validação Android do APK resultante. A fingerprint pública esperada está registrada em `docs/ASSINATURA.md`; não copiar nem expor os segredos.
+
+A confirmação automática de CI e a prova no emulador não substituem testes físicos no Realme 7 5G, Lenovo Tab M9 ou Yamaha P-45. Após a avaliação do usuário, reorganizar as próximas tarefas; não declarar as antigas tarefas 07–20 concluídas.
+
+
 Etapas 1–5 encerradas no escopo técnico, sem aceite físico. Etapa 6 consolidou perfis/biblioteca/histórico, importação/backup e distribuição; consulte documentos 40–44. A versão está em gradle.properties e o registro final de commits/runs/Release nas issues #4/#11.
 
-Primeira ação: verificar main, PR #33 e seus checks, certificado e pré-release da versão atual. Não refazer #29–#32 se já integrados. Quando a sequência estiver aprovada e sem falha independente documentada, a próxima ação é executar o roteiro físico Realme/Lenovo/Yamaha de 40 e registrar o resultado em #11. Não declarar 1.0 nem eliminação das travadas físicas sem esse aceite. Correções independentes constatadas continuam autorizadas; não encerrar automaticamente por concluir uma versão.
+Para a intervenção atual, integrar o PR #49 após os checks aprovados, confirmar os Actions no SHA integrado, conferir assinatura/versão do APK e registrar o teste de atualização no documento 56. Após a avaliação do usuário, reorganizar o roadmap. O roteiro físico de Realme/Lenovo/Yamaha continua pendente e necessário para aceite em hardware; não declarar 1.0 sem esse aceite.
 
 As seções por versão abaixo são histórico de execução: pendências nelas descritas podem ter sido resolvidas em versões posteriores. O estado verificado no GitHub e este ponto de retomada prevalecem.
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Install an actual previous public APK, then seed only synthetic upgrade data.
-Both APKs use this runner's disposable debug key; permanent signing is separately
-verified in the trusted main build. No historical/private repository is used.
+"""Install the prior public-version source build, then seed synthetic upgrade data.
+PR runs use the disposable runner key; trusted-main runs use the permanent key.
+The public-signed binary update is separately exercised by emulator_public_upgrade.py.
+No historical/private repository is used.
 """
 import subprocess, os, tempfile, pathlib, struct, json, html, hashlib
-BASELINE='f50b2b266a95b253faaa7ce5c9e7548ec9ec0c0f' # public 0.9.25/code34
+BASELINE='15cafe3c8da7c67b9752d14ba0fb6f8f6141177d' # public 0.9.46/code55
 PACKAGE='br.org.pianolivre.opensource'
 def run(*args, capture=False):
     return subprocess.run(args,check=True,text=True,stdout=subprocess.PIPE if capture else None).stdout
@@ -21,24 +22,17 @@ with tempfile.TemporaryDirectory(prefix='piano-upgrade-') as temporary:
         aapt=signer.with_name('aapt')
         old_info=run(str(aapt),'dump','badging',str(old),capture=True)
         new_info=run(str(aapt),'dump','badging',str(current),capture=True)
-        assert "versionCode='34'" in old_info and "versionCode='34'" not in new_info
+        assert "versionCode='55'" in old_info and "versionCode='56'" in new_info
         def cert(apk):
             return next(x.strip() for x in run(str(signer),'verify','--print-certs',str(apk),capture=True).splitlines() if 'certificate SHA-256 digest:' in x)
         assert cert(old)==cert(current), 'Upgrade APK certificates must match on this runner'
         run('adb','install',str(old))
         run('adb','shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity')
         run('adb','shell','am','force-stop',PACKAGE)
-        # Synthetic state matches the v0.9.25 schema, with non-contiguous IDs.
-        profiles=json.dumps([dict(id=0,name='Upgrade A',avatar=0),dict(id=7,name='Upgrade B',avatar=3)],ensure_ascii=False)
-        library=json.dumps(dict(version=1,favorites=['imported/upgrade.mxl'],collections=[]))
-        bits=lambda value:struct.unpack('>q',struct.pack('>d',value))[0]
-        lines=['<map>', '<boolean name="upgrade_test_fixture" value="true"/>']
-        for key,value in {'profiles':'["Upgrade A","Upgrade B"]','profiles_v2':profiles,'user_7_file':'/data/user/0/br.org.pianolivre.opensource/files/imported/upgrade.mxl','user_7_library':library}.items():
-            lines.append('<string name="'+key+'">'+html.escape(value)+'</string>')
-        for key,value in {'active_profile':7,'profiles_next_id':8,'user_7_mode':1,'user_7_hand':2}.items():lines.append(f'<int name="{key}" value="{value}"/>')
-        for key,value in {'position':.75,'tempo':.8,'loop_start':0,'loop_end':8}.items():lines.append(f'<long name="user_7_{key}" value="{bits(value)}"/>')
-        lines.extend(['<boolean name="user_7_keyboard" value="true"/>','</map>'])
-        prefs=pathlib.Path(temporary)/'upgrade-prefs.xml';prefs.write_text('\n'.join(lines))
+        # Synthetic state uses the public v0.9.46 storage schema, with stable non-contiguous profile IDs.
+        from upgrade_fixture import synthetic_upgrade_preferences
+        prefs=pathlib.Path(temporary)/'upgrade-prefs.xml'
+        prefs.write_text(synthetic_upgrade_preferences(),encoding='utf-8')
         source=baseline/'PianoLivreAndroid/app/src/main/assets/scores/ode-to-joy-ludwig-van-beethoven.mxl'
         run('adb','push',str(source),'/data/local/tmp/upgrade.mxl')
         run('adb','push',str(prefs),'/data/local/tmp/upgrade-prefs.xml')
@@ -49,7 +43,7 @@ with tempfile.TemporaryDirectory(prefix='piano-upgrade-') as temporary:
         run('adb','shell','pidof',PACKAGE)
         run('adb','shell','am','force-stop',PACKAGE)
         # A read-only debug assertion verifies state after the current APK is installed.
-        pathlib.Path('piano-upgrade.json').write_text(json.dumps(dict(baseline=BASELINE,versionCode=34,sourceSha256=hashlib.sha256(source.read_bytes()).hexdigest(),certificate=cert(current),scope='emulator disposable debug certificate; synthetic data'),indent=2))
+        pathlib.Path('piano-upgrade.json').write_text(json.dumps(dict(baseline=BASELINE,versionCode=55,targetVersionCode=56,sourceSha256=hashlib.sha256(source.read_bytes()).hexdigest(),certificate=cert(current),scope='emulator disposable debug certificate; synthetic data; permanent-signature check is separate'),indent=2))
         print('PASS: baseline APK installed and synthetic legacy state seeded; current APK upgrade follows',flush=True)
     finally:
         run('git','worktree','remove','--force',str(baseline))
