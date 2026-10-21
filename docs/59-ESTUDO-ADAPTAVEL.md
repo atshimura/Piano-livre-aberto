@@ -49,3 +49,15 @@ Versão proposta 0.9.48-open-beta / code57; mesmo pacote, sem APK de distribuiç
 ### Fixtures sem metadados suficientes de gravura
 
 Fixtures de `tests/fixtures/motor` foram originalmente feitas para parsers e podem omitir tipos/claves. A auditoria não exige que o OSMD consiga gravar esses arquivos incompletos: exige erro explícito, nenhuma declaração falsa de sucesso e conferência integral da alternativa temporal. O relatório identifica cada fallback e seu motivo. Catálogo e fixtures de gravura continuam exigindo OSMD fiel; falhas neles reprovam o teste. Isso é compatibilidade parcial documentada, não suporte OSMD universal.
+
+## Evidência do código implementado
+
+Código no SHA `e1fac0ec47871adf1c4185d55781187602086465`: [build 39676817138](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39676817138) **success**, incluindo JVM/JS/XML/MIDI, auditoria gráfica e compilação debug/release de teste; sem distribuição. Corpus de **27 arquivos**: 23 OSMD e quatro alternativas temporais verificadas. [Métricas duráveis](evidence/study-profile/summary.json), três dimensões CSS (738×196, 738×351, 883×409), nove capturas das três regressões no artifact `adaptive-study-corpus`. Foram inspecionadas as capturas baixas das três peças; isso não é aceite editorial/físico.
+
+Catálogo verificado: Canon em Ré (160 cabeças), Estudos Livres 01/02/03 (32 cada), Für Elise — Easy (104), Gymnopédie nº 1 (469 escritas; 455 ataques), Lago dos Cisnes (172), Minueto em Sol maior (219), Minueto em Sol menor (200), Ode à Alegria (81). Fonte, ataques MIDI e dados permanecem preservados.
+
+Alertas remanescentes: Gymnopédie no perfil baixo tem 4,853 CSS px entre linhas; Für Elise mantém uma interseção conservadora texto/cabeça; `named-voices-ties.xml` mantém alerta de reconciliação de voz, apesar de alturas/oitavas/durações conferidas. Quatro fixtures do motor (`decimal-divisions`, `explicit-dynamics`, `integer-equivalent`, `tempo-sound-offset`) falham na gravura OSMD e tiveram a alternativa temporal conferida, sem esconder a incompatibilidade.
+
+Histórico de reprovações: `8343b7e` comparava graça com eventos principais; `c65a7be` revelou recuo de âncora em Für Elise; `44fa7ae` revelou também Minueto e a heurística de URL para XML curto; `13e22b6`/`622a35d` registraram os quatro casos de gravura incompleta. Esses resultados não são aprovação. No Android `44fa7ae`, o roteiro preexistente passou até o novo teste de recuperação, que falhou porque o helper de toque recebia uma string em vez da lista esperada; o seletor foi corretamente rotulado, mas o teste tocou outra ação. A correção do teste não altera código de produção. A conclusão do emulador da HEAD e seu SHA/run ficam registrados no [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51), sem inferir sucesso a partir de execuções antigas.
+
+Não há janela vertical local nesta entrega, nem certificação integral de colisões de símbolos; o limite histórico de transmissão de 20 mil eventos para o caminho OSMD também permanece. Sem testes físicos, sem declarar V1 ou fechar B/C.

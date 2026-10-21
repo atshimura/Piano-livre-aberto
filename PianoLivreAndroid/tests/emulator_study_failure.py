@@ -14,7 +14,7 @@ for _ in range(60):
 else:raise AssertionError('Real OSMD failure did not activate native schematic fallback')
 assert any(n.attrib.get('text')=='Esquemático · ativo' for n in dump().iter('node')),'Selector still claims OSMD/temporal'
 screenshot('piano-study-failure.png')
-tap_text('Esquemático · ativo')
+tap_text(['Esquemático · ativo'],exact=True)
 for _ in range(40):
     assert_running()
     if 'TEMPORAL_RENDER_SUCCESS' in adb('logcat','-d','-v','brief'):break
