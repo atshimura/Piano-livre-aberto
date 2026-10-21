@@ -24,17 +24,20 @@ Essas garantias são instrumentadas no emulador; legibilidade percebida, desempe
 
 ### Validação automatizada da Etapa A
 
-Na branch `feat/etapa-a-osmd-padrao`, PR #49, SHA `2213f6f0777f1fff4cd59cd45751865449f21d88`, passaram o [build e testes automatizados](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39528005169) e o [roteiro Android no emulador](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39528005167). O emulador confirmou:
+No PR #49, integrado na `main` pelo commit de merge `535e8ea94d674a886381a5312d71839274ce358b`, passaram o [build assinado e os testes automatizados](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39531053142) e o [roteiro Android no emulador](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39531053402). O emulador confirmou:
 
-- OSMD inicia automaticamente ao abrir e reabrir o Estudo; a opção temporal visível renderiza a alternativa e o retorno a OSMD funciona.
-- Partituras diferentes e um MusicXML sintético complexo carregam sem falha; o arquivo musical, as duas pautas e os símbolos avaliados pelo roteiro permanecem no SVG.
-- Ajuste proporcional ao espaço disponível e `scrollTop=0`, com teclado guia aberto/fechado. Também passou em visores de teste de 1440×2160 e 1600×2560.
-- Cursor, reprodução, seleção de mãos, Modo Espera, mapeamento gráfico para eventos MIDI nativos e atualização da partitura sem recarga indevida.
-- O ensaio de interface do APK de release no emulador mostrou perfil sintético, teclado e velocidade preservados (`PUBLIC_RELEASE_UPGRADE_UI_PASS`).
+- OSMD inicia automaticamente ao abrir e reabrir o Estudo; a alternativa temporal visível renderiza e permite retornar a OSMD.
+- Várias partituras e um MusicXML sintético complexo carregam sem falhas; duas pautas simultâneas, símbolos incluídos na fixture e rolagem vertical zero.
+- Ajuste proporcional no espaço disponível, inclusive com teclado guia aberto/fechado e visores de teste 1440×2160 e 1600×2560.
+- Cursor, reprodução, seleção de mãos, Modo Espera, movimento horizontal e reconciliação das notas gráficas com eventos MIDI nativos.
 
-O teste de atualização com o APK público anterior assinado permanentemente é uma etapa separada do workflow confiável na `main`; os workflows de PR não recebem essa assinatura. O teste de interface acima usa dados sintéticos no emulador e não prova sozinho a atualização binária assinada. A confirmação final deve registrar o resultado do teste Android que instala `v0.9.46-open-beta` code 55 e atualiza com o novo APK code 56, verificando o mesmo certificado e os dados sintéticos preservados.
+### Atualização assinada e distribuição
 
-O beta público da edição aberta é assinado somente nos workflows confiáveis da `main`, com a chave permanente do repositório. O APK público anterior conferido é `br.org.pianolivre.opensource`, `0.9.46-open-beta` / code 55, com fingerprint SHA-256 `7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290`. A versão proposta é `0.9.47-open-beta` / code 56. Não distribuir APK de PR assinado com chave efêmera. Após a integração, conferir pacote, versão e o mesmo certificado com `aapt` e `apksigner`; baixar o APK da pré-release da edição aberta e instalá-lo por cima com atualização Android normal. Não desinstalar o app. Se pacote ou certificado diferirem, interromper antes da instalação para não arriscar os dados.
+A pré-release aberta está publicada em [v0.9.47-open-beta](https://github.com/atshimura/Piano-livre-aberto/releases/tag/v0.9.47-open-beta); baixar [PianoLivre-0.9.47-open-beta.apk](https://github.com/atshimura/Piano-livre-aberto/releases/download/v0.9.47-open-beta/PianoLivre-0.9.47-open-beta.apk). `aapt`/metadados de build confirmam `br.org.pianolivre.opensource`, `0.9.47-open-beta`, code 56, APK não depurável. `apksigner verify` confirmou o certificado permanente SHA-256 `7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290`, igual ao APK público anterior.
+
+O teste [Actions 39531053402](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39531053402) instalou o APK real de `v0.9.46-open-beta` code 55, preparou dados sintéticos e executou atualização Android `adb install -r` para code 56. Resultado: `PUBLIC_APK_UPDATE_PRESERVED_DATA_PASS`; manteve o perfil sintético ID7, teclado, andamento 80% e a partitura importada. O hash do arquivo importado foi conferido antes/depois. Essa prova cobre atualização do binário público e dados sintéticos no emulador API29; não acessa nem modifica os dados pessoais do aparelho do usuário.
+
+A instalação pode ser feita por atualização Android normal sobre a edição aberta instalada; não desinstalar. Se o Android mostrar incompatibilidade de assinatura ou pacote, parar e não remover o aplicativo para proteger os dados. Não instalar APK de PR ou chave efêmera. A impressão digital final e os metadados acompanham a pré-release.
 
 ## Histórico técnico anterior à Etapa A
 
