@@ -96,9 +96,7 @@ jobs:
             python3 tests/emulator_notation06.py
             python3 tests/emulator_responsive.py
             python3 tests/emulator_release.py
-            if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then
-              python3 tests/emulator_public_upgrade.py
-            fi
+            if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py; fi
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
       - name: Verify captured Android visual evidence
         if: success()
