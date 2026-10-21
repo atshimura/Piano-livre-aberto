@@ -4,6 +4,12 @@
  const VERSION=1;
  let cachedXml=null,cached=null; // One exact-content entry, bounded by the import size limit.
  function count(node,tag){return node.getElementsByTagName(tag).length;}
+ function wordKind(text){
+  const tokens=text.trim().toLowerCase().split(/\s+/);
+  if(tokens.length>=4&&tokens.every(function(t){return /^(do|dó|re|ré|mi|fa|fá|sol|la|lá|si)(#|b|♯|♭)?$/.test(t);}))return 'words:note-names';
+  if(tokens.length>=4&&tokens.every(function(t){return /^[1-5]$/.test(t);}))return 'words:fingering-list';
+  return null;
+ }
  function analyze(xml){
   if(xml===cachedXml&&cached)return cached;
   const doc=new DOMParser().parseFromString(xml,'application/xml');
@@ -19,16 +25,19 @@
    return {index:index,number:m.getAttribute('number'),notes:count(m,'note'),symbols:m.getElementsByTagName('*').length,
     voices:Object.keys(voices),staves:Object.keys(staves)};
   });
+  const hiddenTypes=features.lyric?['lyric']:[];
+  Array.from(doc.getElementsByTagName('words')).forEach(function(n){const kind=wordKind(n.textContent);if(kind&&hiddenTypes.indexOf(kind)<0)hiddenTypes.push(kind);});
   const profile={version:VERSION,features:features,measures:measures,notes:count(doc,'pitch'),
    // Lyrics are never required to identify a piano note. Retain words, figures,
    // harmony, dynamics, fingerings, tempo and repetition instructions.
-   hiddenTypes:features.lyric?['lyric']:[],spacing:1};
+   hiddenTypes:hiddenTypes,spacing:1};
   cachedXml=xml;cached=profile;return profile;
  }
  function presentation(xml,profile){
   if(!profile.hiddenTypes.length)return xml;
   const doc=new DOMParser().parseFromString(xml,'application/xml');
-  profile.hiddenTypes.forEach(function(tag){Array.from(doc.getElementsByTagName(tag)).forEach(function(n){n.parentNode.removeChild(n);});});
+  profile.hiddenTypes.forEach(function(tag){if(tag==='lyric')Array.from(doc.getElementsByTagName(tag)).forEach(function(n){n.parentNode.removeChild(n);});});
+  Array.from(doc.getElementsByTagName('words')).forEach(function(n){if(profile.hiddenTypes.indexOf(wordKind(n.textContent))>=0)n.parentNode.removeChild(n);});
   return new XMLSerializer().serializeToString(doc);
  }
  function assess(rows,geometry){
@@ -52,7 +61,7 @@
   return {alerts:alerts,clipped:clipped,overlaps:overlaps,staffSpace:geometry.staffSpace,
    suggestedSpacing:overlaps?1.5:1,limitations:['Bounding boxes are conservative; not glyph contours.','No independent musical reference; source errors cannot be certified.']};
  }
- const api={version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
+ const api={wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);

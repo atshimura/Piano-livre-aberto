@@ -220,6 +220,13 @@
    webviewWidth:document.documentElement.clientWidth,viewportWidth:viewport.clientWidth,viewportHeight:viewportHeight,availableHeight:availableHeight,safetyInsetCssPx:safetyInset,simultaneous:baseHeight*scale<=viewportHeight,verticalOverflow:Math.max(0,baseHeight*scale-viewportHeight),
    viewportMaxScrollTop:getComputedStyle(viewport).overflowY==='hidden'?0:Math.max(0,viewport.scrollHeight-viewport.clientHeight),
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
+ function refreshStudyAnalysis(svg){
+  if(!svg||!studyProof||!osmd)return;
+  const vb=svg.viewBox.baseVal;
+  studyAnalysis=StudyProfile.assess(EngravingAudit.inspect(osmd.graphic,Infinity),{
+   bounds:[vb.x,vb.y,vb.width,vb.height],staffSpace:Number(svg.dataset.opticalStaffSpaceCss),
+   height:svg.getBoundingClientRect().height,availableHeight:viewport.clientHeight,mapping:opticalReconciliation});
+ }
  function alignOpticalScore(beat){
   opticalReferenceX=Math.min(viewport.clientWidth*.4,
    Math.min(viewport.clientWidth,130*opticalDisplayScale)+12);
@@ -872,7 +879,7 @@
       'scroll=',viewport.scrollHeight,viewport.clientHeight);
     loaded=true;message.style.display='none';
     if(window.AndroidNotation&&AndroidNotation.onPresentation)AndroidNotation.onPresentation(
-     (studyProfile&&studyProof&&studyProfile.hiddenTypes.length?'Estudo: letras de canto ocultas. Consulte Partitura Livre. ':'')+
+     (studyProfile&&studyProof&&studyProfile.hiddenTypes.length?'Estudo: anotações auxiliares ocultas ('+studyProfile.hiddenTypes.join(', ')+'). Consulte Partitura Livre. ':'')+
      (studyProof&&studyAnalysis&&studyAnalysis.alerts.length?'Alertas de leitura: '+studyAnalysis.alerts.join(', '):''));
     if(!freeLayout&&!studyProof&&osmd.cursor){osmd.cursor.reset();osmd.cursor.show();}
     if(window.AndroidNotation)AndroidNotation.onRendered();
@@ -933,6 +940,7 @@
      if(osmdRenderedHeight!==viewport.clientHeight){
       osmdRenderedHeight=viewport.clientHeight;
       fitOpticalSvg(document.querySelector('#score svg'));
+      refreshStudyAnalysis(document.querySelector('#score svg'));
       alignOpticalScore(seekBeat);
       paintOpticalContext(seekBeat,true);
       const now=performance.now();
@@ -956,6 +964,7 @@
       fitOpticalSvg(resizedSvg);
       // Graphical positions are invalid after a re-layout: reconcile and bind again.
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
+      refreshStudyAnalysis(resizedSvg);
       attachOpticalNoteTouch(document.querySelector('#score svg'));
       paintOpticalCues(seekBeat);
       alignOpticalScore(seekBeat);

@@ -25,19 +25,25 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    const svg=document.querySelector('#score svg');
    return {same,changed,intact,error:window.testError,done:window.testDone,analysis:PianoNotation.analysis(),
     message:window.presentationMessage};
-   // Kept outside private page state: audit notes through the public analysis
-   // result instead; renderer exports reconciliation in its diagnostics.
-   function nullSafeGraphic(){return {};}
   },item);
   assert(report.same&&report.changed&&report.intact,item.name+' content invalidation/source preservation');
+  console.log('STUDY_CORPUS_FILE '+item.name);
   assert(report.done&&!report.error,item.name+' OSMD: '+report.error);
-  assert(report.analysis.profile.notes===item.events.length,item.name+' written pitch count');
-  const graphic=report.analysis.notes;
+  const graceCount=report.analysis.notes.filter(n=>n.grace).length;
+  assert.equal(report.analysis.profile.notes,item.events.length+graceCount,item.name+' main and grace pitch count');
+  const graphic=report.analysis.notes.filter(n=>!n.grace);
   assert.equal(graphic.length,item.events.length,item.name+' graphical note count');
   for(const e of item.events){
    assert(graphic.some(g=>g.midi===e.midi&&g.writtenOctave===e.octave&&g.writtenStep===e.step&&Math.abs(g.beat-e.beat)<1e-5&&Math.abs(g.length-e.length)<1e-5),item.name+' pitch/octave/duration '+JSON.stringify(e));
   }
-  reports.push({name:item.name,notes:item.events.length,profile:report.analysis.profile,geometry:report.analysis.geometry,mapping:report.analysis.mapping});
+  const dimensions=[];
+  for(const size of [{width:738,height:196},{width:738,height:351},{width:883,height:409}]){
+   await page.setViewportSize(size);await page.waitForTimeout(350);
+   const fitted=await page.evaluate(()=>{PianoNotation.resize();return PianoNotation.analysis().geometry;});
+   assert(!fitted.alerts.includes('vertical-overflow'),item.name+' vertical fit '+JSON.stringify(size));
+   dimensions.push({size,geometry:fitted});
+  }
+  reports.push({dimensions,name:item.name,notes:item.events.length,profile:report.analysis.profile,geometry:report.analysis.geometry,mapping:report.analysis.mapping});
  }
  // Direct DOM preservation and annotation classification, independent of title.
  await page.evaluate(()=>{const xml='<score-partwise><part><measure><note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><lyric><text>C</text></lyric></note><direction><direction-type><words>rit.</words></direction-type></direction><harmony><root><root-step>C</root-step></root></harmony></measure></part></score-partwise>';const p=StudyProfile.analyze(xml),d=new DOMParser().parseFromString(StudyProfile.presentation(xml,p),'application/xml');if(d.querySelector('lyric')||!d.querySelector('words')||!d.querySelector('harmony'))throw Error('annotation policy');});

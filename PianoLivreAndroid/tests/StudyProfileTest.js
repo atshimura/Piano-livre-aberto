@@ -9,4 +9,9 @@ assert.equal(P.assess([row(0,0),row(1,8,10)],{}).overlaps,0,'different vertical 
 assert.equal(P.assess([row(0,-1)],{bounds:[0,0,20,20]}).clipped,1);
 assert(P.assess([],{height:30,availableHeight:20,mapping:{unmatched:1}}).alerts.includes('vertical-overflow'));
 assert(P.assess([],{mapping:{ambiguous:1}}).alerts.includes('native-mapping'));
+assert.equal(P.wordKind('la fa# sol la fa# sol'),'words:note-names');
+assert.equal(P.wordKind('5 3 4 5 1 2'),'words:fingering-list');
+assert.equal(P.wordKind('Lent et douloureux'),null);
+assert.equal(P.wordKind('Allegro'),null);
+assert.equal(P.wordKind('D A Bm F#m'),null,'chord text is preserved');
 console.log('STUDY_PROFILE_UNIT_PASS');
