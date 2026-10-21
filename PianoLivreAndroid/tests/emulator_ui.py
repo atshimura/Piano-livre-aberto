@@ -360,7 +360,11 @@ if __name__=="__main__":
     assert mapping.get("nativeEvents",0)>=12 and mapping.get("matched",0)>=5, "Original Java Score events are not cross-referenced with OSMD"
     assert sum(mapping.get(k,0) for k in ("matched","unmatched","ambiguous"))==professional["graphicalNotes"], "Graphical note reconciliation counts inconsistent"
     print("POC_NATIVE_MIDI_MAPPING "+json.dumps(mapping),flush=True)
-    assert "POC_LAYER software" in adb("logcat","-d","-v","brief"), "Preview did not isolate software SVG diagnostic"
+    # The Study screen now starts directly in OSMD. The old layer diagnostic was
+    # emitted only when the experimental long-press explicitly enabled OSMD, so
+    # it is not a useful acceptance condition for the default-renderer path.
+    assert "POC_NATIVE_MIDI_MAPPING " in adb("logcat","-d","-v","brief"), \
+      "OSMD did not report native-to-graphical event reconciliation"
     time.sleep(2)
     screenshot("piano-osmd-poc.png")
     responsive_evidence("ode")
