@@ -279,7 +279,7 @@ class PianoScreens {
     legacyFallback.setVisibility(View.VISIBLE);
     if(rendererButtons[1]!=null)rendererButtons[1].setText("Esquemático · ativo");
     updateSelections();
-    a.message("OSMD/temporal indisponível. Visualização esquemática ativa: "+cause);
+    android.widget.Toast.makeText(a,"Visualização esquemática ativa; falha na notação: "+cause,android.widget.Toast.LENGTH_LONG).show();
     android.util.Log.w("PianoLivreNotation","ACTIVE_RENDERER schematic; Notation fallback: "+cause);
    }
    @Override public void onPresentation(String message){if(!message.isEmpty())android.widget.Toast.makeText(a,message,android.widget.Toast.LENGTH_LONG).show();}

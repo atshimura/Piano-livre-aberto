@@ -12,7 +12,6 @@ for _ in range(60):
     if 'ACTIVE_RENDERER schematic' in adb('logcat','-d','-v','brief'):break
     time.sleep(.5)
 else:raise AssertionError('Real OSMD failure did not activate native schematic fallback')
-tap_text('OK')
 assert any(n.attrib.get('text')=='Esquemático · ativo' for n in dump().iter('node')),'Selector still claims OSMD/temporal'
 screenshot('piano-study-failure.png')
 tap_text('Esquemático · ativo')

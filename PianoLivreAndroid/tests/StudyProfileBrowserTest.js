@@ -26,6 +26,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    return {same,changed,intact,error:window.testError,done:window.testDone,analysis:PianoNotation.analysis(),
     message:window.presentationMessage};
   },item);
+  try{
   assert(report.same&&report.changed&&report.intact,item.name+' content invalidation/source preservation');
   console.log('STUDY_CORPUS_FILE '+item.name);
   assert(report.done&&!report.error,item.name+' OSMD: '+report.error);
@@ -44,6 +45,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    dimensions.push({size,geometry:fitted});
   }
   reports.push({dimensions,name:item.name,notes:item.events.length,profile:report.analysis.profile,geometry:report.analysis.geometry,mapping:report.analysis.mapping});
+  }catch(error){reports.push({name:item.name,failure:error.message});console.error('STUDY_CORPUS_FAILURE '+error.message);}
  }
  // Direct DOM preservation and annotation classification, independent of title.
  await page.evaluate(()=>{const xml='<score-partwise><part><measure><note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><lyric><text>C</text></lyric></note><direction><direction-type><words>rit.</words></direction-type></direction><harmony><root><root-step>C</root-step></root></harmony></measure></part></score-partwise>';const p=StudyProfile.analyze(xml),d=new DOMParser().parseFromString(StudyProfile.presentation(xml,p),'application/xml');if(d.querySelector('lyric')||!d.querySelector('words')||!d.querySelector('harmony'))throw Error('annotation policy');});
@@ -52,6 +54,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  assert(failed,'OSMD failure must reach native renderer callback');
  fs.mkdirSync('../docs/evidence/study-profile',{recursive:true});
  fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({scope:'Desktop Chromium, not Android or physical acceptance',reports},null,2));
+ assert.equal(reports.filter(r=>r.failure).length,0,'Corpus failures: '+JSON.stringify(reports.filter(r=>r.failure)));
  console.log('STUDY_PROFILE_BROWSER_PASS files='+reports.length);
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1);});
