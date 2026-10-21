@@ -32,6 +32,20 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   try{
   assert(report.same&&report.changed&&report.intact,item.name+' content invalidation/source preservation');
   console.log('STUDY_CORPUS_FILE '+item.name);
+  if(report.error&&item.name.startsWith('tests/fixtures/motor/')){
+   // Parser-only fixtures can omit engraving metadata. The actual OSMD error
+   // must be explicit, and the retained temporal alternative must remain faithful.
+   const fallback=await page.evaluate(async item=>{
+    window.testDone=false;window.testError=null;PianoNotation.load(item.xml,0,'study');
+    const plan=TemporalNotation.parse(item.xml),steps={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+    return {done:window.testDone,error:window.testError,notes:plan.notes.filter(n=>!n.grace).map(n=>({beat:n.at,length:n.dur,midi:12*(n.oct+1)+steps[n.step]+n.alter,staff:n.staff,step:n.step,octave:n.oct}))};
+   },item);
+   assert(fallback.done&&!fallback.error,item.name+' temporal alternative: '+fallback.error);
+   const sig=e=>JSON.stringify([Math.round(e.beat*1e6),Math.round(e.length*1e6),e.midi,e.staff,e.step,e.octave]);
+   assert.deepEqual(fallback.notes.map(sig).sort(),item.events.map(sig).sort(),item.name+' faithful fallback');
+   reports.push({name:item.name,renderer:'temporal',osmdError:report.error,notes:item.events.length});
+   continue;
+  }
   assert(report.done&&!report.error,item.name+' OSMD: '+report.error);
   const graceCount=report.analysis.notes.filter(n=>n.grace).length;
   assert.equal(report.analysis.profile.notes,item.events.length+graceCount,item.name+' main and grace pitch count');

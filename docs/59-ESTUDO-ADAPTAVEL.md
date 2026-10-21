@@ -45,3 +45,7 @@ Não se detecta uma nota musicalmente errada no próprio MusicXML sem referênci
 - Ambiente local: teste unitário, catálogo JVM e ScoreImportTest aprovados; Chromium local impedido por `socket() Operation not permitted` antes da renderização. Isso é bloqueio de ambiente, não aprovação da gravura. CI e emulador devem ser registrados por SHA após execução.
 
 Versão proposta 0.9.48-open-beta / code57; mesmo pacote, sem APK de distribuição nesta PR, sem merge. Assinatura permanente somente no workflow confiável após eventual integração.
+
+### Fixtures sem metadados suficientes de gravura
+
+Fixtures de `tests/fixtures/motor` foram originalmente feitas para parsers e podem omitir tipos/claves. A auditoria não exige que o OSMD consiga gravar esses arquivos incompletos: exige erro explícito, nenhuma declaração falsa de sucesso e conferência integral da alternativa temporal. O relatório identifica cada fallback e seu motivo. Catálogo e fixtures de gravura continuam exigindo OSMD fiel; falhas neles reprovam o teste. Isso é compatibilidade parcial documentada, não suporte OSMD universal.
