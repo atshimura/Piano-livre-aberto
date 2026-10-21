@@ -65,7 +65,7 @@ def dump():
             time.sleep(4)
     raise AssertionError("Android UI hierarchy inaccessible")
 
-def tap_text(targets, return_point=False, exact=False, scroll=False):
+def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pass=0):
     root=dump()
     for node in root.iter("node"):
         label=node.attrib.get("text","")
@@ -76,14 +76,21 @@ def tap_text(targets, return_point=False, exact=False, scroll=False):
                     str((nums[1]+nums[3])//2))
                 print("Tapped",label,flush=True)
                 return (str((nums[0]+nums[2])//2),str((nums[1]+nums[3])//2)) if return_point else label
-    if scroll:
-        for node in root.iter("node"):
-            if node.attrib.get("scrollable")=="true":
-                box=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
-                if len(box)==4:
+    if scroll and _scroll_pass<5:
+        scroll_nodes=[node for node in root.iter("node") if node.attrib.get("scrollable")=="true"]
+        # Study controls use a horizontal scroller; prioritize it so off-screen
+        # hand choices remain testable after adding the renderer selectors.
+        scroll_nodes.sort(key=lambda node:"Horizontal" not in node.attrib.get("class",""))
+        for node in scroll_nodes:
+            box=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
+            if len(box)==4:
+                if "Horizontal" in node.attrib.get("class",""):
+                    y=str((box[1]+box[3])//2)
+                    adb("shell","input","swipe",str(box[2]-12),y,str(box[0]+12),y,"400")
+                else:
                     x=str((box[0]+box[2])//2)
                     adb("shell","input","swipe",x,str(box[3]-15),x,str(box[1]+15),"400")
-                    return tap_text(targets,return_point,exact,False)
+                return tap_text(targets,return_point,exact,True,_scroll_pass+1)
     labels=[n.attrib.get("text","") for n in root.iter("node") if n.attrib.get("text")]
     print(adb("logcat","-d","-s","PianoLivreUI:I","PianoLivreNotation:I","PianoLivreTimeline:I")[-18000:],flush=True)
     raise AssertionError("Not found: "+str(targets)+"; available: "+str(labels[:40]))
