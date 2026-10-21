@@ -264,14 +264,20 @@ class PianoScreens {
   notation=new NotationView(a,new NotationView.Listener(){
    public void onRendered(){
     legacyFallback.setVisibility(View.INVISIBLE);
+    if(rendererButtons[1]!=null)rendererButtons[1].setText("Anterior · temporal");
+    updateSelections();
     followScore(a.position,true);
     android.util.Log.i("PianoLivreNotation","NOTATION_RENDERED");
    }
    public void onError(String cause){
     notation.setVisibility(View.INVISIBLE);
     legacyFallback.setVisibility(View.VISIBLE);
+    if(rendererButtons[1]!=null)rendererButtons[1].setText("Esquemático · ativo");
+    updateSelections();
+    a.message("OSMD/temporal indisponível. Visualização esquemática ativa: "+cause);
     android.util.Log.w("PianoLivreNotation","Notation fallback: "+cause);
    }
+   @Override public void onPresentation(String message){if(!message.isEmpty())android.widget.Toast.makeText(a,message,android.widget.Toast.LENGTH_LONG).show();}
    @Override public void onLoopSelected(double start,double end){
     editingLoop=false;
     a.applyLoopSelection(start,end);
@@ -380,7 +386,7 @@ class PianoScreens {
   if(loopButton!=null)loopButton.setText(editingLoop?"Selecionando…":"Trecho ↻");
  }
  void selectStudyRenderer(boolean useOsmd){
-  if(notation==null||a.score==null||notation.isEngravingProof()==useOsmd)return;
+  if(notation==null||a.score==null||notation.isEngravingProof()==useOsmd&&!notation.hasRendererFailure())return;
   // A renderer change is presentational: leave beat, playback, MusicXML,
   // profile, and saved study data untouched.
   notation.setEngravingProof(useOsmd);

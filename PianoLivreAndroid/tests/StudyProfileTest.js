@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('assert');
+const P=require('../app/src/main/assets/study-profile.js');
+const row=(beat,x,y=0)=>({staff:1,beat,headBox:[x,y,10,6]});
+let r=P.assess([row(0,0),row(1,8)],{bounds:[0,0,30,20],staffSpace:5,height:20,availableHeight:20});
+assert.equal(r.overlaps,1);assert(r.alerts.includes('small-staff-space'));assert.equal(r.suggestedSpacing,1.5);
+assert.equal(P.assess([row(0,0),row(0,0)],{}).overlaps,0,'simultaneous voices are not collisions');
+assert.equal(P.assess([row(0,0),row(1,8,10)],{}).overlaps,0,'different vertical bands');
+assert.equal(P.assess([row(0,-1)],{bounds:[0,0,20,20]}).clipped,1);
+assert(P.assess([],{height:30,availableHeight:20,mapping:{unmatched:1}}).alerts.includes('vertical-overflow'));
+assert(P.assess([],{mapping:{ambiguous:1}}).alerts.includes('native-mapping'));
+console.log('STUDY_PROFILE_UNIT_PASS');

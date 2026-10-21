@@ -29,12 +29,14 @@
 <script src="temporal-notation.js"></script>
 <script src="optical-time-map.js"></script>
 <script src="engraving-audit.js"></script>
+<script src="study-profile.js"></script>
 <script src="engraving-conventions.js"></script></head>
 <body><div id="viewport"><div id="score"></div></div><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
 <script>
 (function(){
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
+ let studyProfile=null,studyAnalysis=null;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1,opticalReferenceX=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
@@ -634,7 +636,9 @@
    return;
   }
   const proofStarted=performance.now();
+  const originalXml=xml;
   try{
+   if(studyProof){studyProfile=StudyProfile.analyze(originalXml);xml=StudyProfile.presentation(originalXml,studyProfile);}
    if(!window.opensheetmusicdisplay){throw new Error('Motor musical indisponível');}
    if(studyProof)console.log('POC_OSMD_LOAD_BEGIN '+JSON.stringify({xmlLength:xml.length,
     nativeEvents:lastNativeEvents.length,viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight}));
@@ -660,11 +664,28 @@
     }
     // Keep OSMD at its default internal zoom; apply a CSS transform to the entire grand staff.
     osmd.render();
+    if(studyProof){
+     let probe=document.querySelector('#score svg');
+     if(!probe)throw Error('OSMD não produziu SVG');
+     fitOpticalSvg(probe);
+     const initial=StudyProfile.assess(EngravingAudit.inspect(osmd.graphic,Infinity),{
+      staffSpace:Number(probe.dataset.opticalStaffSpaceCss),height:probe.getBoundingClientRect().height,availableHeight:viewport.clientHeight});
+     // One bounded re-engraving pass. Increase optical spacing through OSMD,
+     // never stretch x independently or alter durations/notes.
+     const factor=initial.overlaps?1.5:(initial.alerts.indexOf('small-staff-space')>=0?1.25:1);
+     studyProfile=Object.assign({},studyProfile,{spacing:factor});
+     if(factor>1){
+      osmd.EngravingRules.VoiceSpacingMultiplierVexflow*=factor;
+      osmd.EngravingRules.VoiceSpacingAddendVexflow*=factor;
+      osmd.render();
+     }
+    }
     if(studyProof)console.log('POC_OSMD_RENDER_RESOLVED');
     osmdRenderedWidth=viewport.clientWidth;
     osmdRenderedHeight=viewport.clientHeight;
     if(ticket!==generation)return;
-    const svg=document.querySelector('#score svg');
+    let svg=document.querySelector('#score svg');
+    if(!svg)throw Error('OSMD não produziu SVG');
     if(studyProof){
      const graphic=osmd.graphic,columns=graphic&&graphic.measureList||[];
      if(!window.OpticalTimeMap)throw Error('Mapeamento óptico não carregado');
@@ -673,6 +694,11 @@
      fitOpticalSvg(svg);
      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
      console.log('POC_MIDI_MAPPING '+JSON.stringify(opticalReconciliation));
+     studyAnalysis=StudyProfile.assess(EngravingAudit.inspect(graphic,Infinity),{
+      bounds:[svg.viewBox.baseVal.x,svg.viewBox.baseVal.y,svg.viewBox.baseVal.width,svg.viewBox.baseVal.height],
+      staffSpace:Number(svg.dataset.opticalStaffSpaceCss),height:svg.getBoundingClientRect().height,
+      availableHeight:viewport.clientHeight,mapping:opticalReconciliation});
+     console.log('STUDY_ANALYSIS '+JSON.stringify({profile:studyProfile,geometry:studyAnalysis}));
      attachOpticalNoteTouch(svg);
      paintOpticalCues(start||0);
      alignOpticalScore(start||0);
@@ -845,10 +871,14 @@
     console.log('SCORE_DRAWN','zoom=',osmd.Zoom,'svg=',svg?svg.getBoundingClientRect().toJSON():null,
       'scroll=',viewport.scrollHeight,viewport.clientHeight);
     loaded=true;message.style.display='none';
+    if(window.AndroidNotation&&AndroidNotation.onPresentation)AndroidNotation.onPresentation(
+     (studyProfile&&studyProof&&studyProfile.hiddenTypes.length?'Estudo: letras de canto ocultas. Consulte Partitura Livre. ':'')+
+     (studyProof&&studyAnalysis&&studyAnalysis.alerts.length?'Alertas de leitura: '+studyAnalysis.alerts.join(', '):''));
     if(!freeLayout&&!studyProof&&osmd.cursor){osmd.cursor.reset();osmd.cursor.show();}
     if(window.AndroidNotation)AndroidNotation.onRendered();
     if(!freeLayout&&!studyProof)requestAnimationFrame(()=>setTimeout(()=>atBeat(seekBeat,true),150));
    }).catch(function(err){
+    if(ticket!==generation)return;
     console.error('POC_OSMD_EXCEPTION '+(err&&err.stack||err));
     inform('Falha ao abrir notação: '+err.message);
     if(window.AndroidNotation)AndroidNotation.onError(err.message);
@@ -857,6 +887,7 @@
  }
  window.PianoNotation={
    load:render,
+   analysis:function(){return {profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
    seek:function(beat,animated,bpm,playing){
     if(freeLayout)return;seekBeat=beat;
     if(studyProof){opticalSeek(beat,bpm,!!playing);return;}

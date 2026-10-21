@@ -2,6 +2,10 @@
 
 **Repositório autoritativo para mudanças futuras:** `atshimura/Piano-livre-aberto`. Não fazer novos commits em `atshimura/piano-livre` como parte do fluxo aberto; aquele repositório histórico permanece privado.
 
+## Implementação em revisão — análise automática
+
+Branch `feat/analise-estudo-adaptavel`, sem merge: consultar [59](59-ESTUDO-ADAPTAVEL.md), critérios experimentais, testes do SHA e limitações. Main permanece 0.9.47; a branch propõe 0.9.48/code57. Não alterar os PRs #46/#48 nem declarar aceite físico ou V1.
+
 ## Ponto de retomada vigente
 
 **Etapa A — OSMD padrão CONCLUÍDA (PR #49 integrado na main em 21/10/2026):** o Estudo abre OSMD automaticamente; `OSMD · nova` / `Anterior · temporal` alternam sem alterar posição musical ou dados. Build assinado: [Actions 39531053142](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39531053142); testes Android, inclusive atualização do APK público code55 para code56 com dados sintéticos preservados: [Actions 39531053402](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39531053402). Pré-release: [v0.9.47-open-beta](https://github.com/atshimura/Piano-livre-aberto/releases/tag/v0.9.47-open-beta), APK [PianoLivre-0.9.47-open-beta.apk](https://github.com/atshimura/Piano-livre-aberto/releases/download/v0.9.47-open-beta/PianoLivre-0.9.47-open-beta.apk). Pacote `br.org.pianolivre.opensource`, versionCode 56, certificado SHA-256 `7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290`. Não iniciar a antiga Tarefa 07; não declarar 1.0 nem aceite físico. PR #46 permanece separado e não foi integrado em bloco.
