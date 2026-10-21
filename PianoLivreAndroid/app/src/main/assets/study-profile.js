@@ -72,10 +72,19 @@
   if(geometry.annotationOverlaps)alerts.push('text-note-overlap');
   if(overlaps)alerts.push('adjacent-attack-overlap');
   if(geometry.staffSpace>0&&geometry.staffSpace<6)alerts.push('small-staff-space');
-  if(geometry.mapping&&(geometry.mapping.unmatched||geometry.mapping.ambiguous))alerts.push('native-mapping');
+  if(geometry.mapping&&(geometry.mapping.unmatched||geometry.mapping.ambiguous||geometry.mapping.unmatchedNative))alerts.push('native-mapping');
   if(geometry.height>geometry.availableHeight+.5)alerts.push('vertical-overflow');
   return {alerts:alerts,clipped:clipped,overlaps:overlaps,annotationOverlaps:geometry.annotationOverlaps||0,inkClipped:!!geometry.inkClipped,renderedTextCount:geometry.renderedTextCount||0,staffSpace:geometry.staffSpace,
    suggestedSpacing:overlaps?1.5:1,limitations:['Bounding boxes are conservative; not glyph contours.','No independent musical reference; source errors cannot be certified.']};
+ }
+ function compare(rows,events){
+  const bag=new Map();
+  function signature(n){return JSON.stringify([Math.round(n.beat*1e6),Math.round(n.length*1e6),n.midi,n.staff,n.measure,n.step||n.writtenStep,n.octave===undefined?n.writtenOctave:n.octave]);}
+  events.forEach(function(n){const key=signature(n);bag.set(key,(bag.get(key)||0)+1);});
+  let unexpected=0;
+  rows.filter(function(n){return !n.grace;}).forEach(function(n){const key=signature(n),left=bag.get(key)||0;if(left)bag.set(key,left-1);else unexpected++;});
+  let missing=0;bag.forEach(function(value){missing+=value;});
+  return {missing:missing,unexpected:unexpected};
  }
  function summary(profile,analysis){
   const names={'lyric':'letras de canto','words:note-names':'listas de solfejo','words:fingering-list':'listas de dedos'};
@@ -84,7 +93,7 @@
   if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
   return text;
  }
- const api={summary:summary,inspectSvg:inspectSvg,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
+ const api={compare:compare,summary:summary,inspectSvg:inspectSvg,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);

@@ -699,6 +699,10 @@
      fitOpticalSvg(svg);
      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
      console.log('POC_MIDI_MAPPING '+JSON.stringify(opticalReconciliation));
+     if(Array.isArray(nativeEvents)&&nativeEvents.length){
+      const fidelity=StudyProfile.compare(EngravingAudit.inspect(graphic,Infinity),nativeEvents);
+      if(fidelity.missing||fidelity.unexpected)throw Error('Notação OSMD diverge das alturas/oitavas/durações importadas: '+JSON.stringify(fidelity));
+     }
      refreshStudyAnalysis(svg);
      console.log('STUDY_ANALYSIS '+JSON.stringify({version:studyProfile.version,notes:studyProfile.notes,measures:studyProfile.measures.length,hiddenTypes:studyProfile.hiddenTypes,spacing:studyProfile.spacing,geometry:studyAnalysis}));
      attachOpticalNoteTouch(svg);

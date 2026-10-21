@@ -16,4 +16,8 @@ assert.equal(P.wordKind('Allegro'),null);
 assert.equal(P.wordKind('D A Bm F#m'),null,'chord text is preserved');
 assert(P.assess([],{inkClipped:true,annotationOverlaps:2}).alerts.includes('symbol-envelope-clipping'));
 assert(P.assess([],{annotationOverlaps:1}).alerts.includes('text-note-overlap'));
+const native=[{beat:0,length:1,midi:60,staff:1,measure:1,step:'C',octave:4}];
+assert.deepEqual(P.compare(native,native),{missing:0,unexpected:0});
+assert.deepEqual(P.compare([{...native[0],length:2}],native),{missing:1,unexpected:1});
+assert.deepEqual(P.compare([],native),{missing:1,unexpected:0});
 console.log('STUDY_PROFILE_UNIT_PASS');
