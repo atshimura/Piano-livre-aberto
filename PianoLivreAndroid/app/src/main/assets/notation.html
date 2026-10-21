@@ -659,7 +659,7 @@
     disableCursor:freeLayout||studyProof,
     cursorsOptions:[{type:1,color:'#008b78',alpha:0.8,follow:false}]
    });
-   Promise.resolve(osmd.load(xml)).then(function(){
+   Promise.resolve(osmd.load(new DOMParser().parseFromString(xml,'application/xml'))).then(function(){
     if(ticket!==generation)return;
     if(studyProof)console.log('POC_OSMD_LOAD_RESOLVED');
     if(studyProof&&xml.indexOf('parentheses')>=0){
@@ -700,7 +700,7 @@
      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
      console.log('POC_MIDI_MAPPING '+JSON.stringify(opticalReconciliation));
      refreshStudyAnalysis(svg);
-     console.log('STUDY_ANALYSIS '+JSON.stringify({profile:studyProfile,geometry:studyAnalysis}));
+     console.log('STUDY_ANALYSIS '+JSON.stringify({version:studyProfile.version,notes:studyProfile.notes,measures:studyProfile.measures.length,hiddenTypes:studyProfile.hiddenTypes,spacing:studyProfile.spacing,geometry:studyAnalysis}));
      attachOpticalNoteTouch(svg);
      paintOpticalCues(start||0);
      alignOpticalScore(start||0);
