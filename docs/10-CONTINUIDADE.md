@@ -1,5 +1,7 @@
 # 10 — Como continuar o Piano Livre aberto
 
+> **Inventário/Plano Geral V1 de 20/10/2026:** consultar [57 — inventário funcional](57-INVENTARIO-FUNCIONAL-V1.md) e [58 — plano de desenvolvimento](58-PLANO-GERAL-V1.md) antes de criar novas tarefas. O item 1.2 foi simplificado para entregas A (OSMD padrão com APK atualizável), B (experiência de estudo) e C (consolidação), sem obrigatoriedade de executar as antigas 20 subtarefas. Além disso permanecem as trilhas do Laboratório, MIDI, biblioteca, dados e aceitação V1. **OSMD padrão é decisão aprovada para futuras versões de teste, não funcionalidade integrada na `main` no snapshot do inventário.** A Entrega A corre independentemente no PR #46 e requer **o mesmo package/certificado da versão instalada**, sem variante de aplicativo nem assinatura provisória. As releases atuais não são versões estáveis; hardware real continua pendente. O restante deste documento contém sobretudo histórico por versão: verificar status presente no GitHub.
+
 **Repositório autoritativo para mudanças futuras:** `atshimura/Piano-livre-aberto`. Não fazer novos commits em `atshimura/piano-livre` como parte do fluxo aberto; aquele repositório histórico permanece privado.
 
 ## Ponto de retomada vigente

@@ -2,7 +2,25 @@
 
 Data: 17/10/2026. Referência: [issue #34](https://github.com/atshimura/Piano-livre-aberto/issues/34). Este documento especifica o **escopo aprovado**, distinguindo rigorosamente as funcionalidades já implementadas daquelas ainda pendentes. Não confundir implementação de uma base com Laboratório completo nem CI com aceite físico.
 
-## Decisões aprovadas para o produto
+## Decisão de produto vigente — Laboratório Musical da versão 1.0 (20/10/2026)
+
+A decisão abaixo **substitui, exclusivamente para o escopo funcional da 1.0**, as propostas anteriores de tela complexa do Laboratório. Este documento mantém as implementações anteriores como histórico técnico; não apagar código nem dados somente porque um recurso ficará indisponível na interface 1.0.
+
+1. Na **tela inicial do Piano Livre**, oferecer um botão claramente identificado **“Laboratório Musical”**.
+2. Ao entrar, exibir barra superior com **Voltar**, **Descobrir** e **Aprender**. A aba **Descobrir** é selecionada automaticamente. **Aprender** permanece visível, porém **desabilitado/inativo na 1.0**, sem permitir abrir catálogo, exercícios ou prática; seu desenvolvimento para uso público será retomado depois.
+3. Na área de conteúdo, **antes de qualquer entrada MIDI**, exibir **somente** a instrução: **“toque uma nota, acorde ou escala musical”**. Não exibir teclado virtual, catálogo, exercícios, botões de início/gravação ou controles extras nessa tela da 1.0.
+4. **Entrada exclusiva por teclado físico conectado via MIDI** nessa versão. Não é necessário teclado virtual na interface de Descobrir; preservar implementação preexistente em código sem exposição/destruição.
+5. Ao tocar, observar brevemente os ataques MIDI para decidir se há **nota isolada ou acorde**; a saída apresenta o nome em português e notação internacional com oitava (ex.: **“DÓ - C4”**), bem como **pauta desenhada com clave de sol ou de fá conforme a altura**, posicionando a(s) nota(s) correspondente(s). A representação gráfica deve respeitar grafia/oitava, e não ser apenas texto ou uma legenda “Sol/Fá”.
+6. Quando chegarem várias notas em sequência, distinguir candidaturas a **arpejo e escala**. Uma janela curta de simultaneidade basta para detectar acordes, **mas não basta para confirmar escala/arpejo completos**: observar os ataques sucessivos e encerrar a frase por uma pausa breve/inatividade ou outro critério determinístico apropriado, sem exigir botão de gravação. Tempo e tolerância ainda dependem de calibração/validação, não fixar milissegundos arbitrários.
+7. **Escala/arpejo reconhecido:** apresentar o nome e **todas as notas reconhecidas desenhadas na pauta**, na ordem efetivamente tocada, com altura e oitava corretas; usar clave(s) apropriada(s) ao registro para manter legibilidade. Não resumir apenas ao nome, à nota inicial ou às classes de altura. Para acordes, desenhar as notas reconhecidas simultaneamente na pauta.
+8. Não anunciar precocemente “escala” ou “arpejo” após uma única nota; não deduzir tonalidade, mão ou acorde sem evidência. Quando a interpretação ainda for ambígua, mostrar o que é musicalmente demonstrável, sem falso reconhecimento.
+9. **Persistência visual do resultado:** depois de reconhecida uma nota, acorde, escala ou arpejo, **manter o nome e a pauta exibidos até que um novo reconhecimento válido esteja pronto para substituí-los**. Não ocultar por temporizador, não retornar automaticamente à instrução inicial e não apagar o resultado ao primeiro novo ataque MIDI enquanto a classificação seguinte estiver pendente. A instrução inicial vale antes do primeiro reconhecimento na entrada da tela.
+10. **Aprender** e seus recursos existentes (catálogo, demonstração, práticas, sequências, eventual histórico de laboratório e dedilhado) são **pós-1.0** salvo nova aprovação. Não requisitar sua conclusão para aceitar a 1.0.
+9. Manter fluxo offline e sem serviço externo, conservar assinaturas, pacote, perfis e backups. Testes automatizados de MIDI/reconhecimento são necessários; validação real com Yamaha P-45 permanece pendente.
+
+**Status:** decisão aprovada; **interface específica da 1.0 ainda não implementada**. Não interpretar a existência de `MusicLabScreen` como cumprimento automático destes requisitos. [Plano Geral](58-PLANO-GERAL-V1.md) e [inventário](57-INVENTARIO-FUNCIONAL-V1.md).
+
+## Decisões anteriores e implementação histórica (referência; escopo atualizado acima)
 
 ### Melhorias dos modos atuais
 1. **Espera:** botão "Iniciar"; após acionamento, partitura avança gradualmente até a posição de estudo por **5 segundos inicialmente**, configuráveis. Sem contagem regressiva textual e sem prazo para tocar após a preparação. Cursor/referência **antes** das cabeças de nota, nunca as cobrindo; manter extras indicadas mas não bloqueantes, duração/pedal orientativos e acordes com janela somente após calibração.

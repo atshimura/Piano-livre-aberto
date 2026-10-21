@@ -1,5 +1,7 @@
 # 07 — Estado atual e prioridades da linha aberta
 
+> **Atualização de planejamento (20/10/2026):** o inventário verificável por subsistema está em [57](57-INVENTARIO-FUNCIONAL-V1.md), e o novo [Plano Geral 1.0 em 58](58-PLANO-GERAL-V1.md) organiza as entregas A/B/C do OSMD e as demais funções. Este texto documenta prioritariamente o estado integrado da `main`, **não** o desenvolvimento experimental do [PR #46](https://github.com/atshimura/Piano-livre-aberto/pull/46). OSMD padrão das futuras versões de teste foi aprovado como decisão de produto; não declarar entregue até comprovação de APK assinado/atualizável. O aplicativo ainda não possui versão estável.
+
 ## Implementado no código público
 
 - Android em paisagem, local/offline, sem permissão INTERNET. MusicXML/XML/MXL e MIDI SMF 0/1 PPQN com notação aproximada, escolha explícita de mão por trilha e fonte original preservada.
