@@ -21,6 +21,13 @@
 
 - [28 — Plano sequencial até V1 e entrega da Etapa 1](28-ETAPAS-V1.md).
 
+## Inventário e planejamento geral 1.0 (vigentes)
+
+- [57 — Inventário funcional e técnico V1](57-INVENTARIO-FUNCIONAL-V1.md): estado integrado versus experimental, evidências, limitações e itens pendentes.
+- [58 — Plano Geral de Desenvolvimento V1](58-PLANO-GERAL-V1.md): entregas A/B/C de OSMD, demais trilhas e critérios de aceite.
+
+Os documentos 57/58 complementam o plano histórico 28 e devem ser revistos após cada entrega; não declaram V1 pronta nem testes físicos executados.
+
 ## Histórico técnico (versões anteriores)
 Arquivos de auditoria e evolução, preservados **como referências históricas, não declarações de testes atuais**:
 - [12 — Auditoria MIDI](12-AUDITORIA-RECONHECIMENTO-MIDI-MAOS.md)
