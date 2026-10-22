@@ -206,11 +206,29 @@
     return {left:Math.min.apply(null,xs),right:Math.max.apply(null,xs),top:Math.min.apply(null,ys),bottom:Math.max.apply(null,ys)};
    }catch(e){return node.getBoundingClientRect();}
   }
+  function visibleTextBox(node){
+   const fallback=tightBox(node),value=(node.textContent||'').trim();
+   if(!value||typeof node.getStartPositionOfChar!=='function')return fallback;
+   try{
+    const canvas=document.createElement('canvas'),context=canvas.getContext('2d');
+    if(!context)return fallback;
+    context.font=getComputedStyle(node).font;context.textAlign='start';context.textBaseline='alphabetic';
+    const metrics=context.measureText(value),position=node.getStartPositionOfChar(0),matrix=node.getScreenCTM();
+    if(!matrix||![metrics.actualBoundingBoxLeft,metrics.actualBoundingBoxRight,metrics.actualBoundingBoxAscent,metrics.actualBoundingBoxDescent].every(Number.isFinite))return fallback;
+    const local=[[position.x-metrics.actualBoundingBoxLeft,position.y-metrics.actualBoundingBoxAscent],
+     [position.x+metrics.actualBoundingBoxRight,position.y-metrics.actualBoundingBoxAscent],
+     [position.x-metrics.actualBoundingBoxLeft,position.y+metrics.actualBoundingBoxDescent],
+     [position.x+metrics.actualBoundingBoxRight,position.y+metrics.actualBoundingBoxDescent]];
+    const points=local.map(function(p){return {x:matrix.a*p[0]+matrix.c*p[1]+matrix.e,y:matrix.b*p[0]+matrix.d*p[1]+matrix.f};});
+    const xs=points.map(function(p){return p.x;}),ys=points.map(function(p){return p.y;});
+    return {left:Math.min.apply(null,xs),right:Math.max.apply(null,xs),top:Math.min.apply(null,ys),bottom:Math.max.apply(null,ys)};
+   }catch(e){return fallback;}
+  }
   const heads=Array.from(svg.querySelectorAll('.vf-notehead')).map(function(n){return {node:n,box:tightBox(n)};}).sort(function(a,b){return a.box.left-b.box.left;});
   const annotationOverlaps=[];
   Array.from(svg.querySelectorAll('text')).forEach(function(n,textIndex){
    if(n.style.visibility==='hidden'||n.getAttribute('visibility')==='hidden')return;
-   const t=tightBox(n);
+   const t=visibleTextBox(n);
    for(const item of heads){const h=item.box;if(h.left>=t.right)break;
     const overlapX=Math.min(h.right,t.right)-Math.max(h.left,t.left),overlapY=Math.min(h.bottom,t.bottom)-Math.max(h.top,t.top);
     if(overlapX>.5&&overlapY>.5){

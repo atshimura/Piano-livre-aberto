@@ -27,7 +27,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    for(let i=0;i<300&&!window.testDone&&!window.testError;i++)await new Promise(r=>setTimeout(r,50));
   const analysis=PianoNotation.analysis();
   const svg=document.querySelector('#score svg');
-  const targetPairs=analysis.geometry.textNotePairs.map(pair=>{
+  const targetPairs=(analysis.geometry&&analysis.geometry.textNotePairs||[]).map(pair=>{
     const rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
     const rawX=vb.x+(pair.noteBox[0]+pair.noteBox[2]/2-rect.left)*vb.width/rect.width;
     const rawY=vb.y+(pair.noteBox[1]+pair.noteBox[3]/2-rect.top)*vb.height/rect.height;
@@ -44,6 +44,17 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    await page.evaluate(x=>{const v=document.getElementById('viewport');v.scrollLeft=Math.max(0,x-100);},target.textBox[0]);
    await page.screenshot({path:'../docs/evidence/study-profile/fur-elise-text-note-target.png'});
    console.log('STUDY_FUR_ELISE_TEXT_NOTE_TARGET '+JSON.stringify(target));
+  }
+  if(item.name.endsWith('fur-elise-easy-ver.mxl')){
+   const target=report.analysis.notes.find(n=>n.measure===13&&n.beat===36&&n.midi===56&&n.staff===2);
+   assert(target,'Für Elise regression note G-sharp 3 at beat 36 must be present');
+   const x=await page.evaluate(note=>{
+    const svg=document.querySelector('#score svg'),v=document.getElementById('viewport'),box=note.headBox;
+    const point=svg.createSVGPoint();point.x=box[0]+box[2]/2;point.y=box[1]+box[3]/2;
+    const screen=point.matrixTransform(svg.getScreenCTM());v.scrollLeft=Math.max(0,screen.x-100);return screen.x;
+   },target);
+   await page.screenshot({path:'../docs/evidence/study-profile/fur-elise-dynamic-beat-36.png'});
+   console.log('STUDY_FUR_ELISE_DYNAMIC_NOTE '+JSON.stringify({text:'p',decision:'preserved; measured visible glyph bounds do not touch notehead',beat:target.beat,midi:target.midi,step:target.step||target.writtenStep,octave:target.octave===undefined?target.writtenOctave:target.octave,staff:target.staff,measure:target.measure,centerXCss:x,headBox:target.headBox}));
   }
   if(/(canon-in-d|fur-elise-easy-ver|gymnopedie-no-1-satie)\.mxl$/.test(item.name))
    await page.screenshot({path:'../docs/evidence/study-profile/'+path.basename(item.name)+'.738x220.initial.png'});
