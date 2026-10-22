@@ -1,5 +1,17 @@
 # 59 — Análise automática e apresentação adaptável do Estudo
 
+## B1 — continuação: câmera ancorada, contexto e vozes nomeadas (22/10/2026)
+
+**PR #51 permanece aberto, sem merge.** A câmera horizontal agora utiliza a faixa efetivamente alcançável pela área pintada, levando em conta a posição inicial, a margem e a linha de referência. A escala é reavaliada contra o envelope no enquadramento final, com preservação de ambas as pautas, MusicXML e MIDI. O guardião anterior considerava tinta à direita além do que efetivamente poderia entrar na viewport; isso podia diminuir desnecessariamente a escala local.
+
+A faixa de contexto fixo à esquerda agora adapta sua largura ao conteúdo ativo (clave, armadura e fórmula de compasso) e sincroniza o viewBox após deslocamento ou mudança de escala. O corpus passou a pedir capturas de transições 1→2→3→2→1 na fixture engraving-context-change.musicxml e a conferir limites dos glifos, área visível e alinhamento. Testes de janela conferem os extremos, ausência de recorte, integridade do mapeamento e redimensionamentos nos três perfis. Essas verificações não certificam fluidez ou legibilidade subjetiva.
+
+**native-mapping:** em named-voices-ties.xml há quatro eventos nativos C4/MIDI 60 e quatro cabeças OSMD nos mesmos tempos; as vozes nomeadas upper/lower não obtiveram identidade gráfica verificável na evidência anterior (matched=0, ambiguous=4, unmatchedNative=4). Não existe demonstração de nota, andamento ou duração divergente pelo multiconjunto de eventos; existe ambiguidade de voz. Não forçar emparelhamento nem suprimir alerta. O teste exige explicitamente a ambiguidade e compara também a sequência da alternativa temporal. Os quatro fixtures incompletos para OSMD preservam fallback temporal explícito.
+
+**Evidências:** StudyProfileBrowserTest.js produz no artifact adaptive-study-corpus as capturas gymnopedie.window-{opening,middle,extreme,ending}.{738x196,738x351,883x409}.png, b1-viewport-comparison.json, context-change.measure-*.png e b1-context-transitions.json. O script e este protocolo ficam versionados; os novos binários produzidos pela CI não são automaticamente versionados. Consultar o SHA e as medições no PR antes de declarar aprovação. O valor de 6 CSS px continua referência experimental, nunca padrão aceito pelo usuário.
+
+**Checklist físico pendente:** Realme 7 5G — abertura, meio e extremos da Gymnopédie, variação de escala, cursor e retorno; Lenovo Tab M9 — contexto, mudança de compasso, teclado guia ligado/desligado, redimensionamento, repetição e trechos; Yamaha P-45 — USB-MIDI, ataques, mãos, Espera, pausa/retomada e sincronização. Registrar percepção de leitura e movimentos com consentimento. **Nenhum teste físico foi realizado.** B1 e V1 não foram concluídas. Sem alteração de dados, versão, pacote, certificado, APK de distribuição ou release.
+
 ## Escopo e arquitetura
 
 Branch `feat/analise-estudo-adaptavel`, baseada na main `801543c` (Entrega A, PR #49 integrado). Não integra nem modifica a pesquisa #46. Os documentos 57/58 foram copiados da HEAD `62a9443` do PR #48 apenas para acrescentar este estado; aquele PR e sua branch permanecem intactos. Há sobreposição documental a reconciliar antes de integrar, sem trazer o restante daquela branch.
