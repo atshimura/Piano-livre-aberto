@@ -445,7 +445,8 @@
     const symbol=symbols[kind];
     if(!symbol)return;
     const wrapper=document.createElementNS('http://www.w3.org/2000/svg','g');
-    wrapper.setAttribute('transform','translate('+(slots[kind]-symbol.x)+' 0)');
+    const rowShift=staffIndex===1&&studyVerticalAdaptation.accepted?studyVerticalAdaptation.delta:0;
+    wrapper.setAttribute('transform','translate('+(slots[kind]-symbol.x)+' '+(-rowShift)+')');
     wrapper.appendChild(symbol.node.cloneNode(true));
     state.overlay.appendChild(wrapper);
    });
