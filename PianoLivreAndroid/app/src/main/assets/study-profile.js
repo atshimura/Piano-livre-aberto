@@ -286,6 +286,27 @@
   });
   return hidden;
  }
+ function applyDynamicCollisionPolicy(svg){
+  if(!svg)return [];
+  const dynamic=/^(?:p{1,5}|f{1,5}|mp|mf|fp|pf|sf|sfp|sfpp|sfz|sffz|fz|rfz|n)$/i;
+  const adjustments=[];
+  inspectSvg(svg).textNotePairs.forEach(function(pair){
+   if(pair.chord||!dynamic.test(pair.text))return;
+   const node=svg.querySelectorAll('text')[pair.textIndex],matrix=node&&node.getScreenCTM();
+   if(!node||!matrix)return;
+   const scaleY=Math.hypot(matrix.b,matrix.d);
+   if(!Number.isFinite(scaleY)||scaleY<.01)return;
+   const shiftCssPx=pair.overlapCss[1]+4,previous=node.getAttribute('transform');
+   node.setAttribute('transform',(previous?previous+' ':'')+'translate(0 '+(-shiftCssPx/scaleY)+')');
+   const after=inspectSvg(svg);
+   if(after.inkClipped||after.textNotePairs.some(function(next){return next.textIndex===pair.textIndex;})){
+    if(previous===null)node.removeAttribute('transform');else node.setAttribute('transform',previous);
+    return;
+   }
+   adjustments.push({text:pair.text,shiftCssPx:+shiftCssPx.toFixed(2),reason:'colisão geométrica com cabeça; dinâmicas preservadas e movidas para cima na apresentação do Estudo'});
+  });
+  return adjustments;
+ }
  function assess(rows,geometry){
   const alerts=[];let overlaps=0,clipped=0;
   const bounds=geometry.bounds;
@@ -329,7 +350,7 @@
   if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
   return text;
  }
- const api={applyChordCollisionPolicy:applyChordCollisionPolicy,restoreStaffGap:restoreStaffGap,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,compactStaffGap:compactStaffGap,shiftEngravingRows:shiftEngravingRows,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
+ const api={applyChordCollisionPolicy:applyChordCollisionPolicy,applyDynamicCollisionPolicy:applyDynamicCollisionPolicy,restoreStaffGap:restoreStaffGap,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,compactStaffGap:compactStaffGap,shiftEngravingRows:shiftEngravingRows,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);

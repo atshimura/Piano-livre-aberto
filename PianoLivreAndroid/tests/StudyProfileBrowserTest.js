@@ -39,15 +39,32 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
     renderer:svg?'OSMD SVG':'none',
     chordLabels:chordLabels,message:window.presentationMessage};
   },item);
-  if(item.name.endsWith('fur-elise-easy-ver.mxl')&&report.textNotePairs.length){
-   const target=report.textNotePairs[0];
-   await page.evaluate(x=>{const v=document.getElementById('viewport');v.scrollLeft=Math.max(0,x-100);},target.textBox[0]);
-   await page.screenshot({path:'../docs/evidence/study-profile/fur-elise-text-note-target.png'});
-   console.log('STUDY_FUR_ELISE_TEXT_NOTE_TARGET '+JSON.stringify(target));
-  }
   if(item.name.endsWith('fur-elise-easy-ver.mxl')){
    const target=report.analysis.notes.find(n=>n.measure===13&&n.beat===36&&n.midi===56&&n.staff===2);
    assert(target,'Für Elise regression note G-sharp 3 at beat 36 must be present');
+   const captureDynamic=async(disabled,suffix)=>{
+    await page.evaluate(({item,disabled})=>{
+     window.__testDisableDynamicCollisionPolicy=disabled;window.testDone=false;window.testError=null;
+     PianoNotation.load(item.xml,0,'engraving-poc',item.events);
+    },{item,disabled});
+    await page.waitForFunction(()=>window.testDone||window.testError,{timeout:30000});
+    const visible=await page.evaluate(()=>{
+     const svg=document.querySelector('#score svg'),text=Array.from(svg.querySelectorAll('text')).find(n=>n.textContent.trim()==='p');
+     if(!text)throw Error('Für Elise dynamic p missing from active OSMD SVG');
+     const b=text.getBBox(),m=text.getScreenCTM(),x=m.a*(b.x+b.width/2)+m.c*(b.y+b.height/2)+m.e;
+     const v=document.getElementById('viewport');v.scrollLeft=Math.max(0,x-100);
+     return {centerXCss:x,pairs:StudyProfile.inspectSvg(svg).textNotePairs,adjustments:PianoNotation.analysis().dynamicRepositionDetails||[]};
+    });
+    await page.screenshot({path:'../docs/evidence/study-profile/fur-elise-dynamic-beat-36.'+suffix+'.png'});
+    return visible;
+   };
+   const beforeDynamic=captureDynamic?await captureDynamic(true,'before'):null;
+   const afterDynamic=await captureDynamic(false,'after');
+   assert(beforeDynamic.pairs.some(p=>p.text==='p'),'Für Elise baseline must reproduce the text/note collision geometrically');
+   assert(afterDynamic.adjustments.some(a=>a.text==='p'),'Study view must reposition the colliding dynamic, preserving the indication');
+   assert(!afterDynamic.pairs.some(p=>p.text==='p'),'repositioned dynamic must clear the notehead');
+   assert(!report.analysis.geometry.alerts.includes('text-note-overlap'),'Für Elise dynamic collision is corrected in Study view');
+   assert(report.analysis.dynamicRepositionDetails.some(a=>a.text==='p'),'analysis must record the Study-only dynamic adjustment');
    const glyphDiagnostics=await page.evaluate(()=>{
     const text=document.querySelectorAll('#score svg text')[5],canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
     let extent=null,range=null;
@@ -64,8 +81,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
     const b=text.getBBox(),m=text.getScreenCTM(),x=m.a*(b.x+b.width/2)+m.c*(b.y+b.height/2)+m.e;
     v.scrollLeft=Math.max(0,x-100);return x;
    });
-   await page.screenshot({path:'../docs/evidence/study-profile/fur-elise-dynamic-beat-36.png'});
-   console.log('STUDY_FUR_ELISE_DYNAMIC_NOTE '+JSON.stringify({text:'p',decision:report.analysis.geometry.alerts.includes('text-note-overlap')?'requires presentation adjustment':'preserved; visible glyph outlines clear the notehead',beat:target.beat,midi:target.midi,step:target.step||target.writtenStep,octave:target.octave===undefined?target.writtenOctave:target.octave,staff:target.staff,measure:target.measure,centerXCss:textX,headBox:target.headBox,visibleGlyphPairs:report.textNotePairs}));
+   console.log('STUDY_FUR_ELISE_DYNAMIC_NOTE '+JSON.stringify({text:'p',decision:'preserved and moved upward in Study presentation after reproducible glyph collision',beat:target.beat,midi:target.midi,step:target.step||target.writtenStep,octave:target.octave===undefined?target.writtenOctave:target.octave,staff:target.staff,measure:target.measure,centerXCss:textX,beforePairs:beforeDynamic.pairs,afterPairs:afterDynamic.pairs,adjustments:afterDynamic.adjustments,headBox:target.headBox}));
   }
   if(/(canon-in-d|fur-elise-easy-ver|gymnopedie-no-1-satie)\.mxl$/.test(item.name))
    await page.screenshot({path:'../docs/evidence/study-profile/'+path.basename(item.name)+'.738x220.initial.png'});

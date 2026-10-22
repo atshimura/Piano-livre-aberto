@@ -37,6 +37,7 @@
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let studyProfile=null,studyAnalysis=null,studyVerticalAdaptation={status:'not-evaluated'};
+ let studyDynamicAdjustments=[];
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1,opticalReferenceX=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
@@ -222,11 +223,13 @@
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
  function refreshStudyAnalysis(svg){
   if(!svg||!studyProof||!osmd)return;
+  studyDynamicAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
   const rows=EngravingAudit.inspect(osmd.graphic,Infinity);
   const visibleRows=studyVerticalAdaptation.accepted
    ?StudyProfile.shiftEngravingRows(rows,2,studyVerticalAdaptation.delta):rows;
   studyAnalysis=StudyProfile.assess(visibleRows,
    Object.assign(StudyProfile.inspectSvg(svg),{availableHeight:viewport.clientHeight,mapping:opticalReconciliation}));
+  studyAnalysis.dynamicRepositionDetails=studyDynamicAdjustments;
  }
  function alignOpticalScore(beat){
   opticalReferenceX=Math.min(viewport.clientWidth*.4,
@@ -623,7 +626,7 @@
   cancelOptical();cancelOpticalWait();
   document.getElementById('optical-note-tip').style.display='none';
   loaded=false;appliedBeat=-1;seekBeat=start||0;
-  studyProfile=null;studyAnalysis=null;studyVerticalAdaptation={status:'not-evaluated'};
+  studyProfile=null;studyAnalysis=null;studyVerticalAdaptation={status:'not-evaluated'};studyDynamicAdjustments=[];
   osmdRenderedWidth=0;osmdRenderedHeight=0;opticalDisplayScale=1;
   opticalContextState=null;opticalContextMeasure=-1;
   document.getElementById('optical-context-rail').innerHTML='';
@@ -768,7 +771,7 @@
      const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
      refreshStudyAnalysis(svg);
      studyAnalysis.hiddenChordLabels=hiddenChordLabels;
-     studyAnalysis.repositionedDynamics=repositionedDynamics;
+     studyAnalysis.repositionedDynamics=repositionedDynamics+studyDynamicAdjustments.length;
      studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
      if(hiddenChordLabels.length)console.log('STUDY_CHORD_LABELS_HIDDEN '+JSON.stringify(hiddenChordLabels));
      if(studyAnalysis.textNotePairs.length)console.log('STUDY_TEXT_NOTE_GEOMETRY '+JSON.stringify(studyAnalysis.textNotePairs));
