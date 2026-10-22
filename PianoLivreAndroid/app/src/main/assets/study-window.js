@@ -27,30 +27,48 @@
   const global=options.bounds,width=options.width,height=options.height,available=Math.max(1,height-8);
   const fullScale=available/global[3],targetScale=Math.max(fullScale,.7);
   const cellWidth=Math.max(100,width/targetScale/2),windows=[];
-  const context=options.context;
+  const context=options.context,firstX=Number.isFinite(options.firstX)?options.firstX:global[0];
+  // Use the actual reference line and the opening's marginLeft. The older
+  // planner guarded a full extra viewport to the right of EVERY cell, even
+  // when that ink could not reach the painted viewport at any beat in it.
+  function frame(start,scale){
+   const referenceX=Math.min(width*.4,Math.min(width,130*scale)+12);
+   const reference=referenceX+53,offset=Math.max(0,reference-firstX*scale);
+   const anchor=reference-offset;
+   const left=start-anchor/scale-20;
+   const right=start+cellWidth+(width-anchor)/scale+20;
+   const active=boxes.filter(function(b){return b.x+b.w>=left&&b.x<=right;});
+   if(context)active.push(context);
+   return {left:left,right:right,anchorPx:anchor,ink:union(active)};
+  }
   for(let start=global[0];start<global[0]+global[2];start+=cellWidth){
-   let scale=fullScale,window=null;
-   // Monotone refinement: a larger scale exposes less horizontal content.
-   // The last interval was calculated at <= the final scale, so it contains
-   // every visible glyph, including long slurs with endpoints outside it.
-   for(let pass=0;pass<3;pass++){
-    const reference=Math.min(width*.4,130*targetScale+12)+53;
-    const left=start-reference/scale-20,right=start+cellWidth+width/scale+20;
-    const active=boxes.filter(function(b){return b.x+b.w>=left&&b.x<=right;});
-    if(context)active.push(context);
-    const ink=union(active);
-    if(!ink)return null;
-    const top=ink.y-4,bottom=ink.y+ink.h+4;
-    scale=Math.max(fullScale,Math.min(targetScale,available/(bottom-top)));
-    const fittedHeight=available/scale;
-    window={start:start,end:start+cellWidth,left:left,right:right,
-     top:top-(fittedHeight-(bottom-top))/2,height:fittedHeight,scale:scale,
-     inkTop:ink.y,inkBottom:ink.y+ink.h,staffSpace:10*scale};
+   let scale=fullScale,f=null;
+   // Re-evaluate at the final painted scale: both the viewport width in SVG
+   // units and the offset of the fixed reference line depend on that scale.
+   for(let pass=0;pass<8;pass++){
+    f=frame(start,scale);
+    if(!f.ink)return null;
+    const desired=Math.max(fullScale,Math.min(targetScale,available/(f.ink.h+8)));
+    if(Math.abs(desired-scale)<.0000001)break;
+    scale=desired;
    }
-   windows.push(window);
+   // Never accept a camera based only on the previous iteration's envelope.
+   // If an anchor shift exposes ink, fall back monotonically until it fits.
+   for(let pass=0;pass<8;pass++){
+    f=frame(start,scale);
+    if(f.ink.h+8<=available/scale+.000001)break;
+    const safer=Math.max(fullScale,Math.min(scale,available/(f.ink.h+8)));
+    if(Math.abs(safer-scale)<.0000001){scale=fullScale;break;}
+    scale=safer;
+   }
+   f=frame(start,scale);
+   const ink=f.ink,fit=available/scale;
+   windows.push({start:start,end:start+cellWidth,left:f.left,right:f.right,
+    anchorPx:f.anchorPx,top:ink.y-4-(fit-(ink.h+8))/2,height:fit,scale:scale,
+    inkTop:ink.y,inkBottom:ink.y+ink.h,staffSpace:10*scale});
   }
   return {bounds:global.slice(),cellWidth:cellWidth,windows:windows,boxes:boxes,
-   fullScale:fullScale,width:width,height:height,current:-1};
+   firstX:firstX,fullScale:fullScale,width:width,height:height,current:-1};
  }
  function select(model,x){return Math.max(0,Math.min(model.windows.length-1,Math.floor((x-model.bounds[0])/model.cellWidth)));}
  function inspect(model,index){

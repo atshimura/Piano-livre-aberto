@@ -297,7 +297,8 @@
      viewport.clientHeight>240||studyAnalysis.staffSpace>=6)return;
   const geometry=StudyWindow.collect(svg),vb=svg.viewBox.baseVal;
   studyWindow=StudyWindow.plan(geometry.boxes,{bounds:[vb.x,vb.y,vb.width,vb.height],
-   width:viewport.clientWidth,height:viewport.clientHeight,context:geometry.context});
+   width:viewport.clientWidth,height:viewport.clientHeight,context:geometry.context,
+   firstX:optical.timeline.xAt(0)});
   if(!studyWindow)return;
   studyWindowRows=EngravingAudit.inspect(osmd.graphic,Infinity);
   if(studyVerticalAdaptation.accepted)studyWindowRows=StudyProfile.shiftEngravingRows(studyWindowRows,2,studyVerticalAdaptation.delta);
@@ -475,6 +476,7 @@
   opticalContextState={svg:svg,overlay:overlay,base:base,measureStarts:measureStarts,
    active:[{clef:null,key:null,time:null},{clef:null,key:null,time:null}],
    viewBox:viewBox,nativeWidth:nativeWidth,nativeHeight:nativeHeight,
+   cameraKey:null,railWidthCss:0,
    railLeft:0,svgStartLeft:svg.getBoundingClientRect().left-viewport.getBoundingClientRect().left,
    braceNode:braceCopy,hasBrace:!!brace};
   Array.from(svg.querySelectorAll('g.vf-clef,g.vf-keysignature,g.vf-timesignature')).forEach(function(node){
@@ -509,7 +511,10 @@
     railLeft:0,svgStartLeft:+state.svgStartLeft.toFixed(2),svgLeft:+movingSvgLeft.toFixed(2),
     scrollLeft:+viewport.scrollLeft.toFixed(2)}));
   }
-  if(!force&&target===opticalContextMeasure)return;
+  const cameraNow=state.svg.viewBox.baseVal;
+  const cameraKey=[cameraNow.x,cameraNow.y,cameraNow.width,cameraNow.height,opticalDisplayScale].join(':');
+  if(!force&&target===opticalContextMeasure&&cameraKey===state.cameraKey)return;
+  state.cameraKey=cameraKey;
   opticalContextMeasure=target;
   state.active=[{clef:null,key:null,time:null},{clef:null,key:null,time:null}];
   for(let index=0;index<=target;index++){
@@ -523,6 +528,7 @@
   }
   while(state.overlay.firstChild)state.overlay.removeChild(state.overlay.firstChild);
   if(state.braceNode)state.overlay.appendChild(state.braceNode.cloneNode(true));
+  let railEnd=0;
   state.base.forEach(function(staff,staffIndex){
    if(!staff)return;
    const lines=staff.line.cloneNode(true);
@@ -537,6 +543,7 @@
    // blank strip over directions, dynamics or technique markings.
    const end=Math.max(clef?slots.clef+clef.width:0,
     key?slots.key+key.width:0,time?slots.time+time.width:0);
+   railEnd=Math.max(railEnd,end+8);
    const matte=lines.querySelector('rect');
    if(matte)matte.setAttribute('width',String(Math.max(0,end+4-state.viewBox.x)));
    ['clef','key','time'].forEach(function(kind){
@@ -553,7 +560,11 @@
   const viewportRect=viewportNow;
   rail.style.left='0px';
   rail.style.top=Math.max(0,source.top-viewportRect.top)+'px';
-  rail.style.width=Math.min(viewport.clientWidth,130*opticalDisplayScale)+'px';
+  // Never crop a new key/time signature at the former fixed 130-unit rail.
+  // The camera and the pinned SVG must share exactly the same vertical box.
+  rail.style.width=Math.min(viewport.clientWidth,
+   Math.max(130,railEnd-camera.x)*opticalDisplayScale)+'px';
+  state.railWidthCss=parseFloat(rail.style.width);
   const camera=state.svg.viewBox.baseVal,cameraHeight=camera.height*opticalDisplayScale;
   rail.style.height=cameraHeight+'px';
   state.overlay.setAttribute('viewBox',[camera.x,camera.y,camera.width,camera.height].join(' '));
@@ -1033,7 +1044,7 @@
  }
  window.PianoNotation={
    load:render,
-   analysis:function(){return {windowPlan:studyWindow?{windows:studyWindow.windows,current:studyWindow.current,fullScale:studyWindow.fullScale}:null,profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,layoutAdaptation:studyVerticalAdaptation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
+   analysis:function(){return {context:opticalContextState?{measure:opticalContextMeasure+1,railWidthCss:opticalContextState.railWidthCss,sourceMeasures:opticalContextState.active.map(function(a){return {clef:a.clef&&a.clef.sourceMeasure,key:a.key&&a.key.sourceMeasure,time:a.time&&a.time.sourceMeasure};})}:null,windowPlan:studyWindow?{windows:studyWindow.windows,current:studyWindow.current,fullScale:studyWindow.fullScale}:null,profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,layoutAdaptation:studyVerticalAdaptation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
    seek:function(beat,animated,bpm,playing){
     if(freeLayout)return;seekBeat=beat;
     if(studyProof){opticalSeek(beat,bpm,!!playing);return;}

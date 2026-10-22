@@ -10,10 +10,18 @@ assert(m.windows.some(w=>w.scale<m.windows[0].scale),'distant extremes must redu
 for(let x=0;x<10000;x+=13){
  const i=W.select(m,x),w=m.windows[i],v=W.inspect(m,i);
  assert.equal(v.clipped,0,'no visible primitive may be clipped');
- assert(w.left<=x-(Math.min(738*.4,130*w.scale+12)+53)/w.scale,'left of viewport guarded');
- assert(w.right>=x+738/w.scale,'right of viewport guarded');
+ assert(w.left<=x-w.anchorPx/w.scale,'left of viewport guarded');
+ assert(w.right>=x+(738-w.anchorPx)/w.scale,'right of viewport guarded');
  assert(w.height*w.scale<=188.000001,'both staves fit with uniform scale');
  assert(w.scale>=m.fullScale,'window cannot be smaller than complete fit');
 }
+// The reference-line margin changes the visible horizontal envelope. The
+// planner must retain all ink while avoiding offscreen extremes.
+const refined=W.plan(boxes,{bounds:[0,-4,10000,400],width:738,height:196,
+ context:{x:0,y:90,w:100,h:170},firstX:550});
+for(let i=0;i<refined.windows.length;i++)
+ assert.equal(W.inspect(refined,i).clipped,0,'anchored camera clips ink');
+assert(refined.windows.some((w,i)=>w.scale>m.windows[i].scale+.0001),
+ 'eliminating surplus right-side guard should recover local readability');
 assert.equal(W.select(m,-1),0);assert.equal(W.select(m,1e9),m.windows.length-1);
 console.log('STUDY_WINDOW_PASS');

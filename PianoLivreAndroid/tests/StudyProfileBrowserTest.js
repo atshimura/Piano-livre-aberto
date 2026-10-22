@@ -120,6 +120,18 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   assert.equal(report.analysis.profile.notes,item.events.length+graceCount,item.name+' main and grace pitch count');
   const graphic=report.analysis.notes.filter(n=>!n.grace);
   assert.equal(graphic.length,item.events.length,item.name+' graphical note count');
+  if(item.name.endsWith('named-voices-ties.xml')){
+   const map=report.analysis.mapping;
+   assert.equal(map.graphicalNotes,4,'all tied unisons are engraved');
+   assert.equal(map.nativeEvents,4,'both named native voices and continuations exist');
+   assert.equal(map.matched,0,'unknown graphical voice IDs cannot be guessed');
+   assert.equal(map.reasons.ambiguous,4,'ambiguous homophonic heads must be flagged');
+   assert.equal(map.unmatchedNative,4,'unverified voices remain unassigned');
+   assert(report.analysis.geometry.alerts.includes('native-mapping'),
+    'do not hide ambiguous mapping warning');
+   assert.deepEqual([...new Set(item.events.map(e=>e.voice))].sort(),['lower','upper'],
+    'fixture explicitly has two distinct named voices');
+  }
   const signature=e=>JSON.stringify([Math.round(e.beat*1e6),Math.round(e.length*1e6),e.midi,e.staff,e.measure,e.step||e.writtenStep,e.octave===undefined?e.writtenOctave:e.octave]);
   assert.deepEqual(graphic.map(signature).sort(),item.events.map(signature).sort(),item.name+' complete pitch/octave/duration multiset');
   const dimensions=[];
