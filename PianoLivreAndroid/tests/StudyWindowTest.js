@@ -21,7 +21,13 @@ const refined=W.plan(boxes,{bounds:[0,-4,10000,400],width:738,height:196,
  context:{x:0,y:90,w:100,h:170},firstX:550});
 for(let i=0;i<refined.windows.length;i++)
  assert.equal(W.inspect(refined,i).clipped,0,'anchored camera clips ink');
-assert(refined.windows.some((w,i)=>w.scale>m.windows[i].scale+.0001),
- 'eliminating surplus right-side guard should recover local readability');
+const edgeBoxes=[{x:0,y:95,w:10000,h:210},{x:1940,y:0,w:10,h:370}];
+const common={bounds:[0,0,10000,400],width:738,height:196};
+const surplus=W.plan(edgeBoxes,Object.assign({},common,{firstX:0}));
+const anchored=W.plan(edgeBoxes,Object.assign({},common,{firstX:550}));
+assert(anchored.windows[0].scale>surplus.windows[0].scale+.001,
+ 'a glyph beyond the actual right viewport must not shrink the opening');
+for(const sample of anchored.windows)assert(sample.staffSpace>=10*anchored.fullScale,
+ 'an anchored window cannot shrink below full-score fit');
 assert.equal(W.select(m,-1),0);assert.equal(W.select(m,1e9),m.windows.length-1);
 console.log('STUDY_WINDOW_PASS');
