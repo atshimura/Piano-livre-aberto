@@ -64,7 +64,7 @@
    return !(item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&q.w>lineSpace*20&&q.h<lineSpace*.2);
   });}
   const topNodes=nodes(upper);
-  function connector(item){return item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&item.box.w<lineSpace*1.5&&item.box.h>lineSpace*2;}
+  function connector(item){return item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&item.box.w<lineSpace*1.5&&item.box.h>lineSpace*1.5;}
   const originalTransform=lower.getAttribute('transform');
   function setDelta(delta){
    if(!delta){if(originalTransform===null)lower.removeAttribute('transform');else lower.setAttribute('transform',originalTransform);return;}
