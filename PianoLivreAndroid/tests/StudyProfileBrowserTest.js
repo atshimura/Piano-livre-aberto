@@ -31,6 +31,8 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   return {same,changed,intact,error:window.testError,done:window.testDone,analysis:analysis,
     chordLabels:chordLabels,message:window.presentationMessage};
   },item);
+  if(/(canon-in-d|fur-elise-easy-ver|gymnopedie-no-1-satie)\.mxl$/.test(item.name))
+   await page.screenshot({path:'../docs/evidence/study-profile/'+path.basename(item.name)+'.738x220.initial.png'});
   try{
   assert(report.same&&report.changed&&report.intact,item.name+' content invalidation/source preservation');
   console.log('STUDY_CORPUS_FILE '+item.name);

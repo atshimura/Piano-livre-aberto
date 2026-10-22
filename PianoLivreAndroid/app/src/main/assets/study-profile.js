@@ -57,6 +57,21 @@
   Array.from(doc.getElementsByTagName('words')).forEach(function(n){if(profile.hiddenTypes.indexOf(wordKind(n.textContent))>=0)n.parentNode.removeChild(n);});
   return new XMLSerializer().serializeToString(doc);
  }
+ function presentationWithOptions(xml,profile,options){
+  const presentationXml=presentation(xml,profile);
+  if(!options||options.repositionDynamicsAbove!==true)return {xml:presentationXml,repositionedDynamics:0};
+  const doc=new DOMParser().parseFromString(presentationXml,'application/xml');
+  let repositionedDynamics=0;
+  Array.from(doc.getElementsByTagName('direction')).forEach(function(direction){
+   if(direction.getElementsByTagName('dynamics').length&&direction.getAttribute('placement')!=='above'){
+    direction.setAttribute('placement','above');repositionedDynamics++;
+    Array.from(direction.getElementsByTagName('dynamics')).forEach(function(node){
+     node.removeAttribute('default-y');node.removeAttribute('relative-y');
+    });
+   }
+  });
+  return {xml:new XMLSerializer().serializeToString(doc),repositionedDynamics:repositionedDynamics};
+ }
  function inspectSvg(svg){
   const vb=svg.viewBox.baseVal,ink=svg.getBBox(),rect=svg.getBoundingClientRect();
   const inkClipped=ink.x<vb.x-.5||ink.y<vb.y-.5||ink.x+ink.width>vb.x+vb.width+.5||ink.y+ink.height>vb.y+vb.height+.5;
@@ -143,10 +158,11 @@
   if(analysis.hiddenChordLabels&&analysis.hiddenChordLabels.length){
    text+='Cifras ocultadas por colisão geométrica: '+analysis.hiddenChordLabels.map(function(item){return item.text;}).join(', ')+'. Consulte Partitura Livre. ';
   }
+  if(analysis.repositionedDynamics)text+='Dinâmicas reposicionadas acima na visualização estreita. ';
   if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
   return text;
  }
- const api={applyChordCollisionPolicy:applyChordCollisionPolicy,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
+ const api={applyChordCollisionPolicy:applyChordCollisionPolicy,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);

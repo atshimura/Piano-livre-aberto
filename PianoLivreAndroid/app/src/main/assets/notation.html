@@ -643,8 +643,16 @@
   }
   const proofStarted=performance.now();
   const originalXml=xml;
+  let repositionedDynamics=0;
   try{
-   if(studyProof){studyProfile=StudyProfile.analyze(originalXml);xml=StudyProfile.presentation(originalXml,studyProfile);}
+   if(studyProof){
+    studyProfile=StudyProfile.analyze(originalXml);
+    const presentation=StudyProfile.presentationWithOptions(originalXml,studyProfile,{
+     repositionDynamicsAbove:viewport.clientHeight<=240&&window.__testDisableStudyVerticalAdaptation!==true
+    });
+    xml=presentation.xml;repositionedDynamics=presentation.repositionedDynamics;
+    if(repositionedDynamics)console.log('STUDY_DYNAMICS_REPOSITIONED '+JSON.stringify({count:repositionedDynamics,placement:'above',reason:'viewport baixo; preservado conteúdo dinâmico'}));
+   }
    if(!window.opensheetmusicdisplay){throw new Error('Motor musical indisponível');}
    if(studyProof)console.log('POC_OSMD_LOAD_BEGIN '+JSON.stringify({xmlLength:xml.length,
     nativeEvents:lastNativeEvents.length,viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight}));
@@ -756,6 +764,7 @@
      const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
      refreshStudyAnalysis(svg);
      studyAnalysis.hiddenChordLabels=hiddenChordLabels;
+     studyAnalysis.repositionedDynamics=repositionedDynamics;
      studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
      if(hiddenChordLabels.length)console.log('STUDY_CHORD_LABELS_HIDDEN '+JSON.stringify(hiddenChordLabels));
      if(studyAnalysis.textNotePairs.length)console.log('STUDY_TEXT_NOTE_GEOMETRY '+JSON.stringify(studyAnalysis.textNotePairs));
