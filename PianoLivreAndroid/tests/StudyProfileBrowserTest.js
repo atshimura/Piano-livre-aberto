@@ -48,6 +48,16 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   if(item.name.endsWith('fur-elise-easy-ver.mxl')){
    const target=report.analysis.notes.find(n=>n.measure===13&&n.beat===36&&n.midi===56&&n.staff===2);
    assert(target,'Für Elise regression note G-sharp 3 at beat 36 must be present');
+   const glyphDiagnostics=await page.evaluate(()=>{
+    const text=document.querySelectorAll('#score svg text')[5],canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+    let extent=null,range=null;
+    try{const b=text.getExtentOfChar(0);extent=[b.x,b.y,b.width,b.height];}catch(e){extent={error:e.name+': '+e.message};}
+    try{const r=document.createRange();r.selectNodeContents(text);range=Array.from(r.getClientRects()).map(b=>[b.x,b.y,b.width,b.height]);}catch(e){range={error:e.name+': '+e.message};}
+    ctx.font=getComputedStyle(text).font;const m=ctx.measureText(text.textContent.trim());
+    return {font:ctx.font,bbox:(()=>{const b=text.getBBox();return [b.x,b.y,b.width,b.height];})(),extent,range,
+      charCount:text.getNumberOfChars(),start:(()=>{const p=text.getStartPositionOfChar(0);return [p.x,p.y];})(),canvas:{left:m.actualBoundingBoxLeft,right:m.actualBoundingBoxRight,ascent:m.actualBoundingBoxAscent,descent:m.actualBoundingBoxDescent}};
+   });
+   console.log('STUDY_TEXT_GLYPH_DIAGNOSTICS '+JSON.stringify(glyphDiagnostics));
    const textX=await page.evaluate(()=>{
     const svg=document.querySelector('#score svg'),v=document.getElementById('viewport'),text=svg.querySelectorAll('text')[5];
     if(!text||text.textContent.trim()!=='p')throw Error('Für Elise beat-36 dynamic annotation not found');
