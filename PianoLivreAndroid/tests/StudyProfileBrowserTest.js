@@ -131,6 +131,15 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
     'do not hide ambiguous mapping warning');
    assert.deepEqual([...new Set(item.events.map(e=>e.voice))].sort(),['lower','upper'],
     'fixture explicitly has two distinct named voices');
+   // The temporal parser is a separately checked recovery path, not a
+   // fabricated one-to-one assignment to OSMD's indistinguishable heads.
+   const temporal=await page.evaluate(xml=>TemporalNotation.parse(xml).notes
+    .filter(n=>!n.grace).map(n=>({beat:n.at,length:n.dur,
+     midi:12*(n.oct+1)+({C:0,D:2,E:4,F:5,G:7,A:9,B:11})[n.step]+n.alter,
+     staff:n.staff})),item.xml);
+   const ts=e=>JSON.stringify([Math.round(e.beat*1e6),Math.round(e.length*1e6),e.midi,e.staff]);
+   assert.deepEqual(temporal.map(ts).sort(),item.events.map(ts).sort(),
+    'temporal alternative must preserve every named-voice onset and tie');
   }
   const signature=e=>JSON.stringify([Math.round(e.beat*1e6),Math.round(e.length*1e6),e.midi,e.staff,e.measure,e.step||e.writtenStep,e.octave===undefined?e.writtenOctave:e.octave]);
   assert.deepEqual(graphic.map(signature).sort(),item.events.map(signature).sort(),item.name+' complete pitch/octave/duration multiset');
@@ -236,6 +245,89 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   await page.screenshot({path:'../docs/evidence/study-profile/gymnopedie.window-'+label+'.738x196.png'});
  }
 
+ // Comparative B1 captures: opening, middle, first extreme and final
+ // extreme for each requested device-like CSS viewport. A screenshot is
+ // only evidence of Chromium geometry, never physical readability.
+ const b1Views=[],positions=[['opening',0],['middle',110],['extreme',181],['ending',223]];
+ for(const size of [{width:738,height:196},{width:738,height:351},{width:883,height:409}]){
+  await page.setViewportSize(size);
+  await page.evaluate(item=>{window.testDone=false;window.testError=null;
+   PianoNotation.load(item.xml,0,'engraving-poc',item.events);},gym);
+  await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+  for(const [label,beat] of positions){
+   await page.evaluate(async t=>{PianoNotation.seek(t,false,100,false);
+    await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},beat);
+   const row=await page.evaluate(()=>{
+    const v=document.getElementById('viewport'),svg=document.querySelector('#score svg');
+    const a=PianoNotation.analysis(),vr=v.getBoundingClientRect(),sr=svg.getBoundingClientRect();
+    const rail=document.getElementById('optical-context-rail'),rr=rail.getBoundingClientRect();
+    const all=Array.from(svg.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline'));
+    const clipped=all.filter(n=>{
+     if(getComputedStyle(n).visibility==='hidden'||n.closest('#piano-optical-study-cues'))return false;
+     const b=n.getBoundingClientRect();
+     return b.right>vr.left&&b.left<vr.right&&(b.top<vr.top-.5||b.bottom>vr.bottom+.5);
+    });
+    return {staffSpace:a.geometry.staffSpace,scale:a.geometry.staffSpace/10,
+     camera:a.geometry.window||null,viewBox:svg.getAttribute('viewBox'),
+     viewport:[v.clientWidth,v.clientHeight],painted:[sr.width,sr.height],
+     rail:[rr.left,rr.top,rr.width,rr.height],scrollTop:v.scrollTop,
+     context:a.context,clipped:clipped.length,
+     mapping:a.mapping&&a.mapping.matched};
+   });
+   assert.equal(row.scrollTop,0,'no vertical scroll in '+label);
+   assert.equal(row.clipped,0,'painted glyph clipped in '+label+' '+size.height);
+   assert.equal(row.mapping,gym.events.length,'musical mapping in '+label);
+   assert(row.painted[1]<=size.height+.5,'window height within viewport');
+   assert(row.context&&row.context.measure>=1,'pinned context missing');
+   const file='gymnopedie.window-'+label+'.'+size.width+'x'+size.height+'.png';
+   await page.screenshot({path:'../docs/evidence/study-profile/'+file});
+   b1Views.push({size,label,beat,file,...row});
+  }
+ }
+ fs.writeFileSync('../docs/evidence/study-profile/b1-viewport-comparison.json',
+  JSON.stringify({sourceSha,checkoutSha,scope:'Chromium Playwright CSS viewports; no physical acceptance',
+   views:b1Views},null,2));
+
+ // Named context-change corpus fixture tests clefs, key signatures and time
+ // signatures at exact measure boundaries, including backward seeks and
+ // height-only resizing, with the pinned rail aligned to the camera.
+ const changeFixture=corpus.find(item=>item.name.endsWith('engraving-context-change.musicxml'));
+ assert(changeFixture,'context-change MusicXML fixture required');
+ const contextEvidence=[];
+ for(const size of [{width:738,height:196},{width:883,height:409}]){
+  await page.setViewportSize(size);
+  await page.evaluate(item=>{window.testDone=false;window.testError=null;
+   PianoNotation.load(item.xml,0,'engraving-poc',item.events);},changeFixture);
+  await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+  for(const [measure,beat] of [[1,0],[2,4],[3,7],[2,4],[1,0]]){
+   await page.evaluate(async t=>{PianoNotation.seek(t,false,100,false);
+    await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},beat);
+   const proof=await page.evaluate(()=>{
+    const a=PianoNotation.analysis(),rail=document.getElementById('optical-context-rail');
+    const railBox=rail.getBoundingClientRect(),v=document.getElementById('viewport').getBoundingClientRect();
+    const svg=document.querySelector('#score svg').getBoundingClientRect();
+    const symbols=Array.from(rail.querySelectorAll('.vf-clef,.vf-keysignature,.vf-timesignature'));
+    const cropped=symbols.filter(n=>{const b=n.getBoundingClientRect();
+     return b.width>0&&(b.left<railBox.left-.7||b.right>railBox.right+.7||
+      b.top<railBox.top-.7||b.bottom>railBox.bottom+.7);}).map(n=>n.getAttribute('class'));
+    return {context:a.context,rail:[railBox.left,railBox.top,railBox.width,railBox.height],
+     svgTop:svg.top,viewportTop:v.top,cropped,symbols:symbols.length,
+     scrollTop:document.getElementById('viewport').scrollTop};
+   });
+   assert.equal(proof.context&&proof.context.measure,measure,'musical context at beat '+beat);
+   assert(proof.symbols>=2,'active clefs missing at beat '+beat);
+   assert.equal(proof.cropped.length,0,'context symbols cropped by pinned rail at '+beat+
+    ': '+JSON.stringify(proof));
+   assert.equal(proof.scrollTop,0,'context cannot scroll vertically');
+   assert(Math.abs(proof.rail[1]-proof.viewportTop-Math.max(0,proof.svgTop-proof.viewportTop))<2,
+    'pinned rail and score must share vertical origin');
+   const file='context-change.measure-'+measure+'.beat-'+beat+'.'+size.width+'x'+size.height+'.png';
+   await page.screenshot({path:'../docs/evidence/study-profile/'+file});
+   contextEvidence.push({size,measure,beat,file,...proof});
+  }
+ }
+ fs.writeFileSync('../docs/evidence/study-profile/b1-context-transitions.json',
+  JSON.stringify({sourceSha,checkoutSha,scope:'Chromium; not real hardware',contextEvidence},null,2));
  // A zero-width SVG path still paints a stem. It must block unsafe staff
  // compaction; the prior bbox-only filter silently discarded this obstacle.
  await page.evaluate(()=>{
