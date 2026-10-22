@@ -142,7 +142,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    }
   }
  }
- window.__testDisableStudyVerticalAdaptation=false;
+ await page.evaluate(()=>{window.__testDisableStudyVerticalAdaptation=false;});
  // Direct DOM preservation and annotation classification, independent of title.
  await page.evaluate(()=>{const xml='<score-partwise><part><measure><note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><lyric><text>C</text></lyric></note><direction><direction-type><words>rit.</words></direction-type></direction><harmony><root><root-step>C</root-step></root></harmony></measure></part></score-partwise>';const p=StudyProfile.analyze(xml),d=new DOMParser().parseFromString(StudyProfile.presentation(xml,p),'application/xml');if(d.querySelector('lyric')||!d.querySelector('words')||!d.querySelector('harmony'))throw Error('annotation policy');});
  // Real OSMD failure, not a simulated successful fallback.
