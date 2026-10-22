@@ -76,6 +76,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    continue;
   }
   assert(report.done&&!report.error,item.name+' OSMD: '+report.error);
+  assert.equal(report.renderer,'OSMD SVG',item.name+' must be checked through the renderer that actually produced the image');
   if(item.name.endsWith('canon-in-d.mxl')){
    assert(report.analysis.profile.hiddenTypes.includes('words:note-names'),'Canon note-name lists are classified as auxiliary');
    assert(report.analysis.profile.hiddenTypes.includes('words:fingering-list'),'Canon fingering lists are classified as auxiliary');
