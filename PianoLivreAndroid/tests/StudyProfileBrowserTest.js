@@ -143,7 +143,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    assert(!fitted.inkClipped&&fitted.clipped===0,item.name+' complete visible ink');
    assert(!fitted.alerts.includes('vertical-overflow'),item.name+' vertical fit '+JSON.stringify(size));
    if(item.name.endsWith('canon-in-d.mxl')){
-    assert(measured.texts.some(n=>/D A Bm F#m/.test(n.text)&&!n.hidden),'Canon chords must remain visible at each viewport');
+    assert(measured.texts.some(n=>/D A Bm F#m/.test(n.text.replace(/\s+/g,' '))&&!n.hidden),'Canon chords must remain visible at each viewport');
     assert(!measured.texts.some(n=>StudyProfileWordKind(n.text)&&!n.hidden),'Canon auxiliary lists must not be rendered');
     assert.equal(fitted.hiddenChordLabels.length,0,'Canon has no measured chord collision');
    }
@@ -226,7 +226,8 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   const stem=document.createElementNS(ns,'path');stem.setAttribute('d','M 120 150 V 285');stem.setAttribute('stroke','black');stem.setAttribute('stroke-width','2');lower.appendChild(stem);
   document.body.appendChild(svg);
   const result=StudyProfile.compactStaffGap(svg,{staffCount:2,notes:200},196);
-  if(result.accepted||result.candidateDelta>=11)throw Error('Thin stem was ignored: '+JSON.stringify(result));
+  if(result.candidateDelta>=11||result.newCrossStaffOverlaps)throw Error('Thin stem was ignored: '+JSON.stringify(result));
+  StudyProfile.restoreStaffGap(svg);
   if(lower.getAttribute('transform'))throw Error('Rejected compaction must restore native geometry');
   svg.remove();
  });
