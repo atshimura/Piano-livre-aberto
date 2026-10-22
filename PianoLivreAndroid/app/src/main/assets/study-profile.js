@@ -64,7 +64,6 @@
    return !(item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&q.w>lineSpace*20&&q.h<lineSpace*.2);
   });}
   const topNodes=nodes(upper);
-  function connector(item){return item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&item.box.w<screenLineSpace*1.5&&item.box.h>screenLineSpace*1.4;}
   const originalTransform=lower.getAttribute('transform');
   function setDelta(delta){
    if(!delta){if(originalTransform===null)lower.removeAttribute('transform');else lower.setAttribute('transform',originalTransform);return;}
@@ -82,11 +81,13 @@
     while(lowerStart<lowerSorted.length&&lowerSorted[lowerStart].box.x+lowerSorted[lowerStart].box.w<=a.x+.5)lowerStart++;
     for(let k=lowerStart;k<lowerSorted.length&&lowerSorted[k].box.x<a.x+a.w-.5;k++){
     const lowerItem=lowerSorted[k],b=lowerItem.box;
-    // OSMD places a separate vertical barline path in each staff. Once the
-    // lower staff moves, those two pieces overlap by design to remain a
-    // continuous barline. Other connector/note, connector/text and symbol
-    // intersections remain safety blockers.
-    if(connector(upperItem)&&connector(lowerItem))continue;
+    // OSMD may draw the two parts of one vertical barline as separate thin
+    // SVG shapes. Preserve their connection while the lower part moves; only
+    // exempt a shared x-aligned pair where one segment spans the staff gap.
+    const sharedBarline=a.w<screenLineSpace*1.5&&b.w<screenLineSpace*1.5&&
+     Math.abs((a.x+a.w/2)-(b.x+b.w/2))<screenLineSpace*.5&&
+     Math.max(a.h,b.h)>screenLineSpace*8&&Math.min(a.h,b.h)>screenLineSpace*1.4;
+    if(sharedBarline)continue;
     const x=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
     if(x<=.5)continue;
     const y=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);
