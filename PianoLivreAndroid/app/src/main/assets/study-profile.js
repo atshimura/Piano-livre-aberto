@@ -289,9 +289,10 @@
  function applyDynamicCollisionPolicy(svg){
   if(!svg)return [];
   const dynamic=/^(?:p{1,5}|f{1,5}|mp|mf|fp|pf|sf|sfp|sfpp|sfz|sffz|fz|rfz|n)$/i;
-  const adjustments=[];
+  const adjustments=[],visited=new Set();
   inspectSvg(svg).textNotePairs.forEach(function(pair){
-   if(pair.chord||!dynamic.test(pair.text))return;
+   if(pair.chord||!dynamic.test(pair.text)||visited.has(pair.textIndex))return;
+   visited.add(pair.textIndex);
    const node=svg.querySelectorAll('text')[pair.textIndex],matrix=node&&node.getScreenCTM();
    if(!node||!matrix)return;
    const scaleY=Math.hypot(matrix.b,matrix.d);
@@ -346,7 +347,7 @@
   if(analysis.hiddenChordLabels&&analysis.hiddenChordLabels.length){
    text+='Cifras ocultadas por colisão geométrica: '+analysis.hiddenChordLabels.map(function(item){return item.text;}).join(', ')+'. Consulte Partitura Livre. ';
   }
-  if(analysis.repositionedDynamics)text+='Dinâmicas reposicionadas acima na visualização estreita. ';
+  if(analysis.repositionedDynamics)text+='Dinâmicas reposicionadas na apresentação do Estudo. ';
   if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
   return text;
  }
