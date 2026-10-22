@@ -27,11 +27,24 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    for(let i=0;i<300&&!window.testDone&&!window.testError;i++)await new Promise(r=>setTimeout(r,50));
   const analysis=PianoNotation.analysis();
   const svg=document.querySelector('#score svg');
+  const targetPairs=analysis.geometry.textNotePairs.map(pair=>{
+    const rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+    const rawX=vb.x+(pair.noteBox[0]+pair.noteBox[2]/2-rect.left)*vb.width/rect.width;
+    const rawY=vb.y+(pair.noteBox[1]+pair.noteBox[3]/2-rect.top)*vb.height/rect.height;
+    const note=analysis.notes.filter(n=>n.headBox).map(n=>({n,d:Math.hypot(n.headBox[0]+n.headBox[2]/2-rawX,n.headBox[1]+n.headBox[3]/2-rawY)})).sort((a,b)=>a.d-b.d)[0];
+    return Object.assign({},pair,{nearbyNote:note?{beat:note.n.beat,midi:note.n.midi,step:note.n.step||note.n.writtenStep,octave:note.n.octave===undefined?note.n.writtenOctave:note.n.octave,staff:note.n.staff,measure:note.n.measure,geometryDistanceSvg:note.d}:null});
+  });
   const chordLabels=svg?Array.from(svg.querySelectorAll('text')).map(n=>({text:(n.textContent||'').trim(),hidden:n.style.visibility==='hidden'})).filter(n=>StudyProfile.isChordLabel(n.text)):[];
-  return {same,changed,intact,error:window.testError,done:window.testDone,analysis:analysis,
+  return {same,changed,intact,error:window.testError,done:window.testDone,analysis:analysis,textNotePairs:targetPairs,
     renderer:svg?'OSMD SVG':'none',
     chordLabels:chordLabels,message:window.presentationMessage};
   },item);
+  if(item.name.endsWith('fur-elise-easy-ver.mxl')&&report.textNotePairs.length){
+   const target=report.textNotePairs[0];
+   await page.evaluate(x=>{const v=document.getElementById('viewport');v.scrollLeft=Math.max(0,x-100);},target.textBox[0]);
+   await page.screenshot({path:'../docs/evidence/study-profile/fur-elise-text-note-target.png'});
+   console.log('STUDY_FUR_ELISE_TEXT_NOTE_TARGET '+JSON.stringify(target));
+  }
   if(/(canon-in-d|fur-elise-easy-ver|gymnopedie-no-1-satie)\.mxl$/.test(item.name))
    await page.screenshot({path:'../docs/evidence/study-profile/'+path.basename(item.name)+'.738x220.initial.png'});
   try{

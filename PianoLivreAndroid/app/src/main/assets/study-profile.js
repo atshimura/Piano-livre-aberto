@@ -52,12 +52,13 @@
   const available=Math.max(1,viewportHeight-8),initialSpace=Number(svg.dataset.opticalStaffSpaceCss);
   result.beforeStaffSpace=initialSpace;result.staffGapSpaces=gap/lineSpace;
   if(!(initialSpace>0&&initialSpace<6))return Object.assign(result,{status:'not-needed'});
-  // Leave a six-space optical moat between staves. OSMD's own engraving
+  // Leave a five-space optical moat between staves. OSMD's own engraving
   // geometry is retained inside each staff; the remaining reduction is
   // accepted only when primitive SVG bounds introduce no new cross-staff hit.
-  const maximum=Math.max(0,gap-6*lineSpace);
+  const maximum=Math.max(0,gap-5*lineSpace);
   if(maximum<lineSpace)return Object.assign(result,{status:'insufficient-clearance'});
-  const topNodes=Array.from(upper.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(box).filter(function(q){return q&&q.w>.4&&q.h>.4;});
+  const topNodes=Array.from(upper.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(function(node){return {node:node,box:box(node)};}).filter(function(item){return item.box&&item.box.w>.4&&item.box.h>.4;});
+  function connector(item){return item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&item.box.w<lineSpace*1.5&&item.box.h>lineSpace*2;}
   const originalTransform=lower.getAttribute('transform');
   function setDelta(delta){
    if(!delta){if(originalTransform===null)lower.removeAttribute('transform');else lower.setAttribute('transform',originalTransform);return;}
@@ -65,13 +66,19 @@
   }
   function collisions(delta,collect,baselinePairs){
    setDelta(delta);
-   const low=Array.from(lower.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(box).filter(function(q){return q&&q.w>.4&&q.h>.4;});
+   const low=Array.from(lower.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(function(node){return {node:node,box:box(node)};}).filter(function(item){return item.box&&item.box.w>.4&&item.box.h>.4;});
    let count=0,first=[],pairs=[];
    for(let i=0;i<topNodes.length;i++)for(let j=0;j<low.length;j++){
-    const x=Math.min(topNodes[i].x+topNodes[i].w,low[j].x+low[j].w)-Math.max(topNodes[i].x,low[j].x);
+    // OSMD places a separate vertical barline path in each staff. Once the
+    // lower staff moves, those two pieces overlap by design to remain a
+    // continuous barline. Other connector/note, connector/text and symbol
+    // intersections remain safety blockers.
+    if(connector(topNodes[i])&&connector(low[j]))continue;
+    const a=topNodes[i].box,b=low[j].box;
+    const x=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
     if(x<=.5)continue;
-    const y=Math.min(topNodes[i].y+topNodes[i].h,low[j].y+low[j].h)-Math.max(topNodes[i].y,low[j].y);
-    if(y>.5){count++;const key=i+':'+j;pairs.push(key);if(collect&&first.length<8)first.push({upper:[topNodes[i].x,topNodes[i].y,topNodes[i].w,topNodes[i].h],lower:[low[j].x,low[j].y,low[j].w,low[j].h],overlap:[x,y],newPair:baselinePairs?baselinePairs.indexOf(key)<0:false});}
+    const y=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);
+    if(y>.5){count++;const key=i+':'+j;pairs.push(key);if(collect&&first.length<8)first.push({upper:[a.x,a.y,a.w,a.h],lower:[b.x,b.y,b.w,b.h],overlap:[x,y],newPair:baselinePairs?baselinePairs.indexOf(key)<0:false});}
    }
    return {count:count,first:first,pairs:pairs};
   }
