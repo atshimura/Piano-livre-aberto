@@ -53,7 +53,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
      if(!text)throw Error('Für Elise dynamic p missing from active OSMD SVG');
      const v=document.getElementById('viewport'),r=text.getBoundingClientRect(),x=v.scrollLeft+r.left+r.width/2;
      v.scrollLeft=Math.max(0,x-100);
-     return {centerXCss:x,pairs:StudyProfile.inspectSvg(svg).textNotePairs,adjustments:PianoNotation.analysis().dynamicRepositionDetails||[]};
+     return {centerXCss:x,pairs:StudyProfile.inspectSvg(svg).textNotePairs,adjustments:PianoNotation.analysis().geometry.dynamicRepositionDetails||[]};
     });
     await page.screenshot({path:'../docs/evidence/study-profile/fur-elise-dynamic-beat-36.'+suffix+'.png'});
     return visible;
@@ -61,10 +61,10 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    const beforeDynamic=captureDynamic?await captureDynamic(true,'before'):null;
    const afterDynamic=await captureDynamic(false,'after');
    assert(beforeDynamic.pairs.some(p=>p.text==='p'),'Für Elise baseline must reproduce the text/note collision geometrically');
-   assert(afterDynamic.adjustments.some(a=>a.text==='p'),'Study view must reposition the colliding dynamic, preserving the indication: '+JSON.stringify({beforeDynamic,afterDynamic,adjustments:report.analysis.dynamicRepositionDetails}));
+   assert(afterDynamic.adjustments.some(a=>a.text==='p'),'Study view must reposition the colliding dynamic, preserving the indication: '+JSON.stringify({beforeDynamic,afterDynamic,adjustments:report.analysis.geometry.dynamicRepositionDetails}));
    assert(!afterDynamic.pairs.some(p=>p.text==='p'),'repositioned dynamic must clear the notehead');
    assert(!report.analysis.geometry.alerts.includes('text-note-overlap'),'Für Elise dynamic collision is corrected in Study view');
-   assert(report.analysis.dynamicRepositionDetails.some(a=>a.text==='p'),'analysis must record the Study-only dynamic adjustment');
+   assert(report.analysis.geometry.dynamicRepositionDetails.some(a=>a.text==='p'),'analysis must record the Study-only dynamic adjustment');
    const glyphDiagnostics=await page.evaluate(()=>{
     const text=document.querySelectorAll('#score svg text')[5],canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
     let extent=null,range=null;
