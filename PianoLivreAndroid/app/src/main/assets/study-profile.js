@@ -57,7 +57,13 @@
   // accepted only when primitive SVG bounds introduce no new cross-staff hit.
   const maximum=Math.max(0,gap-5*lineSpace);
   if(maximum<lineSpace)return Object.assign(result,{status:'insufficient-clearance'});
-  const topNodes=Array.from(upper.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(function(node){return {node:node,box:box(node)};}).filter(function(item){return item.box&&item.box.w>.4&&item.box.h>.4;});
+  function nodes(group){return Array.from(group.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(function(node,index){return {node:node,index:index,box:box(node)};}).filter(function(item){
+   const q=item.box;if(!q||q.w<=.4||q.h<=.4)return false;
+   // Long horizontal paths are the five staff rules. They intentionally pass
+   // through every note and are not possible sources of a new collision.
+   return !(item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&q.w>lineSpace*20&&q.h<lineSpace*.2);
+  });}
+  const topNodes=nodes(upper);
   function connector(item){return item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&item.box.w<lineSpace*1.5&&item.box.h>lineSpace*2;}
   const originalTransform=lower.getAttribute('transform');
   function setDelta(delta){
@@ -66,19 +72,26 @@
   }
   function collisions(delta,collect,baselinePairs){
    setDelta(delta);
-   const low=Array.from(lower.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(function(node){return {node:node,box:box(node)};}).filter(function(item){return item.box&&item.box.w>.4&&item.box.h>.4;});
+   const low=nodes(lower);
+   const upperSorted=topNodes.slice().sort(function(a,b){return a.box.x-b.box.x;});
+   const lowerSorted=low.slice().sort(function(a,b){return a.box.x-b.box.x;});
    let count=0,first=[],pairs=[];
-   for(let i=0;i<topNodes.length;i++)for(let j=0;j<low.length;j++){
+   let lowerStart=0;
+   for(let i=0;i<upperSorted.length;i++){
+    const upperItem=upperSorted[i],a=upperItem.box;
+    while(lowerStart<lowerSorted.length&&lowerSorted[lowerStart].box.x+lowerSorted[lowerStart].box.w<=a.x+.5)lowerStart++;
+    for(let k=lowerStart;k<lowerSorted.length&&lowerSorted[k].box.x<a.x+a.w-.5;k++){
+    const lowerItem=lowerSorted[k],b=lowerItem.box;
     // OSMD places a separate vertical barline path in each staff. Once the
     // lower staff moves, those two pieces overlap by design to remain a
     // continuous barline. Other connector/note, connector/text and symbol
     // intersections remain safety blockers.
-    if(connector(topNodes[i])&&connector(low[j]))continue;
-    const a=topNodes[i].box,b=low[j].box;
+    if(connector(upperItem)&&connector(lowerItem))continue;
     const x=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
     if(x<=.5)continue;
     const y=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);
-    if(y>.5){count++;const key=i+':'+j;pairs.push(key);if(collect&&first.length<8)first.push({upper:[a.x,a.y,a.w,a.h],lower:[b.x,b.y,b.w,b.h],overlap:[x,y],newPair:baselinePairs?baselinePairs.indexOf(key)<0:false});}
+    if(y>.5){count++;const key=upperItem.index+':'+lowerItem.index;pairs.push(key);if(collect&&first.length<8)first.push({upper:[a.x,a.y,a.w,a.h],lower:[b.x,b.y,b.w,b.h],overlap:[x,y],newPair:baselinePairs?baselinePairs.indexOf(key)<0:false});}
+    }
    }
    return {count:count,first:first,pairs:pairs};
   }
