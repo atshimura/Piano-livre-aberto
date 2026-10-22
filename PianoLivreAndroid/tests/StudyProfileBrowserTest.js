@@ -27,7 +27,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    for(let i=0;i<300&&!window.testDone&&!window.testError;i++)await new Promise(r=>setTimeout(r,50));
   const analysis=PianoNotation.analysis();
   const svg=document.querySelector('#score svg');
-  const targetPairs=(analysis.geometry&&analysis.geometry.textNotePairs||[]).map(pair=>{
+  const targetPairs=(analysis&&analysis.geometry&&analysis.geometry.textNotePairs||[]).map(pair=>{
     const rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
     const rawX=vb.x+(pair.noteBox[0]+pair.noteBox[2]/2-rect.left)*vb.width/rect.width;
     const rawY=vb.y+(pair.noteBox[1]+pair.noteBox[3]/2-rect.top)*vb.height/rect.height;
