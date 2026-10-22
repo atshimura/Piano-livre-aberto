@@ -209,7 +209,7 @@
     staffSpace=nativeStaffSpace*scale;
     if(lineSets[1]&&lineSets[1].length>=1&&nativeStaffSpace>0){
      const upper=lineSets[0][4].getBBox(),lower=lineSets[1][0].getBBox();
-     staffGapSpaces=((lower.y+lower.height/2)-(upper.y+upper.height/2))/nativeStaffSpace;
+     staffGapSpaces=((lower.y+lower.height/2)-(upper.y+upper.height/2)-(Number(svg.dataset.studyStaffShiftY)||0))/nativeStaffSpace;
     }
    }catch(e){}
   }
@@ -728,7 +728,7 @@
        const compactAudit=StudyProfile.assess(compactRows,Object.assign({},compactGeometry,{availableHeight:viewport.clientHeight}));
        const compactFidelity=Array.isArray(nativeEvents)&&nativeEvents.length
         ?StudyProfile.compare(EngravingAudit.inspect(osmd.graphic,Infinity),nativeEvents):{missing:0,unexpected:0,skipped:true};
-       const safe=!compactGeometry.inkClipped&&!compactAudit.clipped&&compactGeometry.alerts.indexOf('vertical-overflow')<0&&
+       const safe=!compactGeometry.inkClipped&&!compactAudit.clipped&&compactAudit.alerts.indexOf('vertical-overflow')<0&&
         !compactFidelity.missing&&!compactFidelity.unexpected;
        studyVerticalAdaptation=Object.assign({},studyVerticalAdaptation,{status:safe?'compacted':'rejected',accepted:safe,
         beforeHeight:beforeCompactHeight,afterHeight:beforeCompactSvg.getBoundingClientRect().height,
@@ -736,9 +736,7 @@
         inkClipped:compactGeometry.inkClipped,noteheadClipping:compactAudit.clipped,nativeFidelity:compactFidelity,
         reason:safe?null:'ink clipping, vertical overflow, or native-event divergence'});
        if(!safe){
-        const lower=beforeCompactSvg.querySelector('[data-study-y-offset]');
-        if(lower){lower.removeAttribute('transform');delete lower.dataset.studyYOffset;}
-        delete beforeCompactSvg.dataset.studyCompressed;delete beforeCompactSvg.dataset.studyStaffShiftY;
+        StudyProfile.restoreStaffGap(beforeCompactSvg);
         optical=OpticalTimeMap.fromGraphical(osmd.graphic);
         opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
         fitOpticalSvg(beforeCompactSvg);

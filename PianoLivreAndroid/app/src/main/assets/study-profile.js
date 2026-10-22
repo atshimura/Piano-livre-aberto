@@ -90,10 +90,25 @@
   result.rejectedPairs=finalCollision.first;
   if(afterSpace<6||safe<lineSpace){setDelta(0);result.status='insufficient-safe-gain';return result;}
   setDelta(safe);
-  lower.dataset.studyYOffset=String(safe);svg.dataset.studyCompressed='true';svg.dataset.studyStaffShiftY=String(safe);
+  lower.dataset.studyYOffset=String(safe);
+  if(originalTransform!==null)lower.dataset.studyOriginalTransform=originalTransform;
+  svg.dataset.studyOriginalViewBox=[vb.x,vb.y,vb.width,vb.height].join(' ');
+  svg.dataset.studyOriginalNativeHeight=String(svg.dataset.opticalNativeHeight||'');
+  svg.dataset.studyCompressed='true';svg.dataset.studyStaffShiftY=String(safe);
   svg.setAttribute('viewBox',[vb.x,afterInk.y-4,vb.width,afterHeight].join(' '));
   if(svg.dataset.opticalNativeHeight)svg.dataset.opticalNativeHeight=String(afterHeight);
   result.status='compacted';result.accepted=true;result.delta=safe;return result;
+ }
+ function restoreStaffGap(svg){
+  if(!svg)return;
+  const lower=svg.querySelector('[data-study-y-offset]');
+  if(lower){const original=lower.dataset.studyOriginalTransform;
+   if(original===undefined)lower.removeAttribute('transform');else lower.setAttribute('transform',original);
+   delete lower.dataset.studyYOffset;delete lower.dataset.studyOriginalTransform;
+  }
+  if(svg.dataset.studyOriginalViewBox)svg.setAttribute('viewBox',svg.dataset.studyOriginalViewBox);
+  if(svg.dataset.studyOriginalNativeHeight)svg.dataset.opticalNativeHeight=svg.dataset.studyOriginalNativeHeight;
+  ['studyCompressed','studyStaffShiftY','studyOriginalViewBox','studyOriginalNativeHeight'].forEach(function(key){delete svg.dataset[key];});
  }
  function shiftEngravingRows(rows,staff,delta){
   return (rows||[]).map(function(row){if(row.staff!==staff)return row;
@@ -247,7 +262,7 @@
   if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
   return text;
  }
- const api={applyChordCollisionPolicy:applyChordCollisionPolicy,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,compactStaffGap:compactStaffGap,shiftEngravingRows:shiftEngravingRows,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
+ const api={applyChordCollisionPolicy:applyChordCollisionPolicy,restoreStaffGap:restoreStaffGap,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,compactStaffGap:compactStaffGap,shiftEngravingRows:shiftEngravingRows,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);
