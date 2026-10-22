@@ -563,7 +563,7 @@
   // Never crop a new key/time signature at the former fixed 130-unit rail.
   // The camera and the pinned SVG must share exactly the same vertical box.
   rail.style.width=Math.min(viewport.clientWidth,
-   Math.max(130,railEnd-camera.x)*opticalDisplayScale)+'px';
+   Math.max(130,railEnd-cameraNow.x)*opticalDisplayScale)+'px';
   state.railWidthCss=parseFloat(rail.style.width);
   const camera=state.svg.viewBox.baseVal,cameraHeight=camera.height*opticalDisplayScale;
   rail.style.height=cameraHeight+'px';
