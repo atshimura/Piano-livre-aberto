@@ -210,6 +210,20 @@
    const fallback=tightBox(node),value=(node.textContent||'').trim();
    if(!value||typeof node.getStartPositionOfChar!=='function')return fallback;
    try{
+    if(typeof node.getNumberOfChars==='function'&&typeof node.getExtentOfChar==='function'){
+     let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+     for(let i=0;i<node.getNumberOfChars();i++){
+      const glyph=node.getExtentOfChar(i);
+      if(glyph.width<=0||glyph.height<=0)continue;
+      left=Math.min(left,glyph.x);top=Math.min(top,glyph.y);right=Math.max(right,glyph.x+glyph.width);bottom=Math.max(bottom,glyph.y+glyph.height);
+     }
+     const matrix=node.getScreenCTM();
+     if(matrix&&[left,top,right,bottom].every(Number.isFinite)){
+      const points=[[left,top],[right,top],[left,bottom],[right,bottom]].map(function(p){return {x:matrix.a*p[0]+matrix.c*p[1]+matrix.e,y:matrix.b*p[0]+matrix.d*p[1]+matrix.f};});
+      const xs=points.map(function(p){return p.x;}),ys=points.map(function(p){return p.y;});
+      return {left:Math.min.apply(null,xs),right:Math.max.apply(null,xs),top:Math.min.apply(null,ys),bottom:Math.max.apply(null,ys)};
+     }
+    }
     const canvas=document.createElement('canvas'),context=canvas.getContext('2d');
     if(!context)return fallback;
     context.font=getComputedStyle(node).font;context.textAlign='start';context.textBaseline='alphabetic';
