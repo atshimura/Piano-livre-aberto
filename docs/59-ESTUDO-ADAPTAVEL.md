@@ -9,7 +9,7 @@ Branch `feat/analise-estudo-adaptavel`, baseada na main `801543c` (Entrega A, PR
 1. Analisa MusicXML: notas por compasso, quantidade de elementos, vozes/pautas, acidentes, acordes, ligaduras, vigas, quiálteras, repetições, letras, palavras, cifras, dedilhados e marcas de ensaio.
 2. Gera cópia transitória de apresentação, desconsiderando atributos de quebra de sistema/página em `<print>`, sem `<lyric>` e sem listas auxiliares em `<words>` compostas exclusivamente por pelo menos quatro nomes de solfejo ou quatro números de dedos (1–5). Preserva outras palavras, andamento, dinâmica, cifras, dedilhado e instruções de repetição. A interface informa a ocultação e remete à Partitura Livre. O XML original não é regravado.
 3. Entrega um `Document` XML local ao OSMD, evitando sua heurística de tratar strings curtas sem declaração XML como URLs. Renderiza OSMD e usa `EngravingAudit` sem o limite diagnóstico histórico de 96 notas. Examina caixas das cabeças, escala efetiva e reconciliação com os eventos escritos nativos.
-4. Efetua no máximo uma nova gravura pelo OSMD: colisão entre ataques adjacentes amplia os fatores de espaçamento de vozes em 1,5; pauta pequena amplia em 1,25. Mantém escala proporcional, duas pautas e rolagem vertical bloqueada, usando o ajuste existente. Isso reduz compassos visíveis horizontalmente, mas **não aumenta por si o tamanho vertical das notas**. Alertas remanescentes não são declarados resolvidos.
+4. Efetua no máximo uma nova gravura pelo OSMD: colisão entre ataques adjacentes amplia os fatores de espaçamento de vozes em 1,5. Pauta pequena isoladamente não amplia mais o espaçamento horizontal. Em telas baixas, a janela horizontal abaixo ajusta proporcionalmente a escala do SVG completo conforme os símbolos visíveis, sempre com as duas pautas e sem rolagem vertical. Alertas remanescentes não são declarados resolvidos.
 5. O mapa óptico ignora como âncora temporal as pausas de compasso inteiro centralizadas pelo gravador: sua posição visual não representa o começo do compasso. A pausa continua desenhada. Essa regra geral corrige o recuo encontrado no corpus de Für Elise, sem alterar tempos ou notas.
 6. Compara o multiconjunto completo de cabeças escritas (altura, grafia, oitava, beat, duração, pauta e compasso) com os eventos nativos, separando notas de graça. Divergência impede declarar sucesso do OSMD e ativa o aviso/fallback, sem modificar a reprodução.
 7. Mantém relógio, MIDI, Espera/Contínuo/Demonstração, mãos, teclado e trechos nos mecanismos existentes. Partitura Livre recebe o XML completo; temporal continua selecionável. Se a WebView falhar, o fallback realmente ativo é identificado como **Esquemático**, com aviso e possibilidade de tentar novamente os renderizadores.
@@ -32,7 +32,7 @@ Não há pontuação global de complexidade determinando o perfil. O cache é um
 
 ## Limitações explícitas
 
-Caixas são aproximações de contornos; a inspeção de colisões de cabeças adjacentes inclui triagem de textos sobre cabeças e envelope de todos os símbolos, mas não certifica todas as sobreposições de hastes, vigas ou arcos. A densidade estrutural é diagnóstico, não prova de legibilidade. Mais de duas pautas, ornamentos e percursos MusicXML mantêm os limites dos importadores/renderizadores existentes. A gravura pode continuar pequena devido a extremos verticais distantes. A B1 comprime localmente o espaço entre as duas pautas quando a geometria permite, sem janelas de compassos nem recorte horizontal por região. Gymnopédie melhora no viewport baixo, mas segue abaixo do limiar diagnóstico de 6 CSS px; isso não comprova legibilidade editorial ou física. Falhas/alertas remanescentes requerem avaliação visual, temporal alternativo ou correção futura; não remover notas para acomodar a tela.
+Caixas são aproximações de contornos; a inspeção de colisões de cabeças adjacentes inclui triagem de textos sobre cabeças e envelope de todos os símbolos, mas não certifica todas as sobreposições de hastes, vigas ou arcos. A densidade estrutural é diagnóstico, não prova de legibilidade. Mais de duas pautas, ornamentos e percursos MusicXML mantêm os limites dos importadores/renderizadores existentes. A gravura pode continuar pequena devido a extremos verticais distantes. A B1 tenta compactar o espaço entre pautas somente quando há ganho seguro; inclui hastes, barras de conexão e chave na verificação. Quando necessário, usa uma janela horizontal conservadora sobre a gravura completa, sem reescrever compassos. Gymnopédie melhora no viewport baixo, mas segue abaixo do limiar diagnóstico de 6 CSS px; isso não comprova legibilidade editorial ou física. Falhas/alertas remanescentes requerem avaliação visual, temporal alternativo ou correção futura; não remover notas para acomodar a tela.
 
 Não se detecta uma nota musicalmente errada no próprio MusicXML sem referência independente. Comparar XML, Java e OSMD prova consistência entre representações, não fidelidade à composição. Sem testes físicos Realme 7 5G, Lenovo Tab M9 ou Yamaha P-45; não conclui V1.
 
@@ -62,7 +62,9 @@ Histórico de reprovações: `8343b7e` comparava graça com eventos principais; 
 
 Limitações registradas antes da B1: não havia adaptação local para a legibilidade vertical, e Für Elise mantinha alerta conservador. A B1 abaixo substitui esses dois estados; continuam sem certificação integral de colisões de símbolos e permanece o limite histórico de transmissão de 20 mil eventos para o caminho OSMD. Sem testes físicos, sem declarar V1 ou fechar B/C.
 
-## B1 — legibilidade local e resposta a colisões (22/10/2026)
+## Histórico B1 — primeira compactação (22/10/2026)
+
+**Evidência substituída pela revisão abaixo:** a primeira auditoria não incluía a tinta de hastes com bbox de largura zero. Os ganhos desta seção não certificam a segurança da compactação atual. Capturas e runs antigos são mantidos para rastreabilidade.
 
 Continuação incorporada ao próprio PR #51 enquanto ele permanece aberto; a análise geral do PR foi preservada. A fonte e a reprodução continuam intactas: a compressão move somente o grupo gráfico da pauta inferior, recompõe o encaixe com o envelope completo, reposiciona as âncoras ópticas verticais correspondentes e conserva x/beats, claves, armadura, fórmula de compasso e rolagem vertical bloqueada. Não há janela por compassos nem regra por título.
 
@@ -88,10 +90,50 @@ O ganho da Gymnopédie é mensurável, mas limitado: o espaço entre linhas aind
 
 Em desenvolvimento no mesmo PR #51, a partir do HEAD `7f8ac63` (build 39805252472 e emulador 39805252486 aprovados). A auditoria ampliada inclui espessura das hastes e linhas: a compactação anterior ignorava primitivas com largura/altura geométrica zero. Isso invalida a alegação de ausência de novas colisões para todas as hastes na evidência anterior. Barras de conexão e chave precisam acompanhar a distância entre pautas sem deslocar o extremo superior.
 
-Nesta revisão, cifras isoladas passam pela política geométrica; dinâmicas mantêm a posição de origem, exceto colisão efetivamente medida. Pauta pequena, isoladamente, deixa de ampliar o espaçamento horizontal, que alongava ligaduras e piorava o encaixe vertical. Os caminhos de abertura e resize passam pelo mesmo critério de segurança. O diagnóstico de alternativas de gravura OSMD em `layout-probes.json` é exploratório, não aceite. CI do novo SHA ainda pendente; B1 não concluída.
+Nesta revisão, cifras isoladas passam pela política geométrica; dinâmicas mantêm a posição de origem, exceto colisão efetivamente medida. Pauta pequena, isoladamente, deixa de ampliar o espaçamento horizontal, que alongava ligaduras e piorava o encaixe vertical. Os caminhos de abertura e resize passam pelo mesmo critério de segurança. O diagnóstico de alternativas de gravura OSMD em `layout-probes.json` no run exploratório foi usado para comparação, não como aceite; não faz parte do caminho de produção. Os resultados atuais estão abaixo; B1 não concluída.
 
-### Janela horizontal de conteúdo — implementação a validar
+### Janela horizontal de conteúdo — implementação atual
 
 O run 39826905026 (`985671a`) confirmou a reprovação do ganho mínimo ao incluir hastes: apenas apertar pautas não é solução segura. A continuação usa uma câmera local sobre o SVG completo, com escala uniforme e envelopes conservadores de todos os símbolos que cruzam a faixa horizontal em leitura (inclusive ligaduras com extremos fora dela). O contexto das duas pautas participa de todos os envelopes. Os elementos musicais não são removidos, reescritos nem regravados; eventos, x nativo, tempo e fontes permanecem os mesmos. A câmera se atualiza no relógio existente e no deslocamento horizontal manual. A escala é limitada a 7 CSS px por espaço e nunca fica menor que o encaixe integral. Região extrema ainda pode permanecer abaixo de 6 px; não há aceite físico inferido.
 
-O harness passa a gravar cada dimensão após uma abertura independente, confere fidelidade em cada dimensão, percorre todos os beats escritos da Gymnopédie nos dois sentidos e testa resize reversível. A existência desses testes ainda não é resultado: aguardar CI do SHA que contém esta implementação.
+O harness passa a gravar cada dimensão após uma abertura independente, confere fidelidade em cada dimensão, percorre todos os beats escritos da Gymnopédie nos dois sentidos e testa resize reversível. Esses testes passaram no head `1e8ca06` conforme os runs abaixo. Novas execuções devem repetir as verificações no próprio SHA.
+
+
+## Estado verificado da continuação — 22/10/2026
+
+**B1 permanece parcial, em revisão no PR #51.** Código de aplicação e testes aprovados no head `1e8ca06bae8270ad66e8586d5ec731b81ac818ed`: [build/corpus 39828730389](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39828730389) e [emulador 39828730333](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39828730333), ambos `success`. A atualização documental posterior não transforma essas evidências em prova de outro SHA: o [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51) registra o head final e os respectivos workflows. O artifact passa a distinguir head de origem e checkout de integração (`sourceSha`/`checkoutSha`).
+
+### Medidas comparáveis
+
+Valores em CSS px no Chromium 131/Playwright 1.49.1, OSMD 1.9.8. Área útil vertical = viewport menos 8 px; SVG ocupa essa altura. A estimativa de leitura usa apenas distância entre linhas, com limiar diagnóstico experimental de 6 px, sem substituir avaliação humana.
+
+| Partitura | Viewport | Área útil (largura × altura) | Espaço entre linhas | Mapeamento | Alertas após ajuste |
+|---|---|---|---|---|---|
+| Gymnopédie | 738×196 | 738×188 | 5,40241 na abertura; 4,85294–5,40241 no percurso | 469/469 | `small-staff-space` |
+| Gymnopédie | 738×351 | 738×343 | 8,85439 | 469/469 | nenhum |
+| Gymnopédie | 883×409 | 883×401 | 10,35163 | 469/469 | nenhum |
+| Canon em Ré | 738×196 | 738×188 | 6,01637 | 160/160 | nenhum |
+| Canon em Ré | 738×351 | 738×343 | 10,97667 | 160/160 | nenhum |
+| Canon em Ré | 883×409 | 883×401 | 12,83278 | 160/160 | nenhum |
+| Für Elise | 738×196 | 738×188 | 8,57291 | 104/104 | nenhum |
+| Für Elise | 738×351 | 738×343 | 15,61065 | 104/104 | nenhum |
+| Für Elise | 883×409 | 883×401 | 18,27542 | 104/104 | nenhum |
+
+As nove aberturas tiveram zero cabeças cortadas, zero sobreposições de ataques adjacentes, zero colisões texto/cabeça após a política e nenhum overflow vertical. Não equivale a certificar toda combinação de hastes, arcos e vigas. [Medições por arquivo/dimensão e capturas](evidence/study-profile/b1-window/).
+
+**Gymnopédie:** comparação controlada desligado/ligado, mesma fonte e viewport baixo: 4,85313→5,40241 (+11,32%) na abertura. A compactação entre pautas é recusada por ganho seguro insuficiente; o aumento vem da câmera local. São 15 janelas geométricas sobre o SVG integral, com envelopes que incluem espessuras, duas pautas, claves, armadura, fórmula e ligaduras que cruzem a região, mesmo com extremos fora da tela. Não há corte de conteúdo musical da região em leitura. As posições x/beats e o relógio continuam nos mecanismos existentes; somente escala uniforme e enquadramento mudam. Não há alteração de notas, duração, ligaduras, MIDI, trechos ou fonte XML. O retorno a regiões altas reduz a escala, conservando a música completa. O menor valor observado volta a 4,85294; portanto **não está resolvida a legibilidade ao longo de toda a peça em tela baixa**. Escala variável e fluidez precisam de avaliação editorial/física. Telas média/tablet mantêm a gravura integral, sem câmera local.
+
+**Canon:** a origem das listas é `<direction><direction-type><words>` da fonte, não notas extras nem geração de solfejo pelo app. `words:note-names` e `words:fingering-list` são filtrados na cópia transitória. As sequências `D A Bm F#m` e `G D G A` são cifras úteis e permaneceram visíveis nas três dimensões; `hiddenChordLabels=[]`. Crédito Paulo Macedo e andamento também foram preservados. A classificação reconhece cifras isoladas maiúsculas sem confundir a dinâmica `f` com a cifra `F`; ocultação de cifra exige colisão medida. A Partitura Livre continua recebendo a fonte completa.
+
+**Für Elise:** o `p` do compasso 13, beat 36, pauta 2, não é ocultado. O teste localiza o glifo pelo texto e a cabeça por identidade musical G♯3/MIDI 56, mede tinta com a fonte ativa (`actualBoundingBox*` ou métricas de fonte disponíveis) e transforma ambos para coordenadas CSS com a escala efetiva. A caixa SVG de linha tipográfica não é tomada como tinta. Há colisão real reproduzível antes da política, e ausência do par depois. O deslocamento é calculado por dimensão: 5,48 / 6,70 / 7,15 CSS px nas três alturas, respectivamente. Esses valores são o ajuste antes do encaixe final do envelope; não transpor um número fixo entre viewports. Notas e dinâmica permanecem visíveis e não cortadas. [Antes/depois em 738×220](evidence/study-profile/b1-window/).
+
+### Testes e limites de evidência
+
+- Harness executa todos os acessos a `window`/DOM dentro de `page.evaluate` ou `waitForFunction`, no Chromium. O `ReferenceError: window is not defined` não reapareceu; corpus completo concluiu `STUDY_PROFILE_BROWSER_PASS files=27`.
+- Cada dimensão começa por carregamento independente; mapeamento e assinatura musical são conferidos em todas. Foram 23 OSMD e quatro fallbacks temporais explícitos, com eventos integralmente conferidos: `decimal-divisions`, `explicit-dynamics`, `integer-equivalent`, `tempo-sound-offset`. A fixture `named-voices-ties` continua com alerta `native-mapping`; não foi mascarado.
+- Gymnopédie: 376 amostras de beats escritos, ida/volta; caixas reais visíveis verificadas independentemente do planejador, nenhuma tinta verticalmente cortada e 469 notas mapeadas. Envelopes conservadores de arcos podem limitar o ganho. Teste sintético de haste com largura geométrica zero impede compactação insegura.
+- Resize com teclado guia: 351→196→218→351→196, contexto Sol/Fá visível e mapeamento preservado; final idêntico à abertura nova. Não certifica conforto das mudanças de escala durante execução física.
+- Build completo passou JVM, JavaScript, fidelidade MusicXML, reconhecimento/reprodução MIDI, teclado das duas mãos, modos e compilação Android; emulador passou o roteiro e a verificação visual. Os jobs de assinatura permanente/publicação foram ignorados por ser PR. Nenhuma distribuição foi publicada, nenhuma chave acessada ou substituída.
+- Local: testes JS do perfil/janela/navegação/contrato e validador público; o Chromium local não inicia por restrição de socket do ambiente. A prova de navegador e Android vem dos Actions, não de uma aprovação local presumida.
+
+**Para fechar B1:** obter leitura confortável também nas regiões que ainda medem cerca de 4,85 px, avaliar mudanças de escala e revisar editorialmente as capturas. Depois, usuário precisa avaliar presencialmente Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 (legibilidade, fluidez, cursor, mãos, teclado guia, trechos e MIDI). Não houve ensaio físico. Issues #4/#11, B, C e V1 permanecem abertas. Sem merge, nova release, migração de dados, dependência online de execução, alteração de pacote/certificado/versão ou APK de distribuição nesta tarefa.

@@ -12,7 +12,8 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--allow-file-access-from-files'],...(process.env.PIANO_CHROMIUM?{executablePath:process.env.PIANO_CHROMIUM}:{})});
  fs.mkdirSync('../docs/evidence/study-profile',{recursive:true});
  const remoteRequests=[];
- const sourceSha=process.env.GITHUB_SHA||require('child_process').execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+ const checkoutSha=process.env.GITHUB_SHA||require('child_process').execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+ const sourceSha=process.env.PIANO_SOURCE_SHA||checkoutSha;
  const page=await browser.newPage({viewport:{width:738,height:220}}),reports=[],visualComparison=[];
  await page.route(/^https?:/,route=>{remoteRequests.push(route.request().url());return route.abort();});
  await page.goto('file://'+path.resolve('app/src/main/assets/notation.html'));
@@ -155,8 +156,8 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    dimensions.push({size,renderer:'OSMD SVG',geometry:fitted,mapping:measured.mapping,layoutAdaptation:measured.layoutAdaptation,availableHeight:measured.availableHeight,renderedHeight:measured.renderedHeight,texts:measured.texts});
   }
   reports.push({dimensions,name:item.name,notes:item.events.length,renderer:report.renderer,profile:report.analysis.profile,geometry:report.analysis.geometry,mapping:report.analysis.mapping,layoutAdaptation:report.analysis.layoutAdaptation});
-  fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({sourceSha,scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));
-  }catch(error){reports.push({name:item.name,renderer:report.renderer,profile:report.analysis&&report.analysis.profile,geometry:report.analysis&&report.analysis.geometry,mapping:report.analysis&&report.analysis.mapping,layoutAdaptation:report.analysis&&report.analysis.layoutAdaptation,failure:error.message});fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({sourceSha,scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));console.error('STUDY_CORPUS_FAILURE '+error.message);}
+  fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({sourceSha,checkoutSha,scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));
+  }catch(error){reports.push({name:item.name,renderer:report.renderer,profile:report.analysis&&report.analysis.profile,geometry:report.analysis&&report.analysis.geometry,mapping:report.analysis&&report.analysis.mapping,layoutAdaptation:report.analysis&&report.analysis.layoutAdaptation,failure:error.message});fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({sourceSha,checkoutSha,scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));console.error('STUDY_CORPUS_FAILURE '+error.message);}
  }
  // Reproducible same-build comparison of the geometric staff-gap compaction
  // on three representative viewport sizes. Baseline uses stock OSMD engraving;
@@ -211,7 +212,18 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   }
   return samples;
  },beats);
- fs.writeFileSync('../docs/evidence/study-profile/window-traversal.json',JSON.stringify({sourceSha,samples:traversal},null,2));
+ fs.writeFileSync('../docs/evidence/study-profile/window-traversal.json',JSON.stringify({sourceSha,checkoutSha,samples:traversal},null,2));
+ // Capture both extremes after the browser has painted, not just synchronous
+ // seeks; keep the smallest result visible in the evidence as well.
+ for(const [label,sample] of [['smallest',traversal.reduce((a,b)=>a.staffSpace<b.staffSpace?a:b)],
+                             ['largest',traversal.reduce((a,b)=>a.staffSpace>b.staffSpace?a:b)]]){
+  await page.evaluate(async beat=>{PianoNotation.seek(beat,false,100,false);await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},sample.beat);
+  const live=await page.evaluate(()=>({space:PianoNotation.analysis().geometry.staffSpace,scrollTop:document.getElementById('viewport').scrollTop}));
+  assert(Math.abs(live.space-sample.staffSpace)<.01,'painted window matches measured scale');
+  assert.equal(live.scrollTop,0,'window must not introduce vertical scrolling');
+  await page.screenshot({path:'../docs/evidence/study-profile/gymnopedie.window-'+label+'.738x196.png'});
+ }
+
  // A zero-width SVG path still paints a stem. It must block unsafe staff
  // compaction; the prior bbox-only filter silently discarded this obstacle.
  await page.evaluate(()=>{
@@ -255,7 +267,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  await page.waitForFunction(()=>window.testDone,null,{timeout:30000});
  const fresh=await page.evaluate(()=>PianoNotation.analysis());
  assert(Math.abs(fresh.geometry.staffSpace-resizeEvidence[3].geometry.staffSpace)<.01,'repeated resize must equal fresh layout at final size');
- fs.writeFileSync('../docs/evidence/study-profile/resize.json',JSON.stringify({sourceSha,resizeEvidence},null,2));
+ fs.writeFileSync('../docs/evidence/study-profile/resize.json',JSON.stringify({sourceSha,checkoutSha,resizeEvidence},null,2));
  // Direct DOM preservation and annotation classification, independent of title.
  await page.evaluate(()=>{const xml='<score-partwise><part><measure><note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><lyric><text>C</text></lyric></note><direction><direction-type><words>rit.</words></direction-type></direction><harmony><root><root-step>C</root-step></root></harmony></measure></part></score-partwise>';const p=StudyProfile.analyze(xml),d=new DOMParser().parseFromString(StudyProfile.presentation(xml,p),'application/xml');if(d.querySelector('lyric')||!d.querySelector('words')||!d.querySelector('harmony'))throw Error('annotation policy');});
  // Real OSMD failure, not a simulated successful fallback.
@@ -263,7 +275,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  assert(failed,'OSMD failure must reach native renderer callback');
  assert.equal(remoteRequests.length,0,'No imported XML may trigger a network request');
  fs.mkdirSync('../docs/evidence/study-profile',{recursive:true});
- fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({sourceSha,scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));
+ fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({sourceSha,checkoutSha,scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));
  assert.equal(reports.filter(r=>r.failure).length,0,'Corpus failures: '+JSON.stringify(reports.filter(r=>r.failure)));
  console.log('STUDY_PROFILE_BROWSER_PASS files='+reports.length);
  await browser.close();

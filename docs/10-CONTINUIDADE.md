@@ -1,5 +1,18 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Estado B1 vigente — janela horizontal (22/10/2026)
+
+**E/IP; B1 ainda parcial**, no [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51), branch `feat/analise-estudo-adaptavel`. Esta atualização substitui as métricas e pendências históricas de B1 abaixo, afetando INV-02/03/15. Código aprovado: `1e8ca06bae8270ad66e8586d5ec731b81ac818ed`; [build/JVM/JS/XML/MIDI/corpus 39828730389](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39828730389) e [emulador Android 39828730333](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39828730333), ambos `success`. O SHA final documental e seus próprios workflows ficam registrados no PR; não substituir essa conferência por resultados antigos.
+
+A auditoria passou a incluir tinta das hastes e a restaurar barras/chave no resize; a compactação antiga ignorava hastes de largura geométrica zero. A janela horizontal conserva o SVG e os eventos completos, ajustando escala uniforme pelos símbolos visíveis e contexto das duas pautas, sem scroll vertical. Gymnopédie em 738×196: abertura 4,85313→5,40241 px (+11,32%); percurso 4,85294–5,40241, ainda com `small-staff-space`. Em 738×351/883×409: 8,85439/10,35163 px. Não basta para declarar a leitura confortável.
+
+Canon: listas de solfejo/dedilhado em `words` ocultas somente na apresentação de Estudo; cifras `D A Bm F#m` e `G D G A`, andamento e crédito mantidos nas três dimensões, sem cifra escondida. Für Elise: `p` do compasso 13/beat 36 preservado e reposicionado por colisão real de tinta com G♯3, sem corte/colisão depois; ajuste depende da escala. Partitura Livre e fontes permanecem completas.
+
+Corpus aprovado: 27 arquivos, 23 OSMD e quatro alternativas temporais explícitas; assinatura musical conferida por viewport. Gymnopédie: 469/469 notas, 376 posições de ida/volta sem corte, resize reversível com claves preservadas. `named-voices-ties` conserva alerta `native-mapping`. [Métricas, implementação, capturas e limites](59-ESTUDO-ADAPTAVEL.md#estado-verificado-da-continuação--22102026).
+
+**Falta para encerrar B1:** legibilidade dos trechos extremos em tela baixa e avaliação editorial da escala variável; ensaios físicos Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 continuam a cargo do usuário. Não houve teste físico, merge, release ou APK de distribuição. Pacote/certificado/versão e dados não foram alterados nesta continuação. PRs #46/#48 permanecem intocados; reconciliar os adendos 57/58 antes de eventual integração. B/C e V1 não concluídas.
+
+
 **Repositório autoritativo para mudanças futuras:** `atshimura/Piano-livre-aberto`. Não fazer novos commits em `atshimura/piano-livre` como parte do fluxo aberto; aquele repositório histórico permanece privado.
 
 ## Implementação em revisão — análise automática
