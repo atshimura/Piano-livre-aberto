@@ -217,6 +217,23 @@
    const fallback=tightBox(node),value=(node.textContent||'').trim();
    if(!value||typeof node.getStartPositionOfChar!=='function')return fallback;
    try{
+    // SVG extent boxes describe a character cell, including unused font
+    // space. Use the active browser font's ink metrics first so descenders
+    // and punctuation are measured by their visible glyph bounds.
+    const canvas=document.createElement('canvas'),context=canvas.getContext('2d');
+    if(context&&!node.querySelector('tspan')){
+     context.font=getComputedStyle(node).font;context.textAlign='start';context.textBaseline='alphabetic';
+     const metrics=context.measureText(value),position=node.getStartPositionOfChar(0),matrix=node.getScreenCTM();
+     if(matrix&&[metrics.actualBoundingBoxLeft,metrics.actualBoundingBoxRight,metrics.actualBoundingBoxAscent,metrics.actualBoundingBoxDescent].every(Number.isFinite)){
+      const local=[[position.x-metrics.actualBoundingBoxLeft,position.y-metrics.actualBoundingBoxAscent],
+       [position.x+metrics.actualBoundingBoxRight,position.y-metrics.actualBoundingBoxAscent],
+       [position.x-metrics.actualBoundingBoxLeft,position.y+metrics.actualBoundingBoxDescent],
+       [position.x+metrics.actualBoundingBoxRight,position.y+metrics.actualBoundingBoxDescent]];
+      const points=local.map(function(p){return {x:matrix.a*p[0]+matrix.c*p[1]+matrix.e,y:matrix.b*p[0]+matrix.d*p[1]+matrix.f};});
+      const xs=points.map(function(p){return p.x;}),ys=points.map(function(p){return p.y;});
+      return {left:Math.min.apply(null,xs),right:Math.max.apply(null,xs),top:Math.min.apply(null,ys),bottom:Math.max.apply(null,ys)};
+     }
+    }
     if(typeof node.getNumberOfChars==='function'&&typeof node.getExtentOfChar==='function'){
      try{
       let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
@@ -233,18 +250,7 @@
       }
      }catch(glyphError){}
     }
-    const canvas=document.createElement('canvas'),context=canvas.getContext('2d');
-    if(!context)return fallback;
-    context.font=getComputedStyle(node).font;context.textAlign='start';context.textBaseline='alphabetic';
-    const metrics=context.measureText(value),position=node.getStartPositionOfChar(0),matrix=node.getScreenCTM();
-    if(!matrix||![metrics.actualBoundingBoxLeft,metrics.actualBoundingBoxRight,metrics.actualBoundingBoxAscent,metrics.actualBoundingBoxDescent].every(Number.isFinite))return fallback;
-    const local=[[position.x-metrics.actualBoundingBoxLeft,position.y-metrics.actualBoundingBoxAscent],
-     [position.x+metrics.actualBoundingBoxRight,position.y-metrics.actualBoundingBoxAscent],
-     [position.x-metrics.actualBoundingBoxLeft,position.y+metrics.actualBoundingBoxDescent],
-     [position.x+metrics.actualBoundingBoxRight,position.y+metrics.actualBoundingBoxDescent]];
-    const points=local.map(function(p){return {x:matrix.a*p[0]+matrix.c*p[1]+matrix.e,y:matrix.b*p[0]+matrix.d*p[1]+matrix.f};});
-    const xs=points.map(function(p){return p.x;}),ys=points.map(function(p){return p.y;});
-    return {left:Math.min.apply(null,xs),right:Math.max.apply(null,xs),top:Math.min.apply(null,ys),bottom:Math.max.apply(null,ys)};
+    return fallback;
    }catch(e){return fallback;}
   }
   const heads=Array.from(svg.querySelectorAll('.vf-notehead')).map(function(n){return {node:n,box:tightBox(n)};}).sort(function(a,b){return a.box.left-b.box.left;});
