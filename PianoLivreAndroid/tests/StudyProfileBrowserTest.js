@@ -29,6 +29,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   const svg=document.querySelector('#score svg');
   const chordLabels=svg?Array.from(svg.querySelectorAll('text')).map(n=>({text:(n.textContent||'').trim(),hidden:n.style.visibility==='hidden'})).filter(n=>StudyProfile.isChordLabel(n.text)):[];
   return {same,changed,intact,error:window.testError,done:window.testDone,analysis:analysis,
+    renderer:svg?'OSMD SVG':'none',
     chordLabels:chordLabels,message:window.presentationMessage};
   },item);
   if(/(canon-in-d|fur-elise-easy-ver|gymnopedie-no-1-satie)\.mxl$/.test(item.name))
@@ -73,12 +74,14 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    if(/(canon-in-d|fur-elise-easy-ver|gymnopedie-no-1-satie)\.mxl$/.test(item.name))await page.screenshot({path:'../docs/evidence/study-profile/'+path.basename(item.name)+'.'+size.width+'x'+size.height+'.png'});
    dimensions.push({size,geometry:fitted});
   }
-  reports.push({dimensions,name:item.name,notes:item.events.length,profile:report.analysis.profile,geometry:report.analysis.geometry,mapping:report.analysis.mapping});
-  }catch(error){reports.push({name:item.name,failure:error.message});console.error('STUDY_CORPUS_FAILURE '+error.message);}
+  reports.push({dimensions,name:item.name,notes:item.events.length,renderer:report.renderer,profile:report.analysis.profile,geometry:report.analysis.geometry,mapping:report.analysis.mapping,layoutAdaptation:report.analysis.layoutAdaptation});
+  fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));
+  }catch(error){reports.push({name:item.name,renderer:report.renderer,profile:report.analysis&&report.analysis.profile,geometry:report.analysis&&report.analysis.geometry,mapping:report.analysis&&report.analysis.mapping,layoutAdaptation:report.analysis&&report.analysis.layoutAdaptation,failure:error.message});fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));console.error('STUDY_CORPUS_FAILURE '+error.message);}
  }
- // Reproducible same-build comparison of the compact-staff fit on three
- // representative viewport sizes. Baseline uses stock OSMD staff clearance;
- // adapted uses the bounded, skyline-checked spacing rule in the Study view.
+ // Reproducible same-build comparison of the geometric staff-gap compaction
+ // on three representative viewport sizes. Baseline uses stock OSMD engraving;
+ // adapted moves the lower staff only when primitive bounds introduce no new
+ // cross-staff intersections, then refits the complete SVG ink envelope.
  const gym=corpus.find(item=>item.name.endsWith('gymnopedie-no-1-satie.mxl'));
  assert(gym,'Gymnopédie source fixture is required for before/after evidence');
  const visualComparison=[];

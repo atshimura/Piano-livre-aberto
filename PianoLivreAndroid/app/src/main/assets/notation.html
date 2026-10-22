@@ -222,7 +222,10 @@
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
  function refreshStudyAnalysis(svg){
   if(!svg||!studyProof||!osmd)return;
-  studyAnalysis=StudyProfile.assess(EngravingAudit.inspect(osmd.graphic,Infinity),
+  const rows=EngravingAudit.inspect(osmd.graphic,Infinity);
+  const visibleRows=studyVerticalAdaptation.accepted
+   ?StudyProfile.shiftEngravingRows(rows,2,studyVerticalAdaptation.delta):rows;
+  studyAnalysis=StudyProfile.assess(visibleRows,
    Object.assign(StudyProfile.inspectSvg(svg),{availableHeight:viewport.clientHeight,mapping:opticalReconciliation}));
  }
  function alignOpticalScore(beat){
@@ -271,6 +274,11 @@
    return box.y<upperBox.y+upperBox.height&&box.y+box.height>lowerBox.y;
   });
   const braceCopy=brace?brace.cloneNode(true):null;
+  if(braceCopy&&studyVerticalAdaptation.accepted){
+   const oldSpan=Math.max(1,lowerBox.y+lowerBox.height/2-(upperBox.y+upperBox.height/2));
+   const factor=Math.max(.2,(oldSpan-studyVerticalAdaptation.delta)/oldSpan);
+   braceCopy.setAttribute('transform','translate(0 '+upperBox.y+') scale(1 '+factor+') translate(0 '+(-upperBox.y)+')');
+  }
   const base=[];
   stafflines.forEach(function(staffline,staffIndex){
    const measures=Array.from(staffline.children).filter(function(node){
@@ -280,6 +288,8 @@
    if(!first){base.push(null);return;}
    const lineGroup=document.createElementNS('http://www.w3.org/2000/svg','g');
    lineGroup.setAttribute('data-context-staff',String(staffIndex+1));
+   if(staffIndex===1&&studyVerticalAdaptation.accepted)
+    lineGroup.setAttribute('transform','translate(0 '+(-studyVerticalAdaptation.delta)+')');
    Array.from(first.children).filter(function(node){
     return node.tagName.toLowerCase()==='path';
    }).slice(0,5).forEach(function(path){
@@ -698,47 +708,41 @@
      }
      const beforeCompactSvg=document.querySelector('#score svg');
      const beforeCompact=StudyProfile.inspectSvg(beforeCompactSvg);
+     const beforeCompactHeight=beforeCompactSvg.getBoundingClientRect().height;
      studyVerticalAdaptation={status:'not-needed',beforeStaffSpace:beforeCompact.staffSpace,
-      afterStaffSpace:beforeCompact.staffSpace,beforeHeight:beforeCompactSvg.getBoundingClientRect().height,
-      afterHeight:beforeCompactSvg.getBoundingClientRect().height,accepted:false};
+      afterStaffSpace:beforeCompact.staffSpace,beforeHeight:beforeCompactHeight,
+      afterHeight:beforeCompactHeight,accepted:false};
      if(window.__testDisableStudyVerticalAdaptation!==true&&StudyProfile.shouldCompactVertical(studyProfile,viewport.clientHeight,beforeCompact.staffSpace)){
-      const rules=osmd.EngravingRules;
-      const previous={minimum:rules.MinimumStaffLineDistance,sky:rules.MinSkyBottomDistBetweenStaves};
-      studyVerticalAdaptation={status:'candidate',beforeStaffSpace:beforeCompact.staffSpace,
-       beforeHeight:beforeCompactSvg.getBoundingClientRect().height,minimumStaffLineDistance:.5,
-       minSkyBottomDistBetweenStaves:.5,accepted:false};
-      // Let OSMD recalculate the interstaff clearance from its note/text
-      // skylines. This compresses only empty space between the two staves;
-      // no SVG is cropped and no note/event coordinate is manually changed.
-      rules.MinimumStaffLineDistance=.5;
-      rules.MinSkyBottomDistBetweenStaves=.5;
-      osmd.render();
-      let compactSvg=document.querySelector('#score svg');
-      if(!compactSvg)throw Error('OSMD não produziu SVG após adaptação vertical');
-      fitOpticalSvg(compactSvg);
-      const compactGeometry=StudyProfile.inspectSvg(compactSvg);
-      const compactRows=EngravingAudit.inspect(osmd.graphic,Infinity);
-      const compactAudit=StudyProfile.assess(compactRows,Object.assign({},compactGeometry,{availableHeight:viewport.clientHeight}));
-      const compactFidelity=Array.isArray(nativeEvents)&&nativeEvents.length
-       ?StudyProfile.compare(compactRows,nativeEvents):{missing:0,unexpected:0,skipped:true};
-      const gained=compactGeometry.staffSpace>=beforeCompact.staffSpace*1.08;
-      const safe=!compactGeometry.inkClipped&&!compactAudit.clipped&&
-       compactGeometry.annotationOverlaps<=beforeCompact.annotationOverlaps&&
-       !compactFidelity.missing&&!compactFidelity.unexpected;
-      studyVerticalAdaptation={status:gained&&safe?'compacted':'rejected',
-       beforeStaffSpace:beforeCompact.staffSpace,afterStaffSpace:compactGeometry.staffSpace,
-       beforeHeight:beforeCompactSvg.getBoundingClientRect().height,afterHeight:compactSvg.getBoundingClientRect().height,
-       minimumStaffLineDistance:.5,minSkyBottomDistBetweenStaves:.5,accepted:gained&&safe,
-       reason:!gained?'insufficient geometric gain':(!safe?'clipping, annotation collision, or native-event divergence':null),
-       annotationOverlapsBefore:beforeCompact.annotationOverlaps,annotationOverlapsAfter:compactGeometry.annotationOverlaps,
-       noteheadClipping:compactAudit.clipped,inkClipped:compactGeometry.inkClipped,nativeFidelity:compactFidelity};
-      if(!gained||!safe){
-       rules.MinimumStaffLineDistance=previous.minimum;
-       rules.MinSkyBottomDistBetweenStaves=previous.sky;
-       osmd.render();
-       const restored=document.querySelector('#score svg');
-       if(!restored)throw Error('OSMD não produziu SVG ao restaurar espaçamento');
-       fitOpticalSvg(restored);
+      // Move only the lower engraved staff within its system. OSMD's musical
+      // graph and x/beat anchors remain intact; the complete ink envelope is
+      // refit below after a primitive-geometry collision check.
+      studyVerticalAdaptation=StudyProfile.compactStaffGap(beforeCompactSvg,studyProfile,viewport.clientHeight);
+      if(studyVerticalAdaptation.accepted){
+       const shift=studyVerticalAdaptation.delta;
+       optical=OpticalTimeMap.fromGraphical(osmd.graphic);
+       optical.notes.forEach(function(note){if(note.staff===2)note.y-=shift;});
+       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
+       fitOpticalSvg(beforeCompactSvg);
+       const compactGeometry=StudyProfile.inspectSvg(beforeCompactSvg);
+       const compactRows=StudyProfile.shiftEngravingRows(EngravingAudit.inspect(osmd.graphic,Infinity),2,shift);
+       const compactAudit=StudyProfile.assess(compactRows,Object.assign({},compactGeometry,{availableHeight:viewport.clientHeight}));
+       const compactFidelity=Array.isArray(nativeEvents)&&nativeEvents.length
+        ?StudyProfile.compare(EngravingAudit.inspect(osmd.graphic,Infinity),nativeEvents):{missing:0,unexpected:0,skipped:true};
+       const safe=!compactGeometry.inkClipped&&!compactAudit.clipped&&compactGeometry.alerts.indexOf('vertical-overflow')<0&&
+        !compactFidelity.missing&&!compactFidelity.unexpected;
+       studyVerticalAdaptation=Object.assign({},studyVerticalAdaptation,{status:safe?'compacted':'rejected',accepted:safe,
+        beforeHeight:beforeCompactHeight,afterHeight:beforeCompactSvg.getBoundingClientRect().height,
+        beforeStaffSpace:beforeCompact.staffSpace,afterStaffSpace:compactGeometry.staffSpace,
+        inkClipped:compactGeometry.inkClipped,noteheadClipping:compactAudit.clipped,nativeFidelity:compactFidelity,
+        reason:safe?null:'ink clipping, vertical overflow, or native-event divergence'});
+       if(!safe){
+        const lower=beforeCompactSvg.querySelector('[data-study-y-offset]');
+        if(lower){lower.removeAttribute('transform');delete lower.dataset.studyYOffset;}
+        delete beforeCompactSvg.dataset.studyCompressed;delete beforeCompactSvg.dataset.studyStaffShiftY;
+        optical=OpticalTimeMap.fromGraphical(osmd.graphic);
+        opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
+        fitOpticalSvg(beforeCompactSvg);
+       }
       }
      }
      console.log('STUDY_VERTICAL_ADAPTATION '+JSON.stringify(studyVerticalAdaptation));
@@ -753,6 +757,7 @@
      const graphic=osmd.graphic,columns=graphic&&graphic.measureList||[];
      if(!window.OpticalTimeMap)throw Error('Mapeamento óptico não carregado');
      optical=OpticalTimeMap.fromGraphical(graphic);
+     if(studyVerticalAdaptation.accepted)optical.notes.forEach(function(note){if(note.staff===2)note.y-=studyVerticalAdaptation.delta;});
      console.log('POC_OPTICAL_MAP_CREATED '+JSON.stringify({anchors:optical.timeline.stops.length,notes:optical.notes.length}));
      fitOpticalSvg(svg);
      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
@@ -1021,9 +1026,17 @@
      osmdRenderedWidth=viewport.clientWidth;
      osmdRenderedHeight=viewport.clientHeight;
      if(studyProof){
-      optical=OpticalTimeMap.fromGraphical(osmd.graphic);
       const resizedSvg=document.querySelector('#score svg');
       fitOpticalSvg(resizedSvg);
+      const resizedProfile=StudyProfile.inspectSvg(resizedSvg);
+      studyVerticalAdaptation={status:'not-needed',accepted:false,delta:0,
+       beforeStaffSpace:resizedProfile.staffSpace,afterStaffSpace:resizedProfile.staffSpace};
+      if(window.__testDisableStudyVerticalAdaptation!==true&&StudyProfile.shouldCompactVertical(studyProfile,viewport.clientHeight,resizedProfile.staffSpace)){
+       studyVerticalAdaptation=StudyProfile.compactStaffGap(resizedSvg,studyProfile,viewport.clientHeight);
+       if(studyVerticalAdaptation.accepted)fitOpticalSvg(resizedSvg);
+      }
+      optical=OpticalTimeMap.fromGraphical(osmd.graphic);
+      if(studyVerticalAdaptation.accepted)optical.notes.forEach(function(note){if(note.staff===2)note.y-=studyVerticalAdaptation.delta;});
       // Graphical positions are invalid after a re-layout: reconcile and bind again.
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
       const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(resizedSvg);

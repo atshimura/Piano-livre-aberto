@@ -19,6 +19,89 @@
   return !!profile&&height<=240&&profile.staffCount===2&&
    (profile.notes>=200||profile.maxNotesPerMeasure>=16)&&staffSpace>0&&staffSpace<6;
  }
+ function compactStaffGap(svg,profile,viewportHeight){
+  const result={status:'not-needed',accepted:false,delta:0};
+  if(!svg||!profile||viewportHeight>240||profile.staffCount!==2||
+     !(profile.notes>=200||profile.maxNotesPerMeasure>=16))return result;
+  const lines=Array.from(svg.querySelectorAll('g.staffline'));
+  let upper=null,lower=null;
+  for(const line of lines){
+   const id=line.id||'',match=id.match(/^(.+)-1$/);
+   if(match){const other=lines.find(function(candidate){return candidate.id===match[1]+'-2';});if(other){upper=line;lower=other;break;}}
+  }
+  if(!upper||!lower)return Object.assign(result,{status:'unsupported-staff-layout'});
+  const paths=function(group){return Array.from(group.children).find(function(n){return n.classList&&n.classList.contains('vf-measure');});};
+  const firstUpper=paths(upper),firstLower=paths(lower);
+  const staffPaths=function(measure){return measure?Array.from(measure.children).filter(function(n){return n.tagName&&n.tagName.toLowerCase()==='path';}).slice(0,5):[];};
+  const topLines=staffPaths(firstUpper),bottomLines=staffPaths(firstLower);
+  if(topLines.length<5||bottomLines.length<1)return Object.assign(result,{status:'unsupported-staff-geometry'});
+  const box=function(node){
+   try{const b=node.getBBox(),m=node.getScreenCTM();if(!m)return {x:b.x,y:b.y,w:b.width,h:b.height};
+    const p=[[b.x,b.y],[b.x+b.width,b.y],[b.x,b.y+b.height],[b.x+b.width,b.y+b.height]].map(function(q){return {x:m.a*q[0]+m.c*q[1]+m.e,y:m.b*q[0]+m.d*q[1]+m.f};});
+    const xs=p.map(function(q){return q.x;}),ys=p.map(function(q){return q.y;});return {x:Math.min.apply(null,xs),y:Math.min.apply(null,ys),w:Math.max.apply(null,xs)-Math.min.apply(null,xs),h:Math.max.apply(null,ys)-Math.min.apply(null,ys)};
+   }catch(e){return null;}
+  };
+  const a=box(topLines[0]),b=box(topLines[1]),u=box(topLines[4]),l=box(bottomLines[0]);
+  if(!a||!b||!u||!l)return Object.assign(result,{status:'unmeasurable-staff-geometry'});
+  const screenLineSpace=Math.abs((b.y+b.h/2)-(a.y+a.h/2));
+  const matrix=topLines[0].getScreenCTM();
+  const unitScale=matrix?Math.sqrt(matrix.c*matrix.c+matrix.d*matrix.d):1;
+  const lineSpace=screenLineSpace/Math.max(.0001,unitScale);
+  const gap=((l.y+l.h/2)-(u.y+u.h/2))/Math.max(.0001,unitScale);
+  const vb=svg.viewBox&&svg.viewBox.baseVal;
+  const available=Math.max(1,viewportHeight-8),initialSpace=Number(svg.dataset.opticalStaffSpaceCss);
+  result.beforeStaffSpace=initialSpace;result.staffGapSpaces=gap/lineSpace;
+  if(!(initialSpace>0&&initialSpace<6))return Object.assign(result,{status:'not-needed'});
+  // Leave a six-space optical moat between staves. OSMD's own engraving
+  // geometry is retained inside each staff; the remaining reduction is
+  // accepted only when primitive SVG bounds introduce no new cross-staff hit.
+  const maximum=Math.max(0,gap-6*lineSpace);
+  if(maximum<lineSpace)return Object.assign(result,{status:'insufficient-clearance'});
+  const topNodes=Array.from(upper.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(box).filter(function(q){return q&&q.w>.4&&q.h>.4;});
+  const originalTransform=lower.getAttribute('transform');
+  function setDelta(delta){
+   if(!delta){if(originalTransform===null)lower.removeAttribute('transform');else lower.setAttribute('transform',originalTransform);return;}
+   lower.setAttribute('transform',(originalTransform?originalTransform+' ':'')+'translate(0 '+(-delta)+')');
+  }
+  function collisions(delta,collect,baselinePairs){
+   setDelta(delta);
+   const low=Array.from(lower.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(box).filter(function(q){return q&&q.w>.4&&q.h>.4;});
+   let count=0,first=[],pairs=[];
+   for(let i=0;i<topNodes.length;i++)for(let j=0;j<low.length;j++){
+    const x=Math.min(topNodes[i].x+topNodes[i].w,low[j].x+low[j].w)-Math.max(topNodes[i].x,low[j].x);
+    if(x<=.5)continue;
+    const y=Math.min(topNodes[i].y+topNodes[i].h,low[j].y+low[j].h)-Math.max(topNodes[i].y,low[j].y);
+    if(y>.5){count++;const key=i+':'+j;pairs.push(key);if(collect&&first.length<8)first.push({upper:[topNodes[i].x,topNodes[i].y,topNodes[i].w,topNodes[i].h],lower:[low[j].x,low[j].y,low[j].w,low[j].h],overlap:[x,y],newPair:baselinePairs?baselinePairs.indexOf(key)<0:false});}
+   }
+   return {count:count,first:first,pairs:pairs};
+  }
+  setDelta(0);
+  const baselinePairs=collisions(0,false).pairs;
+  let safe=0,unsafe=maximum;
+  for(let i=0;i<12;i++){
+   const candidate=(safe+unsafe)/2,collision=collisions(candidate,false).pairs;
+   const introduces=collision.some(function(pair){return baselinePairs.indexOf(pair)<0;});
+   if(!introduces)safe=candidate;else unsafe=candidate;
+  }
+  const finalCollision=collisions(safe,true,baselinePairs),afterInk=svg.getBBox(),afterHeight=Math.max(1,afterInk.height+8);
+  const afterSpace=lineSpace*available/afterHeight;
+  result.candidateDelta=safe;result.maxAllowedDelta=maximum;result.afterStaffSpace=afterSpace;
+  result.newCrossStaffOverlaps=finalCollision.pairs.filter(function(pair){return baselinePairs.indexOf(pair)<0;}).length;result.existingCrossStaffOverlaps=baselinePairs.length;
+  result.rejectedPairs=finalCollision.first;
+  if(afterSpace<6||safe<lineSpace){setDelta(0);result.status='insufficient-safe-gain';return result;}
+  setDelta(safe);
+  lower.dataset.studyYOffset=String(safe);svg.dataset.studyCompressed='true';svg.dataset.studyStaffShiftY=String(safe);
+  svg.setAttribute('viewBox',[vb.x,afterInk.y-4,vb.width,afterHeight].join(' '));
+  if(svg.dataset.opticalNativeHeight)svg.dataset.opticalNativeHeight=String(afterHeight);
+  result.status='compacted';result.accepted=true;result.delta=safe;return result;
+ }
+ function shiftEngravingRows(rows,staff,delta){
+  return (rows||[]).map(function(row){if(row.staff!==staff)return row;
+   const shifted=Object.assign({},row);
+   ['headBox','stemBox','groupBox'].forEach(function(key){if(row[key]){shifted[key]=row[key].slice();shifted[key][1]-=delta;}});
+   return shifted;
+  });
+ }
  function analyze(xml){
   if(xml===cachedXml&&cached)return cached;
   const doc=new DOMParser().parseFromString(xml,'application/xml');
@@ -63,12 +146,14 @@
   const doc=new DOMParser().parseFromString(presentationXml,'application/xml');
   let repositionedDynamics=0;
   Array.from(doc.getElementsByTagName('direction')).forEach(function(direction){
-   if(direction.getElementsByTagName('dynamics').length&&direction.getAttribute('placement')!=='above'){
-    direction.setAttribute('placement','above');repositionedDynamics++;
-    Array.from(direction.getElementsByTagName('dynamics')).forEach(function(node){
-     node.removeAttribute('default-y');node.removeAttribute('relative-y');
-    });
-   }
+   if(!direction.getElementsByTagName('dynamics').length)return;
+   let changed=direction.getAttribute('placement')!=='above';
+   if(changed)direction.setAttribute('placement','above');
+   ['default-y','relative-y'].forEach(function(attribute){if(direction.hasAttribute(attribute)){direction.removeAttribute(attribute);changed=true;}});
+   Array.from(direction.getElementsByTagName('dynamics')).forEach(function(node){
+    ['default-y','relative-y'].forEach(function(attribute){if(node.hasAttribute(attribute)){node.removeAttribute(attribute);changed=true;}});
+   });
+   if(changed)repositionedDynamics++;
   });
   return {xml:new XMLSerializer().serializeToString(doc),repositionedDynamics:repositionedDynamics};
  }
@@ -162,7 +247,7 @@
   if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
   return text;
  }
- const api={applyChordCollisionPolicy:applyChordCollisionPolicy,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
+ const api={applyChordCollisionPolicy:applyChordCollisionPolicy,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,compactStaffGap:compactStaffGap,shiftEngravingRows:shiftEngravingRows,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);
