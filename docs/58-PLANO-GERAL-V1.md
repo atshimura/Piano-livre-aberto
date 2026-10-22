@@ -117,6 +117,12 @@ O [inventário 57](57-INVENTARIO-FUNCIONAL-V1.md) contém os identificadores INV
 
 **Condição de conclusão do planejamento:** documentação revisável e auditável publicada por PR próprio, **não** confundida com implementação nova do aplicativo, teste de regressão ou aceite 1.0.
 
+## B1 — legibilidade e apresentação adaptável do Estudo (22/10/2026)
+
+Continuação em revisão no PR [#51](https://github.com/atshimura/Piano-livre-aberto/pull/51), sem alterar #46 ou #48. No Chromium do head `d11a85845d7fa7d40f0fd7495a800502d62e7354`, a Gymnopédie obteve ganho de 4,77976→5,07480 CSS px no viewport 738×196; 738×351 e 883×409 mantiveram 8,85439 e 10,35163 CSS px. Todas as dimensões passaram sem rolagem vertical. O perfil baixo ainda aciona `small-staff-space`; portanto a legibilidade e o aceite físico permanecem parciais.
+
+Canon foi conferida pelo SVG OSMD ativo: listas auxiliares ocultas, cifras mantidas. A dinâmica `p` de Für Elise foi preservada e reposicionada acima após colisão geométrica reproduzível; fonte, tempo e evento nativo permaneceram iguais. Corpus de 27 arquivos passou: 23 gravuras OSMD e quatro alternativas temporais explícitas. [Métricas e capturas](evidence/study-profile/b1/) e [documento 59](59-ESTUDO-ADAPTAVEL.md) detalham o resultado. A sequência mantém avaliação editorial/física #11 pendente, não declara B/C ou V1 concluídas e não gera/publica APK de distribuição. Este adendo mantém intacta a base documental do PR #48.
+
 ## Implementação em revisão — Estudo adaptável (21/10/2026)
 
 **E/IP**, branch `feat/analise-estudo-adaptavel`: análise estrutural por conteúdo, letras de canto ocultas em cópia transitória, auditoria geométrica OSMD, ampliação óptica limitada e indicação correta do fallback esquemático. Afeta INV-02/03/15 e Entrega B; não conclui B/C ou V1. [Critérios, testes e limites](59-ESTUDO-ADAPTAVEL.md). Catálogo e importação JVM aprovados localmente; auditoria gráfica/CI/Android dependem da execução do SHA da branch. Legibilidade física e segmentação vertical local continuam pendentes. Texto-base preservado do PR #48 (`62a9443`); reconciliar sobreposição documental ao integrar.

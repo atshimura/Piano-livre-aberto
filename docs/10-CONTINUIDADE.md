@@ -180,3 +180,9 @@ Branch `feat/laboratorio-pratica-sequencial` reconciliada por merge não destrut
 ## Checkpoint — análise automática em PR #51
 
 Código `e1fac0ec`, branch `feat/analise-estudo-adaptavel`: build/JVM/JS/XML/MIDI/corpus aprovados no run 39676817138. Documentos 57–59 e métricas em `docs/evidence/study-profile/summary.json`. Roteiro Android da HEAD acompanhado no PR; a correção posterior é do helper de toque do novo teste. Conferir resultado do SHA exato antes de integrar. Sem merge, release, aceite físico ou V1.
+
+### Retomada B1 — legibilidade adaptável no Estudo (22/10/2026)
+
+Continuação no PR #51, ainda aberto, baseada na `main` `801543c`; #46 e #48 seguem intocados. O Chromium do head `d11a85845d7fa7d40f0fd7495a800502d62e7354` passou a regressão de 27 arquivos. Gymnopédie 738×196 melhorou 4,77976→5,07480 CSS px (+6,17%), com overflow vertical zero e alerta de pauta pequena ainda ativo. Canon foi validada pelo OSMD SVG, cifras preservadas. Em Für Elise, colisão do `p` de dinâmica com G♯3 (compasso 13, beat 36) foi confirmada em 3,15 px e corrigida movendo a anotação 7,15 px para cima só na apresentação do Estudo. Quatro fixtures incompletas seguem em fallback temporal explícito e conferido.
+
+O artefato durável e as capturas estão em `docs/evidence/study-profile/b1/`; detalhes atualizados em docs 57/58/59. Build completo e emulador devem ser registrados somente após conclusão para o head final que também inclua este adendo documental. Nenhum ensaio físico: aceite editorial e issue #11 continuam pendentes; não integrar, publicar APK, concluir B/C ou declarar V1.
