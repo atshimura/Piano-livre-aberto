@@ -11,7 +11,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--allow-file-access-from-files'],...(process.env.PIANO_CHROMIUM?{executablePath:process.env.PIANO_CHROMIUM}:{})});
  fs.mkdirSync('../docs/evidence/study-profile',{recursive:true});
  const remoteRequests=[];
- const page=await browser.newPage({viewport:{width:738,height:220}}),reports=[];
+ const page=await browser.newPage({viewport:{width:738,height:220}}),reports=[],visualComparison=[];
  await page.route(/^https?:/,route=>{remoteRequests.push(route.request().url());return route.abort();});
  await page.goto('file://'+path.resolve('app/src/main/assets/notation.html'));
  await page.evaluate(()=>{window.AndroidNotation={onReady(){},onRendered(){window.testDone=true;},onPresentation(m){window.presentationMessage=m;},onError(m){window.testError=m;}};});
@@ -84,7 +84,6 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  // cross-staff intersections, then refits the complete SVG ink envelope.
  const gym=corpus.find(item=>item.name.endsWith('gymnopedie-no-1-satie.mxl'));
  assert(gym,'Gymnopédie source fixture is required for before/after evidence');
- const visualComparison=[];
  for(const size of [{width:738,height:196},{width:738,height:351},{width:883,height:409}]){
   await page.setViewportSize(size);
   for(const disabled of [true,false]){
