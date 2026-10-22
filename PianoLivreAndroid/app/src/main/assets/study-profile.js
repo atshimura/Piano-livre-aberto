@@ -74,7 +74,7 @@
    const low=nodes(lower);
    const upperSorted=topNodes.slice().sort(function(a,b){return a.box.x-b.box.x;});
    const lowerSorted=low.slice().sort(function(a,b){return a.box.x-b.box.x;});
-   let count=0,first=[],pairs=[];
+   let count=0,first=[],pairs=[],introduced=[];
    let lowerStart=0;
    for(let i=0;i<upperSorted.length;i++){
     const upperItem=upperSorted[i],a=upperItem.box;
@@ -91,10 +91,13 @@
     const x=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
     if(x<=.5)continue;
     const y=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);
-    if(y>.5){count++;const key=upperItem.index+':'+lowerItem.index;pairs.push(key);if(collect&&first.length<8)first.push({upper:[a.x,a.y,a.w,a.h],lower:[b.x,b.y,b.w,b.h],overlap:[x,y],newPair:baselinePairs?baselinePairs.indexOf(key)<0:false});}
+    if(y>.5){count++;const key=upperItem.index+':'+lowerItem.index;pairs.push(key);if(collect){const detail={upper:[a.x,a.y,a.w,a.h],lower:[b.x,b.y,b.w,b.h],overlap:[x,y],newPair:baselinePairs?baselinePairs.indexOf(key)<0:false,
+      upperElement:{tag:upperItem.node.tagName,id:upperItem.node.id||null,className:upperItem.node.getAttribute('class')||'',text:(upperItem.node.textContent||'').trim().slice(0,32)},
+      lowerElement:{tag:lowerItem.node.tagName,id:lowerItem.node.id||null,className:lowerItem.node.getAttribute('class')||'',text:(lowerItem.node.textContent||'').trim().slice(0,32)}};
+     if(detail.newPair)introduced.push(detail);if(first.length<8)first.push(detail);}}
     }
    }
-   return {count:count,first:first,pairs:pairs};
+   return {count:count,first:first,pairs:pairs,introduced:introduced};
   }
   setDelta(0);
   const baselinePairs=collisions(0,false).pairs;
@@ -109,6 +112,7 @@
   result.candidateDelta=safe;result.maxAllowedDelta=maximum;result.afterStaffSpace=afterSpace;
   result.newCrossStaffOverlaps=finalCollision.pairs.filter(function(pair){return baselinePairs.indexOf(pair)<0;}).length;result.existingCrossStaffOverlaps=baselinePairs.length;
   result.rejectedPairs=finalCollision.first;
+  if(unsafe>safe){const blocker=collisions(unsafe,true,baselinePairs);result.blockingDelta=unsafe;result.blockingPairs=blocker.introduced.slice(0,8);}
   if(afterSpace<6||safe<lineSpace){setDelta(0);result.status='insufficient-safe-gain';return result;}
   setDelta(safe);
   lower.dataset.studyYOffset=String(safe);
