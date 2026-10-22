@@ -1,7 +1,7 @@
 /* GPL-3.0-only. Derived presentation only; never edits the authoritative XML/events. */
 (function(root){
  'use strict';
- const VERSION=1;
+ const VERSION=2;
  let cachedXml=null,cached=null; // One exact-content entry, bounded by the import size limit.
  function count(node,tag){return node.getElementsByTagName(tag).length;}
  function wordKind(text){
@@ -9,6 +9,15 @@
   if(tokens.length>=4&&tokens.every(function(t){return /^(do|dó|re|ré|mi|fa|fá|sol|la|lá|si)(#|b|♯|♭)?$/.test(t);}))return 'words:note-names';
   if(tokens.length>=4&&tokens.every(function(t){return /^[1-5]$/.test(t);}))return 'words:fingering-list';
   return null;
+ }
+ function isChordLabel(text){
+  const tokens=String(text||'').trim().split(/\s+/).filter(Boolean);
+  const chord=/^[A-G](?:#|b|♯|♭)?(?:m|min|maj|dim|aug|sus\d?|add\d?|\d+)?(?:\/[A-G](?:#|b|♯|♭)?)?$/i;
+  return tokens.length>1&&tokens.every(function(token){return chord.test(token);});
+ }
+ function shouldCompactVertical(profile,height,staffSpace){
+  return !!profile&&height<=240&&profile.staffCount===2&&
+   (profile.notes>=200||profile.maxNotesPerMeasure>=16)&&staffSpace>0&&staffSpace<6;
  }
  function analyze(xml){
   if(xml===cachedXml&&cached)return cached;
@@ -25,9 +34,15 @@
    return {index:index,number:m.getAttribute('number'),notes:count(m,'note'),symbols:m.getElementsByTagName('*').length,
     voices:Object.keys(voices),staves:Object.keys(staves)};
   });
+  const staffCount=Array.from(doc.getElementsByTagName('part')).reduce(function(max,part){
+   const staves=Array.from(part.getElementsByTagName('staff')).map(function(n){return Number(n.textContent)||1;});
+   return Math.max(max,staves.length?Math.max.apply(null,staves):1);
+  },0);
+  const maxNotesPerMeasure=measures.reduce(function(max,measure){return Math.max(max,measure.notes);},0);
   const hiddenTypes=features.lyric?['lyric']:[];
   Array.from(doc.getElementsByTagName('words')).forEach(function(n){const kind=wordKind(n.textContent);if(kind&&hiddenTypes.indexOf(kind)<0)hiddenTypes.push(kind);});
-  const profile={version:VERSION,features:features,measures:measures,notes:count(doc,'pitch'),
+  const profile={version:VERSION,features:features,measures:measures,notes:count(doc,'pitch'),staffCount:staffCount,
+   maxNotesPerMeasure:maxNotesPerMeasure,
    // Lyrics are never required to identify a piano note. Retain words, figures,
    // harmony, dynamics, fingerings, tempo and repetition instructions.
    hiddenTypes:hiddenTypes,spacing:1};
@@ -45,14 +60,49 @@
  function inspectSvg(svg){
   const vb=svg.viewBox.baseVal,ink=svg.getBBox(),rect=svg.getBoundingClientRect();
   const inkClipped=ink.x<vb.x-.5||ink.y<vb.y-.5||ink.x+ink.width>vb.x+vb.width+.5||ink.y+ink.height>vb.y+vb.height+.5;
-  const heads=Array.from(svg.querySelectorAll('.vf-notehead')).map(function(n){return n.getBoundingClientRect();}).sort(function(a,b){return a.left-b.left;});
-  let annotationOverlaps=0;
-  Array.from(svg.querySelectorAll('text')).forEach(function(n){
-   const t=n.getBoundingClientRect();
-   for(const h of heads){if(h.left>=t.right)break;if(h.right>t.left+.5&&Math.min(h.bottom,t.bottom)-Math.max(h.top,t.top)>.5){annotationOverlaps++;break;}}
+  function tightBox(node){
+   try{
+    const b=node.getBBox(),m=node.getScreenCTM();
+    if(!m)return node.getBoundingClientRect();
+    const points=[[b.x,b.y],[b.x+b.width,b.y],[b.x,b.y+b.height],[b.x+b.width,b.y+b.height]].map(function(p){
+     return {x:m.a*p[0]+m.c*p[1]+m.e,y:m.b*p[0]+m.d*p[1]+m.f};
+    });
+    const xs=points.map(function(p){return p.x;}),ys=points.map(function(p){return p.y;});
+    return {left:Math.min.apply(null,xs),right:Math.max.apply(null,xs),top:Math.min.apply(null,ys),bottom:Math.max.apply(null,ys)};
+   }catch(e){return node.getBoundingClientRect();}
+  }
+  const heads=Array.from(svg.querySelectorAll('.vf-notehead')).map(function(n){return {node:n,box:tightBox(n)};}).sort(function(a,b){return a.box.left-b.box.left;});
+  const annotationOverlaps=[];
+  Array.from(svg.querySelectorAll('text')).forEach(function(n,textIndex){
+   if(n.style.visibility==='hidden'||n.getAttribute('visibility')==='hidden')return;
+   const t=tightBox(n);
+   for(const item of heads){const h=item.box;if(h.left>=t.right)break;
+    const overlapX=Math.min(h.right,t.right)-Math.max(h.left,t.left),overlapY=Math.min(h.bottom,t.bottom)-Math.max(h.top,t.top);
+    if(overlapX>.5&&overlapY>.5){
+     annotationOverlaps.push({text:(n.textContent||'').trim(),textIndex:textIndex,chord:isChordLabel(n.textContent),
+      noteId:item.node.id||null,overlapCss:[+overlapX.toFixed(3),+overlapY.toFixed(3)],
+      textBox:[+t.left.toFixed(3),+t.top.toFixed(3),+(t.right-t.left).toFixed(3),+(t.bottom-t.top).toFixed(3)],
+      noteBox:[+h.left.toFixed(3),+h.top.toFixed(3),+(h.right-h.left).toFixed(3),+(h.bottom-h.top).toFixed(3)]});
+     break;
+    }
+   }
   });
-  return {inkClipped:inkClipped,annotationOverlaps:annotationOverlaps,renderedTextCount:svg.querySelectorAll('text').length,
+  return {inkClipped:inkClipped,annotationOverlaps:annotationOverlaps.length,textNotePairs:annotationOverlaps,renderedTextCount:svg.querySelectorAll('text').length,
    bounds:[vb.x,vb.y,vb.width,vb.height],staffSpace:Number(svg.dataset.opticalStaffSpaceCss),height:rect.height};
+ }
+ function applyChordCollisionPolicy(svg){
+  const hidden=[];
+  if(!svg)return hidden;
+  const geometry=inspectSvg(svg);
+  const texts=Array.from(svg.querySelectorAll('text'));
+  geometry.textNotePairs.forEach(function(pair){
+   if(!pair.chord)return;
+   const node=texts[pair.textIndex];
+   if(!node||node.style.visibility==='hidden')return;
+   node.style.visibility='hidden';node.setAttribute('data-study-hidden-reason','colisão geométrica texto/cabeça de nota');
+   hidden.push({text:pair.text,reason:'colisão geométrica texto/cabeça de nota',overlapCss:pair.overlapCss});
+  });
+  return hidden;
  }
  function assess(rows,geometry){
   const alerts=[];let overlaps=0,clipped=0;
@@ -74,7 +124,7 @@
   if(geometry.staffSpace>0&&geometry.staffSpace<6)alerts.push('small-staff-space');
   if(geometry.mapping&&(geometry.mapping.unmatched||geometry.mapping.ambiguous||geometry.mapping.unmatchedNative))alerts.push('native-mapping');
   if(geometry.height>geometry.availableHeight+.5)alerts.push('vertical-overflow');
-  return {alerts:alerts,clipped:clipped,overlaps:overlaps,annotationOverlaps:geometry.annotationOverlaps||0,inkClipped:!!geometry.inkClipped,renderedTextCount:geometry.renderedTextCount||0,staffSpace:geometry.staffSpace,
+  return {alerts:alerts,clipped:clipped,overlaps:overlaps,annotationOverlaps:geometry.annotationOverlaps||0,textNotePairs:geometry.textNotePairs||[],inkClipped:!!geometry.inkClipped,renderedTextCount:geometry.renderedTextCount||0,staffSpace:geometry.staffSpace,
    suggestedSpacing:overlaps?1.5:1,limitations:['Bounding boxes are conservative; not glyph contours.','No independent musical reference; source errors cannot be certified.']};
  }
  function compare(rows,events){
@@ -90,10 +140,13 @@
   const names={'lyric':'letras de canto','words:note-names':'listas de solfejo','words:fingering-list':'listas de dedos'};
   const alerts={'small-staff-space':'pauta pequena','adjacent-attack-overlap':'possível sobreposição de notas','notehead-clipping':'possível corte de notas','symbol-envelope-clipping':'possível corte de símbolos','text-note-overlap':'texto sobre notas','vertical-overflow':'altura insuficiente','native-mapping':'correspondência musical incompleta'};
   let text=profile.hiddenTypes.length?'Estudo: '+profile.hiddenTypes.map(function(t){return names[t]||t;}).join(', ')+' ocultas. Consulte Partitura Livre. ':'';
+  if(analysis.hiddenChordLabels&&analysis.hiddenChordLabels.length){
+   text+='Cifras ocultadas por colisão geométrica: '+analysis.hiddenChordLabels.map(function(item){return item.text;}).join(', ')+'. Consulte Partitura Livre. ';
+  }
   if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
   return text;
  }
- const api={compare:compare,summary:summary,inspectSvg:inspectSvg,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
+ const api={applyChordCollisionPolicy:applyChordCollisionPolicy,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);

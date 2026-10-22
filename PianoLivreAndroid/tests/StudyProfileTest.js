@@ -14,6 +14,15 @@ assert.equal(P.wordKind('5 3 4 5 1 2'),'words:fingering-list');
 assert.equal(P.wordKind('Lent et douloureux'),null);
 assert.equal(P.wordKind('Allegro'),null);
 assert.equal(P.wordKind('D A Bm F#m'),null,'chord text is preserved');
+assert(P.isChordLabel('D A Bm F#m'));
+assert(P.isChordLabel('G D G A'));
+assert.equal(P.isChordLabel('la fa# sol la'),false,'solfege is not a chord label');
+assert.equal(P.isChordLabel('Lent et douloureux'),false,'directions are not chord labels');
+assert(P.shouldCompactVertical({staffCount:2,notes:469,maxNotesPerMeasure:20},196,4.853),
+ 'dense two-staff scores on a low viewport qualify without title-based rules');
+assert.equal(P.shouldCompactVertical({staffCount:1,notes:469,maxNotesPerMeasure:20},196,4.853),false);
+assert.equal(P.shouldCompactVertical({staffCount:2,notes:80,maxNotesPerMeasure:8},196,4.853),false);
+assert.equal(P.shouldCompactVertical({staffCount:2,notes:469,maxNotesPerMeasure:20},351,4.853),false);
 assert(P.assess([],{inkClipped:true,annotationOverlaps:2}).alerts.includes('symbol-envelope-clipping'));
 assert(P.assess([],{annotationOverlaps:1}).alerts.includes('text-note-overlap'));
 const native=[{beat:0,length:1,midi:60,staff:1,measure:1,step:'C',octave:4}];

@@ -36,7 +36,7 @@
 (function(){
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
- let studyProfile=null,studyAnalysis=null;
+ let studyProfile=null,studyAnalysis=null,studyVerticalAdaptation={status:'not-evaluated'};
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1,opticalReferenceX=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
@@ -612,6 +612,7 @@
   cancelOptical();cancelOpticalWait();
   document.getElementById('optical-note-tip').style.display='none';
   loaded=false;appliedBeat=-1;seekBeat=start||0;
+  studyProfile=null;studyAnalysis=null;studyVerticalAdaptation={status:'not-evaluated'};
   osmdRenderedWidth=0;osmdRenderedHeight=0;opticalDisplayScale=1;
   opticalContextState=null;opticalContextMeasure=-1;
   document.getElementById('optical-context-rail').innerHTML='';
@@ -683,7 +684,56 @@
       osmd.EngravingRules.VoiceSpacingMultiplierVexflow*=factor;
       osmd.EngravingRules.VoiceSpacingAddendVexflow*=factor;
       osmd.render();
+      probe=document.querySelector('#score svg');
+      if(!probe)throw Error('OSMD não produziu SVG após ajuste de espaçamento');
+      fitOpticalSvg(probe);
      }
+     const beforeCompactSvg=document.querySelector('#score svg');
+     const beforeCompact=StudyProfile.inspectSvg(beforeCompactSvg);
+     studyVerticalAdaptation={status:'not-needed',beforeStaffSpace:beforeCompact.staffSpace,
+      afterStaffSpace:beforeCompact.staffSpace,beforeHeight:beforeCompactSvg.getBoundingClientRect().height,
+      afterHeight:beforeCompactSvg.getBoundingClientRect().height,accepted:false};
+     if(window.__testDisableStudyVerticalAdaptation!==true&&StudyProfile.shouldCompactVertical(studyProfile,viewport.clientHeight,beforeCompact.staffSpace)){
+      const rules=osmd.EngravingRules;
+      const previous={minimum:rules.MinimumStaffLineDistance,sky:rules.MinSkyBottomDistBetweenStaves};
+      studyVerticalAdaptation={status:'candidate',beforeStaffSpace:beforeCompact.staffSpace,
+       beforeHeight:beforeCompactSvg.getBoundingClientRect().height,minimumStaffLineDistance:.5,
+       minSkyBottomDistBetweenStaves:.5,accepted:false};
+      // Let OSMD recalculate the interstaff clearance from its note/text
+      // skylines. This compresses only empty space between the two staves;
+      // no SVG is cropped and no note/event coordinate is manually changed.
+      rules.MinimumStaffLineDistance=.5;
+      rules.MinSkyBottomDistBetweenStaves=.5;
+      osmd.render();
+      let compactSvg=document.querySelector('#score svg');
+      if(!compactSvg)throw Error('OSMD não produziu SVG após adaptação vertical');
+      fitOpticalSvg(compactSvg);
+      const compactGeometry=StudyProfile.inspectSvg(compactSvg);
+      const compactRows=EngravingAudit.inspect(osmd.graphic,Infinity);
+      const compactAudit=StudyProfile.assess(compactRows,Object.assign({},compactGeometry,{availableHeight:viewport.clientHeight}));
+      const compactFidelity=Array.isArray(nativeEvents)&&nativeEvents.length
+       ?StudyProfile.compare(compactRows,nativeEvents):{missing:0,unexpected:0,skipped:true};
+      const gained=compactGeometry.staffSpace>=beforeCompact.staffSpace*1.08;
+      const safe=!compactGeometry.inkClipped&&!compactAudit.clipped&&
+       compactGeometry.annotationOverlaps<=beforeCompact.annotationOverlaps&&
+       !compactFidelity.missing&&!compactFidelity.unexpected;
+      studyVerticalAdaptation={status:gained&&safe?'compacted':'rejected',
+       beforeStaffSpace:beforeCompact.staffSpace,afterStaffSpace:compactGeometry.staffSpace,
+       beforeHeight:beforeCompactSvg.getBoundingClientRect().height,afterHeight:compactSvg.getBoundingClientRect().height,
+       minimumStaffLineDistance:.5,minSkyBottomDistBetweenStaves:.5,accepted:gained&&safe,
+       reason:!gained?'insufficient geometric gain':(!safe?'clipping, annotation collision, or native-event divergence':null),
+       annotationOverlapsBefore:beforeCompact.annotationOverlaps,annotationOverlapsAfter:compactGeometry.annotationOverlaps,
+       noteheadClipping:compactAudit.clipped,inkClipped:compactGeometry.inkClipped,nativeFidelity:compactFidelity};
+      if(!gained||!safe){
+       rules.MinimumStaffLineDistance=previous.minimum;
+       rules.MinSkyBottomDistBetweenStaves=previous.sky;
+       osmd.render();
+       const restored=document.querySelector('#score svg');
+       if(!restored)throw Error('OSMD não produziu SVG ao restaurar espaçamento');
+       fitOpticalSvg(restored);
+      }
+     }
+     console.log('STUDY_VERTICAL_ADAPTATION '+JSON.stringify(studyVerticalAdaptation));
     }
     if(studyProof)console.log('POC_OSMD_RENDER_RESOLVED');
     osmdRenderedWidth=viewport.clientWidth;
@@ -703,7 +753,12 @@
       const fidelity=StudyProfile.compare(EngravingAudit.inspect(graphic,Infinity),nativeEvents);
       if(fidelity.missing||fidelity.unexpected)throw Error('Notação OSMD diverge das alturas/oitavas/durações importadas: '+JSON.stringify(fidelity));
      }
+     const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
      refreshStudyAnalysis(svg);
+     studyAnalysis.hiddenChordLabels=hiddenChordLabels;
+     studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
+     if(hiddenChordLabels.length)console.log('STUDY_CHORD_LABELS_HIDDEN '+JSON.stringify(hiddenChordLabels));
+     if(studyAnalysis.textNotePairs.length)console.log('STUDY_TEXT_NOTE_GEOMETRY '+JSON.stringify(studyAnalysis.textNotePairs));
      console.log('STUDY_ANALYSIS '+JSON.stringify({version:studyProfile.version,notes:studyProfile.notes,measures:studyProfile.measures.length,hiddenTypes:studyProfile.hiddenTypes,spacing:studyProfile.spacing,geometry:studyAnalysis}));
      attachOpticalNoteTouch(svg);
      paintOpticalCues(start||0);
@@ -892,7 +947,7 @@
  }
  window.PianoNotation={
    load:render,
-   analysis:function(){return {profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
+   analysis:function(){return {profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,layoutAdaptation:studyVerticalAdaptation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
    seek:function(beat,animated,bpm,playing){
     if(freeLayout)return;seekBeat=beat;
     if(studyProof){opticalSeek(beat,bpm,!!playing);return;}
@@ -962,7 +1017,10 @@
       fitOpticalSvg(resizedSvg);
       // Graphical positions are invalid after a re-layout: reconcile and bind again.
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
+      const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(resizedSvg);
       refreshStudyAnalysis(resizedSvg);
+      studyAnalysis.hiddenChordLabels=hiddenChordLabels;
+      studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
       attachOpticalNoteTouch(document.querySelector('#score svg'));
       paintOpticalCues(seekBeat);
       alignOpticalScore(seekBeat);
