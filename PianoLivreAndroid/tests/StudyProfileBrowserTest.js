@@ -48,13 +48,14 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   if(item.name.endsWith('fur-elise-easy-ver.mxl')){
    const target=report.analysis.notes.find(n=>n.measure===13&&n.beat===36&&n.midi===56&&n.staff===2);
    assert(target,'Für Elise regression note G-sharp 3 at beat 36 must be present');
-   const x=await page.evaluate(note=>{
-    const svg=document.querySelector('#score svg'),v=document.getElementById('viewport'),box=note.headBox;
-    const point=svg.createSVGPoint();point.x=box[0]+box[2]/2;point.y=box[1]+box[3]/2;
-    const screen=point.matrixTransform(svg.getScreenCTM());v.scrollLeft=Math.max(0,screen.x-100);return screen.x;
-   },target);
+   const textX=await page.evaluate(()=>{
+    const svg=document.querySelector('#score svg'),v=document.getElementById('viewport'),text=svg.querySelectorAll('text')[5];
+    if(!text||text.textContent.trim()!=='p')throw Error('Für Elise beat-36 dynamic annotation not found');
+    const b=text.getBBox(),m=text.getScreenCTM(),x=m.a*(b.x+b.width/2)+m.c*(b.y+b.height/2)+m.e;
+    v.scrollLeft=Math.max(0,x-100);return x;
+   });
    await page.screenshot({path:'../docs/evidence/study-profile/fur-elise-dynamic-beat-36.png'});
-   console.log('STUDY_FUR_ELISE_DYNAMIC_NOTE '+JSON.stringify({text:'p',decision:'preserved; measured visible glyph bounds do not touch notehead',beat:target.beat,midi:target.midi,step:target.step||target.writtenStep,octave:target.octave===undefined?target.writtenOctave:target.octave,staff:target.staff,measure:target.measure,centerXCss:x,headBox:target.headBox}));
+   console.log('STUDY_FUR_ELISE_DYNAMIC_NOTE '+JSON.stringify({text:'p',decision:report.analysis.geometry.alerts.includes('text-note-overlap')?'requires presentation adjustment':'preserved; visible glyph outlines clear the notehead',beat:target.beat,midi:target.midi,step:target.step||target.writtenStep,octave:target.octave===undefined?target.writtenOctave:target.octave,staff:target.staff,measure:target.measure,centerXCss:textX,headBox:target.headBox,visibleGlyphPairs:report.textNotePairs}));
   }
   if(/(canon-in-d|fur-elise-easy-ver|gymnopedie-no-1-satie)\.mxl$/.test(item.name))
    await page.screenshot({path:'../docs/evidence/study-profile/'+path.basename(item.name)+'.738x220.initial.png'});
