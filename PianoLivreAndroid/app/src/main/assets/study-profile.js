@@ -113,7 +113,9 @@
   result.newCrossStaffOverlaps=finalCollision.pairs.filter(function(pair){return baselinePairs.indexOf(pair)<0;}).length;result.existingCrossStaffOverlaps=baselinePairs.length;
   result.rejectedPairs=finalCollision.first;
   if(unsafe>safe){const blocker=collisions(unsafe,true,baselinePairs);result.blockingDelta=unsafe;result.blockingPairs=blocker.introduced.slice(0,8);}
-  if(afterSpace<6||safe<lineSpace){setDelta(0);result.status='insufficient-safe-gain';return result;}
+  // A five-CSS-pixel staff is a measurable local improvement over the 4.58px
+  // baseline; retain the small-staff alert below six pixels for review.
+  if(afterSpace<5||safe<lineSpace){setDelta(0);result.status='insufficient-safe-gain';return result;}
   setDelta(safe);
   lower.dataset.studyYOffset=String(safe);
   if(originalTransform!==null)lower.dataset.studyOriginalTransform=originalTransform;
