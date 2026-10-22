@@ -33,6 +33,7 @@ jobs:
       - name: Adaptive Study profile and complete corpus (desktop Chromium)
         run: |
           node tests/StudyProfileTest.js
+          node tests/StudyWindowTest.js
           mkdir -p build/score-tests
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java tests/StudyProfileCorpus.java
           java -cp build/score-tests StudyProfileCorpus > build/study-corpus.tsv

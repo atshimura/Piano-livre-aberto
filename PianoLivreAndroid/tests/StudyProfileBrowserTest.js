@@ -2,6 +2,7 @@
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
 const corpus=[];
+const StudyProfileWordKind=require('../app/src/main/assets/study-profile.js').wordKind;
 for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split('\n')){
  const v=line.split('\t');
  if(v[0]==='FILE')corpus.push({name:v[1],xml:Buffer.from(v[2],'base64').toString(),events:[]});
@@ -11,34 +12,13 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--allow-file-access-from-files'],...(process.env.PIANO_CHROMIUM?{executablePath:process.env.PIANO_CHROMIUM}:{})});
  fs.mkdirSync('../docs/evidence/study-profile',{recursive:true});
  const remoteRequests=[];
+ const sourceSha=process.env.GITHUB_SHA||require('child_process').execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
  const page=await browser.newPage({viewport:{width:738,height:220}}),reports=[],visualComparison=[];
  await page.route(/^https?:/,route=>{remoteRequests.push(route.request().url());return route.abort();});
  await page.goto('file://'+path.resolve('app/src/main/assets/notation.html'));
  await page.evaluate(()=>{window.AndroidNotation={onReady(){},onRendered(){window.testDone=true;},onPresentation(m){window.presentationMessage=m;},onError(m){window.testError=m;}};});
- // B1 diagnostic: compare OSMD-native layout rules on the complete source.
- // This probe never changes application defaults and does not grant acceptance.
- const gymProbe=corpus.find(i=>i.name.endsWith('gymnopedie-no-1-satie.mxl'));
- const layoutProbes=[];
- for(const rules of [{},{SlurHeightFactor:.5},{SlurHeightFactor:.25},
-  {SlurHeightFlattenLongSlursCutoffAngle:0,SlurHeightFlattenLongSlursFactorByWidth:2},
-  {SlurTangentMinAngle:15,SlurHeightFactor:.5}]){
-  await page.setViewportSize({width:738,height:196});
-  const probe=await page.evaluate(async({item,rules})=>{
-   const prototype=opensheetmusicdisplay.OpenSheetMusicDisplay.prototype,render=prototype.render;
-   prototype.render=function(){Object.assign(this.EngravingRules,rules);return render.apply(this,arguments);};
-   try{
-    window.testDone=false;window.testError=null;PianoNotation.load(item.xml,0,'engraving-poc',item.events);
-    for(let i=0;i<300&&!window.testDone&&!window.testError;i++)await new Promise(r=>setTimeout(r,50));
-    const a=PianoNotation.analysis();
-    return {error:window.testError,rules,geometry:a.geometry,adaptation:a.layoutAdaptation};
-   }finally{prototype.render=render;}
-  },{item:gymProbe,rules});
-  layoutProbes.push(probe);
- }
- fs.writeFileSync('../docs/evidence/study-profile/layout-probes.json',JSON.stringify(layoutProbes,null,2));
- console.log('STUDY_LAYOUT_PROBES '+JSON.stringify(layoutProbes));
- await page.setViewportSize({width:738,height:220});
  for(const item of corpus){
+  await page.setViewportSize({width:738,height:220});
   const report=await page.evaluate(async item=>{
    const source=StudyProfile.analyze(item.xml),same=StudyProfile.analyze(item.xml)===source;
    const changed=StudyProfile.analyze(item.xml+'\n')!==source;
@@ -70,7 +50,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
      window.__testDisableDynamicCollisionPolicy=disabled;window.testDone=false;window.testError=null;
      PianoNotation.load(item.xml,0,'engraving-poc',item.events);
     },{item,disabled});
-    await page.waitForFunction(()=>window.testDone||window.testError,{timeout:30000});
+    await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
     const visible=await page.evaluate(()=>{
      const svg=document.querySelector('#score svg'),text=Array.from(svg.querySelectorAll('text')).find(n=>n.textContent.trim()==='p');
      if(!text)throw Error('Für Elise dynamic p missing from active OSMD SVG');
@@ -89,7 +69,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    assert(!report.analysis.geometry.alerts.includes('text-note-overlap'),'Für Elise dynamic collision is corrected in Study view');
    assert(report.analysis.geometry.dynamicRepositionDetails.some(a=>a.text==='p'),'analysis must record the Study-only dynamic adjustment');
    const glyphDiagnostics=await page.evaluate(()=>{
-    const text=document.querySelectorAll('#score svg text')[5],canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+    const text=Array.from(document.querySelectorAll('#score svg text')).find(n=>n.textContent.trim()==='p'),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
     let extent=null,range=null;
     try{const b=text.getExtentOfChar(0);extent=[b.x,b.y,b.width,b.height];}catch(e){extent={error:e.name+': '+e.message};}
     try{const r=document.createRange();r.selectNodeContents(text);range=Array.from(r.getClientRects()).map(b=>[b.x,b.y,b.width,b.height]);}catch(e){range={error:e.name+': '+e.message};}
@@ -99,7 +79,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    });
    console.log('STUDY_TEXT_GLYPH_DIAGNOSTICS '+JSON.stringify(glyphDiagnostics));
    const textX=await page.evaluate(()=>{
-    const svg=document.querySelector('#score svg'),v=document.getElementById('viewport'),text=svg.querySelectorAll('text')[5];
+    const svg=document.querySelector('#score svg'),v=document.getElementById('viewport'),text=Array.from(svg.querySelectorAll('text')).find(n=>n.textContent.trim()==='p');
     if(!text||text.textContent.trim()!=='p')throw Error('Für Elise beat-36 dynamic annotation not found');
     const r=text.getBoundingClientRect(),x=v.scrollLeft+r.left+r.width/2;
     v.scrollLeft=Math.max(0,x-100);return x;
@@ -143,15 +123,40 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   assert.deepEqual(graphic.map(signature).sort(),item.events.map(signature).sort(),item.name+' complete pitch/octave/duration multiset');
   const dimensions=[];
   for(const size of [{width:738,height:196},{width:738,height:351},{width:883,height:409}]){
-   await page.setViewportSize(size);await page.waitForTimeout(350);
-   const fitted=await page.evaluate(()=>{PianoNotation.resize();return PianoNotation.analysis().geometry;});
+   await page.setViewportSize(size);
+   // Fresh renders isolate each viewport; never report the state before the
+   // debounced width re-render completes. Dynamic resize is tested separately.
+   await page.evaluate(item=>{window.testDone=false;window.testError=null;PianoNotation.load(item.xml,0,'engraving-poc',item.events);},item);
+   await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+   const measured=await page.evaluate(()=>{
+    const svg=document.querySelector('#score svg'),v=document.getElementById('viewport'),a=PianoNotation.analysis();
+    v.scrollTop=100;
+    return {error:window.testError,geometry:a.geometry,mapping:a.mapping,layoutAdaptation:a.layoutAdaptation,
+     notes:a.notes,scrollTop:v.scrollTop,availableHeight:+svg.dataset.opticalAvailableHeight,renderedHeight:svg.getBoundingClientRect().height,
+     texts:Array.from(svg.querySelectorAll('text')).map(n=>({text:n.textContent.trim(),hidden:n.style.visibility==='hidden'}))};
+   });
+   assert(!measured.error,item.name+' viewport render: '+measured.error);
+   const fitted=measured.geometry;
+   assert.deepEqual(fitted.viewport,size,item.name+' measurements must belong to the requested viewport');
+   assert.deepEqual(measured.notes.filter(n=>!n.grace).map(signature).sort(),item.events.map(signature).sort(),item.name+' viewport musical fidelity');
+   assert.equal(measured.scrollTop,0,item.name+' no vertical scroll');
+   assert(!fitted.inkClipped&&fitted.clipped===0,item.name+' complete visible ink');
    assert(!fitted.alerts.includes('vertical-overflow'),item.name+' vertical fit '+JSON.stringify(size));
+   if(item.name.endsWith('canon-in-d.mxl')){
+    assert(measured.texts.some(n=>/D A Bm F#m/.test(n.text)&&!n.hidden),'Canon chords must remain visible at each viewport');
+    assert(!measured.texts.some(n=>StudyProfileWordKind(n.text)&&!n.hidden),'Canon auxiliary lists must not be rendered');
+    assert.equal(fitted.hiddenChordLabels.length,0,'Canon has no measured chord collision');
+   }
+   if(item.name.endsWith('fur-elise-easy-ver.mxl')){
+    assert(measured.texts.some(n=>n.text==='p'&&!n.hidden),'Für Elise dynamic must remain visible');
+    assert(!fitted.textNotePairs.some(p=>p.text==='p'),'Für Elise measured dynamic/note clearance in each viewport');
+   }
    if(/(canon-in-d|fur-elise-easy-ver|gymnopedie-no-1-satie)\.mxl$/.test(item.name))await page.screenshot({path:'../docs/evidence/study-profile/'+path.basename(item.name)+'.'+size.width+'x'+size.height+'.png'});
-   dimensions.push({size,geometry:fitted});
+   dimensions.push({size,renderer:'OSMD SVG',geometry:fitted,mapping:measured.mapping,layoutAdaptation:measured.layoutAdaptation,availableHeight:measured.availableHeight,renderedHeight:measured.renderedHeight,texts:measured.texts});
   }
   reports.push({dimensions,name:item.name,notes:item.events.length,renderer:report.renderer,profile:report.analysis.profile,geometry:report.analysis.geometry,mapping:report.analysis.mapping,layoutAdaptation:report.analysis.layoutAdaptation});
-  fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));
-  }catch(error){reports.push({name:item.name,renderer:report.renderer,profile:report.analysis&&report.analysis.profile,geometry:report.analysis&&report.analysis.geometry,mapping:report.analysis&&report.analysis.mapping,layoutAdaptation:report.analysis&&report.analysis.layoutAdaptation,failure:error.message});fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));console.error('STUDY_CORPUS_FAILURE '+error.message);}
+  fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({sourceSha,scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));
+  }catch(error){reports.push({name:item.name,renderer:report.renderer,profile:report.analysis&&report.analysis.profile,geometry:report.analysis&&report.analysis.geometry,mapping:report.analysis&&report.analysis.mapping,layoutAdaptation:report.analysis&&report.analysis.layoutAdaptation,failure:error.message});fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({sourceSha,scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));console.error('STUDY_CORPUS_FAILURE '+error.message);}
  }
  // Reproducible same-build comparison of the geometric staff-gap compaction
  // on three representative viewport sizes. Baseline uses stock OSMD engraving;
@@ -166,7 +171,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
     window.testDone=false;window.testError=null;window.__testDisableStudyVerticalAdaptation=disabled;
     PianoNotation.load(item.xml,0,'engraving-poc',item.events);
    },{item:gym,disabled});
-   await page.waitForFunction(()=>window.testDone||window.testError,{timeout:30000});
+   await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
    const row=await page.evaluate(()=>({error:window.testError,analysis:PianoNotation.analysis()}));
    assert(!row.error,'Gymnopédie comparison render: '+row.error);
    const phase=disabled?'before':'after';
@@ -176,12 +181,80 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
     viewportHeightCssPx:size.height,verticalOverflow:row.analysis.geometry.alerts.includes('vertical-overflow'),
     hiddenChordLabels:row.analysis.geometry.hiddenChordLabels||[],adaptation:row.analysis.layoutAdaptation});
    if(!disabled&&size.height===196){
-    assert(row.analysis.geometry.staffSpace>=5,'Gymnopédie low viewport must improve from 4.58 to at least 5 CSS px without clipping: '+JSON.stringify(row.analysis.layoutAdaptation));
+    assert(row.analysis.geometry.staffSpace>=5,'Gymnopédie low viewport opening must reach at least 5 CSS px without clipping: '+JSON.stringify(row.analysis.layoutAdaptation));
     assert(!row.analysis.geometry.alerts.includes('vertical-overflow'),'Gymnopédie remains fully visible without vertical scroll');
    }
   }
  }
  await page.evaluate(()=>{window.__testDisableStudyVerticalAdaptation=false;});
+ // Traverse every authored measure in both directions. Independently measure
+ // actual screen boxes, including stems and long slurs, not just the planner.
+ await page.setViewportSize({width:738,height:196});
+ await page.evaluate(item=>{window.__testDisableStudyVerticalAdaptation=false;window.testDone=false;PianoNotation.load(item.xml,0,'engraving-poc',item.events);},gym);
+ await page.waitForFunction(()=>window.testDone,null,{timeout:30000});
+ const beats=Array.from(new Set(gym.events.map(n=>n.beat))).sort((a,b)=>a-b);
+ const traversal=await page.evaluate(beats=>{
+  const samples=[];
+  for(const beat of beats.concat(beats.slice().reverse())){
+   PianoNotation.seek(beat,false,100,false);
+   const a=PianoNotation.analysis(),svg=document.querySelector('#score svg'),v=document.getElementById('viewport'),vp=v.getBoundingClientRect();
+   const clipped=[];
+   for(const n of Array.from(svg.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline'))){
+    if(getComputedStyle(n).visibility==='hidden'||n.closest('#piano-optical-study-cues'))continue;
+    const b=n.getBoundingClientRect();
+    if(b.right>vp.left&&b.left<vp.right&&(b.top<vp.top-.5||b.bottom>vp.bottom+.5))clipped.push({tag:n.tagName,id:n.id,text:n.textContent,box:[b.left,b.top,b.width,b.height]});
+   }
+   if(clipped.length)throw Error('Visible ink clipped at beat '+beat+': '+JSON.stringify(clipped.slice(0,3)));
+   if(a.geometry.window&&a.geometry.window.clippedPrimitives)throw Error('Window diagnostic clipping');
+   if(a.mapping.matched!==469)throw Error('Gymnopédie mapping changed');
+   samples.push({beat,staffSpace:a.geometry.staffSpace,window:a.geometry.window});
+  }
+  return samples;
+ },beats);
+ fs.writeFileSync('../docs/evidence/study-profile/window-traversal.json',JSON.stringify({sourceSha,samples:traversal},null,2));
+ // A zero-width SVG path still paints a stem. It must block unsafe staff
+ // compaction; the prior bbox-only filter silently discarded this obstacle.
+ await page.evaluate(()=>{
+  const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox','0 0 1000 400');svg.setAttribute('width','490');svg.setAttribute('height','196');
+  svg.dataset.opticalNativeHeight='400';svg.dataset.opticalStaffSpaceCss='4.9';
+  const group=(id,y)=>{const g=document.createElementNS(ns,'g');g.id=id;g.setAttribute('class','staffline');
+   const m=document.createElementNS(ns,'g');m.setAttribute('class','vf-measure');g.appendChild(m);svg.appendChild(g);
+   for(let i=0;i<5;i++){const p=document.createElementNS(ns,'path');p.setAttribute('d','M 0 '+(y+i*10)+' H 1000');p.setAttribute('stroke','black');m.appendChild(p);}return g;};
+  const upper=group('fixture-1',50),lower=group('fixture-2',240);
+  const obstacle=document.createElementNS(ns,'rect');for(const [k,v] of Object.entries({x:118,y:130,width:6,height:10}))obstacle.setAttribute(k,v);upper.appendChild(obstacle);
+  const stem=document.createElementNS(ns,'path');stem.setAttribute('d','M 120 150 V 285');stem.setAttribute('stroke','black');stem.setAttribute('stroke-width','2');lower.appendChild(stem);
+  document.body.appendChild(svg);
+  const result=StudyProfile.compactStaffGap(svg,{staffCount:2,notes:200},196);
+  if(result.accepted||result.candidateDelta>=11)throw Error('Thin stem was ignored: '+JSON.stringify(result));
+  if(lower.getAttribute('transform'))throw Error('Rejected compaction must restore native geometry');
+  svg.remove();
+ });
+ // Height-only guide toggles must be reversible, preserve context and retain
+ // musical mapping; a new render at the final size is the independent oracle.
+ await page.setViewportSize({width:738,height:351});
+ await page.evaluate(item=>{window.testDone=false;PianoNotation.load(item.xml,0,'engraving-poc',item.events);},gym);
+ await page.waitForFunction(()=>window.testDone,null,{timeout:30000});
+ const resizeEvidence=[];
+ for(const height of [196,218,351,196]){
+  await page.setViewportSize({width:738,height});
+  await page.waitForFunction(height=>PianoNotation.analysis().geometry.viewport.height===height,height,{timeout:30000});
+  const live=await page.evaluate(()=>{
+   const a=PianoNotation.analysis(),svg=document.querySelector('#score svg'),rail=document.querySelector('#optical-context-rail svg');
+   return {geometry:a.geometry,mapping:a.mapping,adaptation:a.layoutAdaptation,
+    railVisible:!!rail&&Array.from(rail.querySelectorAll('.vf-clef')).every(n=>getComputedStyle(n).visibility!=='hidden'),
+    box:svg.getAttribute('viewBox')};
+  });
+  assert(live.railVisible,'clefs survive guide resize');
+  assert.equal(live.mapping.matched,gym.events.length,'complete mapping after guide resize');
+  assert(!live.geometry.clipped&&!live.geometry.inkClipped,'no clipped notes or symbols after guide resize');
+  resizeEvidence.push({height,...live});
+ }
+ await page.evaluate(item=>{window.testDone=false;PianoNotation.load(item.xml,0,'engraving-poc',item.events);},gym);
+ await page.waitForFunction(()=>window.testDone,null,{timeout:30000});
+ const fresh=await page.evaluate(()=>PianoNotation.analysis());
+ assert(Math.abs(fresh.geometry.staffSpace-resizeEvidence[3].geometry.staffSpace)<.01,'repeated resize must equal fresh layout at final size');
+ fs.writeFileSync('../docs/evidence/study-profile/resize.json',JSON.stringify({sourceSha,resizeEvidence},null,2));
  // Direct DOM preservation and annotation classification, independent of title.
  await page.evaluate(()=>{const xml='<score-partwise><part><measure><note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><lyric><text>C</text></lyric></note><direction><direction-type><words>rit.</words></direction-type></direction><harmony><root><root-step>C</root-step></root></harmony></measure></part></score-partwise>';const p=StudyProfile.analyze(xml),d=new DOMParser().parseFromString(StudyProfile.presentation(xml,p),'application/xml');if(d.querySelector('lyric')||!d.querySelector('words')||!d.querySelector('harmony'))throw Error('annotation policy');});
  // Real OSMD failure, not a simulated successful fallback.
@@ -189,7 +262,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  assert(failed,'OSMD failure must reach native renderer callback');
  assert.equal(remoteRequests.length,0,'No imported XML may trigger a network request');
  fs.mkdirSync('../docs/evidence/study-profile',{recursive:true});
- fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));
+ fs.writeFileSync('../docs/evidence/study-profile/corpus.json',JSON.stringify({sourceSha,scope:'Desktop Chromium, not Android or physical acceptance',reports,visualComparison},null,2));
  assert.equal(reports.filter(r=>r.failure).length,0,'Corpus failures: '+JSON.stringify(reports.filter(r=>r.failure)));
  console.log('STUDY_PROFILE_BROWSER_PASS files='+reports.length);
  await browser.close();

@@ -74,7 +74,7 @@
   const connectors=Array.from(lower.querySelectorAll('rect')).filter(function(node){
    const r=node.getBBox();
    return !node.getAttribute('transform')&&node.parentNode.classList.contains('vf-connector')&&
-    r.width<lineSpace*.3&&Math.abs(r.y-topY)<lineSpace*.2&&r.height>gap+4*lineSpace-2;
+    r.width<lineSpace*.6&&Math.abs(r.y-topY)<lineSpace*.2&&r.height>gap+4*lineSpace-2;
   }).map(function(node){return {node:node,y:node.getAttribute('y'),height:node.getAttribute('height')};});
   const braces=Array.from(svg.querySelectorAll('g.vf-brace')).filter(function(node){
    return !lower.contains(node)&&!upper.contains(node);
@@ -227,7 +227,9 @@
  }
  function inspectSvg(svg){
   const vb=svg.viewBox.baseVal,ink=svg.getBBox(),rect=svg.getBoundingClientRect();
-  const inkClipped=ink.x<vb.x-.5||ink.y<vb.y-.5||ink.x+ink.width>vb.x+vb.width+.5||ink.y+ink.height>vb.y+vb.height+.5;
+  const camera=svg._studyWindowBounds;
+  const inkClipped=camera?(camera.inkTop<vb.y-.5||camera.inkBottom>vb.y+vb.height+.5):
+   ink.x<vb.x-.5||ink.y<vb.y-.5||ink.x+ink.width>vb.x+vb.width+.5||ink.y+ink.height>vb.y+vb.height+.5;
   function tightBox(node){
    try{
     const b=node.getBBox(),m=node.getScreenCTM();
@@ -298,6 +300,16 @@
   return {inkClipped:inkClipped,annotationOverlaps:annotationOverlaps.length,textNotePairs:annotationOverlaps,renderedTextCount:svg.querySelectorAll('text').length,
    bounds:[vb.x,vb.y,vb.width,vb.height],staffSpace:Number(svg.dataset.opticalStaffSpaceCss),height:rect.height};
  }
+ function restorePresentationAdjustments(svg){
+  if(!svg)return;
+  (svg._studyDynamicTransforms||[]).forEach(function(item){
+   if(item.transform===null)item.node.removeAttribute('transform');else item.node.setAttribute('transform',item.transform);
+  });
+  svg._studyDynamicTransforms=[];
+  Array.from(svg.querySelectorAll('[data-study-hidden-reason]')).forEach(function(node){
+   node.style.visibility='';node.removeAttribute('data-study-hidden-reason');
+  });
+ }
  function applyChordCollisionPolicy(svg){
   const hidden=[];
   if(!svg)return hidden;
@@ -330,6 +342,8 @@
     if(previous===null)node.removeAttribute('transform');else node.setAttribute('transform',previous);
     return;
    }
+   if(!svg._studyDynamicTransforms)svg._studyDynamicTransforms=[];
+   svg._studyDynamicTransforms.push({node:node,transform:previous});
    adjustments.push({text:pair.text,shiftCssPx:+shiftCssPx.toFixed(2),reason:'colisão geométrica com cabeça; dinâmicas preservadas e movidas para cima na apresentação do Estudo'});
   });
   return adjustments;
@@ -377,7 +391,7 @@
   if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
   return text;
  }
- const api={applyChordCollisionPolicy:applyChordCollisionPolicy,applyDynamicCollisionPolicy:applyDynamicCollisionPolicy,restoreStaffGap:restoreStaffGap,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,compactStaffGap:compactStaffGap,shiftEngravingRows:shiftEngravingRows,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
+ const api={restorePresentationAdjustments:restorePresentationAdjustments,applyChordCollisionPolicy:applyChordCollisionPolicy,applyDynamicCollisionPolicy:applyDynamicCollisionPolicy,restoreStaffGap:restoreStaffGap,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,compactStaffGap:compactStaffGap,shiftEngravingRows:shiftEngravingRows,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyProfile=api;
 })(typeof window!=='undefined'?window:null);

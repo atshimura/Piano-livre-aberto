@@ -30,6 +30,7 @@
 <script src="optical-time-map.js"></script>
 <script src="engraving-audit.js"></script>
 <script src="study-profile.js"></script>
+<script src="study-window.js"></script>
 <script src="engraving-conventions.js"></script></head>
 <body><div id="viewport"><div id="score"></div></div><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
 <script>
@@ -37,7 +38,7 @@
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let studyProfile=null,studyAnalysis=null,studyVerticalAdaptation={status:'not-evaluated'};
- let studyDynamicAdjustments=[];
+ let studyDynamicAdjustments=[],studyWindow=null,studyWindowRows=[],studyWindowGlobal=null;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1,opticalReferenceX=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
@@ -222,8 +223,15 @@
    viewportMaxScrollTop:getComputedStyle(viewport).overflowY==='hidden'?0:Math.max(0,viewport.scrollHeight-viewport.clientHeight),
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
  function adaptStudySvg(svg){
+  studyWindow=null;studyWindowRows=[];studyWindowGlobal=null;delete svg._studyWindowBounds;svg.style.overflow='visible';
+  StudyProfile.restorePresentationAdjustments(svg);
   StudyProfile.restoreStaffGap(svg);
+  if(svg._studyBaseEnvelope){
+   svg.setAttribute('viewBox',svg._studyBaseEnvelope.viewBox);
+   svg.dataset.opticalNativeHeight=svg._studyBaseEnvelope.height;
+  }
   fitOpticalSvg(svg);
+  if(!svg._studyBaseEnvelope)svg._studyBaseEnvelope={viewBox:svg.getAttribute('viewBox'),height:svg.dataset.opticalNativeHeight};
  const beforeCompact=StudyProfile.inspectSvg(svg);
  const beforeCompactHeight=svg.getBoundingClientRect().height;
  studyVerticalAdaptation={status:'not-needed',beforeStaffSpace:beforeCompact.staffSpace,
@@ -264,9 +272,15 @@
  }
  function refreshStudyAnalysis(svg){
   if(!svg||!studyProof||!osmd)return;
-  const newAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
-  studyDynamicAdjustments=studyDynamicAdjustments.concat(newAdjustments);
-  if(studyDynamicAdjustments.length)fitOpticalSvg(svg);
+  const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
+  studyDynamicAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
+  if(studyDynamicAdjustments.length){
+   const vb=svg.viewBox.baseVal,ink=svg.getBBox(),ratio=Number(svg.dataset.opticalNativeHeight)/vb.height;
+   const top=Math.min(vb.y,ink.y-4),bottom=Math.max(vb.y+vb.height,ink.y+ink.height+4);
+   svg.setAttribute('viewBox',[vb.x,top,vb.width,bottom-top].join(' '));
+   svg.dataset.opticalNativeHeight=String((bottom-top)*ratio);
+   fitOpticalSvg(svg);
+  }
   const rows=EngravingAudit.inspect(osmd.graphic,Infinity);
   const visibleRows=studyVerticalAdaptation.accepted
    ?StudyProfile.shiftEngravingRows(rows,2,studyVerticalAdaptation.delta):rows;
@@ -274,9 +288,46 @@
    Object.assign(StudyProfile.inspectSvg(svg),{availableHeight:viewport.clientHeight,mapping:opticalReconciliation}));
   studyAnalysis.dynamicRepositionDetails=studyDynamicAdjustments;
   studyAnalysis.repositionedDynamics=studyDynamicAdjustments.length;
-  studyAnalysis.hiddenChordLabels=Array.from(svg.querySelectorAll('[data-study-hidden-reason]')).map(function(node){return {text:node.textContent.trim(),reason:node.dataset.studyHiddenReason};});
+  studyAnalysis.hiddenChordLabels=hiddenChordLabels;
   studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
   studyAnalysis.viewport={width:viewport.clientWidth,height:viewport.clientHeight};
+ }
+ function prepareStudyWindow(svg){
+  if(window.__testDisableStudyVerticalAdaptation===true||!studyProfile||studyProfile.staffCount!==2||
+     viewport.clientHeight>240||studyAnalysis.staffSpace>=6)return;
+  const geometry=StudyWindow.collect(svg),vb=svg.viewBox.baseVal;
+  studyWindow=StudyWindow.plan(geometry.boxes,{bounds:[vb.x,vb.y,vb.width,vb.height],
+   width:viewport.clientWidth,height:viewport.clientHeight,context:geometry.context});
+  if(!studyWindow)return;
+  studyWindowRows=EngravingAudit.inspect(osmd.graphic,Infinity);
+  if(studyVerticalAdaptation.accepted)studyWindowRows=StudyProfile.shiftEngravingRows(studyWindowRows,2,studyVerticalAdaptation.delta);
+  studyWindowGlobal=studyAnalysis;
+  console.log('STUDY_WINDOW_PLAN '+JSON.stringify({windows:studyWindow.windows.length,
+   fullStaffSpace:10*studyWindow.fullScale,minStaffSpace:Math.min.apply(null,studyWindow.windows.map(function(w){return w.staffSpace;})),
+   maxStaffSpace:Math.max.apply(null,studyWindow.windows.map(function(w){return w.staffSpace;}))}));
+ }
+ function updateStudyWindow(x){
+  if(!studyWindow)return false;
+  const index=StudyWindow.select(studyWindow,x);
+  if(index===studyWindow.current)return false;
+  const svg=document.querySelector('#score svg'),w=studyWindow.windows[index];
+  const audit=StudyWindow.inspect(studyWindow,index);
+  if(audit.clipped)throw Error('Janela de Estudo cortaria símbolos musicais');
+  studyWindow.current=index;
+  svg.style.overflow='hidden';
+  svg.setAttribute('viewBox',[studyWindow.bounds[0],w.top,studyWindow.bounds[2],w.height].join(' '));
+  svg.dataset.opticalNativeHeight=String(w.height);
+  svg._studyWindowBounds={left:w.left,right:w.right,inkTop:w.inkTop,inkBottom:w.inkBottom};
+  fitOpticalSvg(svg);
+  alignOpticalScore(0);
+  const rows=studyWindowRows.filter(function(r){return !r.headBox||r.headBox[0]+r.headBox[2]>=w.left&&r.headBox[0]<=w.right;});
+  studyAnalysis=Object.assign({},studyWindowGlobal,StudyProfile.assess(rows,
+   Object.assign(StudyProfile.inspectSvg(svg),{availableHeight:viewport.clientHeight,mapping:opticalReconciliation})));
+  studyAnalysis.window={index:index,count:studyWindow.windows.length,left:w.left,right:w.right,
+   inkTop:w.inkTop,inkBottom:w.inkBottom,checkedPrimitives:audit.checkedPrimitives,clippedPrimitives:audit.clipped,
+   fullStaffSpace:10*studyWindow.fullScale};
+  opticalContextMeasure=-1;
+  return true;
  }
  function alignOpticalScore(beat){
   opticalReferenceX=Math.min(viewport.clientWidth*.4,
@@ -289,6 +340,8 @@
   const rail=document.getElementById('optical-context-rail');
   rail.innerHTML='';
   if(!svg||!columns||!columns.length){opticalContextState=null;return;}
+  // Rebuilding after a height change must not clone the previous hidden state.
+  Array.from(svg.querySelectorAll('g.vf-clef,g.vf-keysignature,g.vf-timesignature,g.vf-brace')).forEach(function(node){node.style.visibility='';});
   const candidates=Array.from(svg.querySelectorAll('g.staffline')).filter(function(node){
    return node.classList&&node.classList.contains('staffline');
   });
@@ -501,9 +554,11 @@
   rail.style.left='0px';
   rail.style.top=Math.max(0,source.top-viewportRect.top)+'px';
   rail.style.width=Math.min(viewport.clientWidth,130*opticalDisplayScale)+'px';
-  rail.style.height=(state.nativeHeight*opticalDisplayScale)+'px';
+  const camera=state.svg.viewBox.baseVal,cameraHeight=camera.height*opticalDisplayScale;
+  rail.style.height=cameraHeight+'px';
+  state.overlay.setAttribute('viewBox',[camera.x,camera.y,camera.width,camera.height].join(' '));
   state.overlay.setAttribute('width',String(state.nativeWidth*opticalDisplayScale));
-  state.overlay.setAttribute('height',String(state.nativeHeight*opticalDisplayScale));
+  state.overlay.setAttribute('height',String(cameraHeight));
   console.log('POC_CONTEXT_RAIL_MEASURE '+JSON.stringify({measure:target+1,beat:beat}));
   console.log('POC_CONTEXT_RAIL_STATE '+JSON.stringify({measure:target+1,
    staffSources:state.active.map(function(symbols){return {clef:symbols.clef&&symbols.clef.sourceMeasure,
@@ -546,6 +601,7 @@
  }
  function opticalPosition(beat){
   if(!optical)return;
+  updateStudyWindow(optical.timeline.xAt(beat));
   const wanted=optical.timeline.xAt(beat)*opticalDisplayScale+opticalOffset-opticalReferenceX-53;
   const maximum=Math.max(0,viewport.scrollWidth-viewport.clientWidth);
   const target=Math.max(0,Math.min(maximum,wanted));
@@ -664,11 +720,12 @@
   });
  }
  function render(xml,start,layout,nativeEvents){
+  clearTimeout(renderTimer);
   const ticket=++generation;
   cancelOptical();cancelOpticalWait();
   document.getElementById('optical-note-tip').style.display='none';
   loaded=false;appliedBeat=-1;seekBeat=start||0;
-  studyProfile=null;studyAnalysis=null;studyVerticalAdaptation={status:'not-evaluated'};studyDynamicAdjustments=[];
+  studyProfile=null;studyAnalysis=null;studyVerticalAdaptation={status:'not-evaluated'};studyDynamicAdjustments=[];studyWindow=null;studyWindowRows=[];studyWindowGlobal=null;
   osmdRenderedWidth=0;osmdRenderedHeight=0;opticalDisplayScale=1;
   opticalContextState=null;opticalContextMeasure=-1;
   document.getElementById('optical-context-rail').innerHTML='';
@@ -775,14 +832,14 @@
       const fidelity=StudyProfile.compare(EngravingAudit.inspect(graphic,Infinity),nativeEvents);
       if(fidelity.missing||fidelity.unexpected)throw Error('Notação OSMD diverge das alturas/oitavas/durações importadas: '+JSON.stringify(fidelity));
      }
-     const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
      refreshStudyAnalysis(svg);
-     studyAnalysis.hiddenChordLabels=hiddenChordLabels;
+     const hiddenChordLabels=studyAnalysis.hiddenChordLabels;
      studyAnalysis.repositionedDynamics=repositionedDynamics+studyDynamicAdjustments.length;
      studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
      if(hiddenChordLabels.length)console.log('STUDY_CHORD_LABELS_HIDDEN '+JSON.stringify(hiddenChordLabels));
      if(studyAnalysis.textNotePairs.length)console.log('STUDY_TEXT_NOTE_GEOMETRY '+JSON.stringify(studyAnalysis.textNotePairs));
      console.log('STUDY_ANALYSIS '+JSON.stringify({version:studyProfile.version,notes:studyProfile.notes,measures:studyProfile.measures.length,hiddenTypes:studyProfile.hiddenTypes,spacing:studyProfile.spacing,geometry:studyAnalysis}));
+     prepareStudyWindow(svg);
      attachOpticalNoteTouch(svg);
      paintOpticalCues(start||0);
      alignOpticalScore(start||0);
@@ -898,6 +955,12 @@
       ?0:Math.max(0,viewport.scrollHeight-viewport.clientHeight);
      proof.sourceInkEnvelope={top:Number(svg.dataset.opticalInkTop),bottom:Number(svg.dataset.opticalInkBottom),
       viewBoxTop:svg.viewBox.baseVal.y,viewBoxBottom:svg.viewBox.baseVal.y+svg.viewBox.baseVal.height};
+     if(svg._studyWindowBounds){
+      proof.fullSourceInkEnvelope=proof.sourceInkEnvelope;
+      proof.sourceInkEnvelope={top:svg._studyWindowBounds.inkTop,bottom:svg._studyWindowBounds.inkBottom,
+       viewBoxTop:svg.viewBox.baseVal.y,viewBoxBottom:svg.viewBox.baseVal.y+svg.viewBox.baseVal.height};
+      proof.studyWindow=studyAnalysis.window;
+     }
      proof.nativeStaffSpaceCssPx=Number(svg&&svg.dataset.opticalStaffSpaceCss||0);
      proof.staffSeparationSpaces=Number(svg&&svg.dataset.opticalStaffGapSpaces||0);
      proof.svgFeatureCounts={
@@ -970,7 +1033,7 @@
  }
  window.PianoNotation={
    load:render,
-   analysis:function(){return {profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,layoutAdaptation:studyVerticalAdaptation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
+   analysis:function(){return {windowPlan:studyWindow?{windows:studyWindow.windows,current:studyWindow.current,fullScale:studyWindow.fullScale}:null,profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,layoutAdaptation:studyVerticalAdaptation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
    seek:function(beat,animated,bpm,playing){
     if(freeLayout)return;seekBeat=beat;
     if(studyProof){opticalSeek(beat,bpm,!!playing);return;}
@@ -1021,6 +1084,7 @@
       if(studyVerticalAdaptation.accepted)optical.notes.forEach(function(note){if(note.staff===2)note.y-=studyVerticalAdaptation.delta;});
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
       refreshStudyAnalysis(resizedSvg);
+      prepareStudyWindow(resizedSvg);
       makeOpticalContextState(resizedSvg,osmd.graphic&&osmd.graphic.measureList||[]);
       opticalCueKey='';paintOpticalCues(seekBeat);
       alignOpticalScore(seekBeat);
@@ -1048,10 +1112,9 @@
       if(studyVerticalAdaptation.accepted)optical.notes.forEach(function(note){if(note.staff===2)note.y-=studyVerticalAdaptation.delta;});
       // Graphical positions are invalid after a re-layout: reconcile and bind again.
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
-      const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(resizedSvg);
       refreshStudyAnalysis(resizedSvg);
-      studyAnalysis.hiddenChordLabels=hiddenChordLabels;
       studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
+      prepareStudyWindow(resizedSvg);
       attachOpticalNoteTouch(document.querySelector('#score svg'));
       paintOpticalCues(seekBeat);
       alignOpticalScore(seekBeat);
@@ -1062,6 +1125,14 @@
     }catch(e){console.log('POC_RESIZE_ERROR',e.message)}},220);
    }
  };
+ viewport.addEventListener('scroll',function(){
+  if(!studyWindow||!optical)return;
+  const x=(viewport.scrollLeft-opticalOffset+opticalReferenceX+53)/opticalDisplayScale;
+  if(updateStudyWindow(x)){
+   viewport.scrollLeft=Math.max(0,x*opticalDisplayScale+opticalOffset-opticalReferenceX-53);
+   paintOpticalContext(seekBeat,true);
+  }
+ });
  window.addEventListener('resize',function(){PianoNotation.resize();});
  if(window.AndroidNotation)AndroidNotation.onReady();
 })();
