@@ -300,7 +300,7 @@
    const shiftCssPx=pair.overlapCss[1]+4,previous=node.getAttribute('transform');
    node.setAttribute('transform',(previous?previous+' ':'')+'translate(0 '+(-shiftCssPx/scaleY)+')');
    const after=inspectSvg(svg);
-   if(after.inkClipped||after.textNotePairs.some(function(next){return next.textIndex===pair.textIndex;})){
+   if(after.textNotePairs.some(function(next){return next.textIndex===pair.textIndex;})){
     if(previous===null)node.removeAttribute('transform');else node.setAttribute('transform',previous);
     return;
    }

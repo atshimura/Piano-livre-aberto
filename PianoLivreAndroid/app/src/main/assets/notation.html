@@ -224,6 +224,7 @@
  function refreshStudyAnalysis(svg){
   if(!svg||!studyProof||!osmd)return;
   studyDynamicAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
+  if(studyDynamicAdjustments.length)fitOpticalSvg(svg);
   const rows=EngravingAudit.inspect(osmd.graphic,Infinity);
   const visibleRows=studyVerticalAdaptation.accepted
    ?StudyProfile.shiftEngravingRows(rows,2,studyVerticalAdaptation.delta):rows;
