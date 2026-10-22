@@ -15,6 +15,29 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  await page.route(/^https?:/,route=>{remoteRequests.push(route.request().url());return route.abort();});
  await page.goto('file://'+path.resolve('app/src/main/assets/notation.html'));
  await page.evaluate(()=>{window.AndroidNotation={onReady(){},onRendered(){window.testDone=true;},onPresentation(m){window.presentationMessage=m;},onError(m){window.testError=m;}};});
+ // B1 diagnostic: compare OSMD-native layout rules on the complete source.
+ // This probe never changes application defaults and does not grant acceptance.
+ const gymProbe=corpus.find(i=>i.name.endsWith('gymnopedie-no-1-satie.mxl'));
+ const layoutProbes=[];
+ for(const rules of [{},{SlurHeightFactor:.5},{SlurHeightFactor:.25},
+  {SlurHeightFlattenLongSlursCutoffAngle:0,SlurHeightFlattenLongSlursFactorByWidth:2},
+  {SlurTangentMinAngle:15,SlurHeightFactor:.5}]){
+  await page.setViewportSize({width:738,height:196});
+  const probe=await page.evaluate(async({item,rules})=>{
+   const prototype=opensheetmusicdisplay.OpenSheetMusicDisplay.prototype,render=prototype.render;
+   prototype.render=function(){Object.assign(this.EngravingRules,rules);return render.apply(this,arguments);};
+   try{
+    window.testDone=false;window.testError=null;PianoNotation.load(item.xml,0,'engraving-poc',item.events);
+    for(let i=0;i<300&&!window.testDone&&!window.testError;i++)await new Promise(r=>setTimeout(r,50));
+    const a=PianoNotation.analysis();
+    return {error:window.testError,rules,geometry:a.geometry,adaptation:a.layoutAdaptation};
+   }finally{prototype.render=render;}
+  },{item:gymProbe,rules});
+  layoutProbes.push(probe);
+ }
+ fs.writeFileSync('../docs/evidence/study-profile/layout-probes.json',JSON.stringify(layoutProbes,null,2));
+ console.log('STUDY_LAYOUT_PROBES '+JSON.stringify(layoutProbes));
+ await page.setViewportSize({width:738,height:220});
  for(const item of corpus){
   const report=await page.evaluate(async item=>{
    const source=StudyProfile.analyze(item.xml),same=StudyProfile.analyze(item.xml)===source;

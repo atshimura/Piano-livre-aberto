@@ -16,6 +16,8 @@ assert.equal(P.wordKind('Allegro'),null);
 assert.equal(P.wordKind('D A Bm F#m'),null,'chord text is preserved');
 assert(P.isChordLabel('D A Bm F#m'));
 assert(P.isChordLabel('G D G A'));
+for(const chord of ['D','A','Bm','F#m'])assert(P.isChordLabel(chord),'isolated chord '+chord);
+for(const dynamic of ['f','ff','p','mf'])assert.equal(P.isChordLabel(dynamic),false,'dynamics are not chord labels');
 assert.equal(P.isChordLabel('la fa# sol la'),false,'solfege is not a chord label');
 assert.equal(P.isChordLabel('Lent et douloureux'),false,'directions are not chord labels');
 assert(P.shouldCompactVertical({staffCount:2,notes:469,maxNotesPerMeasure:20},196,4.853),

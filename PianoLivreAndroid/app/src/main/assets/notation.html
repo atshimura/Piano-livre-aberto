@@ -221,9 +221,51 @@
    webviewWidth:document.documentElement.clientWidth,viewportWidth:viewport.clientWidth,viewportHeight:viewportHeight,availableHeight:availableHeight,safetyInsetCssPx:safetyInset,simultaneous:baseHeight*scale<=viewportHeight,verticalOverflow:Math.max(0,baseHeight*scale-viewportHeight),
    viewportMaxScrollTop:getComputedStyle(viewport).overflowY==='hidden'?0:Math.max(0,viewport.scrollHeight-viewport.clientHeight),
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
+ function adaptStudySvg(svg){
+  StudyProfile.restoreStaffGap(svg);
+  fitOpticalSvg(svg);
+ const beforeCompact=StudyProfile.inspectSvg(svg);
+ const beforeCompactHeight=svg.getBoundingClientRect().height;
+ studyVerticalAdaptation={status:'not-needed',beforeStaffSpace:beforeCompact.staffSpace,
+  afterStaffSpace:beforeCompact.staffSpace,beforeHeight:beforeCompactHeight,
+  afterHeight:beforeCompactHeight,accepted:false};
+ if(window.__testDisableStudyVerticalAdaptation!==true&&StudyProfile.shouldCompactVertical(studyProfile,viewport.clientHeight,beforeCompact.staffSpace)){
+  // Move only the lower engraved staff within its system. OSMD's musical
+  // graph and x/beat anchors remain intact; the complete ink envelope is
+  // refit below after a primitive-geometry collision check.
+  studyVerticalAdaptation=StudyProfile.compactStaffGap(svg,studyProfile,viewport.clientHeight);
+  if(studyVerticalAdaptation.accepted){
+   const shift=studyVerticalAdaptation.delta;
+   optical=OpticalTimeMap.fromGraphical(osmd.graphic);
+   optical.notes.forEach(function(note){if(note.staff===2)note.y-=shift;});
+   opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
+   fitOpticalSvg(svg);
+   const compactGeometry=StudyProfile.inspectSvg(svg);
+   const compactRows=StudyProfile.shiftEngravingRows(EngravingAudit.inspect(osmd.graphic,Infinity),2,shift);
+   const compactAudit=StudyProfile.assess(compactRows,Object.assign({},compactGeometry,{availableHeight:viewport.clientHeight}));
+   const compactFidelity=Array.isArray(lastNativeEvents)&&lastNativeEvents.length
+    ?StudyProfile.compare(EngravingAudit.inspect(osmd.graphic,Infinity),lastNativeEvents):{missing:0,unexpected:0,skipped:true};
+   const safe=!compactGeometry.inkClipped&&!compactAudit.clipped&&compactAudit.alerts.indexOf('vertical-overflow')<0&&
+    !compactFidelity.missing&&!compactFidelity.unexpected;
+   studyVerticalAdaptation=Object.assign({},studyVerticalAdaptation,{status:safe?'compacted':'rejected',accepted:safe,
+    beforeHeight:beforeCompactHeight,afterHeight:svg.getBoundingClientRect().height,
+    beforeStaffSpace:beforeCompact.staffSpace,afterStaffSpace:compactGeometry.staffSpace,
+    inkClipped:compactGeometry.inkClipped,noteheadClipping:compactAudit.clipped,nativeFidelity:compactFidelity,
+    reason:safe?null:'ink clipping, vertical overflow, or native-event divergence'});
+   if(!safe){
+    StudyProfile.restoreStaffGap(svg);
+    optical=OpticalTimeMap.fromGraphical(osmd.graphic);
+    opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
+    fitOpticalSvg(svg);
+   }
+  }
+ }
+ console.log('STUDY_VERTICAL_ADAPTATION '+JSON.stringify(studyVerticalAdaptation));
+ }
  function refreshStudyAnalysis(svg){
   if(!svg||!studyProof||!osmd)return;
-  studyDynamicAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
+  const newAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
+  studyDynamicAdjustments=studyDynamicAdjustments.concat(newAdjustments);
   if(studyDynamicAdjustments.length)fitOpticalSvg(svg);
   const rows=EngravingAudit.inspect(osmd.graphic,Infinity);
   const visibleRows=studyVerticalAdaptation.accepted
@@ -231,6 +273,10 @@
   studyAnalysis=StudyProfile.assess(visibleRows,
    Object.assign(StudyProfile.inspectSvg(svg),{availableHeight:viewport.clientHeight,mapping:opticalReconciliation}));
   studyAnalysis.dynamicRepositionDetails=studyDynamicAdjustments;
+  studyAnalysis.repositionedDynamics=studyDynamicAdjustments.length;
+  studyAnalysis.hiddenChordLabels=Array.from(svg.querySelectorAll('[data-study-hidden-reason]')).map(function(node){return {text:node.textContent.trim(),reason:node.dataset.studyHiddenReason};});
+  studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
+  studyAnalysis.viewport={width:viewport.clientWidth,height:viewport.clientHeight};
  }
  function alignOpticalScore(beat){
   opticalReferenceX=Math.min(viewport.clientWidth*.4,
@@ -278,11 +324,6 @@
    return box.y<upperBox.y+upperBox.height&&box.y+box.height>lowerBox.y;
   });
   const braceCopy=brace?brace.cloneNode(true):null;
-  if(braceCopy&&studyVerticalAdaptation.accepted){
-   const oldSpan=Math.max(1,lowerBox.y+lowerBox.height/2-(upperBox.y+upperBox.height/2));
-   const factor=Math.max(.2,(oldSpan-studyVerticalAdaptation.delta)/oldSpan);
-   braceCopy.setAttribute('transform','translate(0 '+upperBox.y+') scale(1 '+factor+') translate(0 '+(-upperBox.y)+')');
-  }
   const base=[];
   stafflines.forEach(function(staffline,staffIndex){
    const measures=Array.from(staffline.children).filter(function(node){
@@ -662,9 +703,9 @@
   try{
    if(studyProof){
     studyProfile=StudyProfile.analyze(originalXml);
-    const presentation=StudyProfile.presentationWithOptions(originalXml,studyProfile,{
-     repositionDynamicsAbove:viewport.clientHeight<=240&&window.__testDisableStudyVerticalAdaptation!==true
-    });
+    // Keep each authored placement. Only measured collisions may move a
+    // dynamic; relocating every marking above can enlarge the ink envelope.
+    const presentation=StudyProfile.presentationWithOptions(originalXml,studyProfile,{});
     xml=presentation.xml;repositionedDynamics=presentation.repositionedDynamics;
     if(repositionedDynamics)console.log('STUDY_DYNAMICS_REPOSITIONED '+JSON.stringify({count:repositionedDynamics,placement:'above',reason:'viewport baixo; preservado conteúdo dinâmico'}));
    }
@@ -700,8 +741,10 @@
      const initial=StudyProfile.assess(EngravingAudit.inspect(osmd.graphic,Infinity),{
       staffSpace:Number(probe.dataset.opticalStaffSpaceCss),height:probe.getBoundingClientRect().height,availableHeight:viewport.clientHeight});
      // One bounded re-engraving pass. Increase optical spacing through OSMD,
-     // never stretch x independently or alter durations/notes.
-     const factor=initial.overlaps?1.5:(initial.alerts.indexOf('small-staff-space')>=0?1.25:1);
+     // never stretch x independently or alter durations/notes. A small staff
+     // alone is NOT a reason to widen measures: that lengthens slurs and can
+     // increase the vertical envelope, shrinking every symbol even further.
+     const factor=initial.overlaps?1.5:1;
      studyProfile=Object.assign({},studyProfile,{spacing:factor});
      if(factor>1){
       osmd.EngravingRules.VoiceSpacingMultiplierVexflow*=factor;
@@ -711,44 +754,7 @@
       if(!probe)throw Error('OSMD não produziu SVG após ajuste de espaçamento');
       fitOpticalSvg(probe);
      }
-     const beforeCompactSvg=document.querySelector('#score svg');
-     const beforeCompact=StudyProfile.inspectSvg(beforeCompactSvg);
-     const beforeCompactHeight=beforeCompactSvg.getBoundingClientRect().height;
-     studyVerticalAdaptation={status:'not-needed',beforeStaffSpace:beforeCompact.staffSpace,
-      afterStaffSpace:beforeCompact.staffSpace,beforeHeight:beforeCompactHeight,
-      afterHeight:beforeCompactHeight,accepted:false};
-     if(window.__testDisableStudyVerticalAdaptation!==true&&StudyProfile.shouldCompactVertical(studyProfile,viewport.clientHeight,beforeCompact.staffSpace)){
-      // Move only the lower engraved staff within its system. OSMD's musical
-      // graph and x/beat anchors remain intact; the complete ink envelope is
-      // refit below after a primitive-geometry collision check.
-      studyVerticalAdaptation=StudyProfile.compactStaffGap(beforeCompactSvg,studyProfile,viewport.clientHeight);
-      if(studyVerticalAdaptation.accepted){
-       const shift=studyVerticalAdaptation.delta;
-       optical=OpticalTimeMap.fromGraphical(osmd.graphic);
-       optical.notes.forEach(function(note){if(note.staff===2)note.y-=shift;});
-       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
-       fitOpticalSvg(beforeCompactSvg);
-       const compactGeometry=StudyProfile.inspectSvg(beforeCompactSvg);
-       const compactRows=StudyProfile.shiftEngravingRows(EngravingAudit.inspect(osmd.graphic,Infinity),2,shift);
-       const compactAudit=StudyProfile.assess(compactRows,Object.assign({},compactGeometry,{availableHeight:viewport.clientHeight}));
-       const compactFidelity=Array.isArray(nativeEvents)&&nativeEvents.length
-        ?StudyProfile.compare(EngravingAudit.inspect(osmd.graphic,Infinity),nativeEvents):{missing:0,unexpected:0,skipped:true};
-       const safe=!compactGeometry.inkClipped&&!compactAudit.clipped&&compactAudit.alerts.indexOf('vertical-overflow')<0&&
-        !compactFidelity.missing&&!compactFidelity.unexpected;
-       studyVerticalAdaptation=Object.assign({},studyVerticalAdaptation,{status:safe?'compacted':'rejected',accepted:safe,
-        beforeHeight:beforeCompactHeight,afterHeight:beforeCompactSvg.getBoundingClientRect().height,
-        beforeStaffSpace:beforeCompact.staffSpace,afterStaffSpace:compactGeometry.staffSpace,
-        inkClipped:compactGeometry.inkClipped,noteheadClipping:compactAudit.clipped,nativeFidelity:compactFidelity,
-        reason:safe?null:'ink clipping, vertical overflow, or native-event divergence'});
-       if(!safe){
-        StudyProfile.restoreStaffGap(beforeCompactSvg);
-        optical=OpticalTimeMap.fromGraphical(osmd.graphic);
-        opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(nativeEvents)?nativeEvents:[]);
-        fitOpticalSvg(beforeCompactSvg);
-       }
-      }
-     }
-     console.log('STUDY_VERTICAL_ADAPTATION '+JSON.stringify(studyVerticalAdaptation));
+     adaptStudySvg(probe);
     }
     if(studyProof)console.log('POC_OSMD_RENDER_RESOLVED');
     osmdRenderedWidth=viewport.clientWidth;
@@ -1009,8 +1015,14 @@
     if(studyProof&&osmdRenderedWidth===viewport.clientWidth){
      if(osmdRenderedHeight!==viewport.clientHeight){
       osmdRenderedHeight=viewport.clientHeight;
-      fitOpticalSvg(document.querySelector('#score svg'));
-      refreshStudyAnalysis(document.querySelector('#score svg'));
+      const resizedSvg=document.querySelector('#score svg');
+      adaptStudySvg(resizedSvg);
+      optical=OpticalTimeMap.fromGraphical(osmd.graphic);
+      if(studyVerticalAdaptation.accepted)optical.notes.forEach(function(note){if(note.staff===2)note.y-=studyVerticalAdaptation.delta;});
+      opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
+      refreshStudyAnalysis(resizedSvg);
+      makeOpticalContextState(resizedSvg,osmd.graphic&&osmd.graphic.measureList||[]);
+      opticalCueKey='';paintOpticalCues(seekBeat);
       alignOpticalScore(seekBeat);
       paintOpticalContext(seekBeat,true);
       const now=performance.now();
@@ -1030,14 +1042,8 @@
      osmdRenderedHeight=viewport.clientHeight;
      if(studyProof){
       const resizedSvg=document.querySelector('#score svg');
-      fitOpticalSvg(resizedSvg);
-      const resizedProfile=StudyProfile.inspectSvg(resizedSvg);
-      studyVerticalAdaptation={status:'not-needed',accepted:false,delta:0,
-       beforeStaffSpace:resizedProfile.staffSpace,afterStaffSpace:resizedProfile.staffSpace};
-      if(window.__testDisableStudyVerticalAdaptation!==true&&StudyProfile.shouldCompactVertical(studyProfile,viewport.clientHeight,resizedProfile.staffSpace)){
-       studyVerticalAdaptation=StudyProfile.compactStaffGap(resizedSvg,studyProfile,viewport.clientHeight);
-       if(studyVerticalAdaptation.accepted)fitOpticalSvg(resizedSvg);
-      }
+      studyDynamicAdjustments=[];
+      adaptStudySvg(resizedSvg);
       optical=OpticalTimeMap.fromGraphical(osmd.graphic);
       if(studyVerticalAdaptation.accepted)optical.notes.forEach(function(note){if(note.staff===2)note.y-=studyVerticalAdaptation.delta;});
       // Graphical positions are invalid after a re-layout: reconcile and bind again.

@@ -1,7 +1,7 @@
 /* GPL-3.0-only. Derived presentation only; never edits the authoritative XML/events. */
 (function(root){
  'use strict';
- const VERSION=2;
+ const VERSION=3;
  let cachedXml=null,cached=null; // One exact-content entry, bounded by the import size limit.
  function count(node,tag){return node.getElementsByTagName(tag).length;}
  function wordKind(text){
@@ -12,8 +12,8 @@
  }
  function isChordLabel(text){
   const tokens=String(text||'').trim().split(/\s+/).filter(Boolean);
-  const chord=/^[A-G](?:#|b|♯|♭)?(?:m|min|maj|dim|aug|sus\d?|add\d?|\d+)?(?:\/[A-G](?:#|b|♯|♭)?)?$/i;
-  return tokens.length>1&&tokens.every(function(token){return chord.test(token);});
+  const chord=/^[A-G](?:#|b|♯|♭)?(?:m|min|maj|dim|aug|sus\d?|add\d?|\d+)?(?:\/[A-G](?:#|b|♯|♭)?)?$/;
+  return tokens.length>0&&tokens.every(function(token){return chord.test(token);});
  }
  function shouldCompactVertical(profile,height,staffSpace){
   return !!profile&&height<=240&&profile.staffCount===2&&
@@ -36,7 +36,9 @@
   const topLines=staffPaths(firstUpper),bottomLines=staffPaths(firstLower);
   if(topLines.length<5||bottomLines.length<1)return Object.assign(result,{status:'unsupported-staff-geometry'});
   const box=function(node){
-   try{const b=node.getBBox(),m=node.getScreenCTM();if(!m)return {x:b.x,y:b.y,w:b.width,h:b.height};
+   try{const raw=node.getBBox(),style=getComputedStyle(node);
+    const pad=style.stroke&&style.stroke!=='none'?(parseFloat(style.strokeWidth)||0)/2:0;
+    const b={x:raw.x-pad,y:raw.y-pad,width:raw.width+2*pad,height:raw.height+2*pad},m=node.getScreenCTM();if(!m)return {x:b.x,y:b.y,w:b.width,h:b.height};
     const p=[[b.x,b.y],[b.x+b.width,b.y],[b.x,b.y+b.height],[b.x+b.width,b.y+b.height]].map(function(q){return {x:m.a*q[0]+m.c*q[1]+m.e,y:m.b*q[0]+m.d*q[1]+m.f};});
     const xs=p.map(function(q){return q.x;}),ys=p.map(function(q){return q.y;});return {x:Math.min.apply(null,xs),y:Math.min.apply(null,ys),w:Math.max.apply(null,xs)-Math.min.apply(null,xs),h:Math.max.apply(null,ys)-Math.min.apply(null,ys)};
    }catch(e){return null;}
@@ -58,14 +60,31 @@
   const maximum=Math.max(0,gap-5*lineSpace);
   if(maximum<lineSpace)return Object.assign(result,{status:'insufficient-clearance'});
   function nodes(group){return Array.from(group.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).map(function(node,index){return {node:node,index:index,box:box(node)};}).filter(function(item){
-   const q=item.box;if(!q||q.w<=.4||q.h<=.4)return false;
+   const q=item.box;if(!q||q.w<=0||q.h<=0)return false;
    // Long horizontal paths are the five staff rules. They intentionally pass
    // through every note and are not possible sources of a new collision.
-   return !(item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&q.w>lineSpace*20&&q.h<lineSpace*.2);
+   return !(item.node.tagName&&item.node.tagName.toLowerCase()==='path'&&q.w>screenLineSpace*20&&q.h<screenLineSpace*.2);
   });}
   const topNodes=nodes(upper);
   const originalTransform=lower.getAttribute('transform');
+  // VexFlow puts some system-spanning barlines INSIDE the lower staff.
+  // Translating that staff must shorten these connectors, not raise their
+  // upper endpoint through the melody. Keep exact attributes for restoration.
+  const topY=topLines[0].getBBox().y;
+  const connectors=Array.from(lower.querySelectorAll('rect')).filter(function(node){
+   const r=node.getBBox();
+   return !node.getAttribute('transform')&&node.parentNode.classList.contains('vf-connector')&&
+    r.width<lineSpace*.3&&Math.abs(r.y-topY)<lineSpace*.2&&r.height>gap+4*lineSpace-2;
+  }).map(function(node){return {node:node,y:node.getAttribute('y'),height:node.getAttribute('height')};});
+  const braces=Array.from(svg.querySelectorAll('g.vf-brace')).filter(function(node){
+   return !lower.contains(node)&&!upper.contains(node);
+  }).map(function(node){const r=node.getBBox();return {node:node,transform:node.getAttribute('transform'),y:r.y,height:r.height};});
   function setDelta(delta){
+   connectors.forEach(function(c){c.node.setAttribute('y',String(Number(c.y)+delta));c.node.setAttribute('height',String(Number(c.height)-delta));});
+   braces.forEach(function(c){
+    if(!delta){if(c.transform===null)c.node.removeAttribute('transform');else c.node.setAttribute('transform',c.transform);return;}
+    c.node.setAttribute('transform',(c.transform?c.transform+' ':'')+'translate(0 '+c.y+') scale(1 '+((c.height-delta)/c.height)+') translate(0 '+(-c.y)+')');
+   });
    if(!delta){if(originalTransform===null)lower.removeAttribute('transform');else lower.setAttribute('transform',originalTransform);return;}
    lower.setAttribute('transform',(originalTransform?originalTransform+' ':'')+'translate(0 '+(-delta)+')');
   }
@@ -92,7 +111,7 @@
     if(x<=.5)continue;
     const y=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);
     if(y>.5){count++;const key=upperItem.index+':'+lowerItem.index;pairs.push(key);if(collect){const detail={upper:[a.x,a.y,a.w,a.h],lower:[b.x,b.y,b.w,b.h],overlap:[x,y],newPair:baselinePairs?baselinePairs.indexOf(key)<0:false,
-      upperElement:{tag:upperItem.node.tagName,id:upperItem.node.id||null,className:upperItem.node.getAttribute('class')||'',text:(upperItem.node.textContent||'').trim().slice(0,32)},
+      upperElement:{parentClass:upperItem.node.parentNode.getAttribute('class'),tag:upperItem.node.tagName,id:upperItem.node.id||null,className:upperItem.node.getAttribute('class')||'',text:(upperItem.node.textContent||'').trim().slice(0,32)},
       lowerElement:{tag:lowerItem.node.tagName,id:lowerItem.node.id||null,className:lowerItem.node.getAttribute('class')||'',text:(lowerItem.node.textContent||'').trim().slice(0,32)}};
      if(detail.newPair)introduced.push(detail);if(first.length<8)first.push(detail);}}
     }
@@ -117,6 +136,8 @@
   // baseline; retain the small-staff alert below six pixels for review.
   if(afterSpace<5||safe<lineSpace){setDelta(0);result.status='insufficient-safe-gain';return result;}
   setDelta(safe);
+  svg._studyConnectors={bars:connectors,braces:braces};
+  result.adjustedBarlines=connectors.length;result.adjustedBraces=braces.length;
   lower.dataset.studyYOffset=String(safe);
   if(originalTransform!==null)lower.dataset.studyOriginalTransform=originalTransform;
   svg.dataset.studyOriginalViewBox=[vb.x,vb.y,vb.width,vb.height].join(' ');
@@ -128,6 +149,11 @@
  }
  function restoreStaffGap(svg){
   if(!svg)return;
+  if(svg._studyConnectors){
+   svg._studyConnectors.bars.forEach(function(c){c.node.setAttribute('y',c.y);c.node.setAttribute('height',c.height);});
+   svg._studyConnectors.braces.forEach(function(c){if(c.transform===null)c.node.removeAttribute('transform');else c.node.setAttribute('transform',c.transform);});
+   delete svg._studyConnectors;
+  }
   const lower=svg.querySelector('[data-study-y-offset]');
   if(lower){const original=lower.dataset.studyOriginalTransform;
    if(original===undefined)lower.removeAttribute('transform');else lower.setAttribute('transform',original);
