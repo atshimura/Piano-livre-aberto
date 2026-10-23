@@ -100,7 +100,11 @@
    const referenceX=Math.min(Math.max(1,model.width-24),Math.max(
     Math.min(model.width*.4,Math.min(model.width,130*s)+12),rail*s+12));
    const reference=referenceX+53,offset=Math.max(0,reference-firstX*s),anchor=reference-offset;
-   const left=x-anchor/s-20,right=x+(model.width-anchor)/s+20;
+   // Keep the entire cell envelope (plus one cell on either side) under
+   // inspection while WebView scrollLeft and SVG width settle after relayout.
+   // A long curve may paint across the left edge before the next scroll event.
+   const left=Math.min(x-anchor/s-20,chosen.left-model.cellWidth);
+   const right=Math.max(x+(model.width-anchor)/s+20,chosen.right+model.cellWidth);
    const active=model.boxes.filter(function(b){return b.x+b.w>=left&&b.x<=right;});
    if(context)active.push(context);
    return {left:left,right:right,ink:union(active)};
