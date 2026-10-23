@@ -48,7 +48,57 @@
   });
   return results;
  }
- const api={flatten:flatten,restore:restore,trial:trial};
+ // Diagnostic conservative slur-vs-ink contact sampling in SVG coordinates.
+ // Check newly introduced contacts, allowing original endpoint attachments.
+ function collisionReport(svg,boxes){
+  const cubic=(a,b,c,d,t)=>{const u=1-t;return u*u*u*a+3*u*u*t*b+3*u*t*t*c+t*t*t*d;};
+  function meets(d,box){
+   const token=d.match(/[MLCZ]|[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][-+]?\\d+)?/g);
+   if(!token||token.length!==24)return false;
+   const v=token.map(Number),xmin=Math.min(v[1],v[8]),xmax=Math.max(v[1],v[8]);
+   const a=Math.max(xmin,box.x),b=Math.min(xmax,box.x+box.w);
+   if(b<a)return false;
+   const count=Math.max(3,Math.min(21,Math.ceil((b-a)/5)));
+   for(let i=0;i<=count;i++){
+    const x=a+(b-a)*i/count,increasing=v[8]>v[1];
+    let low=0,high=1;
+    for(let j=0;j<25;j++){
+     const t=(low+high)/2,px=cubic(v[1],v[4],v[6],v[8],t);
+     if((px<x)===increasing)low=t;else high=t;
+    }
+    const t=(low+high)/2,upper=cubic(v[2],v[5],v[7],v[9],t),
+     lower=cubic(v[12],v[15],v[17],v[19],1-t);
+    if(Math.min(upper,lower)-.5<=box.y+box.h&&Math.max(upper,lower)+.5>=box.y)
+     return true;
+   }
+   return false;
+  }
+  const candidates=Array.from(svg.querySelectorAll('path[data-study-curve-original]'));
+  const blockers=boxes.filter(b=>b.node&&
+   /vf-(stem|notehead|beam|accidental|text|stavetie|curve|dot|ornament|articulation|dynamic)/.test(b.kind)&&
+   getComputedStyle(b.node).visibility!=='hidden');
+  const report=[];
+  for(const curve of candidates){
+   const current=curve.getAttribute('d'),before=curve.dataset.studyCurveOriginal,
+    changed=[];
+   const root=svg.getScreenCTM().inverse().multiply(curve.getScreenCTM());
+   if(Math.abs(root.a-1)>.0001||Math.abs(root.d-1)>.0001||
+      Math.abs(root.b)>.0001||Math.abs(root.c)>.0001||
+      Math.abs(root.e)>.0001||Math.abs(root.f)>.0001){
+    report.push({unsupportedTransform:true});continue;
+   }
+   for(const box of blockers){
+    if(box.node===curve)continue;
+    if(!meets(current,box)||meets(before,box))continue;
+    changed.push({kind:box.kind,x:+box.x.toFixed(1),y:+box.y.toFixed(1),
+     width:+box.w.toFixed(1),height:+box.h.toFixed(1)});
+    if(changed.length>=12)break;
+   }
+   report.push({x:+curve.getBBox().x.toFixed(1),introducedContacts:changed.length,first:changed});
+  }
+  return report;
+ }
+ const api={flatten:flatten,restore:restore,trial:trial,collisionReport:collisionReport};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyCurve=api;
 })(typeof window!=='undefined'?window:null);
