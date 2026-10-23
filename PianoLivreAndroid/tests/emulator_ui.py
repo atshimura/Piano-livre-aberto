@@ -802,10 +802,17 @@ if __name__=="__main__":
         "webviewWidth":long_proof.get("webviewWidth"),"viewportHeight":long_proof["viewportHeight"]}),flush=True)
     previous_hits=adb("logcat","-d","-v","brief").count("POC_NOTE_TAP {")
     adb("shell","input","tap",str(xx),str(yy))
-    time.sleep(.4)
-    logs=adb("logcat","-d","-v","brief")
-    all_hits=[line for line in logs.splitlines() if "POC_NOTE_TAP {" in line]
-    assert len(all_hits)>previous_hits, "Scaled SVG did not recognize a real notehead touch"
+    # On an instrumented emulator, ADB input completion precedes Chromium's
+    # JavaScript dispatch and its logcat flush. Poll the actual event instead
+    # of imposing an arbitrary 400 ms rendering deadline.
+    all_hits=[]
+    for attempt in range(20):
+        time.sleep(.25)
+        logs=adb("logcat","-d","-v","brief")
+        all_hits=[line for line in logs.splitlines() if "POC_NOTE_TAP {" in line]
+        if len(all_hits)>previous_hits:break
+    assert len(all_hits)>previous_hits, ("Scaled SVG did not recognize a real notehead touch at "+
+        str((xx,yy))+" after 5s; target="+json.dumps(long_head))
     chosen_note=json.loads(all_hits[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
     assert chosen_note["staff"]==1 and chosen_note["nativeMidi"]==long_head["midiEstimate"] and chosen_note["mapped"], "Native-scale notehead did not match native MusicXML/MIDI"
     assert chosen_note.get("writtenName") and chosen_note.get("xmlNoteIndex") is not None, "Scaled notehead lost its original MusicXML notation"
