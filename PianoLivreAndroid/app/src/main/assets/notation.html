@@ -32,6 +32,7 @@
 <script src="study-profile.js"></script>
 <script src="study-window.js"></script>
 <script src="study-curve.js"></script>
+<script src="study-words.js"></script>
 <script src="engraving-conventions.js"></script></head>
 <body><div id="viewport"><div id="score"></div></div><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
 <script>
@@ -39,7 +40,7 @@
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
  let studyProfile=null,studyAnalysis=null,studyVerticalAdaptation={status:'not-evaluated'};
- let studyDynamicAdjustments=[],studyWindow=null,studyWindowRows=[],studyWindowGlobal=null;
+ let studyDynamicAdjustments=[],studyWordSourceNumbers=[],studyWindow=null,studyWindowRows=[],studyWindowGlobal=null;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1,opticalReferenceX=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
@@ -225,6 +226,7 @@
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
  function adaptStudySvg(svg){
   studyWindow=null;studyWindowRows=[];studyWindowGlobal=null;delete svg._studyWindowBounds;svg.style.overflow='visible';
+  StudyWords.restore(svg);
   StudyCurve.restore(svg);
   StudyProfile.restorePresentationAdjustments(svg);
   StudyProfile.restoreStaffGap(svg);
@@ -293,6 +295,8 @@
    }else curveAdaptation=StudyCurve.applySafe(svg,chosen,function(){return StudyWindow.collect(svg).boxes;});
   }
   if(curveAdaptation.edited)console.log('STUDY_B1_SLUR_ADAPTATION '+JSON.stringify(curveAdaptation));
+  const wordAdjustments=window.__testStudyWords===true&&eligible?
+   StudyWords.apply(svg,studyWordSourceNumbers,function(){return StudyWindow.collect(svg).boxes;}):[];
   const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
   studyDynamicAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
   if(studyDynamicAdjustments.length){
@@ -312,6 +316,7 @@
   studyAnalysis.hiddenChordLabels=hiddenChordLabels;
   studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
   studyAnalysis.curveAdaptation=curveAdaptation;
+  studyAnalysis.wordAdaptations=wordAdjustments;
   studyAnalysis.viewport={width:viewport.clientWidth,height:viewport.clientHeight};
  }
  function prepareStudyWindow(svg){
@@ -797,7 +802,7 @@
   cancelOptical();cancelOpticalWait();
   document.getElementById('optical-note-tip').style.display='none';
   loaded=false;appliedBeat=-1;seekBeat=start||0;
-  studyProfile=null;studyAnalysis=null;studyVerticalAdaptation={status:'not-evaluated'};studyDynamicAdjustments=[];studyWindow=null;studyWindowRows=[];studyWindowGlobal=null;
+  studyProfile=null;studyAnalysis=null;studyVerticalAdaptation={status:'not-evaluated'};studyDynamicAdjustments=[];studyWordSourceNumbers=[];studyWindow=null;studyWindowRows=[];studyWindowGlobal=null;
   osmdRenderedWidth=0;osmdRenderedHeight=0;opticalDisplayScale=1;
   opticalContextState=null;opticalContextMeasure=-1;
   document.getElementById('optical-context-rail').innerHTML='';
@@ -832,6 +837,7 @@
   try{
    if(studyProof){
     studyProfile=StudyProfile.analyze(originalXml);
+    studyWordSourceNumbers=StudyWords.sourceNumbers(originalXml);
     // Keep each authored placement. Only measured collisions may move a
     // dynamic; relocating every marking above can enlarge the ink envelope.
     const presentation=StudyProfile.presentationWithOptions(originalXml,studyProfile,{});
