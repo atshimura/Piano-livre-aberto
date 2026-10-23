@@ -641,7 +641,8 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  // of the raw transform probe, including every beat and reverse navigation.
  await page.setViewportSize({width:738,height:196});
  await page.evaluate(item=>{
-  window.__testStudyWords=true;window.testDone=false;window.testError=null;
+  // Test the shipped policy without an experimental enabling flag.
+  delete window.__testStudyWords;window.testDone=false;window.testError=null;
   PianoNotation.load(item.xml,0,'engraving-poc',item.events);
  },gym);
  await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
@@ -668,6 +669,10 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   return Math.abs(change)>Math.abs(a.percent)?{from:wordForward[i].beat,to:b.beat,percent:change}:a;
  },{percent:0});
  const wordProblems=wordFit.filter(x=>x.clipped||x.mapping!==469||x.scrollTop);
+ assert.equal(wordProblems.length,0,'production word reflow must not clip or change native mapping');
+ assert(wordMinimum.space>=5,'production camera must maintain at least 5 CSS px staff spacing in Gymnopédie 738x196: '+JSON.stringify(wordMinimum));
+ assert(wordLargestAdjacent.percent<2.5&&wordLargestAdjacent.percent> -2.5,
+  'production camera must avoid large adjacent musical beat jumps: '+JSON.stringify(wordLargestAdjacent));
  for(const beat of [181,186,223]){
   await page.evaluate(async t=>{PianoNotation.seek(t,false,100,false);
    await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},beat);
