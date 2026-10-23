@@ -785,7 +785,9 @@ if __name__=="__main__":
     assert long_proof["graphicalNotes"]>=50 and long_proof["svgNodes"]>=1000, "Long-score engraving incomplete"
     assert long_proof["midiMapping"]["matched"]==long_proof["graphicalNotes"], "Each written Gymnopédie notehead must reconcile, including tied continuations"
     screenshot("piano-osmd-long.png")
-    responsive_evidence("gymnopedie")
+    # Check the exact notehead against the same ready-frame coordinates before
+    # resizing the WebView; otherwise the proof and hit target come from
+    # different render generations and produce a false negative.
     # Uniformly scaled SVG geometry must preserve notehead hit targets on Android.
     long_head=long_proof.get("firstNoteViewport")
     assert long_head and long_head.get("midiEstimate") is not None, "Long score has no testable upper-staff notehead"
@@ -806,6 +808,7 @@ if __name__=="__main__":
     assert chosen_note["staff"]==1 and chosen_note["nativeMidi"]==long_head["midiEstimate"] and chosen_note["mapped"], "Native-scale notehead did not match native MusicXML/MIDI"
     assert chosen_note.get("writtenName") and chosen_note.get("xmlNoteIndex") is not None, "Scaled notehead lost its original MusicXML notation"
     screenshot("piano-osmd-long-tap.png")
+    responsive_evidence("gymnopedie")
     # A vertical swipe is intentionally ignored: both piano staves stay fixed
     # together while playback remains free to move the score horizontally.
     midx=(rect[0]+rect[2])//2
