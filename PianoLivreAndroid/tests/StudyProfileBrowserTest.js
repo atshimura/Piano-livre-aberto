@@ -233,7 +233,24 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   }
   return samples;
  },beats);
- fs.writeFileSync('../docs/evidence/study-profile/window-traversal.json',JSON.stringify({sourceSha,checkoutSha,samples:traversal},null,2));
+ const forward=traversal.slice(0,beats.length),transitions=[];
+ for(let i=1;i<forward.length;i++){
+  const before=forward[i-1],after=forward[i];
+  if(before.window&&after.window&&before.window.index!==after.window.index){
+   transitions.push({fromBeat:before.beat,toBeat:after.beat,
+    fromWindow:before.window.index,toWindow:after.window.index,
+    fromStaffSpace:before.staffSpace,toStaffSpace:after.staffSpace,
+    changePercent:100*(after.staffSpace/before.staffSpace-1)});
+  }
+ }
+ const largestScaleStep=transitions.reduce((a,b)=>Math.abs(a.changePercent)>=Math.abs(b.changePercent)?a:b,
+  {fromBeat:null,toBeat:null,changePercent:0});
+ const windowDiagnostic={samples:forward.length,transitions:transitions.length,largestScaleStep,
+  minStaffSpace:Math.min(...forward.map(row=>row.staffSpace)),
+  maxStaffSpace:Math.max(...forward.map(row=>row.staffSpace))};
+ console.log('STUDY_WINDOW_TRANSITIONS '+JSON.stringify(windowDiagnostic));
+ fs.writeFileSync('../docs/evidence/study-profile/window-traversal.json',
+  JSON.stringify({sourceSha,checkoutSha,diagnostic:windowDiagnostic,transitions,samples:traversal},null,2));
  // Capture both extremes after the browser has painted, not just synchronous
  // seeks; keep the smallest result visible in the evidence as well.
  for(const [label,sample] of [['smallest',traversal.reduce((a,b)=>a.staffSpace<b.staffSpace?a:b)],
