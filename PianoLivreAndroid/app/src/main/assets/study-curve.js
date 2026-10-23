@@ -75,7 +75,7 @@
   }
   const candidates=Array.from(svg.querySelectorAll('path[data-study-curve-original]'));
   const blockers=boxes.filter(b=>b.node&&
-   /vf-(stem|notehead|beam|accidental|text|stavetie|curve|dot|ornament|articulation|dynamic)/.test(b.kind)&&
+   /vf-(stem|notehead|beam|accidental|text|stavetie|curve|dot|ornament|articulation|dynamic|line|modifier|clef|keysignature|timesignature|rest|barline)/.test(b.kind)&&
    getComputedStyle(b.node).visibility!=='hidden');
   const report=[];
   for(const curve of candidates){
@@ -98,7 +98,25 @@
   }
   return report;
  }
- const api={flatten:flatten,restore:restore,trial:trial,collisionReport:collisionReport};
+ // Only commit a derived visual edit when it introduces no contact with
+ // music engraving or expressive notation. Revert the entire SVG trial on
+ // uncertainty: MusicXML, OSMD graph and note positions remain authoritative.
+ function applySafe(svg,factor,boxes){
+  const changed=trial(svg,factor);
+  if(!changed.length)return {status:'not-applicable',accepted:false,edited:0};
+  const contacts=collisionReport(svg,boxes);
+  const rejected=contacts.filter(function(c){return c.unsupportedTransform||c.introducedContacts>0;});
+  if(rejected.length){
+   restore(svg);
+   return {status:'rejected-new-contact',accepted:false,edited:changed.length,
+    rejected:rejected.slice(0,6)};
+  }
+  return {status:'adapted',accepted:true,edited:changed.length,
+   beforeTop:Math.min.apply(null,changed.map(c=>c.beforeTop)),
+   afterTop:Math.min.apply(null,changed.map(c=>c.afterTop)),
+   introducedContacts:0};
+ }
+ const api={flatten:flatten,restore:restore,trial:trial,collisionReport:collisionReport,applySafe:applySafe};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyCurve=api;
 })(typeof window!=='undefined'?window:null);
