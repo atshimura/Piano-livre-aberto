@@ -469,7 +469,7 @@ if __name__=="__main__":
     def long_loop_menu():
         row=next((n for n in dump().iter("node") if n.attrib.get("text","")=="Trecho ↻"),None)
         assert row is not None, "Study loop toolbar button unavailable"
-        bounds=[int(v) for v in re.findall(r"\\d+",row.attrib.get("bounds",""))]
+        bounds=[int(v) for v in re.findall(r"\d+",row.attrib.get("bounds",""))]
         assert len(bounds)==4, "Invalid long-press loop-button bounds"
         xx=(bounds[0]+bounds[2])//2;yy=(bounds[1]+bounds[3])//2
         adb("shell","input","swipe",str(xx),str(yy),str(xx),str(yy),"1000")
