@@ -449,16 +449,16 @@ if __name__=="__main__":
     time.sleep(.4)
     loop_nodes=[n for n in dump().iter("node") if "Trecho ↻" in n.attrib.get("text","")]
     assert loop_nodes, "Study loop menu button unavailable during continuous playback"
-    box=[int(n) for n in re.findall(r"\\d+",loop_nodes[0].attrib.get("bounds",""))]
+    box=[int(n) for n in re.findall(r"\d+",loop_nodes[0].attrib.get("bounds",""))]
     assert len(box)==4, "Loop menu has no touchable bounds"
     cx=(box[0]+box[2])//2;cy=(box[1]+box[3])//2
     adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1050")
     time.sleep(.3)
     tap_text(["Marcar início na posição atual"],exact=True)
     time.sleep(.3)
-    assert "STUDY_LOOP_MENU start" in adb("logcat","-d","-v","brief"), \\
+    assert "STUDY_LOOP_MENU start" in adb("logcat","-d","-v","brief"), \
         "Manual loop start did not use the safe native boundary transaction"
-    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \\
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
         "Loop edit left native playback running instead of releasing MIDI"
     print("STUDY_B_MANUAL_LOOP_ANDROID_PASS",flush=True)
     tap_text(["Início"],scroll=True)
