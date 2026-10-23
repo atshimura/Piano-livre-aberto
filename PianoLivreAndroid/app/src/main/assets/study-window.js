@@ -78,14 +78,60 @@
     inkTop:ink.y,inkBottom:ink.y+ink.h,staffSpace:10*scale});
   }
   return {bounds:global.slice(),cellWidth:cellWidth,windows:windows,boxes:boxes,
-   firstX:firstX,fullScale:fullScale,width:width,height:height,current:-1};
+   context:context,railUnits:options.railUnits||130,firstX:firstX,fullScale:fullScale,width:width,height:height,current:-1};
  }
  function select(model,x){return Math.max(0,Math.min(model.windows.length-1,Math.floor((x-model.bounds[0])/model.cellWidth)));}
+ // A Lipschitz minorant of the safe per-cell scales: for any position within
+ // cell i the result is never larger than the verified scale of that cell.
+ // Neighboring cells therefore influence the camera *before* a smaller scale
+ // is required, rather than introducing a step at the cell boundary.
+ function sample(model,x){
+  const index=select(model,x),windows=model.windows,chosen=windows[index];
+  const available=Math.max(1,model.height-8);
+  const slope=model.fullScale*model.fullScale/Math.max(1,model.width);
+  let scale=chosen.scale;
+  for(const w of windows){
+   const distance=x<w.start?w.start-x:(x>w.end?x-w.end:0);
+   scale=Math.min(scale,w.scale+slope*distance);
+  }
+  scale=Math.max(model.fullScale,scale);
+  const context=model.context,firstX=model.firstX,rail=model.railUnits||130;
+  function frameAt(s){
+   const referenceX=Math.min(Math.max(1,model.width-24),Math.max(
+    Math.min(model.width*.4,Math.min(model.width,130*s)+12),rail*s+12));
+   const reference=referenceX+53,offset=Math.max(0,reference-firstX*s),anchor=reference-offset;
+   const left=x-anchor/s-20,right=x+(model.width-anchor)/s+20;
+   const active=model.boxes.filter(function(b){return b.x+b.w>=left&&b.x<=right;});
+   if(context)active.push(context);
+   return {left:left,right:right,ink:union(active)};
+  }
+  let f=frameAt(scale);
+  // At smaller scales the painted horizontal range becomes wider. Check
+  // that new range explicitly; never rely solely on the cell's original ink.
+  for(let pass=0;pass<12;pass++){
+   if(!f.ink)return null;
+   const safe=Math.max(model.fullScale,Math.min(scale,available/(f.ink.h+8)));
+   if(Math.abs(safe-scale)<1e-9)break;
+   scale=safe;f=frameAt(scale);
+  }
+  f=frameAt(scale);
+  if(f.ink.h+8>available/scale+1e-6){
+   scale=model.fullScale;f=frameAt(scale);
+  }
+  const fit=available/scale,ink=f.ink;
+  if(!ink||ink.h+8>fit+1e-6)throw Error('Study continuous camera cannot contain visible ink');
+  const fraction=Math.max(0,Math.min(1,(x-chosen.start)/(chosen.end-chosen.start)));
+  const following=windows[Math.min(windows.length-1,index+1)];
+  const requestedTop=chosen.top+(following.top-chosen.top)*fraction;
+  const top=Math.max(ink.y+ink.h+4-fit,Math.min(ink.y-4,requestedTop));
+  return {index:index,start:chosen.start,end:chosen.end,scale:scale,staffSpace:10*scale,
+   top:top,height:fit,left:f.left,right:f.right,inkTop:ink.y,inkBottom:ink.y+ink.h};
+ }
  function inspect(model,index){
-  const w=model.windows[index],active=model.boxes.filter(function(b){return b.x+b.w>=w.left&&b.x<=w.right;});
+  const w=typeof index==='number'?model.windows[index]:index,active=model.boxes.filter(function(b){return b.x+b.w>=w.left&&b.x<=w.right;});
   return {checkedPrimitives:active.length,clipped:active.filter(function(b){return b.y<w.top-.5||b.y+b.h>w.top+w.height+.5;}).length};
  }
- const api={collect:collect,plan:plan,select:select,inspect:inspect};
+ const api={collect:collect,plan:plan,select:select,sample:sample,inspect:inspect};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
  if(root)root.StudyWindow=api;
 })(typeof window!=='undefined'?window:null);
