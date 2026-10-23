@@ -316,6 +316,36 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   JSON.stringify({sourceSha,checkoutSha,scope:'Chromium Playwright CSS viewports; no physical acceptance',
    views:b1Views},null,2));
 
+ // Quantify whether wider OSMD engraving separates vertically extreme
+ // glyphs enough to improve the actual Study camera. This is diagnostic only;
+ // never promote a spacing factor just because the music is more spread out.
+ const spacingTrials=[];
+ for(const factor of [1.25,1.5]){
+  await page.setViewportSize({width:738,height:196});
+  await page.evaluate(({item,factor})=>{
+   window.__testStudySpacingFactor=factor;window.testDone=false;window.testError=null;
+   PianoNotation.load(item.xml,0,'engraving-poc',item.events);
+  },{item:gym,factor});
+  await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+  const samples=[];
+  for(const [label,beat] of positions){
+   await page.evaluate(async beat=>{PianoNotation.seek(beat,false,100,false);
+    await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},beat);
+   const measurement=await page.evaluate(()=>{
+    const a=PianoNotation.analysis(),v=document.getElementById('viewport');
+    return {space:a.geometry.staffSpace,matched:a.mapping&&a.mapping.matched,
+     verticalScroll:v.scrollTop,window:a.geometry.window};
+   });
+   samples.push({label,beat,...measurement});
+  }
+  spacingTrials.push({factor,samples});
+ }
+ await page.evaluate(()=>{delete window.__testStudySpacingFactor;});
+ console.log('STUDY_B1_SPACING_TRIALS '+JSON.stringify(spacingTrials));
+ fs.writeFileSync('../docs/evidence/study-profile/b1-spacing-trials.json',
+  JSON.stringify({sourceSha,checkoutSha,baseline:b1Views.filter(v=>v.size.height===196),
+   trials:spacingTrials},null,2));
+
  // Named context-change corpus fixture tests clefs, key signatures and time
  // signatures at exact measure boundaries, including backward seeks and
  // height-only resizing, with the pinned rail aligned to the camera.
