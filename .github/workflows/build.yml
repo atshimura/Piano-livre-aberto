@@ -72,6 +72,10 @@ jobs:
           java -Xmx512m -cp build/score-tests KeyboardGuideLoadTest
           javac -cp build/score-tests -d build/score-tests tests/MusicTimelineConsistencyTest.java
           java -cp build/score-tests MusicTimelineConsistencyTest
+      - name: Test safe manual Study loop editing (JVM)
+        run: |
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/StudyLoopEditing.java tests/StudyLoopEditingTest.java
+          java -cp build/score-tests StudyLoopEditingTest
       - name: Test Laboratory music theory (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java tests/MusicTheoryTest.java
