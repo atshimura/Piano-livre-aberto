@@ -531,6 +531,57 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    adapted:withCurve.map(v=>({label:v.label,beat:v.beat,space:v.staffSpace})),
    extremeGainPercent:100*(extremeWith.staffSpace/extremeWithout.space-1)},null,2));
 
+ // Look-ahead outside the actual viewport may shrink the score before an
+ // annotation and a deep bass stem can coexist on screen. Compare shorter
+ // conservative guards; an actual on-screen clipping is a hard rejection.
+ const leadTrials=[];
+ for(const lead of [.6,.35]){
+  await page.setViewportSize({width:738,height:196});
+  await page.evaluate(({item,lead})=>{
+   window.__testStudyLeadCells=lead;
+   window.testDone=false;window.testError=null;
+   PianoNotation.load(item.xml,0,'engraving-poc',item.events);
+  },{item:gym,lead});
+  await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+  const trial=await page.evaluate(beats=>{
+   const forward=[],backward=[],all=beats.concat(beats.slice().reverse());
+   for(let i=0;i<all.length;i++){
+    const beat=all[i];
+    try{
+     PianoNotation.seek(beat,false,100,false);
+     const a=PianoNotation.analysis(),v=document.getElementById('viewport');
+     const vp=v.getBoundingClientRect(),svg=document.querySelector('#score svg');
+     const clipped=Array.from(svg.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).filter(node=>{
+      if(getComputedStyle(node).visibility==='hidden'||node.closest('#piano-optical-study-cues'))return false;
+      const b=node.getBoundingClientRect();
+      return b.right>vp.left&&b.left<vp.right&&(b.top<vp.top-.5||b.bottom>vp.bottom+.5);
+     });
+     const row={beat,space:a.geometry.staffSpace,mapping:a.mapping.matched,
+      clipped:clipped.length,scrollTop:v.scrollTop,window:a.geometry.window};
+     (i<beats.length?forward:backward).push(row);
+    }catch(e){return {error:String(e),beat,forward,backward};}
+   }
+   return {forward,backward};
+  },beats);
+  if(trial.error)leadTrials.push({lead,error:trial.error,at:trial.beat});
+  else{
+   const minimum=trial.forward.reduce((a,b)=>a.space<b.space?a:b);
+   const largest=trial.forward.slice(1).reduce((a,b,i)=>{
+    const p=trial.forward[i],delta=100*(b.space/p.space-1);
+    return Math.abs(delta)>Math.abs(a.percent)?{from:p.beat,to:b.beat,percent:delta}:a;
+   },{percent:0});
+   const problems=trial.forward.concat(trial.backward).filter(x=>x.clipped||x.scrollTop||x.mapping!==469);
+   leadTrials.push({lead,minimum,largestAdjacent:largest,problems:problems.slice(0,8),samples:trial.forward.length});
+   await page.evaluate(async beat=>{PianoNotation.seek(beat,false,100,false);
+    await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},minimum.beat);
+   await page.screenshot({path:'../docs/evidence/study-profile/gymnopedie.lead-'+lead+'-minimum.738x196.png'});
+  }
+ }
+ await page.evaluate(()=>{delete window.__testStudyLeadCells;});
+ console.log('STUDY_B1_LEAD_TRIALS '+JSON.stringify(leadTrials));
+ fs.writeFileSync('../docs/evidence/study-profile/b1-lead-trials.json',
+  JSON.stringify({sourceSha,checkoutSha,leadTrials},null,2));
+
  // Named context-change corpus fixture tests clefs, key signatures and time
  // signatures at exact measure boundaries, including backward seeks and
  // height-only resizing, with the pinned rail aligned to the camera.
