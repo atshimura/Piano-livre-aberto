@@ -26,4 +26,9 @@ assert(temporal.includes('popup.style.right="4px";')&&temporal.includes('popup.s
  'temporal renderer must not anchor identification over the touched lower staff');
 assert(!temporal.includes('headRect.top-rootRect.top-57'),
  'temporal popup placement may not cover lower staff');
+assert(notation.includes('font:12px/1.1 sans-serif')&&
+ notation.includes('white-space:nowrap;overflow:hidden;text-overflow:ellipsis'),
+ 'OSMD popup must be a single compact line above rather than across the upper staff');
+assert(temporal.includes('font:600 12px/1.1')&&temporal.includes('popup.style.whiteSpace="nowrap"'),
+ 'temporal popup must have compact height even with contextual chord words');
 console.log('STUDY_NOTE_TIP_PASS');
