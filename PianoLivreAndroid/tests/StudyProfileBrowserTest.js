@@ -637,6 +637,49 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  fs.writeFileSync('../docs/evidence/study-profile/b1-word-shift-trials.json',
   JSON.stringify({sourceSha,checkoutSha,wordShiftTrials},null,2));
 
+ // Verify the source-aware, collision-checked word relocation independently
+ // of the raw transform probe, including every beat and reverse navigation.
+ await page.setViewportSize({width:738,height:196});
+ await page.evaluate(item=>{
+  window.__testStudyWords=true;window.testDone=false;window.testError=null;
+  PianoNotation.load(item.xml,0,'engraving-poc',item.events);
+ },gym);
+ await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+ const wordFit=await page.evaluate(beats=>{
+  const all=[];
+  for(const beat of beats.concat(beats.slice().reverse())){
+   PianoNotation.seek(beat,false,100,false);
+   const a=PianoNotation.analysis(),v=document.getElementById('viewport'),r=v.getBoundingClientRect(),
+    svg=document.querySelector('#score svg');
+   const clipped=Array.from(svg.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).filter(n=>{
+    if(getComputedStyle(n).visibility==='hidden'||n.closest('#piano-optical-study-cues'))return false;
+    const b=n.getBoundingClientRect();
+    return b.right>r.left&&b.left<r.right&&(b.top<r.top-.5||b.bottom>r.bottom+.5);
+   });
+   all.push({beat,space:a.geometry.staffSpace,clipped:clipped.length,
+    mapping:a.mapping.matched,scrollTop:v.scrollTop,adjustments:a.geometry.wordAdaptations||[]});
+  }
+  return all;
+ },beats);
+ const wordForward=wordFit.slice(0,beats.length);
+ const wordMinimum=wordForward.reduce((a,b)=>a.space<b.space?a:b);
+ const wordLargestAdjacent=wordForward.slice(1).reduce((a,b,i)=>{
+  const change=100*(b.space/wordForward[i].space-1);
+  return Math.abs(change)>Math.abs(a.percent)?{from:wordForward[i].beat,to:b.beat,percent:change}:a;
+ },{percent:0});
+ const wordProblems=wordFit.filter(x=>x.clipped||x.mapping!==469||x.scrollTop);
+ for(const beat of [181,186,223]){
+  await page.evaluate(async t=>{PianoNotation.seek(t,false,100,false);
+   await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},beat);
+  await page.screenshot({path:'../docs/evidence/study-profile/gymnopedie.word-layout-beat-'+beat+'.738x196.png'});
+ }
+ await page.evaluate(()=>{delete window.__testStudyWords;});
+ const wordSummary={minimum:wordMinimum,largestAdjacent:wordLargestAdjacent,
+  problems:wordProblems.slice(0,8),samples:wordForward.length};
+ console.log('STUDY_B1_WORD_REFLOW '+JSON.stringify(wordSummary));
+ fs.writeFileSync('../docs/evidence/study-profile/b1-word-refit.json',
+  JSON.stringify({sourceSha,checkoutSha,wordSummary},null,2));
+
  // Named context-change corpus fixture tests clefs, key signatures and time
  // signatures at exact measure boundaries, including backward seeks and
  // height-only resizing, with the pinned rail aligned to the camera.
