@@ -23,7 +23,10 @@ const refined=W.plan(boxes,{bounds:[0,-4,10000,400],width:738,height:196,
  context:{x:0,y:90,w:100,h:170},firstX:550});
 for(let i=0;i<refined.windows.length;i++)
  assert.equal(W.inspect(refined,i).clipped,0,'anchored camera clips ink');
-const edgeBoxes=[{x:0,y:95,w:10000,h:210},{x:1940,y:0,w:10,h:370}];
+// Position the extreme inside the unanchored camera's sampled envelope but
+// outside the anchored camera's envelope, including at the initial fit scale.
+// At x=1940 it was outside BOTH cameras and could not distinguish the cases.
+const edgeBoxes=[{x:0,y:95,w:10000,h:210},{x:1550,y:0,w:10,h:370}];
 const common={bounds:[0,0,10000,400],width:738,height:196};
 const surplus=W.plan(edgeBoxes,Object.assign({},common,{firstX:0}));
 const anchored=W.plan(edgeBoxes,Object.assign({},common,{firstX:550}));
