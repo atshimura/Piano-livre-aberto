@@ -24,13 +24,15 @@ def wait_new(marker,before,seconds=25):
     raise AssertionError(marker+" did not arrive within "+str(seconds)+" s")
 
 def library():
-    # The native library retains its scroll position when returning from
-    # Study; the first catalog entry need not be in the visible UI hierarchy.
-    tap_text(["Biblioteca"],scroll=True)
-    time.sleep(.5)
-    assert_running()
+    # On cold launch we are ALREADY on the library page, where Biblioteca
+    # appears as a non-clickable description. Do not tap it as a control.
     visible=labels()
-    assert any("partitura" in v.casefold() for v in visible), \
+    if not any("Biblioteca local" in v for v in visible):
+        tap_text(["← Biblioteca"],scroll=True)
+        time.sleep(.5)
+        visible=labels()
+    assert_running()
+    assert any("Biblioteca local" in v for v in visible), \
            "public score library did not reopen"
 
 def exercise(title,slug):
