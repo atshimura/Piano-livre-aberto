@@ -535,13 +535,15 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  // annotation and a deep bass stem can coexist on screen. Compare shorter
  // conservative guards; an actual on-screen clipping is a hard rejection.
  const leadTrials=[];
- for(const lead of [.6,.35]){
+ for(const setting of [{lead:.6,local:false},{lead:.35,local:false},{lead:.6,local:true},{lead:.35,local:true}]){
+  const lead=setting.lead;
   await page.setViewportSize({width:738,height:196});
-  await page.evaluate(({item,lead})=>{
-   window.__testStudyLeadCells=lead;
+  await page.evaluate(({item,setting})=>{
+   window.__testStudyLeadCells=setting.lead;
+   window.__testStudyLocalScale=setting.local;
    window.testDone=false;window.testError=null;
    PianoNotation.load(item.xml,0,'engraving-poc',item.events);
-  },{item:gym,lead});
+  },{item:gym,setting});
   await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
   const trial=await page.evaluate(beats=>{
    const forward=[],backward=[],all=beats.concat(beats.slice().reverse());
@@ -563,7 +565,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    }
    return {forward,backward};
   },beats);
-  if(trial.error)leadTrials.push({lead,error:trial.error,at:trial.beat});
+  if(trial.error)leadTrials.push({lead,local:setting.local,error:trial.error,at:trial.beat});
   else{
    const minimum=trial.forward.reduce((a,b)=>a.space<b.space?a:b);
    const largest=trial.forward.slice(1).reduce((a,b,i)=>{
@@ -571,13 +573,13 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
     return Math.abs(delta)>Math.abs(a.percent)?{from:p.beat,to:b.beat,percent:delta}:a;
    },{percent:0});
    const problems=trial.forward.concat(trial.backward).filter(x=>x.clipped||x.scrollTop||x.mapping!==469);
-   leadTrials.push({lead,minimum,largestAdjacent:largest,problems:problems.slice(0,8),samples:trial.forward.length});
+   leadTrials.push({lead,local:setting.local,minimum,largestAdjacent:largest,problems:problems.slice(0,8),samples:trial.forward.length});
    await page.evaluate(async beat=>{PianoNotation.seek(beat,false,100,false);
     await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},minimum.beat);
    await page.screenshot({path:'../docs/evidence/study-profile/gymnopedie.lead-'+lead+'-minimum.738x196.png'});
   }
  }
- await page.evaluate(()=>{delete window.__testStudyLeadCells;});
+ await page.evaluate(()=>{delete window.__testStudyLeadCells;delete window.__testStudyLocalScale;});
  console.log('STUDY_B1_LEAD_TRIALS '+JSON.stringify(leadTrials));
  fs.writeFileSync('../docs/evidence/study-profile/b1-lead-trials.json',
   JSON.stringify({sourceSha,checkoutSha,leadTrials},null,2));
