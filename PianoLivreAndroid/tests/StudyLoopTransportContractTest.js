@@ -1,0 +1,30 @@
+'use strict';
+const assert=require('assert');
+const fs=require('fs'),path=require('path');
+const root=path.join(__dirname,'../app/src/main/java/br/org/pianolivre');
+const main=fs.readFileSync(path.join(root,'MainActivity.java'),'utf8');
+const screens=fs.readFileSync(path.join(root,'PianoScreens.java'),'utf8');
+function body(name,next){
+ const start=main.indexOf(' void '+name+'(');
+ assert(start>=0,'missing '+name);
+ const end=main.indexOf('\n void '+next+'(',start+1);
+ assert(end>start,'missing method terminator '+next);
+ return main.slice(start,end);
+}
+const start=body('markLoopStart','markLoopEnd');
+const end=body('markLoopEnd','clearLoop');
+const clear=body('clearLoop','toggle');
+assert(start.indexOf('stopPlayback();')<start.indexOf('loopStart='),
+ 'changing start of A-B loop must first release MIDI playback');
+assert(start.includes('loopEnd=Double.MAX_VALUE;'),
+ 'new A marker cannot retain stale B marker');
+assert(start.includes('resetWrittenRoute();'),'starting a new A-B selection resets written itinerary');
+assert(end.includes('applyLoopSelection(Math.min(loopStart,position),Math.max(loopStart,position));'),
+ 'B marker must use existing checked and clamped loop selection');
+assert(clear.indexOf('stopPlayback();')<clear.indexOf('loopStart=0;'),
+ 'removing A-B must release MIDI output before clearing itinerary');
+assert(screens.includes('a.markLoopStart();')&&screens.includes('a.markLoopEnd();'),
+ 'native loop menu must call safe transport methods');
+assert(!screens.includes('a.loopStart=a.position')&&!screens.includes('a.loopEnd=a.position'),
+ 'direct UI mutation bypasses native playback safety');
+console.log('STUDY_LOOP_TRANSPORT_CONTRACT_PASS');
