@@ -346,6 +346,35 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   JSON.stringify({sourceSha,checkoutSha,baseline:b1Views.filter(v=>v.size.height===196),
    trials:spacingTrials},null,2));
 
+ // Investigate the high-zoom fixed-point hypothesis without changing the
+ // normal reader until the full musical corpus and visible ink approve it.
+ await page.setViewportSize({width:738,height:196});
+ await page.evaluate(item=>{window.__testStudyMaxFit=true;
+  window.testDone=false;window.testError=null;
+  PianoNotation.load(item.xml,0,'engraving-poc',item.events);},gym);
+ await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+ const maxFitTrials=[];
+ for(const [label,beat] of positions){
+  await page.evaluate(async beat=>{PianoNotation.seek(beat,false,100,false);
+   await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},beat);
+  const result=await page.evaluate(()=>{
+   const a=PianoNotation.analysis(),v=document.getElementById('viewport'),vr=v.getBoundingClientRect();
+   const clipped=Array.from(document.querySelectorAll('#score svg path,#score svg text,#score svg rect')).filter(n=>{
+    if(getComputedStyle(n).visibility==='hidden'||n.closest('#piano-optical-study-cues'))return false;
+    const b=n.getBoundingClientRect();return b.right>vr.left&&b.left<vr.right&&
+     (b.top<vr.top-.5||b.bottom>vr.bottom+.5);
+   });
+   return {staffSpace:a.geometry.staffSpace,mapping:a.mapping&&a.mapping.matched,
+    camera:a.geometry.window,clipped:clipped.length,scrollTop:v.scrollTop};
+  });
+  maxFitTrials.push({label,beat,...result});
+  await page.screenshot({path:'../docs/evidence/study-profile/gymnopedie.maxfit-'+label+'.738x196.png'});
+ }
+ await page.evaluate(()=>{delete window.__testStudyMaxFit;});
+ console.log('STUDY_B1_MAXFIT_TRIALS '+JSON.stringify(maxFitTrials));
+ fs.writeFileSync('../docs/evidence/study-profile/b1-maxfit-trials.json',
+  JSON.stringify({sourceSha,checkoutSha,baseline:b1Views.filter(v=>v.size.height===196),maxFitTrials},null,2));
+
  // Named context-change corpus fixture tests clefs, key signatures and time
  // signatures at exact measure boundaries, including backward seeks and
  // height-only resizing, with the pinned rail aligned to the camera.
