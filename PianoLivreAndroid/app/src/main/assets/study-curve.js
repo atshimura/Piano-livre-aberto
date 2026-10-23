@@ -53,7 +53,7 @@
  function collisionReport(svg,boxes){
   const cubic=(a,b,c,d,t)=>{const u=1-t;return u*u*u*a+3*u*u*t*b+3*u*t*t*c+t*t*t*d;};
   function meets(d,box){
-   const token=d.match(/[MLCZ]|[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][-+]?\\d+)?/g);
+   const token=d.match(/[MLCZ]|[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?/g);
    if(!token||token.length!==24)return false;
    const v=token.map(Number),xmin=Math.min(v[1],v[8]),xmax=Math.max(v[1],v[8]);
    const a=Math.max(xmin,box.x),b=Math.min(xmax,box.x+box.w);
