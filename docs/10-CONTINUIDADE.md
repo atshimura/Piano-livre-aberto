@@ -1,5 +1,14 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## B1 — continuidade operacional (23/10/2026)
+
+Trabalho ativo no [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51). A câmera usa amostragem contínua com envelope de tinta verificado e antecipa a entrada de símbolos, evitando saltos de célula. No Chromium 738×196, o maior salto entre beats adjacentes da Gymnopédie caiu de 6,94% para ~1,52%. O teste de 376 buscas registrou mediana 0,7 ms e p95 6,5 ms no executor Linux. O extremo beat 181 passou de ~4,85 para 5,10 CSS px, graças a um ajuste reversível de duas ligaduras longas a 60% da curvatura original; controles mais agressivos (40%) causaram colisão com cabeças de notas e foram descartados. MusicXML e MIDI permanecem intocados, e a geometria não é mantida se a inspeção constatar nova colisão.
+
+Resultados do [build/Chromium/JVM 39973685094](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39973685094): sucesso; corpus de 27 partituras, Gymnopédie 469/469 notas, recortes/rolagem vertical não detectados nos cenários testados. **Não confundir CI com aceite editorial/físico**. Os estudos de compactação nativa OSMD e as evidências no SHA final ainda precisam ser analisados. Não há autorização para merge, Release ou distribuição. Consultar [doc. 59](59-ESTUDO-ADAPTAVEL.md) antes de mudar os critérios.
+
+---
+
+
 ## B1 — experimento de amostragem espacial e transições (23/10/2026)
 
 A inspeção do `study-window.js` identificou um fator conservador mensurável: cada janela anterior considerava meia largura visível adicional de avanço, além do próprio enquadramento horizontal. Assim, símbolos extremos ainda fora da tela podiam entrar antecipadamente no envelope vertical, reduzindo o tamanho das pautas antes da passagem por eles. A grade experimental agora usa células espaciais menores (um sexto, em vez de metade, da largura projetada no alvo), preservando a inspeção de **todos** os símbolos que possam aparecer em cada célula, as duas pautas e a proibição de recorte vertical. Esta mudança de amostragem **não equivale** a solucionar o extremo: é necessário medir o novo mínimo e as variações, inclusive possível aumento de recálculos/oscilações.
