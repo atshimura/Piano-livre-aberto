@@ -897,8 +897,8 @@
    },
    loopEdit:function(enabled){
     if(studyProof){
-     hideOpticalNoteTip();
      opticalLoopEditing=!!enabled;opticalLoopStart=null;
+     hideOpticalNoteTip();
      const tip=document.getElementById('optical-note-tip');
      tip.textContent='Trecho: toque a nota inicial e a última nota da seleção';
      tip.style.left='12px';tip.style.top='10px';tip.style.display=enabled?'block':'none';
