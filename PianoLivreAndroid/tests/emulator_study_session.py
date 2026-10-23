@@ -24,12 +24,14 @@ def wait_new(marker,before,seconds=25):
     raise AssertionError(marker+" did not arrive within "+str(seconds)+" s")
 
 def library():
-    visible=labels()
-    if not any("10 de 10 partituras" in v for v in visible):
-        tap_text(["Biblioteca"],scroll=True)
-        time.sleep(.5)
+    # The native library retains its scroll position when returning from
+    # Study; the first catalog entry need not be in the visible UI hierarchy.
+    tap_text(["Biblioteca"],scroll=True)
+    time.sleep(.5)
     assert_running()
-    expect("Ode à Alegria","public score library did not reopen")
+    visible=labels()
+    assert any("partitura" in v.casefold() for v in visible), \
+           "public score library did not reopen"
 
 def exercise(title,slug):
     library()
