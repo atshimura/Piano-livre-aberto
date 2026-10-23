@@ -838,7 +838,9 @@
      // never stretch x independently or alter durations/notes. A small staff
      // alone is NOT a reason to widen measures: that lengthens slurs and can
      // increase the vertical envelope, shrinking every symbol even further.
-     const factor=initial.overlaps?1.5:1;
+     // Browser-only spacing experiment. The shipped default is unchanged.
+     const trial=Number(window.__testStudySpacingFactor);
+     const factor=trial>1&&trial<=2?trial:(initial.overlaps?1.5:1);
      studyProfile=Object.assign({},studyProfile,{spacing:factor});
      if(factor>1){
       osmd.EngravingRules.VoiceSpacingMultiplierVexflow*=factor;
