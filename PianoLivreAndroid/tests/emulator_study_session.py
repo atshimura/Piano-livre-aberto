@@ -27,13 +27,19 @@ def library():
     # On cold launch we are ALREADY on the library page, where Biblioteca
     # appears as a non-clickable description. Do not tap it as a control.
     visible=labels()
-    if not any("Biblioteca local" in v for v in visible):
+    if any("← Biblioteca" in v for v in visible):
         tap_text(["← Biblioteca"],scroll=True)
         time.sleep(.5)
         visible=labels()
     assert_running()
-    assert any("Biblioteca local" in v for v in visible), \
-           "public score library did not reopen"
+    assert not any("← Biblioteca" in v for v in visible), \
+           "Study back button remained after returning to library"
+    # The ScrollView keeps its earlier scroll position. A hero subtitle at
+    # the top is not required to be visible after reopening the library.
+    known={item["name"] for item in json.loads(
+      Path("app/src/main/assets/catalog.json").read_text(encoding="utf-8"))}
+    assert any(title in label for title in known for label in visible), \
+           "No catalog score visible after library return"
 
 def exercise(title,slug):
     library()
