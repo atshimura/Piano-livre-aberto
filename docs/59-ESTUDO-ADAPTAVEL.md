@@ -1,3 +1,13 @@
+## B1 — verificação técnica consolidada em 23/10/2026
+
+**Status: implementação e validação automatizada concluídas; aceite editorial em aparelhos reais pendente.** O commit `ca03737e98f9d0f7d5d6ccb2cf3d6afd4e68fe7f` passou integralmente em [build, Chromium e testes JVM (39987167821)](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39987167821) e em [emulador Android (39987167936)](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39987167936). Na comparação Chromium 738×196, o menor espaçamento entre linhas no percurso de 188 posições foi **5,017498 CSS px**, no beat 188; no beat 181, **5,157618 CSS px**. Maior mudança de escala entre amostras musicais adjacentes: **1,156629%**. Os testes passaram sem recortes visíveis ou rolagem vertical nos cenários exercitados, com reconciliação **469/469** de notas escritas da Gymnopédie. O corpus de 27 partituras/fixtures, reversibilidade das alterações de apresentação, contexto fixo, renderização e eventos no emulador foram executados no CI.
+
+A política de curvatura, de posicionamento de indicações numéricas e de câmera modifica apenas a apresentação SVG no Estudo; MusicXML autoritativo e eventos MIDI permanecem inalterados. O limiar técnico de 5 px serve para impedir regressões mensuradas, não é um critério universal de conforto visual.
+
+**Impedimento para encerramento integral da B1:** as capturas de Chromium e o emulador não atestam leitura confortável, resposta ao toque ou estabilidade com o guia aberto nos aparelhos físicos Realme 7 5G e Lenovo Tab M9; o Yamaha P-45 também requer ensaio real de MIDI. Esses testes serão feitos pelo usuário quando houver oportunidade e não impedem trabalho independente nas outras etapas. Não efetuar merge do PR #51, Release ou distribuição antes da autorização e dos critérios de aceite aplicáveis. Não classificar B1 como aceita fisicamente com base exclusivamente nos Actions.
+
+---
+
 # 59 — Análise automática e apresentação adaptável do Estudo
 
 ## B1 — reposicionamento editorial condicionado, SHA de verificação (23/10/2026)
