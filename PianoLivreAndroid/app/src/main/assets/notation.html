@@ -321,7 +321,9 @@
   studyWindow=StudyWindow.plan(geometry.boxes,{bounds:[vb.x,vb.y,vb.width,vb.height],
    width:viewport.clientWidth,height:viewport.clientHeight,context:geometry.context,
    firstX:optical.timeline.xAt(0),railUnits:opticalContextState?opticalContextState.contextRailUnits:130,
-   probeMaxFit:window.__testStudyMaxFit===true});
+   probeMaxFit:window.__testStudyMaxFit===true,
+   safetyLeadCells:Number.isFinite(Number(window.__testStudyLeadCells))&&
+    window.__testStudyLeadCells!==undefined?Number(window.__testStudyLeadCells):1});
   if(!studyWindow)return;
   studyWindowRows=EngravingAudit.inspect(osmd.graphic,Infinity);
   if(studyVerticalAdaptation.accepted)studyWindowRows=StudyProfile.shiftEngravingRows(studyWindowRows,2,studyVerticalAdaptation.delta);
