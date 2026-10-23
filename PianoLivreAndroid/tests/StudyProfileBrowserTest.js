@@ -289,7 +289,17 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
      viewport:[v.clientWidth,v.clientHeight],painted:[sr.width,sr.height],
      rail:[rr.left,rr.top,rr.width,rr.height],scrollTop:v.scrollTop,
      context:a.context,clipped:clipped.length,
-     mapping:a.mapping&&a.mapping.matched};
+     mapping:a.mapping&&a.mapping.matched,
+     limiters:(()=>{
+      if(!a.geometry.window)return null;
+      const region=a.geometry.window,boxes=StudyWindow.collect(svg).boxes.filter(b=>
+       b.x+b.w>=region.left&&b.x<=region.right);
+      const ident=b=>({kind:b.kind,tag:b.tag,text:b.text,x:+b.x.toFixed(1),
+       y:+b.y.toFixed(1),right:+(b.x+b.w).toFixed(1),bottom:+(b.y+b.h).toFixed(1)});
+      return {top:boxes.slice().sort((a,b)=>a.y-b.y).slice(0,5).map(ident),
+       bottom:boxes.slice().sort((a,b)=>(b.y+b.h)-(a.y+a.h)).slice(0,5).map(ident),
+       count:boxes.length};
+     })()};
    });
    assert.equal(row.scrollTop,0,'no vertical scroll in '+label);
    assert.equal(row.clipped,0,'painted glyph clipped in '+label+' '+size.height);
@@ -299,6 +309,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    const file='gymnopedie.window-'+label+'.'+size.width+'x'+size.height+'.png';
    await page.screenshot({path:'../docs/evidence/study-profile/'+file});
    b1Views.push({size,label,beat,file,...row});
+   if(size.height===196)console.log('STUDY_B1_GEOMETRY '+JSON.stringify({label,beat,...row}));
   }
  }
  fs.writeFileSync('../docs/evidence/study-profile/b1-viewport-comparison.json',
