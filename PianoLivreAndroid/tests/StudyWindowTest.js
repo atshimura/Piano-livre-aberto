@@ -34,5 +34,29 @@ assert(anchored.windows[0].scale>surplus.windows[0].scale+.001,
  'a glyph beyond the actual right viewport must not shrink the opening');
 for(const sample of anchored.windows)assert(sample.staffSpace>=10*anchored.fullScale,
  'an anchored window cannot shrink below full-score fit');
+// Continuous camera must stay safe for intermediate beats, including movement
+// backward and across every grid boundary. No apparent smoothness may be bought
+// with a glyph cut or a musical-coordinate shift.
+for(const model of [m,refined,anchored,surplus]){
+ let previous=null;
+ for(let x=model.bounds[0];x<=model.bounds[0]+model.bounds[2];x+=13){
+  const sample=W.sample(model,x);
+  assert(sample&&sample.scale>=model.fullScale,'continuous sample below global fit');
+  assert.equal(W.inspect(model,sample).clipped,0,'continuous view clips SVG ink at '+x);
+  assert(sample.top<=sample.inkTop-3.9999,'sample cuts top ink');
+  assert(sample.top+sample.height>=sample.inkBottom+3.9999,'sample cuts bottom ink');
+  if(previous)assert(Math.abs(sample.scale-previous.scale)<.075,
+   'large scale discontinuity in neighboring sampling positions');
+  previous=sample;
+ }
+ for(let i=1;i<model.windows.length;i++){
+  const edge=model.windows[i].start;
+  const left=W.sample(model,edge-.00001),right=W.sample(model,edge+.00001);
+  assert(Math.abs(left.scale-right.scale)<.0005,
+   'cell crossing cannot snap scale at x='+edge);
+ }
+ for(let x=model.bounds[0]+model.bounds[2];x>=model.bounds[0];x-=17)
+  assert.equal(W.inspect(model,W.sample(model,x)).clipped,0,'reverse seek must not clip');
+}
 assert.equal(W.select(m,-1),0);assert.equal(W.select(m,1e9),m.windows.length-1);
 console.log('STUDY_WINDOW_PASS');
