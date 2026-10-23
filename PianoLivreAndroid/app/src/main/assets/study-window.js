@@ -33,7 +33,7 @@
   // top/bottom inset; OSMD's viewBox alone can be slightly too short.
   const fullInk=union(boxes.concat(options.context?[options.context]:[]));
   const fullScale=available/Math.max(global[3],fullInk?fullInk.h+8:global[3]);
-  const targetScale=Math.max(fullScale,.7);
+  const targetScale=Math.max(fullScale,options.probeMaxFit?1:.7);
   // Bound the look-ahead to a fraction of the visible viewport. The earlier
   // half-viewport cells could let distant vertical extremes shrink a camera
   // long before their glyphs could actually enter the painted area.
@@ -57,9 +57,22 @@
   }
   for(let start=global[0];start<global[0]+global[2];start+=cellWidth){
    let scale=fullScale,f=null;
+   if(options.probeMaxFit){
+    // A higher scale narrows the horizontal viewport. Starting exclusively
+    // from the full fit may get trapped in a low-scale envelope containing
+    // two distant vertical extremes which do not coexist at higher zoom.
+    // Search descending, certifying each candidate using the complete ink.
+    for(let step=0;step<=60;step++){
+     const candidate=targetScale-(targetScale-fullScale)*step/60;
+     const attempt=frame(start,candidate);
+     if(attempt.ink&&attempt.ink.h+8<=available/candidate+1e-7){
+      scale=candidate;f=attempt;break;
+     }
+    }
+   }
    // Re-evaluate at the final painted scale: both the viewport width in SVG
    // units and the offset of the fixed reference line depend on that scale.
-   for(let pass=0;pass<8;pass++){
+   if(!options.probeMaxFit)for(let pass=0;pass<8;pass++){
     f=frame(start,scale);
     if(!f.ink)return null;
     const desired=Math.max(fullScale,Math.min(targetScale,available/(f.ink.h+8)));
