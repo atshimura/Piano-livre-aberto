@@ -29,6 +29,20 @@ O estudo de largura OSMD mostrou que a multiplicação do espaçamento por 1,25 
 
 O ganho no extremo de ~5,4% é mensurável, mas **não garante conforto editorial** no viewport baixo. No percurso de 188 posições para frente e 188 para trás, a maior transição entre notas consecutivas caiu de 6,94% no experimento anterior para 1,52% com a forma segura; o perfil de 376 chamadas a `seek` no Chromium registrou mediana de 0,7 ms, p95 de 6,5 ms e máximo de 12,3 ms (medidas do ambiente CI, não do hardware). Mapeamento Gymnopédie: 469/469 notas escritas; os testes cobrem 27 arquivos com fallbacks explícitos, Canon, Für Elise e a fixture de contexto fixo. Os [Actions do commit 72e96c5](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39973685094) aprovaram os testes de build/Chromium/JVM, sem representar aceite em aparelhos reais.
 
+### Resultado da implementação padrão, build 39982008947
+
+O [workflow de build e testes 39982008947](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39982008947), no SHA `1d529dfa46ac6bec97e07d5080c4a2688f60e78f`, **passou** com a política de textos numéricos habilitada por padrão. O Chromium percorreu 188 posições e o trajeto inverso, e o corpus de 27 partituras/fixtures passou. Os dados medidos do arquivo `b1-viewport-comparison.json` foram:
+
+| Viewport CSS | Abertura | Meio | Beat 181 | Pior trecho, beat 188 | Final |
+|---|---:|---:|---:|---:|---:|
+| 738×196 | 5,4049 | 5,3940 | 5,1576 | **5,0175** | 5,2267 |
+| 738×351 | 8,8544 | 8,8544 | 8,8544 | 8,8544 | 8,8544 |
+| 883×409 | 10,3516 | 10,3516 | 10,3516 | 10,3516 | 10,3516 |
+
+Unidades: CSS px entre linhas consecutivas. As quinze amostras comparáveis tiveram zero recortes visíveis, zero scroll vertical e mapeamento 469/469. No percurso compacto completo, a maior variação de escala entre posições musicais adjacentes foi 1,1566%; o mínimo ficou no beat 188. Os números `direction/words` `46` e `34` mudaram apenas de posição gráfica (14 e 5 unidades SVG), sem contatos novos. As capturas `gymnopedie.word-layout-beat-181.738x196.png` e `gymnopedie.word-layout-beat-186.738x196.png` foram revisadas: duas pautas e ligaduras permanecem visíveis.
+
+Isso encerra a **implementação e a verificação automatizada dos critérios técnicos medidos**, mas não demonstra aceitação editorial/física da leitura no Realme 7 5G ou Lenovo Tab M9, nem teste MIDI real com o Yamaha P-45. A B1 não deve ser declarada integralmente aceita antes dessa verificação, nem o PR integrado sem autorização. Não houve publicação de Release ou APK.
+
 Persistem como decisões condicionais à evidência: analisar os ensaios de redução **nativa** de distância entre pautas por OSMD; inspecionar capturas finais da curvatura e os testes Android do SHA de entrega; obter aceite visual/físico no Realme 7 5G, Lenovo Tab M9 e Yamaha P-45. Não publicar APK, Release nem integrar este PR sem autorização.
 
 ---
