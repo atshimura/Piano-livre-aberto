@@ -1113,10 +1113,10 @@ function setupNoteIdentification(st){
   popup.textContent=text;
   popup.style.whiteSpace="pre-line";
   popup.style.display="block";
-  var rootRect=st.root.getBoundingClientRect(),headRect=e.target.getBoundingClientRect();
-  var preferredX=headRect.left-rootRect.left-18;
-  popup.style.left=Math.max(st.layout.railWidth+5,Math.min(st.viewportWidth-180,preferredX))+"px";
-  popup.style.top=Math.max(4,headRect.top-rootRect.top-57)+"px";
+  popup.style.left="auto";
+  popup.style.right="4px";
+  popup.style.top="4px";
+  popup.style.maxWidth="calc(100% - 8px)";
   if(st.popupTimer)clearTimeout(st.popupTimer);
   st.popupTimer=setTimeout(function(){popup.style.display="none";st.popupTimer=null;},2000);
  });
