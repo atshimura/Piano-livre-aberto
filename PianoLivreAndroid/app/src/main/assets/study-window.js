@@ -117,7 +117,21 @@
    const right=Math.max(x+(model.width-anchor)/s+20,guardedRight);
    const active=model.boxes.filter(function(b){return b.x+b.w>=left&&b.x<=right;});
    if(context)active.push(context);
-   return {left:left,right:right,ink:union(active)};
+   const ink=union(active);
+   if(!ink)return {left:left,right:right,ink:null};
+   // Introduce outside extremes gradually as they approach the GUARDED
+   // viewport. Their weight reaches one before they become visible. A
+   // discrete bounding-box enter/exit event must not snap staff size.
+   const baselineTop=ink.y,baselineBottom=ink.y+ink.h;
+   let top=baselineTop,bottom=baselineBottom;
+   for(const b of model.boxes){
+    const gap=b.x+b.w<left?left-b.x-b.w:(b.x>right?b.x-right:0);
+    if(gap<=0||gap>=model.cellWidth)continue;
+    const weight=1-gap/model.cellWidth;
+    top=Math.min(top,baselineTop+Math.min(0,b.y-baselineTop)*weight);
+    bottom=Math.max(bottom,baselineBottom+Math.max(0,b.y+b.h-baselineBottom)*weight);
+   }
+   return {left:left,right:right,ink:{x:ink.x,y:top,w:ink.w,h:bottom-top}};
   }
   let f=frameAt(scale);
   // At smaller scales the painted horizontal range becomes wider. Check
