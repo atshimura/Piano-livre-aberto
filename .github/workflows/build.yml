@@ -72,6 +72,15 @@ jobs:
           java -Xmx512m -cp build/score-tests KeyboardGuideLoadTest
           javac -cp build/score-tests -d build/score-tests tests/MusicTimelineConsistencyTest.java
           java -cp build/score-tests MusicTimelineConsistencyTest
+      - name: Integrated Study session on short and long scores (JVM)
+        run: |
+          javac -cp build/score-tests -d build/score-tests \
+            app/src/main/java/br/org/pianolivre/WaitPreparation.java \
+            app/src/main/java/br/org/pianolivre/WaitRecognizer.java \
+            app/src/main/java/br/org/pianolivre/KeyboardGuide.java \
+            app/src/main/java/br/org/pianolivre/MidiPlayback.java \
+            tests/StudySessionIntegrationTest.java
+          java -Xmx512m -cp build/score-tests StudySessionIntegrationTest
       - name: Test Laboratory music theory (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java tests/MusicTheoryTest.java
