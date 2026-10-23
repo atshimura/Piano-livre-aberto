@@ -99,7 +99,8 @@
   }
   return {bounds:global.slice(),cellWidth:cellWidth,windows:windows,boxes:boxes,
    context:context,railUnits:options.railUnits||130,firstX:firstX,fullScale:fullScale,width:width,height:height,
-   safetyLeadCells:Number.isFinite(options.safetyLeadCells)?Math.max(0,Math.min(1,options.safetyLeadCells)):1,current:-1};
+   safetyLeadCells:Number.isFinite(options.safetyLeadCells)?Math.max(0,Math.min(1,options.safetyLeadCells)):1,
+   localScaleExperiment:options.localScaleExperiment===true,current:-1};
  }
  function select(model,x){return Math.max(0,Math.min(model.windows.length-1,Math.floor((x-model.bounds[0])/model.cellWidth)));}
  // A Lipschitz minorant of the safe per-cell scales: for any position within
@@ -110,8 +111,8 @@
   const index=select(model,x),windows=model.windows,chosen=windows[index];
   const available=Math.max(1,model.height-8);
   const slope=model.fullScale*model.fullScale/Math.max(1,model.width);
-  let scale=chosen.scale;
-  for(const w of windows){
+  let scale=model.localScaleExperiment?Math.max(model.fullScale,.7):chosen.scale;
+  if(!model.localScaleExperiment)for(const w of windows){
    const distance=x<w.start?w.start-x:(x>w.end?x-w.end:0);
    scale=Math.min(scale,w.scale+slope*distance);
   }
@@ -131,8 +132,10 @@
    // Keep the entire cell envelope (plus one cell on either side) under
    // inspection while WebView scrollLeft and SVG width settle after relayout.
    // A long curve may paint across the left edge before the next scroll event.
-   const left=Math.min(x-anchor/s-20,guardedLeft);
-   const right=Math.max(x+(model.width-anchor)/s+20,guardedRight);
+   const left=model.localScaleExperiment?x-anchor/s-20-lead:
+    Math.min(x-anchor/s-20,guardedLeft);
+   const right=model.localScaleExperiment?x+(model.width-anchor)/s+20+lead:
+    Math.max(x+(model.width-anchor)/s+20,guardedRight);
    const active=model.boxes.filter(function(b){return b.x+b.w>=left&&b.x<=right;});
    if(context)active.push(context);
    const ink=union(active);
