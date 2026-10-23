@@ -409,15 +409,33 @@ if __name__=="__main__":
     ny=bounds[1]+round(first["y"]*h/professional["viewportHeight"])
     assert bounds[0]<=nx<bounds[2] and bounds[1]<=ny<bounds[3], "Mapped notehead outside visible WebView"
     adb("shell","input","tap",str(nx),str(ny))
-    time.sleep(.5)
+    # Capture the ACTUAL visible popup before multiple logcat/ADB round trips
+    # consume its required two-second lifetime.
+    time.sleep(.25)
+    screenshot("piano-osmd-poc-note-tap.png")
+    time.sleep(.25)
     touches=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_NOTE_TAP {" in line]
     assert touches, "Actual Android touch did not reach graphical notehead"
     hit=json.loads(touches[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
     assert hit["staff"]==1 and hit["midiEstimate"]==first["midiEstimate"], "Android head-touch resolved wrong note or staff"
     assert hit["mapped"] and hit["nativeMidi"]==first["midiEstimate"], "Actual Android note tap did not agree with native Score.java MIDI"
     assert hit.get("writtenName")=="Mi4" and hit.get("xmlNoteIndex") is not None, "OSMD head did not preserve the actual written pitch and XML identity"
-    screenshot("piano-osmd-poc-note-tap.png")
-    print("PASS: actual Android tap identified first upper-staff OSMD notehead",flush=True)
+    visible=[line for line in adb("logcat","-d","-v","brief").splitlines()
+             if "POC_NOTE_TIP_VISIBLE {" in line]
+    assert visible, "OSMD tap did not show a bounded temporary identification"
+    popup=json.loads(visible[-1].split("POC_NOTE_TIP_VISIBLE ",1)[1].split(" @",1)[0])
+    assert popup["label"]=="Mi4 · E4", "Note popup lost international written spelling: "+str(popup)
+    view=popup["viewport"]
+    assert view[0]-1<=popup["left"]<popup["right"]<=view[2]+1 and \
+           view[1]-1<=popup["top"]<popup["bottom"]<=view[3]+1, \
+           "Note popup escapes the actual score viewport: "+str(popup)
+    time.sleep(2.3)
+    timeline=adb("logcat","-d","-v","brief").splitlines()
+    visible_index=max(i for i,line in enumerate(timeline) if "POC_NOTE_TIP_VISIBLE {" in line)
+    assert any("POC_NOTE_TIP_HIDDEN" in line for line in timeline[visible_index+1:]), \
+           "Note identification persisted beyond two seconds"
+    screenshot("piano-osmd-poc-note-tap-expired.png")
+    print("PASS: Android OSMD notehead shows written Mi4/E4 inside viewport and expires",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     playback_point=tap_text(["Iniciar"],return_point=True)
     time.sleep(2)

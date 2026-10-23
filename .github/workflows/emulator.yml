@@ -108,6 +108,7 @@ jobs:
               "piano-osmd-poc.png",
               "piano-osmd-poc-moving.png",
               "piano-osmd-poc-note-tap.png",
+              "piano-osmd-poc-note-tap-expired.png",
               "piano-osmd-poc-loop.png",
               "piano-osmd-poc-wait.png",
               "piano-temporal-long.png",
@@ -175,6 +176,7 @@ jobs:
             PianoLivreAndroid/piano-osmd-failure-diagnostics.txt
             PianoLivreAndroid/piano-osmd-poc-moving.png
             PianoLivreAndroid/piano-osmd-poc-note-tap.png
+            PianoLivreAndroid/piano-osmd-poc-note-tap-expired.png
             PianoLivreAndroid/piano-osmd-poc-loop.png
             PianoLivreAndroid/piano-osmd-poc-wait.png
             PianoLivreAndroid/piano-temporal-long.png
