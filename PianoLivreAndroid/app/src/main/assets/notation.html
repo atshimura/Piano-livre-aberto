@@ -309,12 +309,18 @@
  }
  function updateStudyWindow(x){
   if(!studyWindow)return false;
-  const index=StudyWindow.select(studyWindow,x);
-  if(index===studyWindow.current)return false;
-  const svg=document.querySelector('#score svg'),w=studyWindow.windows[index];
-  const audit=StudyWindow.inspect(studyWindow,index);
+  const w=StudyWindow.sample(studyWindow,x);
+  if(!w)return false;
+  const index=w.index,previous=studyWindow.applied;
+  // Sub-pixel camera changes do not merit a complete Android WebView reflow.
+  if(previous&&previous.index===index&&
+     Math.abs(w.staffSpace-previous.staffSpace)<.02&&
+     Math.abs(w.top-previous.top)*w.scale<.35)return false;
+  const svg=document.querySelector('#score svg');
+  const audit=StudyWindow.inspect(studyWindow,w);
   if(audit.clipped)throw Error('Janela de Estudo cortaria símbolos musicais');
   studyWindow.current=index;
+  studyWindow.applied=w;
   svg.style.overflow='hidden';
   svg.setAttribute('viewBox',[studyWindow.bounds[0],w.top,studyWindow.bounds[2],w.height].join(' '));
   svg.dataset.opticalNativeHeight=String(w.height);
