@@ -1096,9 +1096,9 @@ function setupNoteIdentification(st){
  popup.id="temporal-note-identification";
  popup.setAttribute("role","status");
  popup.style.cssText="position:absolute;display:none;z-index:10;pointer-events:none;"+
-  "background:#17324e;color:#fff;border-radius:8px;padding:7px 10px;"+
-  "font:600 14px system-ui,sans-serif;max-width:60%;line-height:1.4;"+
-  "box-shadow:0 2px 9px #55718c66;";
+  "background:#17324e;color:#fff;border-radius:8px;padding:3px 7px;"+
+  "font:600 12px/1.1 system-ui,sans-serif;max-width:calc(100% - 8px);"+
+  "box-shadow:0 1px 3px #55718c66;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
  st.root.appendChild(popup);st.popup=popup;st.popupTimer=null;
  st.root.addEventListener("click",function(e){
   if(st.editingLoop||!e.target||!e.target.tagName
@@ -1109,9 +1109,9 @@ function setupNoteIdentification(st){
   if(!Number.isInteger(index)||index<0)return;
   var note=st.layout.plan.notes[index],identity=noteIdentification(note);
   if(!identity)return;
-  var text=identity+(note.harmony?"\nAcorde: "+note.harmony.symbol+" — "+note.harmony.name:"");
+  var text=identity+(note.harmony?" · Acorde: "+note.harmony.symbol+" — "+note.harmony.name:"");
   popup.textContent=text;
-  popup.style.whiteSpace="pre-line";
+  popup.style.whiteSpace="nowrap";
   popup.style.display="block";
   // The identification is temporary and must not sit over the touched
   // lower staff. Anchor it in the upper-right margin, independent of the
