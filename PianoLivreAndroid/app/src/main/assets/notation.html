@@ -298,7 +298,8 @@
   const geometry=StudyWindow.collect(svg),vb=svg.viewBox.baseVal;
   studyWindow=StudyWindow.plan(geometry.boxes,{bounds:[vb.x,vb.y,vb.width,vb.height],
    width:viewport.clientWidth,height:viewport.clientHeight,context:geometry.context,
-   firstX:optical.timeline.xAt(0),railUnits:opticalContextState?opticalContextState.contextRailUnits:130});
+   firstX:optical.timeline.xAt(0),railUnits:opticalContextState?opticalContextState.contextRailUnits:130,
+   probeMaxFit:window.__testStudyMaxFit===true});
   if(!studyWindow)return;
   studyWindowRows=EngravingAudit.inspect(osmd.graphic,Infinity);
   if(studyVerticalAdaptation.accepted)studyWindowRows=StudyProfile.shiftEngravingRows(studyWindowRows,2,studyVerticalAdaptation.delta);
