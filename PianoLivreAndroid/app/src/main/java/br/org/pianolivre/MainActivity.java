@@ -687,7 +687,7 @@ public class MainActivity extends Activity {
  void markLoopStart(){
   if(score==null)return;
   stopPlayback();
-  loopStart=Math.max(0,Math.min(score.end(),position));
+  loopStart=StudyLoopPosition.start(score,position);
   loopEnd=Double.MAX_VALUE;
   resetWrittenRoute();
   saveSession();updateInfo();
@@ -695,7 +695,8 @@ public class MainActivity extends Activity {
  /** Commit the B marker via the same checked path as graphical selection. */
  void markLoopEnd(){
   if(score==null)return;
-  applyLoopSelection(Math.min(loopStart,position),Math.max(loopStart,position));
+  double release=StudyLoopPosition.end(score,position);
+  applyLoopSelection(Math.min(loopStart,release),Math.max(loopStart,release));
  }
  void clearLoop(){
   // A running demonstration must release its held notes before its route or
