@@ -387,7 +387,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  // MusicXML notes remain fixed. Visual comparison is mandatory before any
  // approval; this trial does NOT certify collision safety.
  const curveTrials=[];
- for(const factor of [.8,.6]){
+ for(const factor of [.8,.6,.4]){
   await page.setViewportSize({width:738,height:196});
   await page.evaluate(({item,factor})=>{window.__testStudyCurveFactor=factor;
    window.testDone=false;window.testError=null;
@@ -405,8 +405,12 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
      const b=n.getBoundingClientRect();
      return b.right>vr.left&&b.left<vr.right&&(b.top<vr.top-.5||b.bottom>vr.bottom+.5);
     });
+    const contacts=StudyCurve.collisionReport(document.querySelector('#score svg'),
+     StudyWindow.collect(document.querySelector('#score svg')).boxes);
     return {staffSpace:a.geometry.staffSpace,mapping:a.mapping&&a.mapping.matched,
-     clipped:clipped.length,scrollTop:v.scrollTop};
+     clipped:clipped.length,scrollTop:v.scrollTop,
+     editedCurves:contacts.length,collidingCurves:contacts.filter(c=>c.introducedContacts>0),
+     unsupportedCurves:contacts.filter(c=>c.unsupportedTransform).length};
    });
    const file='gymnopedie.slur-'+factor+'-'+label+'.738x196.png';
    await page.screenshot({path:'../docs/evidence/study-profile/'+file});
