@@ -282,7 +282,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  // Comparative B1 captures: opening, middle, first extreme and final
  // extreme for each requested device-like CSS viewport. A screenshot is
  // only evidence of Chromium geometry, never physical readability.
- const b1Views=[],positions=[['opening',0],['middle',110],['extreme',181],['ending',223]];
+ const b1Views=[],positions=[['opening',0],['middle',110],['extreme',181],['deepest',186],['ending',223]];
  for(const size of [{width:738,height:196},{width:738,height:351},{width:883,height:409}]){
   await page.setViewportSize(size);
   await page.evaluate(item=>{window.testDone=false;window.testError=null;
@@ -307,6 +307,14 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
      rail:[rr.left,rr.top,rr.width,rr.height],scrollTop:v.scrollTop,
      context:a.context,clipped:clipped.length,
      mapping:a.mapping&&a.mapping.matched,
+     numericText:Array.from(svg.querySelectorAll('text')).filter(node=>
+      ['46','34'].includes((node.textContent||'').trim())).map(node=>{
+       const b=node.getBBox();return {text:(node.textContent||'').trim(),x:+b.x.toFixed(2),
+        y:+b.y.toFixed(2),width:+b.width.toFixed(2),height:+b.height.toFixed(2),
+        className:node.getAttribute('class'),parentClass:node.parentNode.getAttribute('class'),
+        containerClass:node.parentNode.parentNode.getAttribute('class'),
+        attrs:node.outerHTML.slice(0,450)};
+      }),
      limiters:(()=>{
       if(!a.geometry.window)return null;
       const region=a.geometry.window,boxes=StudyWindow.collect(svg).boxes.filter(b=>
