@@ -74,6 +74,8 @@ jobs:
           java -cp build/score-tests PerformanceRouteTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiPlayback.java app/src/main/java/br/org/pianolivre/KeyboardGuide.java tests/PerformanceRoutePlaybackTest.java
           java -cp build/score-tests PerformanceRoutePlaybackTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/StudyLoopPosition.java tests/StudyLoopPositionTest.java
+          java -cp build/score-tests StudyLoopPositionTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/WaitRecognizer.java tests/StudyJourneyTest.java
           java -cp build/score-tests StudyJourneyTest
           java -cp build/score-tests MusicStructureTest
