@@ -383,6 +383,43 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  fs.writeFileSync('../docs/evidence/study-profile/b1-maxfit-trials.json',
   JSON.stringify({sourceSha,checkoutSha,baseline:b1Views.filter(v=>v.size.height===196),maxFitTrials},null,2));
 
+ // Research-only editorial slur trial: all endpoints and original
+ // MusicXML notes remain fixed. Visual comparison is mandatory before any
+ // approval; this trial does NOT certify collision safety.
+ const curveTrials=[];
+ for(const factor of [.8,.6]){
+  await page.setViewportSize({width:738,height:196});
+  await page.evaluate(({item,factor})=>{window.__testStudyCurveFactor=factor;
+   window.testDone=false;window.testError=null;
+   PianoNotation.load(item.xml,0,'engraving-poc',item.events);}, {item:gym,factor});
+  await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+  const readings=[];
+  for(const [label,beat] of positions){
+   await page.evaluate(async beat=>{PianoNotation.seek(beat,false,100,false);
+    await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},beat);
+   const row=await page.evaluate(()=>{
+    const v=document.getElementById('viewport'),a=PianoNotation.analysis();
+    const vr=v.getBoundingClientRect();
+    const clipped=Array.from(document.querySelectorAll('#score svg path,#score svg text,#score svg rect')).filter(n=>{
+     if(getComputedStyle(n).visibility==='hidden'||n.closest('#piano-optical-study-cues'))return false;
+     const b=n.getBoundingClientRect();
+     return b.right>vr.left&&b.left<vr.right&&(b.top<vr.top-.5||b.bottom>vr.bottom+.5);
+    });
+    return {staffSpace:a.geometry.staffSpace,mapping:a.mapping&&a.mapping.matched,
+     clipped:clipped.length,scrollTop:v.scrollTop};
+   });
+   const file='gymnopedie.slur-'+factor+'-'+label+'.738x196.png';
+   await page.screenshot({path:'../docs/evidence/study-profile/'+file});
+   readings.push({label,beat,file,...row});
+  }
+  curveTrials.push({factor,readings});
+ }
+ await page.evaluate(()=>{delete window.__testStudyCurveFactor;});
+ console.log('STUDY_B1_CURVE_TRIALS '+JSON.stringify(curveTrials));
+ fs.writeFileSync('../docs/evidence/study-profile/b1-curve-trials.json',
+  JSON.stringify({sourceSha,checkoutSha,baseline:b1Views.filter(v=>v.size.height===196),
+   curveTrials},null,2));
+
  // Named context-change corpus fixture tests clefs, key signatures and time
  // signatures at exact measure boundaries, including backward seeks and
  // height-only resizing, with the pinned rail aligned to the camera.
