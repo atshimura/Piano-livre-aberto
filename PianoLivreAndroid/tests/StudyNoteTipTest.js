@@ -21,4 +21,9 @@ assert(notation.includes('showOpticalNoteTip((international'),'note tap must use
 assert(notation.includes('},2200);'),'note tap must expire');
 assert(notation.includes('hideOpticalNoteTip();\n  loaded=false;'),'change score must cancel previous toast');
 assert(!notation.includes("ev.clientY-44)+'px';tip.style.display='block';\n   console.log('POC_NOTE_TAP"),'old note badge obscures lower staff');
+const temporal=fs.readFileSync(path.join(__dirname,'../app/src/main/assets/temporal-notation.js'),'utf8');
+assert(temporal.includes('popup.style.right="4px";')&&temporal.includes('popup.style.top="4px";'),
+ 'temporal renderer must not anchor identification over the touched lower staff');
+assert(!temporal.includes('headRect.top-rootRect.top-57'),
+ 'temporal popup placement may not cover lower staff');
 console.log('STUDY_NOTE_TIP_PASS');
