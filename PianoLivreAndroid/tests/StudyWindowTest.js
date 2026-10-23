@@ -59,4 +59,27 @@ for(const model of [m,refined,anchored,surplus]){
   assert.equal(W.inspect(model,W.sample(model,x)).clipped,0,'reverse seek must not clip');
 }
 assert.equal(W.select(m,-1),0);assert.equal(W.select(m,1e9),m.windows.length-1);
+// A Study-only slur shape may become flatter, but must retain its start,
+// end, filled outline thickness and reverse cubic. An unsupported Bézier
+// command or a malformed path must remain untouched, never silently altered.
+const StudyCurve=require('../app/src/main/assets/study-curve.js');
+const slur='M0 100C25 20,75 20,100 100L100 99.5C75 17,25 17,0 99.5L0 100Z';
+const curveTokens=d=>d.match(/[MLCZ]|[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][-+]?\\d+)?/g);
+const native=curveTokens(slur).map(Number);
+for(const factor of [.9,.8,.6,.4]){
+ const modified=StudyCurve.flatten(slur,factor);
+ assert(modified,'supported filled cubic remains parseable');
+ const next=curveTokens(modified).map(Number);
+ for(const i of [1,2,8,9,11,12,18,19,21,22])
+  assert.equal(next[i],native[i],'Study editorial slur endpoints remain exact');
+ const midpoint=(a,b,c,d)=>(a+3*b+3*c+d)/8;
+ const y0=midpoint(native[2],native[5],native[7],native[9]);
+ const y1=midpoint(next[2],next[5],next[7],next[9]);
+ assert(y1>y0&&y1<native[2],'curvature decreases without moving anchors');
+ assert(Math.abs((next[5]-next[15])-(native[5]-native[15]))<.0001,
+  'filled slur edge thickness remains unchanged');
+}
+assert.equal(StudyCurve.flatten(slur,1.1),null,'no excessive curvature factor');
+assert.equal(StudyCurve.flatten('M0 0Q5 10 10 0',.6),null,
+ 'unsupported geometry is preserved rather than guessed');
 console.log('STUDY_WINDOW_PASS');
