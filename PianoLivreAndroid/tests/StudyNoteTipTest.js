@@ -34,4 +34,8 @@ ok(html.includes('showOpticalTip(noteName&&international'),'OSMD note touch disp
 ok(html.includes('opticalTipTimeout=setTimeout(hideOpticalTip,2000)'),'identification automatically expires');
 ok(html.includes('hideOpticalTip();\n  loaded=false'),'opening new score clears stale label');
 ok(html.includes('tip.textContent=label'),'no unsafe HTML interpolation from MusicXML');
+const temporal=fs.readFileSync('app/src/main/assets/temporal-notation.js','utf8');
+ok(temporal.includes('StudyNoteTip.place(vp'),'temporal Study shares the same viewport-safe placement');
+ok(temporal.includes('st.popupTimer=setTimeout(function(){popup.style.display="none"'),'temporal popup still expires');
+
 console.log('STUDY_NOTE_TIP_PASS checks='+checks);
