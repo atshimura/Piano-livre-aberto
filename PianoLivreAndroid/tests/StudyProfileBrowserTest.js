@@ -475,6 +475,44 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  fs.writeFileSync('../docs/evidence/study-profile/b1-staff-rule-trials.json',
   JSON.stringify({sourceSha,checkoutSha,staffRuleTrials},null,2));
 
+ // Explicitly compare the shipped adaptive camera against the exact same
+ // engraving with only the local curve edit disabled. No absolute CSS-pixel
+ // target is a user-approved acceptance criterion; verify real improvement.
+ await page.setViewportSize({width:738,height:196});
+ await page.evaluate(item=>{
+  window.__testDisableStudyCurveAdaptation=true;
+  window.testDone=false;window.testError=null;
+  PianoNotation.load(item.xml,0,'engraving-poc',item.events);
+ },gym);
+ await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+ const withoutCurve=[];
+ for(const [label,beat] of positions){
+  await page.evaluate(async beat=>{PianoNotation.seek(beat,false,100,false);
+   await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},beat);
+  const values=await page.evaluate(()=>{
+   const a=PianoNotation.analysis(),v=document.getElementById('viewport');
+   return {space:a.geometry.staffSpace,mapped:a.mapping.matched,scrollTop:v.scrollTop};
+  });
+  if(label==='extreme'||label==='ending')
+   await page.screenshot({path:'../docs/evidence/study-profile/gymnopedie.curve-disabled-'+label+'.738x196.png'});
+  withoutCurve.push({label,beat,...values});
+ }
+ await page.evaluate(()=>{delete window.__testDisableStudyCurveAdaptation;});
+ const withCurve=b1Views.filter(v=>v.size.height===196);
+ const extremeWith=withCurve.find(v=>v.label==='extreme'),
+  extremeWithout=withoutCurve.find(v=>v.label==='extreme');
+ assert(extremeWith.staffSpace>extremeWithout.space+.1,
+  'Study editorial repair must measurably improve the difficult Gymnopédie region');
+ assert(withCurve.every(v=>v.mapping===469&&v.clipped===0&&v.scrollTop===0),
+  'curve adjustment must preserve every written pitch and visible symbol');
+ console.log('STUDY_B1_CONTROLLED_IMPROVEMENT '+JSON.stringify({
+  baseline:withoutCurve,adapted:withCurve.map(v=>({label:v.label,beat:v.beat,space:v.staffSpace})),
+  extremeGainPercent:100*(extremeWith.staffSpace/extremeWithout.space-1)}));
+ fs.writeFileSync('../docs/evidence/study-profile/b1-controlled-improvement.json',
+  JSON.stringify({sourceSha,checkoutSha,baseline:withoutCurve,
+   adapted:withCurve.map(v=>({label:v.label,beat:v.beat,space:v.staffSpace})),
+   extremeGainPercent:100*(extremeWith.staffSpace/extremeWithout.space-1)},null,2));
+
  // Named context-change corpus fixture tests clefs, key signatures and time
  // signatures at exact measure boundaries, including backward seeks and
  // height-only resizing, with the pinned rail aligned to the camera.
