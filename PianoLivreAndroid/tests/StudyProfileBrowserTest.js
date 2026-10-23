@@ -424,6 +424,48 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   JSON.stringify({sourceSha,checkoutSha,baseline:b1Views.filter(v=>v.size.height===196),
    curveTrials},null,2));
 
+ // Compare the engraver's native inter-staff distances. Unlike SVG
+ // translations, OSMD may move accompanying dynamics and connectors.
+ const staffRuleTrials=[];
+ for(const trial of [{between:3,curve:.6},{between:1,curve:.6},{between:3,staff:5,curve:.6}]){
+  await page.setViewportSize({width:738,height:196});
+  await page.evaluate(({item,trial})=>{
+   window.__testStudyStaffRules=trial;
+   window.__testStudyCurveFactor=trial.curve;
+   window.testDone=false;window.testError=null;
+   PianoNotation.load(item.xml,0,'engraving-poc',item.events);
+  },{item:gym,trial});
+  await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+  const measurements=[];
+  for(const [label,beat] of positions){
+   await page.evaluate(async t=>{
+    PianoNotation.seek(t,false,100,false);
+    await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);
+   },beat);
+   const value=await page.evaluate(()=>{
+    const a=PianoNotation.analysis(),v=document.getElementById('viewport'),vr=v.getBoundingClientRect();
+    const svg=document.querySelector('#score svg');
+    const clipped=svg?Array.from(svg.querySelectorAll('path,text,rect,circle,ellipse,line')).filter(node=>{
+     if(getComputedStyle(node).visibility==='hidden'||node.closest('#piano-optical-study-cues'))return false;
+     const b=node.getBoundingClientRect();
+     return b.right>vr.left&&b.left<vr.right&&(b.top<vr.top-.5||b.bottom>vr.bottom+.5);
+    }).length:0;
+    return {space:a.geometry&&a.geometry.staffSpace,mapping:a.mapping&&a.mapping.matched,
+     staffGapSpaces:a.geometry&&a.geometry.staffSeparationSpaces,
+     window:a.geometry&&a.geometry.window,clipped,scrollTop:v.scrollTop,
+     error:window.testError};
+   });
+   const file='gymnopedie.staff-rule-'+trial.between+'-'+(trial.staff||'base')+'-'+label+'.738x196.png';
+   await page.screenshot({path:'../docs/evidence/study-profile/'+file});
+   measurements.push({label,beat,file,...value});
+  }
+  staffRuleTrials.push({trial,measurements});
+ }
+ await page.evaluate(()=>{delete window.__testStudyStaffRules;delete window.__testStudyCurveFactor;});
+ console.log('STUDY_B1_STAFF_RULE_TRIALS '+JSON.stringify(staffRuleTrials));
+ fs.writeFileSync('../docs/evidence/study-profile/b1-staff-rule-trials.json',
+  JSON.stringify({sourceSha,checkoutSha,staffRuleTrials},null,2));
+
  // Named context-change corpus fixture tests clefs, key signatures and time
  // signatures at exact measure boundaries, including backward seeks and
  // height-only resizing, with the pinned rail aligned to the camera.
