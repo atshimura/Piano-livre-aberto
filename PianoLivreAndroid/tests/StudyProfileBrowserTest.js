@@ -186,6 +186,16 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  // cross-staff intersections, then refits the complete SVG ink envelope.
  const gym=corpus.find(item=>item.name.endsWith('gymnopedie-no-1-satie.mxl'));
  assert(gym,'Gymnopédie source fixture is required for before/after evidence');
+ const numericOrigins=await page.evaluate(xml=>{
+  const doc=new DOMParser().parseFromString(xml,'application/xml');
+  return Array.from(doc.querySelectorAll('words,fingering,other-technical,lyric,tuplet,ending,notations,credit-words'))
+   .filter(node=>/(^|\\D)(46|34)(\\D|$)/.test((node.textContent||'').trim())||
+    ['46','34'].includes((node.getAttribute('number')||'').trim()))
+   .slice(0,25).map(node=>({tag:node.tagName,text:(node.textContent||'').trim().slice(0,100),
+    number:node.getAttribute('number'),measure:node.closest('measure')&&node.closest('measure').getAttribute('number'),
+    parent:node.parentNode.tagName}));
+ },gym.xml);
+ console.log('STUDY_B1_NUMERIC_SOURCE '+JSON.stringify(numericOrigins));
  for(const size of [{width:738,height:196},{width:738,height:351},{width:883,height:409}]){
   await page.setViewportSize(size);
   for(const disabled of [true,false]){
