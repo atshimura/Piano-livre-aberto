@@ -1113,10 +1113,24 @@ function setupNoteIdentification(st){
   popup.textContent=text;
   popup.style.whiteSpace="pre-line";
   popup.style.display="block";
-  var rootRect=st.root.getBoundingClientRect(),headRect=e.target.getBoundingClientRect();
-  var preferredX=headRect.left-rootRect.left-18;
-  popup.style.left=Math.max(st.layout.railWidth+5,Math.min(st.viewportWidth-180,preferredX))+"px";
-  popup.style.top=Math.max(4,headRect.top-rootRect.top-57)+"px";
+  var headRect=e.target.getBoundingClientRect();
+  var viewport=document.getElementById("viewport")||st.root;
+  var vp=viewport.getBoundingClientRect(),measured=popup.getBoundingClientRect();
+  var ink=[];
+  st.root.querySelectorAll("ellipse,svg text").forEach(function(n){
+   var bounds=n.getBoundingClientRect();
+   if(bounds.right<vp.left||bounds.left>vp.right||bounds.bottom<vp.top||bounds.top>vp.bottom)return;
+   ink.push({rect:bounds,weight:n.tagName.toLowerCase()==="ellipse"?50:3});
+  });
+  // Use the same unobtrusive viewport placement as the default OSMD Study
+  // renderer, so either presentation keeps the touched notehead visible.
+  popup.style.position="fixed";
+  var place=window.StudyNoteTip&&StudyNoteTip.place(vp,{
+   x:(headRect.left+headRect.right)/2,y:(headRect.top+headRect.bottom)/2
+  },measured.width,measured.height,ink);
+  if(place){popup.style.left=place.left+"px";popup.style.top=place.top+"px";}
+  else{popup.style.left=Math.max(4,headRect.left-18)+"px";
+   popup.style.top=Math.max(4,headRect.top-57)+"px";}
   if(st.popupTimer)clearTimeout(st.popupTimer);
   st.popupTimer=setTimeout(function(){popup.style.display="none";st.popupTimer=null;},2000);
  });
