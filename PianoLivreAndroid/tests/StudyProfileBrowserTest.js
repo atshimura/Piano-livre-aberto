@@ -584,6 +584,59 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  fs.writeFileSync('../docs/evidence/study-profile/b1-lead-trials.json',
   JSON.stringify({sourceSha,checkoutSha,leadTrials},null,2));
 
+ // Trace a possible editorial relocation of the source's numeric
+ // direction-word "46" (measure 77). It is drawn far above the staff while
+ // still offscreen at the camera's smallest beat. Test-only presentation
+ // injection: never erase the MusicXML word or weaken clipping checks.
+ await page.evaluate(()=>{
+  window.__b1OriginalChordPolicy=StudyProfile.applyChordCollisionPolicy;
+  StudyProfile.applyChordCollisionPolicy=function(svg){
+   if(window.__testWordShift>0){
+    for(const t of Array.from(svg.querySelectorAll('g.vf-text text'))){
+     if((t.textContent||'').trim()==='46')
+      t.setAttribute('transform','translate(0 '+window.__testWordShift+')');
+    }
+   }
+   return window.__b1OriginalChordPolicy(svg);
+  };
+ });
+ const wordShiftTrials=[];
+ for(const shift of [8,12,15]){
+  await page.setViewportSize({width:738,height:196});
+  await page.evaluate(({item,shift})=>{
+   window.__testWordShift=shift;window.testDone=false;window.testError=null;
+   PianoNotation.load(item.xml,0,'engraving-poc',item.events);
+  },{item:gym,shift});
+  await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+  const values=[];
+  for(const beat of [181,185,186,187,188,189,223]){
+   await page.evaluate(async beat=>{PianoNotation.seek(beat,false,100,false);
+    await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);},beat);
+   values.push(await page.evaluate(beat=>{
+    const a=PianoNotation.analysis(),svg=document.querySelector('#score svg'),
+     v=document.getElementById('viewport'),vr=v.getBoundingClientRect(),
+     word=Array.from(svg.querySelectorAll('g.vf-text text')).find(t=>t.textContent.trim()==='46');
+    const clipped=Array.from(svg.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline')).filter(n=>{
+     if(getComputedStyle(n).visibility==='hidden'||n.closest('#piano-optical-study-cues'))return false;
+     const b=n.getBoundingClientRect();
+     return b.right>vr.left&&b.left<vr.right&&(b.top<vr.top-.5||b.bottom>vr.bottom+.5);
+    });
+    return {beat,staffSpace:a.geometry.staffSpace,matched:a.mapping.matched,
+     clipped:clipped.length,verticalScroll:v.scrollTop,
+     label:word?{transform:word.getAttribute('transform'),y:word.getBoundingClientRect().top}:null};
+   },beat));
+  }
+  await page.screenshot({path:'../docs/evidence/study-profile/gymnopedie.numeric-word-shift-'+shift+'.738x196.png'});
+  wordShiftTrials.push({shift,values});
+ }
+ await page.evaluate(()=>{
+  StudyProfile.applyChordCollisionPolicy=window.__b1OriginalChordPolicy;
+  delete window.__testWordShift;delete window.__b1OriginalChordPolicy;
+ });
+ console.log('STUDY_B1_WORD_SHIFT_TRIALS '+JSON.stringify(wordShiftTrials));
+ fs.writeFileSync('../docs/evidence/study-profile/b1-word-shift-trials.json',
+  JSON.stringify({sourceSha,checkoutSha,wordShiftTrials},null,2));
+
  // Named context-change corpus fixture tests clefs, key signatures and time
  // signatures at exact measure boundaries, including backward seeks and
  // height-only resizing, with the pinned rail aligned to the camera.
