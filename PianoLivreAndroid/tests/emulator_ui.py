@@ -421,7 +421,11 @@ if __name__=="__main__":
     ny=bounds[1]+round(first["y"]*h/professional["viewportHeight"])
     assert bounds[0]<=nx<bounds[2] and bounds[1]<=ny<bounds[3], "Mapped notehead outside visible WebView"
     adb("shell","input","tap",str(nx),str(ny))
-    time.sleep(.5)
+    # Capture the ACTUAL visible popup before multiple logcat/ADB round trips
+    # consume its required two-second lifetime.
+    time.sleep(.25)
+    screenshot("piano-osmd-poc-note-tap.png")
+    time.sleep(.25)
     touches=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_NOTE_TAP {" in line]
     assert touches, "Actual Android touch did not reach graphical notehead"
     hit=json.loads(touches[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
@@ -437,7 +441,6 @@ if __name__=="__main__":
     assert view[0]-1<=popup["left"]<popup["right"]<=view[2]+1 and \
            view[1]-1<=popup["top"]<popup["bottom"]<=view[3]+1, \
            "Note popup escapes the actual score viewport: "+str(popup)
-    screenshot("piano-osmd-poc-note-tap.png")
     time.sleep(2.3)
     timeline=adb("logcat","-d","-v","brief").splitlines()
     visible_index=max(i for i,line in enumerate(timeline) if "POC_NOTE_TIP_VISIBLE {" in line)
