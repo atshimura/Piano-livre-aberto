@@ -417,7 +417,19 @@ if __name__=="__main__":
     assert hit["mapped"] and hit["nativeMidi"]==first["midiEstimate"], "Actual Android note tap did not agree with native Score.java MIDI"
     assert hit.get("writtenName")=="Mi4" and hit.get("xmlNoteIndex") is not None, "OSMD head did not preserve the actual written pitch and XML identity"
     screenshot("piano-osmd-poc-note-tap.png")
-    print("PASS: actual Android tap identified first upper-staff OSMD notehead",flush=True)
+    tip_logs=adb("logcat","-d","-v","brief")
+    assert "POC_NOTE_TIP_VISIBLE Mi4 · E4" in tip_logs, (
+        "OSMD selected head did not present written Portuguese and international pitch")
+    initial_hidden=tip_logs.count("POC_NOTE_TIP_HIDDEN")
+    for attempt in range(15):
+        time.sleep(.25)
+        if adb("logcat","-d","-v","brief").count("POC_NOTE_TIP_HIDDEN")>initial_hidden:
+            break
+    assert adb("logcat","-d","-v","brief").count("POC_NOTE_TIP_HIDDEN")>initial_hidden, (
+        "OSMD note identification did not expire after its transient lifetime")
+    screenshot("piano-osmd-poc-note-tap-expired.png")
+    print("PASS: actual Android tap identified first upper-staff OSMD notehead, "
+          "showed Mi4 · E4, and expired without persistent overlay",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     playback_point=tap_text(["Iniciar"],return_point=True)
     time.sleep(2)
