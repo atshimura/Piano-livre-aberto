@@ -1,5 +1,29 @@
 # 59 — Análise automática e apresentação adaptável do Estudo
 
+## B1 — câmera contínua e ligaduras verificadas (23/10/2026, PR #51)
+
+**Implementação em investigação com evidência reproduzível; não é ainda aceite editorial/físico.** O renderizador preserva duas pautas e usa janelas horizontais menores, mas agora amostra a câmera continuamente. O planejamento considera tinta efetiva, margens e contexto fixo, interpola os envelopes de segurança e antecipa progressivamente os símbolos que entram na viewport. As verificações de clipping incluem caminhos, hastes, notas, textos e ligaduras; nunca se aceita aumento de escala baseado apenas na geometria da janela anterior.
+
+A anatomia da dificuldade da Gymnopédie foi registrada no Chromium (738×196): no beat 181, um arco `vf-curve` longo de x≈6850,9 até 7681,7 ocupa y≈6,36; uma haste inferior em x≈5777,4 termina em y≈382,34. No final, textos de contagem e ligaduras também contribuem para o envelope vertical. Portanto o obstáculo não é resolvido ocultando marcações ou expandindo os compassos horizontalmente.
+
+O estudo de largura OSMD mostrou que a multiplicação do espaçamento por 1,25 e 1,50 **piora** o extremo, respectivamente para 4,77 e 4,63 CSS px. O zoom experimental de busca descendente também não melhorou o extremo. Ambos permanecem experimentais, desativados por padrão. Uma transformação visual reversível de duas ligaduras longas foi mais efetiva: a forma Bézier mantém exatamente as extremidades e a espessura e usa 60% da curvatura anterior. Antes de preservar essa apresentação, o programa examina novos contatos com cabeças de notas, hastes, textos, dinâmicas e outros caminhos; qualquer contato ou transformação não suportada desfaz o ajuste. O teste com 40% foi rejeitado porque introduziu contato com cabeças de notas e números de compasso. Esta política altera **somente o SVG transitório** do Modo Estudo, nunca o MusicXML, o gráfico musical original ou os eventos MIDI.
+
+**Comparação 738×196, beats 0/110/181/223, sem rolagem vertical nem clipping visível:**
+
+| Região | Base antes da câmera/curvatura contínuas (CSS px) | Curvatura 60% + câmera contínua (CSS px) |
+| --- | ---: | ---: |
+| Abertura | 5,40 | 5,40 |
+| Meio | 5,16 | 5,39 |
+| Extremo, beat 181 | 4,85 | 5,10 |
+| Final, beat 223 | 5,03 | 5,03 |
+
+O ganho no extremo de ~5,4% é mensurável, mas **não garante conforto editorial** no viewport baixo. No percurso de 188 posições para frente e 188 para trás, a maior transição entre notas consecutivas caiu de 6,94% no experimento anterior para 1,52% com a forma segura; o perfil de 376 chamadas a `seek` no Chromium registrou mediana de 0,7 ms, p95 de 6,5 ms e máximo de 12,3 ms (medidas do ambiente CI, não do hardware). Mapeamento Gymnopédie: 469/469 notas escritas; os testes cobrem 27 arquivos com fallbacks explícitos, Canon, Für Elise e a fixture de contexto fixo. Os [Actions do commit 72e96c5](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39973685094) aprovaram os testes de build/Chromium/JVM, sem representar aceite em aparelhos reais.
+
+Persistem como decisões condicionais à evidência: analisar os ensaios de redução **nativa** de distância entre pautas por OSMD; inspecionar capturas finais da curvatura e os testes Android do SHA de entrega; obter aceite visual/físico no Realme 7 5G, Lenovo Tab M9 e Yamaha P-45. Não publicar APK, Release nem integrar este PR sem autorização.
+
+---
+
+
 ## B1 — experimento de amostragem espacial e transições (23/10/2026)
 
 A inspeção do `study-window.js` identificou um fator conservador mensurável: cada janela anterior considerava meia largura visível adicional de avanço, além do próprio enquadramento horizontal. Assim, símbolos extremos ainda fora da tela podiam entrar antecipadamente no envelope vertical, reduzindo o tamanho das pautas antes da passagem por eles. A grade experimental agora usa células espaciais menores (um sexto, em vez de metade, da largura projetada no alvo), preservando a inspeção de **todos** os símbolos que possam aparecer em cada célula, as duas pautas e a proibição de recorte vertical. Esta mudança de amostragem **não equivale** a solucionar o extremo: é necessário medir o novo mínimo e as variações, inclusive possível aumento de recálculos/oscilações.
