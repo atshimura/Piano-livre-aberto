@@ -26,7 +26,11 @@
  function plan(boxes,options){
   const global=options.bounds,width=options.width,height=options.height,available=Math.max(1,height-8);
   const fullScale=available/global[3],targetScale=Math.max(fullScale,.7);
-  const cellWidth=Math.max(100,width/targetScale/2),windows=[];
+  // Bound the look-ahead to a fraction of the visible viewport. The earlier
+  // half-viewport cells could let distant vertical extremes shrink a camera
+  // long before their glyphs could actually enter the painted area.
+  // This is a geometric sampling change, not a staff-size acceptance rule.
+  const cellWidth=Math.max(80,width/targetScale/6),windows=[];
   const context=options.context,firstX=Number.isFinite(options.firstX)?options.firstX:global[0];
   // Use the actual reference line and the opening's marginLeft. The older
   // planner guarded a full extra viewport to the right of EVERY cell, even
