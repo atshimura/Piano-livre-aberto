@@ -275,7 +275,10 @@
  function refreshStudyAnalysis(svg){
   if(!svg||!studyProof||!osmd)return;
   const slurTrial=StudyCurve.trial(svg,Number(window.__testStudyCurveFactor));
-  if(slurTrial.length)console.log('STUDY_B1_SLUR_TRIAL '+JSON.stringify(slurTrial));
+  if(slurTrial.length){
+   console.log('STUDY_B1_SLUR_TRIAL '+JSON.stringify(slurTrial));
+   console.log('STUDY_B1_SLUR_CONTACTS '+JSON.stringify(StudyCurve.collisionReport(svg,StudyWindow.collect(svg).boxes)));
+  }
   const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
   studyDynamicAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
   if(studyDynamicAdjustments.length){
