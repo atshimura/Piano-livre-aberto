@@ -464,6 +464,40 @@ if __name__=="__main__":
     screenshot("piano-osmd-poc-loop.png")
     tap_text(["Início"],scroll=True)  # Clear persisted loop before legacy renderer regression.
     print("PASS: verified OSMD noteheads selected a native study loop",flush=True)
+    # Transport integration: the toolbar's long-press menu must pause a
+    # running journey BEFORE changing either loop bound or clearing the loop.
+    def long_loop_menu():
+        row=next((n for n in dump().iter("node") if n.attrib.get("text","")=="Trecho ↻"),None)
+        assert row is not None, "Study loop toolbar button unavailable"
+        bounds=[int(v) for v in re.findall(r"\\d+",row.attrib.get("bounds",""))]
+        assert len(bounds)==4, "Invalid long-press loop-button bounds"
+        xx=(bounds[0]+bounds[2])//2;yy=(bounds[1]+bounds[3])//2
+        adb("shell","input","swipe",str(xx),str(yy),str(xx),str(yy),"1000")
+        time.sleep(.25)
+        assert any("Marcar início na posição atual" in n.attrib.get("text","")
+                   for n in dump().iter("node")), "Loop menu did not open"
+    tap_text(["Contínuo"],exact=True,scroll=True)
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.8)
+    long_loop_menu()
+    tap_text(["Marcar início na posição atual"],scroll=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), (
+        "Changing A marker must pause ongoing playback")
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.9)
+    long_loop_menu()
+    tap_text(["Marcar fim na posição atual"],scroll=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), (
+        "Applying B marker must pause and return to the validated loop start")
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.45)
+    long_loop_menu()
+    tap_text(["Remover repetição"],scroll=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), (
+        "Clearing an active A-B loop must release playback")
+    tap_text(["Início"],scroll=True)
+    print("PASS: long-press A-B start/end/clear pauses active native transport",flush=True)
+
     # Wait-mode preparation uses the same native 1–30-second preference and
     # animates a nonnumeric horizontal pre-roll without changing attack rules.
     tap_text(["Espera"],exact=True,scroll=True)
