@@ -295,7 +295,10 @@
    }else curveAdaptation=StudyCurve.applySafe(svg,chosen,function(){return StudyWindow.collect(svg).boxes;});
   }
   if(curveAdaptation.edited)console.log('STUDY_B1_SLUR_ADAPTATION '+JSON.stringify(curveAdaptation));
-  const wordAdjustments=window.__testStudyWords===true&&eligible?
+  // Source-aware, reversible numeric directions may move only when the
+  // collision audit proves the new position safe. The Study-only change
+  // never modifies the authoritative MusicXML or MIDI events.
+  const wordAdjustments=eligible&&window.__testDisableStudyWords!==true?
    StudyWords.apply(svg,studyWordSourceNumbers,function(){return StudyWindow.collect(svg).boxes;}):[];
   const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
   studyDynamicAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
