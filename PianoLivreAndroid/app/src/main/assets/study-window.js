@@ -147,7 +147,7 @@
    scale=model.fullScale;f=frameAt(scale);
   }
   const fit=available/scale,ink=f.ink;
-  if(!ink||ink.h+8>fit+1e-6)throw Error('Study continuous camera cannot contain visible ink');
+  if(!ink||ink.h+8>fit+1e-6)throw Error('Study continuous camera cannot contain visible ink: '+JSON.stringify({x:x,index:index,scale:scale,fullScale:model.fullScale,ink:ink,fit:fit}));
   const requestedTop=chosen.top+(following.top-chosen.top)*fraction;
   const top=Math.max(ink.y+ink.h+4-fit,Math.min(ink.y-4,requestedTop));
   return {index:index,start:chosen.start,end:chosen.end,scale:scale,staffSpace:10*scale,
