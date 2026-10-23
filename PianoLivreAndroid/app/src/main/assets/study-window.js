@@ -29,7 +29,11 @@
  }
  function plan(boxes,options){
   const global=options.bounds,width=options.width,height=options.height,available=Math.max(1,height-8);
-  const fullScale=available/global[3],targetScale=Math.max(fullScale,.7);
+  // The full fit must include actual stroked primitives and the 4-unit
+  // top/bottom inset; OSMD's viewBox alone can be slightly too short.
+  const fullInk=union(boxes.concat(options.context?[options.context]:[]));
+  const fullScale=available/Math.max(global[3],fullInk?fullInk.h+8:global[3]);
+  const targetScale=Math.max(fullScale,.7);
   // Bound the look-ahead to a fraction of the visible viewport. The earlier
   // half-viewport cells could let distant vertical extremes shrink a camera
   // long before their glyphs could actually enter the painted area.
