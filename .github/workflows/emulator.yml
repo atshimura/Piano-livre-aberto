@@ -96,6 +96,7 @@ jobs:
             python3 tests/emulator_polyphony.py
             python3 tests/emulator_notation06.py
             python3 tests/emulator_responsive.py
+            python3 tests/emulator_study_session.py
             python3 tests/emulator_release.py
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py; fi
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
@@ -109,6 +110,13 @@ jobs:
               "piano-osmd-poc.png",
               "piano-osmd-poc-moving.png",
               "piano-osmd-poc-note-tap.png",
+              "piano-entrega-b-long-resumed.png",
+              "piano-entrega-b-long-guide.png",
+              "piano-entrega-b-long-study.png",
+              "piano-entrega-b-short-resumed.png",
+              "piano-entrega-b-short-guide.png",
+              "piano-entrega-b-short-study.png",
+              "piano-osmd-poc-note-tap-expired.png",
               "piano-osmd-poc-loop.png",
               "piano-osmd-poc-wait.png",
               "piano-temporal-long.png",
@@ -175,6 +183,14 @@ jobs:
             PianoLivreAndroid/piano-osmd-failure-window.xml
             PianoLivreAndroid/piano-osmd-failure-diagnostics.txt
             PianoLivreAndroid/piano-osmd-poc-moving.png
+            PianoLivreAndroid/piano-osmd-poc-note-tap-expired.png
+            PianoLivreAndroid/piano-entrega-b-short-study.png
+            PianoLivreAndroid/piano-entrega-b-short-guide.png
+            PianoLivreAndroid/piano-entrega-b-short-resumed.png
+            PianoLivreAndroid/piano-entrega-b-long-study.png
+            PianoLivreAndroid/piano-entrega-b-long-guide.png
+            PianoLivreAndroid/piano-entrega-b-long-resumed.png
+            PianoLivreAndroid/piano-entrega-b-session.json
             PianoLivreAndroid/piano-osmd-poc-note-tap.png
             PianoLivreAndroid/piano-osmd-poc-loop.png
             PianoLivreAndroid/piano-osmd-poc-wait.png
