@@ -1,5 +1,15 @@
 # 59 — Análise automática e apresentação adaptável do Estudo
 
+## B1 — reposicionamento editorial condicionado, SHA de verificação (23/10/2026)
+
+A implementação compacta do Estudo passou a considerar as indicações numéricas `direction/words` reconhecidas no MusicXML autoritativo, sem alterar a fonte. A política `StudyWords.apply` calcula deslocamento vertical apenas para inscrições correspondentes à fonte, testa contatos com as demais primitivas SVG e com o contorno real das ligaduras e rejeita ajustes inseguros. `StudyWords.restore` restaura os atributos originais antes de nova renderização ou troca de tamanho. O ajuste se aplica somente ao SVG transitório, quando há duas pautas, estudo denso, viewport até 240 CSS px e pauta inicialmente menor que 6 CSS px; a desativação explícita de ensaio `__testDisableStudyWords` permite comparar o mesmo conteúdo sem ajuste.
+
+Uma rodada anterior de Chromium do experimento registrou o menor espaçamento de 5,0175 CSS px no beat 188, 188 posições para frente e o mesmo percurso de volta, mapeamento 469/469, nenhuma rolagem vertical ou símbolo cortado e maior mudança entre posições adjacentes de 1,16%. O teste agora exige esses limites diretamente do **comportamento padrão**, não de uma chave de ativação experimental; os números só se tornam evidência de aprovação da política quando os Actions do SHA subsequente terminarem com sucesso. O limiar de 5 CSS px é um limite técnico de regressão, **não** um atestado de conforto de leitura no telefone.
+
+Permanecem necessários a inspeção editorial das imagens da versão final e os ensaios físicos pelo usuário (Realme 7 5G, Lenovo Tab M9, Yamaha P-45). Não foi autorizado merge, release ou distribuição. Um Action de emulador não substitui os aparelhos reais.
+
+---
+
 ## B1 — câmera contínua e ligaduras verificadas (23/10/2026, PR #51)
 
 **Implementação em investigação com evidência reproduzível; não é ainda aceite editorial/físico.** O renderizador preserva duas pautas e usa janelas horizontais menores, mas agora amostra a câmera continuamente. O planejamento considera tinta efetiva, margens e contexto fixo, interpola os envelopes de segurança e antecipa progressivamente os símbolos que entram na viewport. As verificações de clipping incluem caminhos, hastes, notas, textos e ligaduras; nunca se aceita aumento de escala baseado apenas na geometria da janela anterior.
