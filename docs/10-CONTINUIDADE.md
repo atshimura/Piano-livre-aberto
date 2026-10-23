@@ -1,3 +1,11 @@
+## Entrega B — ensaio determinístico curto e longo (23/10/2026)
+
+Novo ensaio `StudyJourneyTest.java`, executado no CI a partir dos arquivos MusicXML/MXL públicos e autorizados `ode-to-joy-ludwig-van-beethoven.mxl` e `gymnopedie-no-1-satie.mxl`. No mesmo percurso lógico, verifica três seleções de mãos, Espera com notas extras não bloqueantes e reconhecimento do acorde esperado sem duração arbitrária, teclado guia sempre mostrando as duas mãos, reprodução MIDI sintética, pausa/liberação de notas, retomada em outra posição, repetição A–B, retorno à música inteira e preservação dos eventos de origem. Complementa, mas não substitui, os testes gráficos/funcionais no emulador; não valida USB-MIDI físico nem a leitura real em aparelhos.
+
+O trabalho é um PR exclusivo de regressão criado da `main`, independente da B1 (#51), das correções de etiquetas e do menu A–B. Status final somente após os Actions exatos do commit, sem autorização de merge ou Release.
+
+---
+
 # 10 — Como continuar o Piano Livre aberto
 
 **Repositório autoritativo para mudanças futuras:** `atshimura/Piano-livre-aberto`. Não fazer novos commits em `atshimura/piano-livre` como parte do fluxo aberto; aquele repositório histórico permanece privado.
