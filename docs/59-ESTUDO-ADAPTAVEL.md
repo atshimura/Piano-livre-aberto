@@ -1,5 +1,14 @@
 # 59 — Análise automática e apresentação adaptável do Estudo
 
+## B1 — experimento de amostragem espacial e transições (23/10/2026)
+
+A inspeção do `study-window.js` identificou um fator conservador mensurável: cada janela anterior considerava meia largura visível adicional de avanço, além do próprio enquadramento horizontal. Assim, símbolos extremos ainda fora da tela podiam entrar antecipadamente no envelope vertical, reduzindo o tamanho das pautas antes da passagem por eles. A grade experimental agora usa células espaciais menores (um sexto, em vez de metade, da largura projetada no alvo), preservando a inspeção de **todos** os símbolos que possam aparecer em cada célula, as duas pautas e a proibição de recorte vertical. Esta mudança de amostragem **não equivale** a solucionar o extremo: é necessário medir o novo mínimo e as variações, inclusive possível aumento de recálculos/oscilações.
+
+O teste unitário conserva a checagem de recorte em todo o percurso; o teste Chromium produz `window-traversal.json` com `diagnostic` e `transitions` para localizar a maior variação medida entre notas sucessivas. Comparar também abertura, meio, extremo e final nas três dimensões e inspecionar capturas. **Nenhum ganho, suavidade ou conforto editorial é declarado antes do resultado dos Actions do SHA final e da revisão das imagens.** Não foi alterado o MusicXML, o motor MIDI, o pacote ou a assinatura. O PR #51 continua aberto e B1 permanece **PARCIAL**.
+
+A limitação estrutural segue relevante: a compactação vertical global foi recusada em amostra anterior porque deslocar a pauta inferior além de ~9 unidades SVG introduzia colisões de `vf-line` com hastes (`vf-stem`); não é seguro impor maior aproximação sem regravação ou análise por região. Permanecem pendentes o ganho efetivo nos extremos, a continuidade visual e a verificação de contexto fixo em movimento. O diagnóstico de `native-mapping` em vozes ambíguas e os fallbacks explicitados não foram alterados.
+
+
 ### Evidência medida da reserva do contexto fixo (SHA b8ed11e, build 39875463421)
 
 O teste da fixture `engraving-context-change.musicxml` encontrou na implementação anterior uma faixa fixa que podia ocupar 168,94 CSS px enquanto o cursor permanecia próximo de 167 px no terceiro compasso. A revisão passou a reservar, antes do planejamento de janela e cursor, a **largura máxima do contexto efetivamente gravado** na partitura. No Chromium 738×196 a faixa mede 168,94 CSS px e o cursor está em 180,94 px, com 12 px livres e sem recorte nas transições 1→2→3→2→1. No tablet 883×409, faixa 360,34 px e cursor 372,34 px, igualmente com 12 px de folga. Ambos preservam a origem vertical. Isso demonstra ausência da colisão detectada nessa fixture, não prova legibilidade editorial universal.
