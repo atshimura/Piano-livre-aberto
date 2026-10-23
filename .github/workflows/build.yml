@@ -91,6 +91,19 @@ jobs:
           java -Xmx512m -cp build/score-tests KeyboardGuideLoadTest
           javac -cp build/score-tests -d build/score-tests tests/MusicTimelineConsistencyTest.java
           java -cp build/score-tests MusicTimelineConsistencyTest
+      - name: End-to-end musical Study journeys on short and long scores (JVM)
+        run: |
+          javac -cp build/score-tests -d build/score-tests \
+            app/src/main/java/br/org/pianolivre/WaitPreparation.java \
+            app/src/main/java/br/org/pianolivre/WaitRecognizer.java \
+            app/src/main/java/br/org/pianolivre/KeyboardGuide.java \
+            app/src/main/java/br/org/pianolivre/MidiPlayback.java \
+            tests/StudySessionIntegrationTest.java
+          java -Xmx512m -cp build/score-tests StudySessionIntegrationTest
+      - name: Manual loop edit and Note Off ordering (JVM)
+        run: |
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/StudyLoopEditing.java tests/StudyLoopEditingTest.java
+          java -cp build/score-tests StudyLoopEditingTest
       - name: Test Laboratory music theory (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java tests/MusicTheoryTest.java
@@ -147,6 +160,8 @@ jobs:
           node tests/EngravingProofContractTest.js
           node tests/VerticalNavigationTest.js
           node tests/OpticalTimeMapTest.js
+          node tests/StudyNoteTipTest.js
+          node --check app/src/main/assets/study-note-tip.js
           node tests/PolyphonyFidelityTest.js
           node tests/EnharmonicReconciliationTest.js
           node tests/AccidentalConventionsTest.js
