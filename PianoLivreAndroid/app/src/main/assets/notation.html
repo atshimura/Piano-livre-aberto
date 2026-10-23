@@ -546,7 +546,10 @@
  }
  function hideOpticalTip(){
   if(opticalTipTimeout!==null){clearTimeout(opticalTipTimeout);opticalTipTimeout=null;}
-  document.getElementById('optical-note-tip').style.display='none';
+  const tip=document.getElementById('optical-note-tip');
+  const wasVisible=tip.style.display==='block';
+  tip.style.display='none';
+  if(wasVisible)console.log('POC_NOTE_TIP_HIDDEN');
  }
  function showOpticalTip(label,point){
   hideOpticalTip();
@@ -572,6 +575,10 @@
   const layout=StudyNoteTip.place(vp,{x:point.clientX,y:point.clientY},
    measured.width,measured.height,obstacles);
   if(layout){tip.style.left=layout.left+'px';tip.style.top=layout.top+'px';}
+  const placed=tip.getBoundingClientRect();
+  console.log('POC_NOTE_TIP_VISIBLE '+JSON.stringify({label:label,
+   left:placed.left,top:placed.top,right:placed.right,bottom:placed.bottom,
+   viewport:[vp.left,vp.top,vp.right,vp.bottom]}));
   // Each new tap restarts this timer; the popup never freezes over a staff.
   opticalTipTimeout=setTimeout(hideOpticalTip,2000);
  }
