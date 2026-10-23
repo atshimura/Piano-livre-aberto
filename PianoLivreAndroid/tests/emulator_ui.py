@@ -798,6 +798,8 @@ if __name__=="__main__":
     xx=rect[0]+round(long_head["x"]*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))
     yy=rect[1]+round(long_head["y"]*(rect[3]-rect[1])/long_proof["viewportHeight"])
     assert rect[0]<=xx<rect[2] and rect[1]<=yy<rect[3], "Scaled graphical notehead outside screen"
+    print("POC_TOUCH_TARGET "+json.dumps({"head":long_head,"webviewRect":rect,"x":xx,"y":yy,
+        "webviewWidth":long_proof.get("webviewWidth"),"viewportHeight":long_proof["viewportHeight"]}),flush=True)
     previous_hits=adb("logcat","-d","-v","brief").count("POC_NOTE_TAP {")
     adb("shell","input","tap",str(xx),str(yy))
     time.sleep(.4)
