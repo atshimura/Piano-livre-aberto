@@ -685,6 +685,44 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  fs.writeFileSync('../docs/evidence/study-profile/b1-word-refit.json',
   JSON.stringify({sourceSha,checkoutSha,wordSummary},null,2));
 
+ // Pointer-up must resolve one genuine score head even if pan-x suppresses
+ // Android's synthesized click, and its delayed click must not count twice.
+ await page.setViewportSize({width:738,height:196});
+ await page.evaluate(item=>{window.testDone=false;window.testError=null;
+  PianoNotation.load(item.xml,0,'engraving-poc',item.events);},gym);
+ await page.waitForFunction(()=>window.testDone||window.testError,null,{timeout:30000});
+ const pointerProof=await page.evaluate(()=>{
+  PianoNotation.seek(0,false,100,false);
+  const a=PianoNotation.analysis(),svg=document.querySelector('#score svg'),vb=svg.viewBox.baseVal;
+  const r=svg.getBoundingClientRect(),vp=document.getElementById('viewport').getBoundingClientRect();
+  const candidate=a.notes.filter(n=>n.staff===1&&n.headBox).map(n=>{
+   const b=n.headBox;return {x:r.left+(b[0]+b[2]/2-vb.x)*r.width/vb.width,
+    y:r.top+(b[1]+b[3]/2-vb.y)*r.height/vb.height};
+  }).find(n=>n.x>vp.left+150&&n.x<vp.right-25&&n.y>vp.top+8&&n.y<vp.bottom-8);
+  if(!candidate)throw Error('Touch regression lacks visible upper-staff notehead');
+  let hits=0;const original=console.log;
+  console.log=function(){
+   if(String(arguments[0]).startsWith('POC_NOTE_TAP '))hits++;
+   return original.apply(console,arguments);
+  };
+  function pointer(type,x,y){
+   svg.dispatchEvent(new PointerEvent(type,{bubbles:true,isPrimary:true,pointerType:'touch',
+    pointerId:77,clientX:x,clientY:y}));
+  }
+  try{
+   pointer('pointerdown',candidate.x,candidate.y);
+   pointer('pointerup',candidate.x,candidate.y);
+   svg.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:candidate.x,clientY:candidate.y}));
+   const afterTap=hits;
+   pointer('pointerdown',candidate.x,candidate.y);
+   pointer('pointerup',candidate.x+30,candidate.y);
+   return {afterTap,afterSwipe:hits,target:candidate};
+  }finally{console.log=original;}
+ });
+ assert.equal(pointerProof.afterTap,1,'short touch and following click must select exactly once: '+JSON.stringify(pointerProof));
+ assert.equal(pointerProof.afterSwipe,1,'horizontal swipe must not select a note: '+JSON.stringify(pointerProof));
+ console.log('STUDY_B1_POINTER_TOUCH '+JSON.stringify(pointerProof));
+
  // Named context-change corpus fixture tests clefs, key signatures and time
  // signatures at exact measure boundaries, including backward seeks and
  // height-only resizing, with the pinned rail aligned to the camera.
