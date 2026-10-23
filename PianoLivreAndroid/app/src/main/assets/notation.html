@@ -327,9 +327,18 @@
   svg._studyWindowBounds={left:w.left,right:w.right,inkTop:w.inkTop,inkBottom:w.inkBottom};
   fitOpticalSvg(svg);
   alignOpticalScore(0);
-  const rows=studyWindowRows.filter(function(r){return !r.headBox||r.headBox[0]+r.headBox[2]>=w.left&&r.headBox[0]<=w.right;});
-  studyAnalysis=Object.assign({},studyWindowGlobal,StudyProfile.assess(rows,
-   Object.assign(StudyProfile.inspectSvg(svg),{availableHeight:viewport.clientHeight,mapping:opticalReconciliation})));
+  if(!previous||previous.index!==index){
+   // Full graphical audit only on entering a different musical region.
+   const rows=studyWindowRows.filter(function(r){return !r.headBox||
+    r.headBox[0]+r.headBox[2]>=w.left&&r.headBox[0]<=w.right;});
+   studyAnalysis=Object.assign({},studyWindowGlobal,StudyProfile.assess(rows,
+    Object.assign(StudyProfile.inspectSvg(svg),{availableHeight:viewport.clientHeight,mapping:opticalReconciliation})));
+  }else{
+   // On sub-cell camera moves the visible score nodes, pitches, and mapping
+   // are unchanged. Avoid scanning thousands of SVG glyphs at playback rate.
+   studyAnalysis=Object.assign({},studyAnalysis,{staffSpace:10*w.scale,
+    availableHeight:viewport.clientHeight});
+  }
   studyAnalysis.window={index:index,count:studyWindow.windows.length,left:w.left,right:w.right,
    inkTop:w.inkTop,inkBottom:w.inkBottom,checkedPrimitives:audit.checkedPrimitives,clippedPrimitives:audit.clipped,
    fullStaffSpace:10*studyWindow.fullScale};
