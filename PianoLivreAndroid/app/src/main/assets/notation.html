@@ -843,6 +843,19 @@
      console.log('POC_ACCIDENTAL_CONVENTIONS '+JSON.stringify(
       EngravingConventions.apply(sourceDoc,osmd.graphic,Array.isArray(nativeEvents)?nativeEvents:[])));
     }
+    // Opt-in Chromium-only investigation of OSMD's own layout distances:
+    // unlike a post-render transform, the engraving engine can reposition
+    // associated symbols while calculating collisions.
+    if(studyProof&&window.__testStudyStaffRules){
+     const rules=window.__testStudyStaffRules;
+     if(Number.isFinite(rules.between)&&rules.between>=1&&rules.between<=5)
+      osmd.EngravingRules.BetweenStaffDistance=rules.between;
+     if(Number.isFinite(rules.staff)&&rules.staff>=4&&rules.staff<=7)
+      osmd.EngravingRules.StaffDistance=rules.staff;
+     console.log('STUDY_B1_STAFF_RULES '+JSON.stringify({
+      between:osmd.EngravingRules.BetweenStaffDistance,
+      staff:osmd.EngravingRules.StaffDistance}));
+    }
     // Keep OSMD at its default internal zoom; apply a CSS transform to the entire grand staff.
     osmd.render();
     if(studyProof){
