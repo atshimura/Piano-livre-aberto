@@ -2,14 +2,15 @@
 (function(root){
  'use strict';
  function box(node){if(!node)return null;try{const b=node.getBBox();return [b.x,b.y,b.width,b.height];}catch(e){return null;}}
- function inspect(graphic){
+ function inspect(graphic,limit){
+  if(limit===undefined)limit=96;
   const rows=[];
   (graphic.measureList||[]).forEach(function(staves,mi){(staves||[]).forEach(function(m,si){
    if(!m)return;
    (m.staffEntries||[]).forEach(function(entry){
     const time=entry.getAbsoluteTimestamp();
     (entry.graphicalVoiceEntries||[]).forEach(function(voice){(voice.notes||[]).forEach(function(gn){
-     const src=gn.sourceNote;if(!src||src.isRestFlag||rows.length>=96)return;
+     const src=gn.sourceNote;if(!src||src.isRestFlag||rows.length>=limit)return;
      const vf=gn.vfnote&&gn.vfnote[0],idx=gn.vfnote&&gn.vfnote[1];
      const modifiers=vf&&vf.getModifiers?vf.getModifiers():[];
      const pitch=src.Pitch;

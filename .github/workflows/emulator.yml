@@ -92,6 +92,7 @@ jobs:
             adb logcat -d -v brief | grep 'XML_INPUT_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'HISTORY_ACTIVITY_SELFTEST_PASS'
             python3 tests/emulator_ui.py
+            python3 tests/emulator_study_failure.py
             python3 tests/emulator_polyphony.py
             python3 tests/emulator_notation06.py
             python3 tests/emulator_responsive.py

@@ -84,3 +84,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [53 — Catálogo pesquisável do Laboratório](53-LAB-CATALOGO.md)
 - [54 — Demonstração musical USB-MIDI](54-LAB-DEMONSTRACAO-MIDI.md)
 - [55 — Prática guiada sequencial no Laboratório](55-LAB-PRATICA-SEQUENCIAL.md)
+
+- [59 — Análise automática e Estudo adaptável](59-ESTUDO-ADAPTAVEL.md).

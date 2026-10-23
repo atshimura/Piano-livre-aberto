@@ -1,6 +1,59 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## B1 — continuidade operacional (23/10/2026)
+
+Trabalho ativo no [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51). A câmera usa amostragem contínua com envelope de tinta verificado e antecipa a entrada de símbolos, evitando saltos de célula. No Chromium 738×196, o maior salto entre beats adjacentes da Gymnopédie caiu de 6,94% para ~1,52%. O teste de 376 buscas registrou mediana 0,7 ms e p95 6,5 ms no executor Linux. O extremo beat 181 passou de ~4,85 para 5,10 CSS px, graças a um ajuste reversível de duas ligaduras longas a 60% da curvatura original; controles mais agressivos (40%) causaram colisão com cabeças de notas e foram descartados. MusicXML e MIDI permanecem intocados, e a geometria não é mantida se a inspeção constatar nova colisão.
+
+Resultados do [build/Chromium/JVM 39973685094](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39973685094): sucesso; corpus de 27 partituras, Gymnopédie 469/469 notas, recortes/rolagem vertical não detectados nos cenários testados. **Não confundir CI com aceite editorial/físico**. Os estudos de compactação nativa OSMD e as evidências no SHA final ainda precisam ser analisados. Não há autorização para merge, Release ou distribuição. Consultar [doc. 59](59-ESTUDO-ADAPTAVEL.md) antes de mudar os critérios.
+
+---
+
+
+## B1 — experimento de amostragem espacial e transições (23/10/2026)
+
+A inspeção do `study-window.js` identificou um fator conservador mensurável: cada janela anterior considerava meia largura visível adicional de avanço, além do próprio enquadramento horizontal. Assim, símbolos extremos ainda fora da tela podiam entrar antecipadamente no envelope vertical, reduzindo o tamanho das pautas antes da passagem por eles. A grade experimental agora usa células espaciais menores (um sexto, em vez de metade, da largura projetada no alvo), preservando a inspeção de **todos** os símbolos que possam aparecer em cada célula, as duas pautas e a proibição de recorte vertical. Esta mudança de amostragem **não equivale** a solucionar o extremo: é necessário medir o novo mínimo e as variações, inclusive possível aumento de recálculos/oscilações.
+
+O teste unitário conserva a checagem de recorte em todo o percurso; o teste Chromium produz `window-traversal.json` com `diagnostic` e `transitions` para localizar a maior variação medida entre notas sucessivas. Comparar também abertura, meio, extremo e final nas três dimensões e inspecionar capturas. **Nenhum ganho, suavidade ou conforto editorial é declarado antes do resultado dos Actions do SHA final e da revisão das imagens.** Não foi alterado o MusicXML, o motor MIDI, o pacote ou a assinatura. O PR #51 continua aberto e B1 permanece **PARCIAL**.
+
+A limitação estrutural segue relevante: a compactação vertical global foi recusada em amostra anterior porque deslocar a pauta inferior além de ~9 unidades SVG introduzia colisões de `vf-line` com hastes (`vf-stem`); não é seguro impor maior aproximação sem regravação ou análise por região. Permanecem pendentes o ganho efetivo nos extremos, a continuidade visual e a verificação de contexto fixo em movimento. O diagnóstico de `native-mapping` em vozes ambíguas e os fallbacks explicitados não foram alterados.
+
+
+### Evidência medida da reserva do contexto fixo (SHA b8ed11e, build 39875463421)
+
+O teste da fixture `engraving-context-change.musicxml` encontrou na implementação anterior uma faixa fixa que podia ocupar 168,94 CSS px enquanto o cursor permanecia próximo de 167 px no terceiro compasso. A revisão passou a reservar, antes do planejamento de janela e cursor, a **largura máxima do contexto efetivamente gravado** na partitura. No Chromium 738×196 a faixa mede 168,94 CSS px e o cursor está em 180,94 px, com 12 px livres e sem recorte nas transições 1→2→3→2→1. No tablet 883×409, faixa 360,34 px e cursor 372,34 px, igualmente com 12 px de folga. Ambos preservam a origem vertical. Isso demonstra ausência da colisão detectada nessa fixture, não prova legibilidade editorial universal.
+
+A nova rodada de 27 arquivos, incluindo Gymnopédie, corpus nativo e fallback temporal, passou no [build 39875463421](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39875463421) do código `b8ed11e63f54d83afc64cdfeb2c8848b2fc2bc46`. As 12 capturas comparáveis da Gymnopédie mantiveram os espaçamentos 5,40241 / 5,16247 / **4,85294** / 5,03093 CSS px (abertura/meio/extremo/final) em 738×196; as telas 738×351 e 883×409 mediram 8,85439 e 10,35163 em todas as regiões. Cortes detectados: zero; rolagem vertical: zero; mapeamento: 469/469. A mudança no extremo baixo segue **insuficiente**, e transições da escala variável, bem como validação real, continuam pendentes. Ver [relatório versionado](evidence/study-profile/b1-window/comparison-validated-2026-10-22.json) e o artifact do run correspondente. Não atribuir esta medição a outro SHA nem ao hardware.
+
+## B1 — continuação: câmera ancorada, contexto e vozes nomeadas (22/10/2026)
+
+**PR #51 permanece aberto, sem merge.** A câmera horizontal agora utiliza a faixa efetivamente alcançável pela área pintada, levando em conta a posição inicial, a margem e a linha de referência. A escala é reavaliada contra o envelope no enquadramento final, com preservação de ambas as pautas, MusicXML e MIDI. O guardião anterior considerava tinta à direita além do que efetivamente poderia entrar na viewport; isso podia diminuir desnecessariamente a escala local.
+
+A faixa de contexto fixo à esquerda agora adapta sua largura ao conteúdo ativo (clave, armadura e fórmula de compasso) e sincroniza o viewBox após deslocamento ou mudança de escala. O corpus passou a pedir capturas de transições 1→2→3→2→1 na fixture engraving-context-change.musicxml e a conferir limites dos glifos, área visível e alinhamento. Testes de janela conferem os extremos, ausência de recorte, integridade do mapeamento e redimensionamentos nos três perfis. Essas verificações não certificam fluidez ou legibilidade subjetiva.
+
+**native-mapping:** em named-voices-ties.xml há quatro eventos nativos C4/MIDI 60 e quatro cabeças OSMD nos mesmos tempos; as vozes nomeadas upper/lower não obtiveram identidade gráfica verificável na evidência anterior (matched=0, ambiguous=4, unmatchedNative=4). Não existe demonstração de nota, andamento ou duração divergente pelo multiconjunto de eventos; existe ambiguidade de voz. Não forçar emparelhamento nem suprimir alerta. O teste exige explicitamente a ambiguidade e compara também a sequência da alternativa temporal. Os quatro fixtures incompletos para OSMD preservam fallback temporal explícito.
+
+**Evidências:** StudyProfileBrowserTest.js produz no artifact adaptive-study-corpus as capturas gymnopedie.window-{opening,middle,extreme,ending}.{738x196,738x351,883x409}.png, b1-viewport-comparison.json, context-change.measure-*.png e b1-context-transitions.json. O script e este protocolo ficam versionados; os novos binários produzidos pela CI não são automaticamente versionados. Consultar o SHA e as medições no PR antes de declarar aprovação. O valor de 6 CSS px continua referência experimental, nunca padrão aceito pelo usuário.
+
+**Checklist físico pendente:** Realme 7 5G — abertura, meio e extremos da Gymnopédie, variação de escala, cursor e retorno; Lenovo Tab M9 — contexto, mudança de compasso, teclado guia ligado/desligado, redimensionamento, repetição e trechos; Yamaha P-45 — USB-MIDI, ataques, mãos, Espera, pausa/retomada e sincronização. Registrar percepção de leitura e movimentos com consentimento. **Nenhum teste físico foi realizado.** B1 e V1 não foram concluídas. Sem alteração de dados, versão, pacote, certificado, APK de distribuição ou release.
+
+## Estado B1 vigente — janela horizontal (22/10/2026)
+
+**E/IP; B1 ainda parcial**, no [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51), branch `feat/analise-estudo-adaptavel`. Esta atualização substitui as métricas e pendências históricas de B1 abaixo, afetando INV-02/03/15. Código aprovado: `1e8ca06bae8270ad66e8586d5ec731b81ac818ed`; [build/JVM/JS/XML/MIDI/corpus 39828730389](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39828730389) e [emulador Android 39828730333](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39828730333), ambos `success`. O SHA final documental e seus próprios workflows ficam registrados no PR; não substituir essa conferência por resultados antigos.
+
+A auditoria passou a incluir tinta das hastes e a restaurar barras/chave no resize; a compactação antiga ignorava hastes de largura geométrica zero. A janela horizontal conserva o SVG e os eventos completos, ajustando escala uniforme pelos símbolos visíveis e contexto das duas pautas, sem scroll vertical. Gymnopédie em 738×196: abertura 4,85313→5,40241 px (+11,32%); percurso 4,85294–5,40241, ainda com `small-staff-space`. Em 738×351/883×409: 8,85439/10,35163 px. Não basta para declarar a leitura confortável.
+
+Canon: listas de solfejo/dedilhado em `words` ocultas somente na apresentação de Estudo; cifras `D A Bm F#m` e `G D G A`, andamento e crédito mantidos nas três dimensões, sem cifra escondida. Für Elise: `p` do compasso 13/beat 36 preservado e reposicionado por colisão real de tinta com G♯3, sem corte/colisão depois; ajuste depende da escala. Partitura Livre e fontes permanecem completas.
+
+Corpus aprovado: 27 arquivos, 23 OSMD e quatro alternativas temporais explícitas; assinatura musical conferida por viewport. Gymnopédie: 469/469 notas, 376 posições de ida/volta sem corte, resize reversível com claves preservadas. `named-voices-ties` conserva alerta `native-mapping`. [Métricas, implementação, capturas e limites](59-ESTUDO-ADAPTAVEL.md#estado-verificado-da-continuação--22102026).
+
+**Falta para encerrar B1:** legibilidade dos trechos extremos em tela baixa e avaliação editorial da escala variável; ensaios físicos Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 continuam a cargo do usuário. Não houve teste físico, merge, release ou APK de distribuição. Pacote/certificado/versão e dados não foram alterados nesta continuação. PRs #46/#48 permanecem intocados; reconciliar os adendos 57/58 antes de eventual integração. B/C e V1 não concluídas.
+
+
 **Repositório autoritativo para mudanças futuras:** `atshimura/Piano-livre-aberto`. Não fazer novos commits em `atshimura/piano-livre` como parte do fluxo aberto; aquele repositório histórico permanece privado.
+
+## Implementação em revisão — análise automática
+
+Branch `feat/analise-estudo-adaptavel`, sem merge: consultar [59](59-ESTUDO-ADAPTAVEL.md), critérios experimentais, testes do SHA e limitações. Main permanece 0.9.47; a branch propõe 0.9.48/code57. Não alterar os PRs #46/#48 nem declarar aceite físico ou V1.
 
 ## Ponto de retomada vigente
 
@@ -172,3 +225,13 @@ Branch `feat/laboratorio-demonstracao-midi` reconciliada com `main` 0.9.44 sem r
 ## Retomada 0.9.46 — prática sequencial (PR #45)
 
 Branch `feat/laboratorio-pratica-sequencial` reconciliada por merge não destrutivo com a `main` 0.9.45. Preservados reconhecimento espontâneo/manual, catálogo, USB-MIDI/virtual e demonstração MIDI/cancelamento do PR #44. Escalas e arpejos avançam por ataque **novo, isolado** na ordem da altura MIDI; extras isoladas são indicadas sem bloquear e demora não penaliza. Notas repetidas exigem novo ataque; ataques simultâneos/sobrepostos e mistura com notas já mantidas no MIDI/virtual não fabricam ordenação. Reprodução de demonstração nunca avança prática. Busca, troca de exercício/modo, saída/pausa/desconexão cancelam estado; mão Ambas/Direita/Esquerda é referência, não inferência. Acordes/intervalos preservam a comparação por classes cromáticas. Sem migração de dados, serviços ou telemetria. Ver [55](55-LAB-PRATICA-SEQUENCIAL.md), teste JVM e emulador. Exigir CI no SHA da branch/merge e release assinada 0.9.46/code55. Faltam dedilhado, métricas rítmicas/metrônomo, calibração, histórico do Lab e testes físicos #11. Não declarar V1.
+
+## Checkpoint — análise automática em PR #51
+
+Código `e1fac0ec`, branch `feat/analise-estudo-adaptavel`: build/JVM/JS/XML/MIDI/corpus aprovados no run 39676817138. Documentos 57–59 e métricas em `docs/evidence/study-profile/summary.json`. Roteiro Android da HEAD acompanhado no PR; a correção posterior é do helper de toque do novo teste. Conferir resultado do SHA exato antes de integrar. Sem merge, release, aceite físico ou V1.
+
+### Retomada B1 — legibilidade adaptável no Estudo (22/10/2026)
+
+Continuação no PR #51, ainda aberto, baseada na `main` `801543c`; #46 e #48 seguem intocados. O Chromium do head `d11a85845d7fa7d40f0fd7495a800502d62e7354` passou a regressão de 27 arquivos. Gymnopédie 738×196 melhorou 4,77976→5,07480 CSS px (+6,17%), com overflow vertical zero e alerta de pauta pequena ainda ativo. Canon foi validada pelo OSMD SVG, cifras preservadas. Em Für Elise, colisão do `p` de dinâmica com G♯3 (compasso 13, beat 36) foi confirmada em 3,15 px e corrigida movendo a anotação 7,15 px para cima só na apresentação do Estudo. Quatro fixtures incompletas seguem em fallback temporal explícito e conferido.
+
+O artefato durável e as capturas estão em `docs/evidence/study-profile/b1/`; detalhes atualizados em docs 57/58/59. Build completo e emulador devem ser registrados somente após conclusão para o head final que também inclua este adendo documental. Nenhum ensaio físico: aceite editorial e issue #11 continuam pendentes; não integrar, publicar APK, concluir B/C ou declarar V1.

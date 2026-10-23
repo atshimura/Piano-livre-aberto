@@ -224,3 +224,8 @@ console.log("OPTICAL_LONG_MAP_PASS anchors="+longMap.stops.length+
  " mapAndLookupMs="+mappingMs+
  " heapUsedBytes="+process.memoryUsage().heapUsed);
 console.log("OPTICAL_TIME_MAP_PASS checks="+checks);
+
+const centredRest={getAbsoluteTimestamp:()=>({RealValue:.75}),PositionAndShape:{AbsolutePosition:{x:31,y:0}},graphicalVoiceEntries:[{notes:[{sourceNote:{isRestFlag:true,IsWholeMeasureRest:true}}]}]};
+const restRegression=T.fromGraphical({measureList:[[{staffEntries:[entry(3,25,[76]),entry(3.5,28,[75])]}, {staffEntries:[centredRest]}]]});
+ok(restRegression.timeline.xAt(3)===250&&restRegression.timeline.xAt(3.5)===280,'Centred whole-measure rest cannot move the clock anchor ahead of pitched attacks');
+console.log('CENTRED_MEASURE_REST_ANCHOR_PASS');

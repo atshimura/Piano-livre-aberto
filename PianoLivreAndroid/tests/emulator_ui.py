@@ -40,9 +40,21 @@ def responsive_evidence(name):
         controls_visible="Espera" in labels
         assert title_visible==(state!="open"), "Guide did not hide/restore title bar"
         assert controls_visible==(state!="open"), "Guide did not hide/restore controls bar"
-        rows=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_SVG_FIT {" in line]
-        assert rows, "Responsive geometry report absent"
-        geometry=json.loads(rows[-1].split("POC_SVG_FIT ",1)[1].split(" @",1)[0])
+        # The guide transitions native UI synchronously but its WebView
+        # reflow is debounced. Do not mistake the previous layout's logcat
+        # sample for the restored viewport. Require a fresh matching height.
+        geometry=None
+        for attempt in range(25):
+            rows=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_SVG_FIT {" in line]
+            if rows:
+                candidate=json.loads(rows[-1].split("POC_SVG_FIT ",1)[1].split(" @",1)[0])
+                if not result or ((state=="open") !=
+                    (candidate["viewportHeight"]==result[0]["geometry"]["viewportHeight"])):
+                    geometry=candidate
+                    break
+            time.sleep(.4)
+        assert geometry is not None, ("Responsive geometry failed to settle after guide "+state+
+                                      "; last="+str(candidate if rows else None))
         assert geometry["scale"]>0, "Guide resize produced an invalid uniform scale"
         assert geometry["height"]<=geometry["availableHeight"]+0.5, "Both staves exceed the available height"
         assert geometry["viewportMaxScrollTop"]==0, "Vertical scrolling is exposed in OSMD preview"
@@ -773,7 +785,9 @@ if __name__=="__main__":
     assert long_proof["graphicalNotes"]>=50 and long_proof["svgNodes"]>=1000, "Long-score engraving incomplete"
     assert long_proof["midiMapping"]["matched"]==long_proof["graphicalNotes"], "Each written Gymnopédie notehead must reconcile, including tied continuations"
     screenshot("piano-osmd-long.png")
-    responsive_evidence("gymnopedie")
+    # Check the exact notehead against the same ready-frame coordinates before
+    # resizing the WebView; otherwise the proof and hit target come from
+    # different render generations and produce a false negative.
     # Uniformly scaled SVG geometry must preserve notehead hit targets on Android.
     long_head=long_proof.get("firstNoteViewport")
     assert long_head and long_head.get("midiEstimate") is not None, "Long score has no testable upper-staff notehead"
@@ -784,16 +798,26 @@ if __name__=="__main__":
     xx=rect[0]+round(long_head["x"]*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))
     yy=rect[1]+round(long_head["y"]*(rect[3]-rect[1])/long_proof["viewportHeight"])
     assert rect[0]<=xx<rect[2] and rect[1]<=yy<rect[3], "Scaled graphical notehead outside screen"
+    print("POC_TOUCH_TARGET "+json.dumps({"head":long_head,"webviewRect":rect,"x":xx,"y":yy,
+        "webviewWidth":long_proof.get("webviewWidth"),"viewportHeight":long_proof["viewportHeight"]}),flush=True)
     previous_hits=adb("logcat","-d","-v","brief").count("POC_NOTE_TAP {")
     adb("shell","input","tap",str(xx),str(yy))
-    time.sleep(.4)
-    logs=adb("logcat","-d","-v","brief")
-    all_hits=[line for line in logs.splitlines() if "POC_NOTE_TAP {" in line]
-    assert len(all_hits)>previous_hits, "Scaled SVG did not recognize a real notehead touch"
+    # On an instrumented emulator, ADB input completion precedes Chromium's
+    # JavaScript dispatch and its logcat flush. Poll the actual event instead
+    # of imposing an arbitrary 400 ms rendering deadline.
+    all_hits=[]
+    for attempt in range(20):
+        time.sleep(.25)
+        logs=adb("logcat","-d","-v","brief")
+        all_hits=[line for line in logs.splitlines() if "POC_NOTE_TAP {" in line]
+        if len(all_hits)>previous_hits:break
+    assert len(all_hits)>previous_hits, ("Scaled SVG did not recognize a real notehead touch at "+
+        str((xx,yy))+" after 5s; target="+json.dumps(long_head))
     chosen_note=json.loads(all_hits[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
     assert chosen_note["staff"]==1 and chosen_note["nativeMidi"]==long_head["midiEstimate"] and chosen_note["mapped"], "Native-scale notehead did not match native MusicXML/MIDI"
     assert chosen_note.get("writtenName") and chosen_note.get("xmlNoteIndex") is not None, "Scaled notehead lost its original MusicXML notation"
     screenshot("piano-osmd-long-tap.png")
+    responsive_evidence("gymnopedie")
     # A vertical swipe is intentionally ignored: both piano staves stay fixed
     # together while playback remains free to move the score horizontally.
     midx=(rect[0]+rect[2])//2
