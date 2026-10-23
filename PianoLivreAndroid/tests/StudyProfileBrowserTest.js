@@ -216,9 +216,11 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  await page.waitForFunction(()=>window.testDone,null,{timeout:30000});
  const beats=Array.from(new Set(gym.events.map(n=>n.beat))).sort((a,b)=>a-b);
  const traversal=await page.evaluate(beats=>{
-  const samples=[];
+  const samples=[],seekDurations=[];
   for(const beat of beats.concat(beats.slice().reverse())){
+   const start=performance.now();
    PianoNotation.seek(beat,false,100,false);
+   seekDurations.push(performance.now()-start);
    const a=PianoNotation.analysis(),svg=document.querySelector('#score svg'),v=document.getElementById('viewport'),vp=v.getBoundingClientRect();
    const clipped=[];
    for(const n of Array.from(svg.querySelectorAll('path,text,rect,circle,ellipse,line,polygon,polyline'))){
@@ -231,8 +233,15 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
    if(a.mapping.matched!==469)throw Error('Gymnopédie mapping changed');
    samples.push({beat,staffSpace:a.geometry.staffSpace,window:a.geometry.window});
   }
+  window.__b1SeekDurations=seekDurations;
   return samples;
  },beats);
+ const seekDurations=await page.evaluate(()=>window.__b1SeekDurations.slice().sort((a,b)=>a-b));
+ const seekPerformance={calls:seekDurations.length,
+  medianMs:seekDurations[Math.floor(seekDurations.length*.5)],
+  p95Ms:seekDurations[Math.floor(seekDurations.length*.95)],
+  maximumMs:seekDurations[seekDurations.length-1]};
+ console.log('STUDY_B1_SEEK_PERFORMANCE '+JSON.stringify(seekPerformance));
  const forward=traversal.slice(0,beats.length),transitions=[];
  for(let i=1;i<forward.length;i++){
   const before=forward[i-1],after=forward[i];
