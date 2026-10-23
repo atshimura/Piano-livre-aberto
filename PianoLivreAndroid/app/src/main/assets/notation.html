@@ -745,7 +745,8 @@
  function attachOpticalNoteTouch(svg){
   if(!svg||svg.dataset.opticalTouch==='yes')return;
   svg.dataset.opticalTouch='yes';
-  svg.addEventListener('click',function(ev){
+  let touchStart=null,lastTouchAt=-Infinity;
+  function dispatchNoteTap(ev){
    if(!studyProof||!optical)return;
    const rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
    if(rect.width<=0||rect.height<=0)return;
@@ -797,6 +798,25 @@
     mapped:verified,status:note.mappingStatus,sourceEventIndex:native?native.index:null,
     writtenName:noteName,xmlNoteIndex:native?native.xmlNoteIndex:null,
     playbackAttack:native?native.playbackAttack:null,x:x,y:y}));
+  }
+  // Android WebView can suppress a synthesized click inside touch-action:pan-x.
+  // A short primary touch is nevertheless a deliberate note-selection gesture.
+  // Do not treat horizontal swipes as taps or process its following click twice.
+  svg.addEventListener('pointerdown',function(ev){
+   if(ev.isPrimary&&ev.pointerType==='touch')
+    touchStart={x:ev.clientX,y:ev.clientY,id:ev.pointerId};
+  });
+  svg.addEventListener('pointerup',function(ev){
+   const origin=touchStart;touchStart=null;
+   if(!origin||origin.id!==ev.pointerId)return;
+   if(Math.hypot(ev.clientX-origin.x,ev.clientY-origin.y)>12)return;
+   lastTouchAt=performance.now();
+   dispatchNoteTap(ev);
+  });
+  svg.addEventListener('pointercancel',function(){touchStart=null;});
+  svg.addEventListener('click',function(ev){
+   if(performance.now()-lastTouchAt<700)return;
+   dispatchNoteTap(ev);
   });
  }
  function render(xml,start,layout,nativeEvents){
