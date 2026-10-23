@@ -18,6 +18,10 @@
     [raw.x-stroke,raw.y+raw.height+stroke],[raw.x+raw.width+stroke,raw.y+raw.height+stroke]].map(function(p){return {x:m.a*p[0]+m.c*p[1]+m.e,y:m.b*p[0]+m.d*p[1]+m.f,w:0,h:0};});
    const b=union(corners);
    if(![b.x,b.y,b.w,b.h].every(Number.isFinite))throw Error('Unmeasurable Study window glyph');
+   // Retain primitive identity for reproducible diagnostics; no engraving changes.
+   b.kind=(node.closest('g[class]')||node).getAttribute('class')||node.tagName;
+   b.tag=node.tagName;
+   b.text=node.tagName.toLowerCase()==='text'?(node.textContent||'').trim().slice(0,32):'';
    boxes.push(b);
    if(node.closest('.vf-clef,.vf-keysignature,.vf-timesignature,.vf-brace'))context.push(b);
   });
