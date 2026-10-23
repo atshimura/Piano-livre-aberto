@@ -623,7 +623,9 @@
    // A MIDI semitone does not reveal whether e.g. D-sharp or E-flat was written.
    const noteName=verified?OpticalTimeMap.writtenPitch(native):null;
    const international=verified?StudyNoteTip.international(native):null;
-   showOpticalTip(noteName&&international?(noteName+' · '+international):'Grafia a conferir',ev);
+   showOpticalTip(noteName&&international?
+    (noteName+' · '+international+(native.playbackAttack?'':' · Ligadura: sem novo ataque MIDI')):
+    'Grafia a conferir · MIDI não confirmado',ev);
    console.log('POC_NOTE_TAP '+JSON.stringify({beat:note.beat,staff:note.staff,
     midiEstimate:note.midiEstimate,nativeMidi:native?native.midi:null,
     mapped:verified,status:note.mappingStatus,sourceEventIndex:native?native.index:null,
