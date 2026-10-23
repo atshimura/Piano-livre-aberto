@@ -95,6 +95,12 @@
    scale=Math.min(scale,w.scale+slope*distance);
   }
   scale=Math.max(model.fullScale,scale);
+  const fraction=Math.max(0,Math.min(1,(x-chosen.start)/(chosen.end-chosen.start)));
+  const following=windows[Math.min(windows.length-1,index+1)];
+  // Interpolate guarded window limits as well as the camera: switching the
+  // guard itself at a cell boundary previously caused a 0.053-scale jump.
+  const guardedLeft=chosen.left+(following.left-chosen.left)*fraction-model.cellWidth;
+  const guardedRight=chosen.right+(following.right-chosen.right)*fraction+model.cellWidth;
   const context=model.context,firstX=model.firstX,rail=model.railUnits||130;
   function frameAt(s){
    const referenceX=Math.min(Math.max(1,model.width-24),Math.max(
@@ -103,8 +109,8 @@
    // Keep the entire cell envelope (plus one cell on either side) under
    // inspection while WebView scrollLeft and SVG width settle after relayout.
    // A long curve may paint across the left edge before the next scroll event.
-   const left=Math.min(x-anchor/s-20,chosen.left-model.cellWidth);
-   const right=Math.max(x+(model.width-anchor)/s+20,chosen.right+model.cellWidth);
+   const left=Math.min(x-anchor/s-20,guardedLeft);
+   const right=Math.max(x+(model.width-anchor)/s+20,guardedRight);
    const active=model.boxes.filter(function(b){return b.x+b.w>=left&&b.x<=right;});
    if(context)active.push(context);
    return {left:left,right:right,ink:union(active)};
@@ -124,8 +130,6 @@
   }
   const fit=available/scale,ink=f.ink;
   if(!ink||ink.h+8>fit+1e-6)throw Error('Study continuous camera cannot contain visible ink');
-  const fraction=Math.max(0,Math.min(1,(x-chosen.start)/(chosen.end-chosen.start)));
-  const following=windows[Math.min(windows.length-1,index+1)];
   const requestedTop=chosen.top+(following.top-chosen.top)*fraction;
   const top=Math.max(ink.y+ink.h+4-fit,Math.min(ink.y-4,requestedTop));
   return {index:index,start:chosen.start,end:chosen.end,scale:scale,staffSpace:10*scale,
