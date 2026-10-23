@@ -98,7 +98,8 @@
     inkTop:ink.y,inkBottom:ink.y+ink.h,staffSpace:10*scale});
   }
   return {bounds:global.slice(),cellWidth:cellWidth,windows:windows,boxes:boxes,
-   context:context,railUnits:options.railUnits||130,firstX:firstX,fullScale:fullScale,width:width,height:height,current:-1};
+   context:context,railUnits:options.railUnits||130,firstX:firstX,fullScale:fullScale,width:width,height:height,
+   safetyLeadCells:Number.isFinite(options.safetyLeadCells)?Math.max(0,Math.min(1,options.safetyLeadCells)):1,current:-1};
  }
  function select(model,x){return Math.max(0,Math.min(model.windows.length-1,Math.floor((x-model.bounds[0])/model.cellWidth)));}
  // A Lipschitz minorant of the safe per-cell scales: for any position within
@@ -119,8 +120,9 @@
   const following=windows[Math.min(windows.length-1,index+1)];
   // Interpolate guarded window limits as well as the camera: switching the
   // guard itself at a cell boundary previously caused a 0.053-scale jump.
-  const guardedLeft=chosen.left+(following.left-chosen.left)*fraction-model.cellWidth;
-  const guardedRight=chosen.right+(following.right-chosen.right)*fraction+model.cellWidth;
+  const lead=model.cellWidth*model.safetyLeadCells;
+  const guardedLeft=chosen.left+(following.left-chosen.left)*fraction-lead;
+  const guardedRight=chosen.right+(following.right-chosen.right)*fraction+lead;
   const context=model.context,firstX=model.firstX,rail=model.railUnits||130;
   function frameAt(s){
    const referenceX=Math.min(Math.max(1,model.width-24),Math.max(
