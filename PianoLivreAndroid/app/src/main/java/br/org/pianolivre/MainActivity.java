@@ -683,7 +683,24 @@ public class MainActivity extends Activity {
   else if(screens!=null)screens.followScore(position,true);
   saveSession();updateInfo();
  }
+ /** Menu start is a pending A marker; it must not mutate a running MIDI route. */
+ void markLoopStart(){
+  if(score==null)return;
+  stopPlayback();
+  loopStart=Math.max(0,Math.min(score.end(),position));
+  loopEnd=Double.MAX_VALUE;
+  resetWrittenRoute();
+  saveSession();updateInfo();
+ }
+ /** Commit the B marker via the same checked path as graphical selection. */
+ void markLoopEnd(){
+  if(score==null)return;
+  applyLoopSelection(Math.min(loopStart,position),Math.max(loopStart,position));
+ }
  void clearLoop(){
+  // A running demonstration must release its held notes before its route or
+  // loop bounds are replaced. The user can explicitly press Iniciar again.
+  stopPlayback();
   loopStart=0;loopEnd=Double.MAX_VALUE;resetWrittenRoute();
   if(screens!=null)screens.clearLoopSelection();
   saveSession();updateInfo();
