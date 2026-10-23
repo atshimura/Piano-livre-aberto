@@ -104,7 +104,7 @@
  function applySafe(svg,factor,boxes){
   const changed=trial(svg,factor);
   if(!changed.length)return {status:'not-applicable',accepted:false,edited:0};
-  const contacts=collisionReport(svg,boxes);
+  const contacts=collisionReport(svg,typeof boxes==='function'?boxes():boxes);
   const rejected=contacts.filter(function(c){return c.unsupportedTransform||c.introducedContacts>0;});
   if(rejected.length){
    restore(svg);
