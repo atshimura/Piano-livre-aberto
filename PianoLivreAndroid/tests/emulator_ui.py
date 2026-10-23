@@ -40,9 +40,21 @@ def responsive_evidence(name):
         controls_visible="Espera" in labels
         assert title_visible==(state!="open"), "Guide did not hide/restore title bar"
         assert controls_visible==(state!="open"), "Guide did not hide/restore controls bar"
-        rows=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_SVG_FIT {" in line]
-        assert rows, "Responsive geometry report absent"
-        geometry=json.loads(rows[-1].split("POC_SVG_FIT ",1)[1].split(" @",1)[0])
+        # The guide transitions native UI synchronously but its WebView
+        # reflow is debounced. Do not mistake the previous layout's logcat
+        # sample for the restored viewport. Require a fresh matching height.
+        geometry=None
+        for attempt in range(25):
+            rows=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_SVG_FIT {" in line]
+            if rows:
+                candidate=json.loads(rows[-1].split("POC_SVG_FIT ",1)[1].split(" @",1)[0])
+                if not result or ((state=="open") !=
+                    (candidate["viewportHeight"]==result[0]["geometry"]["viewportHeight"])):
+                    geometry=candidate
+                    break
+            time.sleep(.4)
+        assert geometry is not None, ("Responsive geometry failed to settle after guide "+state+
+                                      "; last="+str(candidate if rows else None))
         assert geometry["scale"]>0, "Guide resize produced an invalid uniform scale"
         assert geometry["height"]<=geometry["availableHeight"]+0.5, "Both staves exceed the available height"
         assert geometry["viewportMaxScrollTop"]==0, "Vertical scrolling is exposed in OSMD preview"
