@@ -323,7 +323,8 @@
    firstX:optical.timeline.xAt(0),railUnits:opticalContextState?opticalContextState.contextRailUnits:130,
    probeMaxFit:window.__testStudyMaxFit===true,
    safetyLeadCells:Number.isFinite(Number(window.__testStudyLeadCells))&&
-    window.__testStudyLeadCells!==undefined?Number(window.__testStudyLeadCells):1});
+    window.__testStudyLeadCells!==undefined?Number(window.__testStudyLeadCells):1,
+   localScaleExperiment:window.__testStudyLocalScale===true});
   if(!studyWindow)return;
   studyWindowRows=EngravingAudit.inspect(osmd.graphic,Infinity);
   if(studyVerticalAdaptation.accepted)studyWindowRows=StudyProfile.shiftEngravingRows(studyWindowRows,2,studyVerticalAdaptation.delta);
