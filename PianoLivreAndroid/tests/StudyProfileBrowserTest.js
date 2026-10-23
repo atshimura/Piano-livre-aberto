@@ -189,7 +189,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  const numericOrigins=await page.evaluate(xml=>{
   const doc=new DOMParser().parseFromString(xml,'application/xml');
   return Array.from(doc.querySelectorAll('words,fingering,other-technical,lyric,tuplet,ending,notations,credit-words'))
-   .filter(node=>/(^|\\D)(46|34)(\\D|$)/.test((node.textContent||'').trim())||
+   .filter(node=>/(^|\D)(46|34)(\D|$)/.test((node.textContent||'').trim())||
     ['46','34'].includes((node.getAttribute('number')||'').trim()))
    .slice(0,25).map(node=>({tag:node.tagName,text:(node.textContent||'').trim().slice(0,100),
     number:node.getAttribute('number'),measure:node.closest('measure')&&node.closest('measure').getAttribute('number'),
