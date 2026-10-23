@@ -31,6 +31,7 @@
 <script src="engraving-audit.js"></script>
 <script src="study-profile.js"></script>
 <script src="study-window.js"></script>
+<script src="study-curve.js"></script>
 <script src="engraving-conventions.js"></script></head>
 <body><div id="viewport"><div id="score"></div></div><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
 <script>
@@ -224,6 +225,7 @@
    nativeStaffSpaceCssPx:staffSpace,staffSeparationSpaces:staffGapSpaces})); }
  function adaptStudySvg(svg){
   studyWindow=null;studyWindowRows=[];studyWindowGlobal=null;delete svg._studyWindowBounds;svg.style.overflow='visible';
+  StudyCurve.restore(svg);
   StudyProfile.restorePresentationAdjustments(svg);
   StudyProfile.restoreStaffGap(svg);
   if(svg._studyBaseEnvelope){
@@ -272,6 +274,8 @@
  }
  function refreshStudyAnalysis(svg){
   if(!svg||!studyProof||!osmd)return;
+  const slurTrial=StudyCurve.trial(svg,Number(window.__testStudyCurveFactor));
+  if(slurTrial.length)console.log('STUDY_B1_SLUR_TRIAL '+JSON.stringify(slurTrial));
   const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
   studyDynamicAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
   if(studyDynamicAdjustments.length){
