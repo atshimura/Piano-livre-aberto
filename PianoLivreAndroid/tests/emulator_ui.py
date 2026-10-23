@@ -420,13 +420,19 @@ if __name__=="__main__":
     tip_logs=adb("logcat","-d","-v","brief")
     assert "POC_NOTE_TIP_VISIBLE Mi4 · E4" in tip_logs, (
         "OSMD selected head did not present written Portuguese and international pitch")
-    initial_hidden=tip_logs.count("POC_NOTE_TIP_HIDDEN")
+    # Screenshots can take longer than the 2200ms badge lifetime.
+    # Require the HIDDEN event to appear AFTER this tap's VISIBLE event,
+    # rather than counting only events arriving after screenshot capture.
+    expired=False
     for attempt in range(15):
-        time.sleep(.25)
-        if adb("logcat","-d","-v","brief").count("POC_NOTE_TIP_HIDDEN")>initial_hidden:
+        logs=adb("logcat","-d","-v","brief")
+        shown=logs.rfind("POC_NOTE_TIP_VISIBLE Mi4 · E4")
+        hidden=logs.rfind("POC_NOTE_TIP_HIDDEN")
+        if shown>=0 and hidden>shown:
+            expired=True
             break
-    assert adb("logcat","-d","-v","brief").count("POC_NOTE_TIP_HIDDEN")>initial_hidden, (
-        "OSMD note identification did not expire after its transient lifetime")
+        time.sleep(.25)
+    assert expired, "OSMD note identification did not expire after the displayed note"
     screenshot("piano-osmd-poc-note-tap-expired.png")
     print("PASS: actual Android tap identified first upper-staff OSMD notehead, "
           "showed Mi4 · E4, and expired without persistent overlay",flush=True)
