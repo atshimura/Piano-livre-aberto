@@ -5,6 +5,8 @@ const assert=require('assert'),W=require('../app/src/main/assets/study-window.js
 const boxes=[{x:0,y:100,w:10000,h:150},{x:0,y:80,w:10,h:10},
  {x:7000,y:0,w:2500,h:120},{x:4400,y:300,w:1,h:85}];
 const m=W.plan(boxes,{bounds:[0,-4,10000,400],width:738,height:196,context:{x:0,y:90,w:100,h:170}});
+assert(m.cellWidth<738/.7/5,'window cells must be substantially narrower than the visible viewport');
+assert(m.windows.length>40,'inspect enough local envelopes to avoid premature distant extremes');
 assert(m.windows[0].scale>m.fullScale,'local opening gains readability');
 assert(m.windows.some(w=>w.scale<m.windows[0].scale),'distant extremes must reduce scale where necessary');
 for(let x=0;x<10000;x+=13){
