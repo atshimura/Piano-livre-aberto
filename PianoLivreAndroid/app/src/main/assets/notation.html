@@ -556,9 +556,11 @@
   tip.style.maxWidth='calc(100vw - 8px)';
   tip.style.left='auto';tip.style.right='4px';tip.style.top='4px';
   tip.style.bottom='auto';tip.style.display='block';
+  console.log('POC_NOTE_TIP_VISIBLE '+message);
   // No persistent badge covering the notation. A second touch replaces and
   // restarts the timer; the timer is cleared before loading a different score.
-  noteTipTimer=setTimeout(function(){noteTipTimer=null;tip.style.display='none';},2200);
+  noteTipTimer=setTimeout(function(){noteTipTimer=null;tip.style.display='none';
+   console.log('POC_NOTE_TIP_HIDDEN');},2200);
  }
  // Reattach after every OSMD render/resize: OSMD can replace its SVG root.
  function attachOpticalNoteTouch(svg){
@@ -895,6 +897,7 @@
    },
    loopEdit:function(enabled){
     if(studyProof){
+     hideOpticalNoteTip();
      opticalLoopEditing=!!enabled;opticalLoopStart=null;
      const tip=document.getElementById('optical-note-tip');
      tip.textContent='Trecho: toque a nota inicial e a última nota da seleção';
@@ -906,7 +909,7 @@
    clearLoop:function(){
     if(studyProof){
      opticalLoopEditing=false;opticalLoopStart=null;
-     document.getElementById('optical-note-tip').style.display='none';
+     hideOpticalNoteTip();
      return;
     }
     if(!freeLayout&&window.TemporalNotation)TemporalNotation.clearLoop();
