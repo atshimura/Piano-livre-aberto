@@ -245,7 +245,15 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
  }
  const largestScaleStep=transitions.reduce((a,b)=>Math.abs(a.changePercent)>=Math.abs(b.changePercent)?a:b,
   {fromBeat:null,toBeat:null,changePercent:0});
+ const adjacent=forward.slice(1).map((row,i)=>({
+  fromBeat:forward[i].beat,toBeat:row.beat,
+  fromStaffSpace:forward[i].staffSpace,toStaffSpace:row.staffSpace,
+  changePercent:100*(row.staffSpace/forward[i].staffSpace-1)}));
+ const largestAdjacentChange=adjacent.reduce((a,b)=>
+  Math.abs(a.changePercent)>=Math.abs(b.changePercent)?a:b,
+  {fromBeat:null,toBeat:null,changePercent:0});
  const windowDiagnostic={samples:forward.length,transitions:transitions.length,largestScaleStep,
+  largestAdjacentChange,
   minStaffSpace:Math.min(...forward.map(row=>row.staffSpace)),
   maxStaffSpace:Math.max(...forward.map(row=>row.staffSpace))};
  console.log('STUDY_WINDOW_TRANSITIONS '+JSON.stringify(windowDiagnostic));
