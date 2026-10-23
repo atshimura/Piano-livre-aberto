@@ -290,7 +290,7 @@
      contacts=edits.length?StudyCurve.collisionReport(svg,geometry.boxes):[];
     curveAdaptation={status:'experimental',accepted:false,edited:edits.length,
      colliding:contacts.filter(c=>c.unsupportedTransform||c.introducedContacts>0)};
-   }else curveAdaptation=StudyCurve.applySafe(svg,chosen,geometry.boxes);
+   }else curveAdaptation=StudyCurve.applySafe(svg,chosen,function(){return StudyWindow.collect(svg).boxes;});
   }
   if(curveAdaptation.edited)console.log('STUDY_B1_SLUR_ADAPTATION '+JSON.stringify(curveAdaptation));
   const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
