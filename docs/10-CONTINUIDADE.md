@@ -1,3 +1,11 @@
+## Entrega B — identificação de nota sem ocultar a pauta inferior (23/10/2026)
+
+Correção independente da B1 em PR próprio: o toque em uma cabeça OSMD antes posicionava a etiqueta junto ao toque, inclusive acima da pauta inferior, e a deixava visível sem expiração. Agora a etiqueta temporária fica no canto superior direito, respeita a largura da WebView, desaparece após 2,2 s e é cancelada ao carregar outra partitura ou entrar no editor de trecho. A mesma política de evitar a pauta inferior foi aplicada à alternativa temporal, preservando seu período de expiração de 2 s. Quando a correspondência MusicXML/MIDI é confiável, a nota aparece com grafia portuguesa e internacional (por exemplo `Mi4 · E4`); uma altura não reconciliada permanece explicitamente sem confirmação, nunca produz cifra inventada.
+
+`StudyNoteTipTest.js` cobre grafias e política de interface; o emulador usa toque real numa cabeça de nota para verificar texto e expiração pelos eventos do WebView. Teste físico editorial no Realme 7 5G e Lenovo Tab M9 continua pendente. A correção não altera MusicXML, eventos MIDI ou estados persistidos. A integração com o PR #51 deverá usar resultados específicos da branch de compatibilidade, sem associá-los à `main` ou integrar B1 indevidamente.
+
+---
+
 # 10 — Como continuar o Piano Livre aberto
 
 **Repositório autoritativo para mudanças futuras:** `atshimura/Piano-livre-aberto`. Não fazer novos commits em `atshimura/piano-livre` como parte do fluxo aberto; aquele repositório histórico permanece privado.
