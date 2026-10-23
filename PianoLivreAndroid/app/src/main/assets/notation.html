@@ -274,11 +274,25 @@
  }
  function refreshStudyAnalysis(svg){
   if(!svg||!studyProof||!osmd)return;
-  const slurTrial=StudyCurve.trial(svg,Number(window.__testStudyCurveFactor));
-  if(slurTrial.length){
-   console.log('STUDY_B1_SLUR_TRIAL '+JSON.stringify(slurTrial));
-   console.log('STUDY_B1_SLUR_CONTACTS '+JSON.stringify(StudyCurve.collisionReport(svg,StudyWindow.collect(svg).boxes)));
+  const experimental=Number(window.__testStudyCurveFactor),
+   chosen=experimental>0&&experimental<1?experimental:.6,
+   eligible=studyProfile&&studyProfile.staffCount===2&&
+    (studyProfile.notes>=200||studyProfile.maxNotesPerMeasure>=16)&&
+    viewport.clientHeight<=240&&Number(svg.dataset.opticalStaffSpaceCss)<6;
+  let curveAdaptation={status:'not-needed',accepted:false,edited:0};
+  if(window.__testDisableStudyCurveAdaptation!==true&&
+     (eligible||(experimental>0&&experimental<1))){
+   // The experimental override may intentionally measure rejected shapes.
+   // Production is allowed to keep only contact-free, reversible edits.
+   const geometry=StudyWindow.collect(svg);
+   if(experimental>0&&experimental<1){
+    const edits=StudyCurve.trial(svg,chosen),
+     contacts=edits.length?StudyCurve.collisionReport(svg,geometry.boxes):[];
+    curveAdaptation={status:'experimental',accepted:false,edited:edits.length,
+     colliding:contacts.filter(c=>c.unsupportedTransform||c.introducedContacts>0)};
+   }else curveAdaptation=StudyCurve.applySafe(svg,chosen,geometry.boxes);
   }
+  if(curveAdaptation.edited)console.log('STUDY_B1_SLUR_ADAPTATION '+JSON.stringify(curveAdaptation));
   const hiddenChordLabels=StudyProfile.applyChordCollisionPolicy(svg);
   studyDynamicAdjustments=window.__testDisableDynamicCollisionPolicy===true?[]:StudyProfile.applyDynamicCollisionPolicy(svg);
   if(studyDynamicAdjustments.length){
@@ -297,6 +311,7 @@
   studyAnalysis.repositionedDynamics=studyDynamicAdjustments.length;
   studyAnalysis.hiddenChordLabels=hiddenChordLabels;
   studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
+  studyAnalysis.curveAdaptation=curveAdaptation;
   studyAnalysis.viewport={width:viewport.clientWidth,height:viewport.clientHeight};
  }
  function prepareStudyWindow(svg){
