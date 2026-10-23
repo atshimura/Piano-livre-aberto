@@ -22,6 +22,8 @@
    b.kind=(node.closest('g[class]')||node).getAttribute('class')||node.tagName;
    b.tag=node.tagName;
    b.text=node.tagName.toLowerCase()==='text'?(node.textContent||'').trim().slice(0,32):'';
+   b.pathData=b.kind==='vf-curve'&&node.tagName.toLowerCase()==='path'?
+    (node.getAttribute('d')||'').slice(0,460):'';
    boxes.push(b);
    if(node.closest('.vf-clef,.vf-keysignature,.vf-timesignature,.vf-brace'))context.push(b);
   });
