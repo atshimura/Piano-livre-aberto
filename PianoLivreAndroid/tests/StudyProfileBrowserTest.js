@@ -310,12 +310,16 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
     const cropped=symbols.filter(n=>{const b=n.getBoundingClientRect();
      return b.width>0&&(b.left<railBox.left-.7||b.right>railBox.right+.7||
       b.top<railBox.top-.7||b.bottom>railBox.bottom+.7);}).map(n=>n.getAttribute('class'));
-    return {context:a.context,rail:[railBox.left,railBox.top,railBox.width,railBox.height],
+    const reference=document.getElementById('optical-reference').getBoundingClientRect();
+    return {context:a.context,referenceLeft:reference.left,
+     rail:[railBox.left,railBox.top,railBox.width,railBox.height],
      svgTop:svg.top,viewportTop:v.top,cropped,symbols:symbols.length,
      scrollTop:document.getElementById('viewport').scrollTop};
    });
    assert.equal(proof.context&&proof.context.measure,measure,'musical context at beat '+beat);
    assert(proof.symbols>=2,'active clefs missing at beat '+beat);
+   assert(proof.rail[0]+proof.rail[2]+4<=proof.referenceLeft,
+    'context rail must clear the fixed cursor at '+beat+': '+JSON.stringify(proof));
    assert.equal(proof.cropped.length,0,'context symbols cropped by pinned rail at '+beat+
     ': '+JSON.stringify(proof));
    assert.equal(proof.scrollTop,0,'context cannot scroll vertically');

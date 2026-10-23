@@ -298,7 +298,7 @@
   const geometry=StudyWindow.collect(svg),vb=svg.viewBox.baseVal;
   studyWindow=StudyWindow.plan(geometry.boxes,{bounds:[vb.x,vb.y,vb.width,vb.height],
    width:viewport.clientWidth,height:viewport.clientHeight,context:geometry.context,
-   firstX:optical.timeline.xAt(0)});
+   firstX:optical.timeline.xAt(0),railUnits:opticalContextState?opticalContextState.contextRailUnits:130});
   if(!studyWindow)return;
   studyWindowRows=EngravingAudit.inspect(osmd.graphic,Infinity);
   if(studyVerticalAdaptation.accepted)studyWindowRows=StudyProfile.shiftEngravingRows(studyWindowRows,2,studyVerticalAdaptation.delta);
@@ -331,8 +331,11 @@
   return true;
  }
  function alignOpticalScore(beat){
-  opticalReferenceX=Math.min(viewport.clientWidth*.4,
+  const baseReference=Math.min(viewport.clientWidth*.4,
    Math.min(viewport.clientWidth,130*opticalDisplayScale)+12);
+  const railUnits=opticalContextState?opticalContextState.contextRailUnits:130;
+  opticalReferenceX=Math.min(Math.max(1,viewport.clientWidth-24),
+   Math.max(baseReference,railUnits*opticalDisplayScale+12));
   opticalOffset=Math.max(0,opticalReferenceX+53-optical.timeline.xAt(beat)*opticalDisplayScale);
   document.getElementById('score').style.marginLeft=opticalOffset+'px';
   document.getElementById('optical-reference').style.left=opticalReferenceX+'px';
@@ -463,6 +466,20 @@
    console.log('POC_CONTEXT_RAIL_SKIP '+JSON.stringify({staffData:base.filter(Boolean).length}));
    opticalContextState=null;return;
   }
+  // Reserve the widest musical context for the entire score: a later
+  // signature change must neither cross the pinned cursor nor move its anchor.
+  const contextRailUnits=Math.max(130,...base.map(function(staff){
+   const active={clef:null,key:null,time:null};let maximum=0;
+   for(const measure of staff.measures){
+    if(!measure)continue;
+    ['clef','key','time'].forEach(function(kind){if(measure[kind])active[kind]=measure[kind];});
+    const c=active.clef,k=active.key,t=active.time;
+    const keyX=c?25+c.width+10:61;
+    const timeX=k?Math.max(66,61+k.width+15):66;
+    maximum=Math.max(maximum,c?25+c.width:0,k?keyX+k.width:0,t?timeX+t.width:0);
+   }
+   return maximum+8;
+  }));
   const measureStarts=columns.map(function(group,index){
    let firstBeat=Infinity;
    (group||[]).forEach(function(measure){
@@ -476,7 +493,7 @@
   opticalContextState={svg:svg,overlay:overlay,base:base,measureStarts:measureStarts,
    active:[{clef:null,key:null,time:null},{clef:null,key:null,time:null}],
    viewBox:viewBox,nativeWidth:nativeWidth,nativeHeight:nativeHeight,
-   cameraKey:null,railWidthCss:0,
+   cameraKey:null,railWidthCss:0,contextRailUnits:contextRailUnits,
    railLeft:0,svgStartLeft:svg.getBoundingClientRect().left-viewport.getBoundingClientRect().left,
    braceNode:braceCopy,hasBrace:!!brace};
   Array.from(svg.querySelectorAll('g.vf-clef,g.vf-keysignature,g.vf-timesignature')).forEach(function(node){
@@ -484,7 +501,8 @@
   });
   if(brace)brace.style.visibility='hidden';
   rail.appendChild(overlay);
-  paintOpticalContext(0,true);
+  alignOpticalScore(seekBeat);
+  paintOpticalContext(seekBeat,true);
   console.log('POC_CONTEXT_RAIL_READY '+JSON.stringify({staves:base.length,brace:!!brace,
    measures:measureStarts.length,scale:opticalDisplayScale,railLeft:0,
    railWidth:Math.min(viewport.clientWidth,130*opticalDisplayScale),
@@ -562,8 +580,10 @@
   rail.style.top=Math.max(0,source.top-viewportRect.top)+'px';
   // Never crop a new key/time signature at the former fixed 130-unit rail.
   // The camera and the pinned SVG must share exactly the same vertical box.
+  if(railEnd-cameraNow.x>state.contextRailUnits+.5)
+   throw Error('Pinned musical context exceeds reserved width');
   rail.style.width=Math.min(viewport.clientWidth,
-   Math.max(130,railEnd-cameraNow.x)*opticalDisplayScale)+'px';
+   state.contextRailUnits*opticalDisplayScale)+'px';
   state.railWidthCss=parseFloat(rail.style.width);
   const camera=state.svg.viewBox.baseVal,cameraHeight=camera.height*opticalDisplayScale;
   rail.style.height=cameraHeight+'px';
@@ -850,12 +870,12 @@
      if(hiddenChordLabels.length)console.log('STUDY_CHORD_LABELS_HIDDEN '+JSON.stringify(hiddenChordLabels));
      if(studyAnalysis.textNotePairs.length)console.log('STUDY_TEXT_NOTE_GEOMETRY '+JSON.stringify(studyAnalysis.textNotePairs));
      console.log('STUDY_ANALYSIS '+JSON.stringify({version:studyProfile.version,notes:studyProfile.notes,measures:studyProfile.measures.length,hiddenTypes:studyProfile.hiddenTypes,spacing:studyProfile.spacing,geometry:studyAnalysis}));
-     prepareStudyWindow(svg);
      attachOpticalNoteTouch(svg);
      paintOpticalCues(start||0);
+     makeOpticalContextState(svg,columns);
+     prepareStudyWindow(svg);
      alignOpticalScore(start||0);
      document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
-     makeOpticalContextState(svg,columns);
      opticalSeek(start||0,100,false);
      const samples=[];
      for(const group of columns.slice(0,6))for(const measure of group||[]){
@@ -1095,8 +1115,8 @@
       if(studyVerticalAdaptation.accepted)optical.notes.forEach(function(note){if(note.staff===2)note.y-=studyVerticalAdaptation.delta;});
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
       refreshStudyAnalysis(resizedSvg);
-      prepareStudyWindow(resizedSvg);
       makeOpticalContextState(resizedSvg,osmd.graphic&&osmd.graphic.measureList||[]);
+      prepareStudyWindow(resizedSvg);
       opticalCueKey='';paintOpticalCues(seekBeat);
       alignOpticalScore(seekBeat);
       paintOpticalContext(seekBeat,true);
@@ -1125,12 +1145,12 @@
       opticalReconciliation=OpticalTimeMap.reconcile(optical.notes,Array.isArray(lastNativeEvents)?lastNativeEvents:[]);
       refreshStudyAnalysis(resizedSvg);
       studyAnalysis.layoutAdaptation=studyVerticalAdaptation;
-      prepareStudyWindow(resizedSvg);
       attachOpticalNoteTouch(document.querySelector('#score svg'));
       paintOpticalCues(seekBeat);
       alignOpticalScore(seekBeat);
       document.getElementById('score').style.paddingRight=(viewport.clientWidth*.65)+'px';
       makeOpticalContextState(resizedSvg,osmd.graphic&&osmd.graphic.measureList||[]);
+      prepareStudyWindow(resizedSvg);
       opticalSeek(seekBeat,opticalPlayback.bpm,opticalPlayback.playing);
      }else if(!freeLayout)atBeat(seekBeat,false);
     }catch(e){console.log('POC_RESIZE_ERROR',e.message)}},220);

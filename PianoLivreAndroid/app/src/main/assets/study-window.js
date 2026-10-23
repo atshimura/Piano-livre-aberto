@@ -32,7 +32,9 @@
   // planner guarded a full extra viewport to the right of EVERY cell, even
   // when that ink could not reach the painted viewport at any beat in it.
   function frame(start,scale){
-   const referenceX=Math.min(width*.4,Math.min(width,130*scale)+12);
+   const referenceX=Math.min(Math.max(1,width-24),Math.max(
+    Math.min(width*.4,Math.min(width,130*scale)+12),
+    (options.railUnits||130)*scale+12));
    const reference=referenceX+53,offset=Math.max(0,reference-firstX*scale);
    const anchor=reference-offset;
    const left=start-anchor/scale-20;
