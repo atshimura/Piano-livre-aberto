@@ -1,5 +1,11 @@
 # 58 — Plano Geral de Desenvolvimento do Piano Livre até a versão 1.0
 
+### Evidência medida da reserva do contexto fixo (SHA b8ed11e, build 39875463421)
+
+O teste da fixture `engraving-context-change.musicxml` encontrou na implementação anterior uma faixa fixa que podia ocupar 168,94 CSS px enquanto o cursor permanecia próximo de 167 px no terceiro compasso. A revisão passou a reservar, antes do planejamento de janela e cursor, a **largura máxima do contexto efetivamente gravado** na partitura. No Chromium 738×196 a faixa mede 168,94 CSS px e o cursor está em 180,94 px, com 12 px livres e sem recorte nas transições 1→2→3→2→1. No tablet 883×409, faixa 360,34 px e cursor 372,34 px, igualmente com 12 px de folga. Ambos preservam a origem vertical. Isso demonstra ausência da colisão detectada nessa fixture, não prova legibilidade editorial universal.
+
+A nova rodada de 27 arquivos, incluindo Gymnopédie, corpus nativo e fallback temporal, passou no [build 39875463421](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39875463421) do código `b8ed11e63f54d83afc64cdfeb2c8848b2fc2bc46`. As 12 capturas comparáveis da Gymnopédie mantiveram os espaçamentos 5,40241 / 5,16247 / **4,85294** / 5,03093 CSS px (abertura/meio/extremo/final) em 738×196; as telas 738×351 e 883×409 mediram 8,85439 e 10,35163 em todas as regiões. Cortes detectados: zero; rolagem vertical: zero; mapeamento: 469/469. A mudança no extremo baixo segue **insuficiente**, e transições da escala variável, bem como validação real, continuam pendentes. Ver [relatório versionado](evidence/study-profile/b1-window/comparison-validated-2026-10-22.json) e o artifact do run correspondente. Não atribuir esta medição a outro SHA nem ao hardware.
+
 ## B1 — continuação: câmera ancorada, contexto e vozes nomeadas (22/10/2026)
 
 **PR #51 permanece aberto, sem merge.** A câmera horizontal agora utiliza a faixa efetivamente alcançável pela área pintada, levando em conta a posição inicial, a margem e a linha de referência. A escala é reavaliada contra o envelope no enquadramento final, com preservação de ambas as pautas, MusicXML e MIDI. O guardião anterior considerava tinta à direita além do que efetivamente poderia entrar na viewport; isso podia diminuir desnecessariamente a escala local.
