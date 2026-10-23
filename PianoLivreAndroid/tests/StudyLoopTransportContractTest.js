@@ -16,10 +16,13 @@ const end=body('markLoopEnd','clearLoop');
 const clear=body('clearLoop','toggle');
 assert(start.indexOf('stopPlayback();')<start.indexOf('loopStart='),
  'changing start of A-B loop must first release MIDI playback');
+assert(start.includes('StudyLoopPosition.start(score,position)'),
+ 'A marker must be quantized to a real note onset');
 assert(start.includes('loopEnd=Double.MAX_VALUE;'),
  'new A marker cannot retain stale B marker');
 assert(start.includes('resetWrittenRoute();'),'starting a new A-B selection resets written itinerary');
-assert(end.includes('applyLoopSelection(Math.min(loopStart,position),Math.max(loopStart,position));'),
+assert(end.includes('double release=StudyLoopPosition.end(score,position);')&&
+ end.includes('applyLoopSelection(Math.min(loopStart,release),Math.max(loopStart,release));'),
  'B marker must use existing checked and clamped loop selection');
 assert(clear.indexOf('stopPlayback();')<clear.indexOf('loopStart=0;'),
  'removing A-B must release MIDI output before clearing itinerary');
