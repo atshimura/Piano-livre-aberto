@@ -1,3 +1,11 @@
+## Entrega B — marcação A–B segura no transporte (23/10/2026)
+
+Em revisão independente da B1: os comandos nativos “Marcar início” e “Marcar fim” do menu de trecho não devem alterar diretamente os campos `loopStart`/`loopEnd` enquanto a reprodução ou demonstração MIDI está ativa. A correção pausa e libera os eventos MIDI antes de registrar um novo marco A, invalida um limite B anterior e redefine a rota de repetições. Para concluir B, reutiliza `applyLoopSelection`, que valida intervalo, pausa MIDI, realinha a posição e atualiza a sessão. “Remover repetição” também pausa antes de zerar os limites, evitando deixar a reprodução de outro itinerário ativa. Não altera MusicXML, biblioteca ou a política de reconhecimento em Espera.
+
+Teste de regressão `StudyLoopTransportContractTest.js` no workflow de build confere a passagem da interface nativa pelos métodos de transporte e a ordem de parada/edição. O teste físico USB-MIDI continua reservado ao Yamaha P-45, e a suíte em emulador será vinculada ao SHA final do PR correspondente. Nenhum merge ou publicação autorizados.
+
+---
+
 # 10 — Como continuar o Piano Livre aberto
 
 **Repositório autoritativo para mudanças futuras:** `atshimura/Piano-livre-aberto`. Não fazer novos commits em `atshimura/piano-livre` como parte do fluxo aberto; aquele repositório histórico permanece privado.
