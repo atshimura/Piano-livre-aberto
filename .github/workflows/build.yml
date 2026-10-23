@@ -128,6 +128,8 @@ jobs:
           node tests/EngravingProofContractTest.js
           node tests/VerticalNavigationTest.js
           node tests/OpticalTimeMapTest.js
+          node tests/StudyNoteTipTest.js
+          node --check app/src/main/assets/study-note-tip.js
           node tests/PolyphonyFidelityTest.js
           node tests/EnharmonicReconciliationTest.js
           node tests/AccidentalConventionsTest.js
