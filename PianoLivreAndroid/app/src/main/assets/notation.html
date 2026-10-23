@@ -23,11 +23,12 @@
  #optical-wait{display:none;position:absolute;bottom:8px;left:8px;width:142px;padding:7px 10px;border:1px solid #92b7ad;border-radius:7px;background:rgba(255,255,255,.96);color:#164b40;z-index:10;font:12px system-ui;pointer-events:none;box-shadow:0 1px 4px #0002}
  #optical-wait-progress{height:4px;margin-top:5px;background:#d8eee7;border-radius:2px;overflow:hidden}
  #optical-wait-fill{height:100%;width:0;background:#008b78}
- #optical-note-tip{display:none;position:absolute;z-index:12;background:#fff;border:1px solid #a7c6bc;border-radius:6px;padding:5px 9px;font:14px sans-serif;color:#183b38;box-shadow:0 2px 6px #0002;pointer-events:none;max-width:210px}
+ #optical-note-tip{display:none;position:absolute;z-index:12;background:#fff;border:1px solid #a7c6bc;border-radius:6px;padding:3px 7px;font:12px/1.1 sans-serif;color:#183b38;box-shadow:0 1px 3px #0002;pointer-events:none;box-sizing:border-box;max-width:calc(100vw - 8px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
 <script src="temporal-notation.js"></script>
 <script src="optical-time-map.js"></script>
+<script src="study-note-tip.js"></script>
 <script src="engraving-audit.js"></script>
 <script src="engraving-conventions.js"></script></head>
 <body><div id="viewport"><div id="score"></div></div><div id="optical-context-rail" aria-hidden="true"></div><div id="optical-reference"></div><div id="optical-note-tip" role="status"></div><div id="optical-wait" role="status"><span id="optical-wait-label">Preparação</span><div id="optical-wait-progress"><div id="optical-wait-fill"></div></div></div><div id="loading">Preparando partitura...</div>
@@ -35,6 +36,7 @@
 (function(){
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
+ let noteTipTimer=null;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1,opticalReferenceX=0;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
@@ -542,6 +544,24 @@
   }
   if(!opticalRaf)opticalRaf=requestAnimationFrame(opticalFrame);
  }
+ function hideOpticalNoteTip(){
+  if(noteTipTimer!==null){clearTimeout(noteTipTimer);noteTipTimer=null;}
+  const tip=document.getElementById('optical-note-tip');
+  tip.style.display='none';
+ }
+ function showOpticalNoteTip(message){
+  const tip=document.getElementById('optical-note-tip');
+  if(noteTipTimer!==null)clearTimeout(noteTipTimer);
+  tip.textContent=message;
+  tip.style.maxWidth='calc(100vw - 8px)';
+  tip.style.left='auto';tip.style.right='4px';tip.style.top='4px';
+  tip.style.bottom='auto';tip.style.display='block';
+  console.log('POC_NOTE_TIP_VISIBLE '+message);
+  // No persistent badge covering the notation. A second touch replaces and
+  // restarts the timer; the timer is cleared before loading a different score.
+  noteTipTimer=setTimeout(function(){noteTipTimer=null;tip.style.display='none';
+   console.log('POC_NOTE_TIP_HIDDEN');},2200);
+ }
  // Reattach after every OSMD render/resize: OSMD can replace its SVG root.
  function attachOpticalNoteTouch(svg){
   if(!svg||svg.dataset.opticalTouch==='yes')return;
@@ -559,7 +579,7 @@
    const hitRadiusY=Math.max(7,Math.min(26,10*vb.height/rect.height));
    const note=OpticalTimeMap.hitTest(optical.notes,x,y,hitRadiusX,hitRadiusY);
    const tip=document.getElementById('optical-note-tip');
-   if(!note){tip.style.display='none';return;}
+   if(!note){hideOpticalNoteTip();return;}
    const native=note.nativeEvent;
    if(opticalLoopEditing){
     if(!native){tip.textContent='Trecho: escolha uma nota confirmada pelo MIDI';}
@@ -588,11 +608,11 @@
    // Only a reconciled native event can confirm exact MusicXML spelling.
    // A MIDI semitone does not reveal whether e.g. D-sharp or E-flat was written.
    const noteName=verified?OpticalTimeMap.writtenPitch(native):null;
-   tip.textContent=(noteName||'Grafia a conferir')+' · compasso '+note.measure+' · pauta '+note.staff+
+   const international=verified?StudyNoteTip.label(native,noteName):null;
+   showOpticalNoteTip((international||'Grafia a conferir')+
+    ' · compasso '+note.measure+' · pauta '+note.staff+
     (verified?(native.playbackAttack?' · MIDI conferido':' · Ligadura: sem novo ataque MIDI'):
-      ' · MIDI não confirmado');
-   tip.style.left=Math.max(4,Math.min(window.innerWidth-220,ev.clientX+10))+'px';
-   tip.style.top=Math.max(4,ev.clientY-44)+'px';tip.style.display='block';
+      ' · MIDI não confirmado'));
    console.log('POC_NOTE_TAP '+JSON.stringify({beat:note.beat,staff:note.staff,
     midiEstimate:note.midiEstimate,nativeMidi:native?native.midi:null,
     mapped:verified,status:note.mappingStatus,sourceEventIndex:native?native.index:null,
@@ -603,7 +623,7 @@
  function render(xml,start,layout,nativeEvents){
   const ticket=++generation;
   cancelOptical();cancelOpticalWait();
-  document.getElementById('optical-note-tip').style.display='none';
+  hideOpticalNoteTip();
   loaded=false;appliedBeat=-1;seekBeat=start||0;
   osmdRenderedWidth=0;osmdRenderedHeight=0;opticalDisplayScale=1;
   opticalContextState=null;opticalContextMeasure=-1;
@@ -878,6 +898,7 @@
    loopEdit:function(enabled){
     if(studyProof){
      opticalLoopEditing=!!enabled;opticalLoopStart=null;
+     hideOpticalNoteTip();
      const tip=document.getElementById('optical-note-tip');
      tip.textContent='Trecho: toque a nota inicial e a última nota da seleção';
      tip.style.left='12px';tip.style.top='10px';tip.style.display=enabled?'block':'none';
@@ -888,7 +909,7 @@
    clearLoop:function(){
     if(studyProof){
      opticalLoopEditing=false;opticalLoopStart=null;
-     document.getElementById('optical-note-tip').style.display='none';
+     hideOpticalNoteTip();
      return;
     }
     if(!freeLayout&&window.TemporalNotation)TemporalNotation.clearLoop();
