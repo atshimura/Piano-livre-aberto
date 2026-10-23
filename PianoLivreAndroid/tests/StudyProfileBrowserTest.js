@@ -302,7 +302,7 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
       if(!a.geometry.window)return null;
       const region=a.geometry.window,boxes=StudyWindow.collect(svg).boxes.filter(b=>
        b.x+b.w>=region.left&&b.x<=region.right);
-      const ident=b=>({kind:b.kind,tag:b.tag,text:b.text,x:+b.x.toFixed(1),
+      const ident=b=>({kind:b.kind,tag:b.tag,text:b.text,pathData:b.pathData,x:+b.x.toFixed(1),
        y:+b.y.toFixed(1),right:+(b.x+b.w).toFixed(1),bottom:+(b.y+b.h).toFixed(1)});
       return {top:boxes.slice().sort((a,b)=>a.y-b.y).slice(0,5).map(ident),
        bottom:boxes.slice().sort((a,b)=>(b.y+b.h)-(a.y+a.h)).slice(0,5).map(ident),
