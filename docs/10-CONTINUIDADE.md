@@ -2,6 +2,8 @@
 
 Em revisão independente da B1: os comandos nativos “Marcar início” e “Marcar fim” do menu de trecho não devem alterar diretamente os campos `loopStart`/`loopEnd` enquanto a reprodução ou demonstração MIDI está ativa. A correção pausa e libera os eventos MIDI antes de registrar um novo marco A, invalida um limite B anterior e redefine a rota de repetições. Para concluir B, reutiliza `applyLoopSelection`, que valida intervalo, pausa MIDI, realinha a posição e atualiza a sessão. “Remover repetição” também pausa antes de zerar os limites, evitando deixar a reprodução de outro itinerário ativa. Não altera MusicXML, biblioteca ou a política de reconhecimento em Espera.
 
+**Ajuste posterior:** as posições fracionárias do relógio no menu nativo passaram por `StudyLoopPosition`: A usa o ataque escrito anterior válido, B estende-se até a liberação das notas efetivamente soando na posição escolhida. A regressão `StudyLoopPositionTest.java` cobre acordes simultâneos com durações diferentes, sustain, pausa entre frases e limites externos. Isso não altera a seleção por toque em cabeças OSMD, que já usa posições musicais reais.
+
 Teste de regressão `StudyLoopTransportContractTest.js` no workflow de build confere a passagem da interface nativa pelos métodos de transporte e a ordem de parada/edição. O teste físico USB-MIDI continua reservado ao Yamaha P-45, e a suíte em emulador será vinculada ao SHA final do PR correspondente. Nenhum merge ou publicação autorizados.
 
 ---
