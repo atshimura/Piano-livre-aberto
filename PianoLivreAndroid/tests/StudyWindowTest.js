@@ -64,7 +64,7 @@ assert.equal(W.select(m,-1),0);assert.equal(W.select(m,1e9),m.windows.length-1);
 // command or a malformed path must remain untouched, never silently altered.
 const StudyCurve=require('../app/src/main/assets/study-curve.js');
 const slur='M0 100C25 20,75 20,100 100L100 99.5C75 17,25 17,0 99.5L0 100Z';
-const curveTokens=d=>d.match(/[MLCZ]|[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][-+]?\\d+)?/g);
+const curveTokens=d=>d.match(/[MLCZ]|[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?/g);
 const native=curveTokens(slur).map(Number);
 for(const factor of [.9,.8,.6,.4]){
  const modified=StudyCurve.flatten(slur,factor);
