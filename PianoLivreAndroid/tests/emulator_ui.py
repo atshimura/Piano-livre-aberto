@@ -466,14 +466,21 @@ if __name__=="__main__":
     print("PASS: verified OSMD noteheads selected a native study loop",flush=True)
     # Transport integration: the toolbar's long-press menu must pause a
     # running journey BEFORE changing either loop bound or clearing the loop.
+    # Reuse the button coordinates after the first hierarchy check. Asking
+    # uiautomator to dump the entire playing WebView three times in a row
+    # can fail on resource-constrained API29 CI emulators before long-press.
+    loop_button_point=[]
     def long_loop_menu():
-        row=next((n for n in dump().iter("node") if n.attrib.get("text","")=="Trecho ↻"),None)
-        assert row is not None, "Study loop toolbar button unavailable"
-        bounds=[int(v) for v in re.findall(r"\d+",row.attrib.get("bounds",""))]
-        assert len(bounds)==4, "Invalid long-press loop-button bounds"
-        xx=(bounds[0]+bounds[2])//2;yy=(bounds[1]+bounds[3])//2
+        if not loop_button_point:
+            row=next((n for n in dump().iter("node") if n.attrib.get("text","")=="Trecho ↻"),None)
+            assert row is not None, "Study loop toolbar button unavailable"
+            bounds=[int(v) for v in re.findall(r"\d+",row.attrib.get("bounds",""))]
+            assert len(bounds)==4, "Invalid long-press loop-button bounds"
+            loop_button_point.extend(((bounds[0]+bounds[2])//2,(bounds[1]+bounds[3])//2))
+        assert_running()
+        xx,yy=loop_button_point
         adb("shell","input","swipe",str(xx),str(yy),str(xx),str(yy),"1000")
-        time.sleep(.25)
+        time.sleep(.35)
         assert any("Marcar início na posição atual" in n.attrib.get("text","")
                    for n in dump().iter("node")), "Loop menu did not open"
     tap_text(["Contínuo"],exact=True,scroll=True)
