@@ -348,11 +348,10 @@ class PianoScreens {
  void loopMenu(){
   new AlertDialog.Builder(a).setTitle("Repetição de trecho")
    .setItems(new String[]{"Marcar início na posição atual","Marcar fim na posição atual","Remover repetição","Voltar ao início"},(dlg,i)->{
-    if(i==0)a.loopStart=a.position;else if(i==1)a.loopEnd=a.position;
-    else if(i==2){a.clearLoop();return;}
-    else {a.seekPrevious();return;}
-    if(a.loopEnd<a.loopStart){double tmp=a.loopEnd;a.loopEnd=a.loopStart;a.loopStart=tmp;}
-    a.saveSession();a.updateInfo();
+    if(i==0)a.markLoopStart();
+    else if(i==1)a.markLoopEnd();
+    else if(i==2)a.clearLoop();
+    else a.seekPrevious();
    }).show();
  }
  void showWaitFeedback(String message){

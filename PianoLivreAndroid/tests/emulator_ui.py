@@ -464,6 +464,47 @@ if __name__=="__main__":
     screenshot("piano-osmd-poc-loop.png")
     tap_text(["Início"],scroll=True)  # Clear persisted loop before legacy renderer regression.
     print("PASS: verified OSMD noteheads selected a native study loop",flush=True)
+    # Transport integration: the toolbar's long-press menu must pause a
+    # running journey BEFORE changing either loop bound or clearing the loop.
+    # Reuse the button coordinates after the first hierarchy check. Asking
+    # uiautomator to dump the entire playing WebView three times in a row
+    # can fail on resource-constrained API29 CI emulators before long-press.
+    loop_button_point=[]
+    def long_loop_menu():
+        if not loop_button_point:
+            row=next((n for n in dump().iter("node") if n.attrib.get("text","")=="Trecho ↻"),None)
+            assert row is not None, "Study loop toolbar button unavailable"
+            bounds=[int(v) for v in re.findall(r"\d+",row.attrib.get("bounds",""))]
+            assert len(bounds)==4, "Invalid long-press loop-button bounds"
+            loop_button_point.extend(((bounds[0]+bounds[2])//2,(bounds[1]+bounds[3])//2))
+        assert_running()
+        xx,yy=loop_button_point
+        adb("shell","input","swipe",str(xx),str(yy),str(xx),str(yy),"1000")
+        time.sleep(.35)
+        assert any("Marcar início na posição atual" in n.attrib.get("text","")
+                   for n in dump().iter("node")), "Loop menu did not open"
+    tap_text(["Contínuo"],exact=True,scroll=True)
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.8)
+    long_loop_menu()
+    tap_text(["Marcar início na posição atual"],scroll=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), (
+        "Changing A marker must pause ongoing playback")
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.9)
+    long_loop_menu()
+    tap_text(["Marcar fim na posição atual"],scroll=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), (
+        "Applying B marker must pause and return to the validated loop start")
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.45)
+    long_loop_menu()
+    tap_text(["Remover repetição"],scroll=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), (
+        "Clearing an active A-B loop must release playback")
+    tap_text(["Início"],scroll=True)
+    print("PASS: long-press A-B start/end/clear pauses active native transport",flush=True)
+
     # Wait-mode preparation uses the same native 1–30-second preference and
     # animates a nonnumeric horizontal pre-roll without changing attack rules.
     tap_text(["Espera"],exact=True,scroll=True)

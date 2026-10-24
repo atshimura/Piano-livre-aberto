@@ -55,6 +55,8 @@ jobs:
           java -cp build/score-tests PerformanceRouteTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiPlayback.java app/src/main/java/br/org/pianolivre/KeyboardGuide.java tests/PerformanceRoutePlaybackTest.java
           java -cp build/score-tests PerformanceRoutePlaybackTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/StudyLoopPosition.java tests/StudyLoopPositionTest.java
+          java -cp build/score-tests StudyLoopPositionTest
           java -cp build/score-tests MusicStructureTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiProtocol.java app/src/main/java/br/org/pianolivre/MidiPlayback.java tests/MidiSmokeTest.java
           java -cp build/score-tests MidiSmokeTest
@@ -128,6 +130,7 @@ jobs:
           node tests/EngravingProofContractTest.js
           node tests/VerticalNavigationTest.js
           node tests/OpticalTimeMapTest.js
+          node tests/StudyLoopTransportContractTest.js
           node tests/PolyphonyFidelityTest.js
           node tests/EnharmonicReconciliationTest.js
           node tests/AccidentalConventionsTest.js
