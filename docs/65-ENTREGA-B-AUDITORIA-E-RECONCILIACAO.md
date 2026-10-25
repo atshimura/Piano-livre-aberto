@@ -53,3 +53,8 @@ A execução `40213805638` do HEAD `04c2bd9bad68e795b48903c35f5a732979a79f1d` fa
 ## Resultado do filtro no emulador — 2026-10-25
 
 No SHA `52441848911a23fc430af18e773d56237a8357a3`, o workflow de build passou (run 40215362948), mas a jornada Android falhou no run 40215362946 depois de abrir o Spinner da biblioteca e selecionar `Todas`: a captura imediata da hierarquia não continha novamente o controle de filtro. A busca ainda não havia começado; portanto a correção de query não foi exercitada nessa execução. Como os logs não demonstram que a biblioteca deixou a tela, não classificamos isso como defeito de produção nem como simples falha do teste sem nova evidência. A regressão agora espera a linha de busca voltar após a escolha, dispensa apenas popup identificado e captura XML/screenshot se permanecer ausente. A jornada curta e longa continua pendente do próximo SHA.
+
+
+## Estado residual da busca em execução Android
+
+O run 40216924861 no SHA `9e0cb5a2ba4f910e73343305ef1d9b558d03e9d1` confirmou que a biblioteca exibia `Todas`, mas o contador era `1 de 10 partituras`. A consulta digitada antes persistiu na interface entre cenários e removeu o hint do EditText; o localizador baseado no hint deixou de reconhecer tanto o campo quanto o Spinner na mesma linha. O registro não prova bug funcional de catálogo: o roteiro havia deixado estado temporário de busca no Activity. A correção busca o único EditText pelo tipo/posição, apaga somente seu texto de consulta, exige que o contador inclua as dez partituras do catálogo empacotado e acrescenta fixture para campo preenchido sem hint. Preservam-se arquivos e dados persistentes. Build verde em 40216924903; a jornada Android completa segue pendente.
