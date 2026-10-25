@@ -1,5 +1,7 @@
 # 58 — Plano Geral de Desenvolvimento do Piano Livre até a versão 1.0
 
+> **Aditivo 25/10/2026:** mantenha as dependências da Entrega B separadas da B1. O inventário documental do PR #48 permanece preservado neste plano; a revisão de status, causas e reconciliação de #52–#61 fica em [doc 65](65-ENTREGA-B-AUDITORIA-E-RECONCILIACAO.md). A branch de CI `ci/entrega-b-integral-20261025` é experimental, não deve ser integrada. Não altere #46/#47/#48/#51 e não faça merge, Release ou distribuição. A prova final só pode ser afirmada para um SHA único com workflows de build e emulador aprovados.
+
 ### Evidência medida da reserva do contexto fixo (SHA b8ed11e, build 39875463421)
 
 O teste da fixture `engraving-context-change.musicxml` encontrou na implementação anterior uma faixa fixa que podia ocupar 168,94 CSS px enquanto o cursor permanecia próximo de 167 px no terceiro compasso. A revisão passou a reservar, antes do planejamento de janela e cursor, a **largura máxima do contexto efetivamente gravado** na partitura. No Chromium 738×196 a faixa mede 168,94 CSS px e o cursor está em 180,94 px, com 12 px livres e sem recorte nas transições 1→2→3→2→1. No tablet 883×409, faixa 360,34 px e cursor 372,34 px, igualmente com 12 px de folga. Ambos preservam a origem vertical. Isso demonstra ausência da colisão detectada nessa fixture, não prova legibilidade editorial universal.
@@ -159,3 +161,16 @@ Canon foi conferida pelo SVG OSMD ativo: listas auxiliares ocultas, cifras manti
 **E/IP**, branch `feat/analise-estudo-adaptavel`: análise estrutural por conteúdo, letras de canto ocultas em cópia transitória, auditoria geométrica OSMD, ampliação óptica limitada e indicação correta do fallback esquemático. Afeta INV-02/03/15 e Entrega B; não conclui B/C ou V1. [Critérios, testes e limites](59-ESTUDO-ADAPTAVEL.md). Catálogo e importação JVM aprovados localmente; auditoria gráfica/CI/Android dependem da execução do SHA da branch. Legibilidade física e segmentação vertical local continuam pendentes. Texto-base preservado do PR #48 (`62a9443`); reconciliar sobreposição documental ao integrar.
 
 **Evidência automatizada atualizada:** código `e1fac0ec`, [build 39676817138](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39676817138) aprovado: 27 arquivos, dez partituras do catálogo, três dimensões; 23 gravuras OSMD e quatro alternativas temporais verificadas. Gymnopédie pequena em viewport baixo, alerta texto/cabeça em Für Elise e quatro incompatibilidades OSMD permanecem parciais. Resultado Android da HEAD no [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51); não declarar físico/V1. [Registro completo e reprovações](59-ESTUDO-ADAPTAVEL.md).
+
+
+
+### Adendo de validação da Entrega B — 2026-10-25
+
+A jornada Android curta/longa e a suíte de build passaram juntas no SHA `ffdda2fcc7081cee363560cb8f79336a5030f2da`: [build/JVM/Chromium](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693) e [emulador](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698). A prova inclui os recursos pedagógicos em conjunto e as correções de isolamento de busca/posição e interação durante playback.
+
+Ordem de revisão futura: preservar #51 (B1) como base; selecionar uma implementação por duplicação (#58 em vez de #52, #59 em vez de #54, #60 em vez de #53); incorporar a jornada #55 corrigida; usar #62 exclusivamente como evidência experimental B1+B, nunca como PR de merge. #56/#57/#61 permanecem experimentais. Integração à `main`, Release, distribuição do APK e aceite físico/editorial permanecem fora desta autorização. Este adendo acrescenta evidência sem substituir decisões anteriores do plano.
+
+
+## Resultado automatizado da prova integrada — 2026-10-25
+
+No SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`, passaram build/JVM/Chromium [run 40229478373](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478373) e emulador [run 40229478320](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478320). Esta evidência supersede notas históricas neste documento que aguardavam a execução de CI da atualização. Mantêm-se as decisões anteriores: B1 deve ser revisada primeiro; escolher #58/#59/#60 para componentes B e portar a jornada Android corrigida em revisão coordenada; #62 é prova experimental, não destino de merge. Main não foi alterada. Aceite físico/editorial continua pendente.
