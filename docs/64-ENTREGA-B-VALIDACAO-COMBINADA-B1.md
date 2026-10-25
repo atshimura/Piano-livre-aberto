@@ -33,3 +33,8 @@ O branch de prova aplicou B sobre a B1 conhecida em `15f05d7463794409b64ed9b5efd
 Evidências do mesmo ciclo: B1/OSMD Gymnopédie de 78 compassos, contexto de claves/armaduras/compasso fixo, duas pautas e rolagem vertical desativada; polifonia com 30 cabeças gráficas e 30 eventos nativos casados sem ambiguidades; loops A–B; etiquetas OSMD e temporal; sessões curta e longa com controles de mãos, guia, pausa/retomada e background; responsividade low/taller/tablet. A sessão usa eventos sintéticos onde aplicável e não representa teste físico com Yamaha P-45. O arquivo-base B1 e os fixtures do corpus não foram intencionalmente alterados.
 
 O SHA de documentação desta atualização ainda precisa passar nos workflows antes de ser tratado como SHA final da prova.
+
+
+## Estado documental final da prova — 2026-10-25
+
+As notas anteriores que diziam “CI pendente” ou apontavam SHA `ffdda2fcc7081cee363560cb8f79336a5030f2da` como final são históricas e foram supersedidas. Resultado vigente: código e documentação no SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`; build/JVM/Chromium/APK CI aprovado em [40229478373](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478373) e emulador aprovado em [40229478320](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478320), ambos associados a esse mesmo SHA. A jornada Android passou com Estudo livre 01 e Gymnopédie nº 1. #62 continua experimental e não deve ser integrado; nenhuma alteração na `main`, Release ou distribuição foi feita. Aceite físico/editorial pendente.
