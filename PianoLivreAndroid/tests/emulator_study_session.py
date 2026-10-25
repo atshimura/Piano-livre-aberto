@@ -362,10 +362,18 @@ def exercise(title,slug):
     # Unsupported demonstration without an output port must refuse playback,
     # rather than silently claiming sound from the visual keyboard.
     tap_text(["Demonstração"],exact=True,scroll=True)
+    warning=[]
+    for _ in range(20):
+        warning=labels()
+        if any("Demonstração requer uma saída MIDI aberta" in value for value in warning):break
+        time.sleep(.2)
+    assert any("Demonstração requer uma saída MIDI aberta" in value for value in warning), \
+        "DEMONSTRATION_OUTPUT_WARNING_MISSING: unavailable MIDI output was not explained"
     before=log_count("play=true mode=2")
-    tap_text(["Iniciar"],scroll=True)
-    time.sleep(.6)
-    assert log_count("play=true mode=2")==before,"Demonstration claimed MIDI without an output device"
+    assert log_count("play=true mode=2")==before, "Demonstration claimed MIDI without an output device"
+    tap_text(["OK"],exact=True)
+    time.sleep(.3)
+    expect("Espera","output warning did not return to the Study controls")
     # Wait preparation must finish and not require a timeout to play afterward.
     tap_text(["Espera"],exact=True,scroll=True)
     before=log_count("POC_WAIT_COMPLETE")
