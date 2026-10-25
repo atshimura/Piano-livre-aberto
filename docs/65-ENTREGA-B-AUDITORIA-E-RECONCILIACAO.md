@@ -43,3 +43,8 @@ Os atuais PRs #46, #47, #48 e #51 foram preservados. `docs/57` e `docs/58` mant�
 
 **Atualização após o run 40212363484:** o `window.xml` do artifact ainda mostra ambos os nós `Spinner` com `text=''`, mas a captura `piano-library.png` mostra claramente o filtro da biblioteca em `Todas` e o perfil sintético selecionado no cabeçalho. Portanto, não há evidência de coleção errada no app; a API de acessibilidade não fornece o rótulo selecionado. O teste agora abre o Spinner alinhado à busca, confirma a opção visível `Todas`, seleciona explicitamente, limpa a consulta, exige total de resultados igual ou superior aos itens do catálogo, e só então busca o título. A fixture verifica o caso de texto vazio. O emulador ainda precisa ser reexecutado no próximo HEAD para validar esse percurso e ambas as sessões curtas/longas.
 - Integração à `main`, Release, distribuição APK e aceite físico/editorial permanecem pendentes e exigem as condições/autorização já definidas.
+
+
+## Evidência posterior: codificação da busca Android
+
+A execução `40213805638` do HEAD `04c2bd9bad68e795b48903c35f5a732979a79f1d` falhou após confirmar filtro `Todas`: o teste transmitiu a query literal `Estudo livre%01`, que não representa o espaço antes de `01` no comando Android `input text`. O pacote tinha `Estudo livre 01`; filtro, perfil e carregamento da biblioteca não explicam esse resultado. O defeito estava na codificação da query de UI do próprio roteiro. A jornada agora usa uma função que codifica cada espaço como `%s` e inclui asserção para `Estudo%slivre%s01`. Resultado dos workflows no novo SHA será registrado após a conclusão; a execução anterior não certifica a jornada.
