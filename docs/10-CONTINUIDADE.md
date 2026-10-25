@@ -294,3 +294,13 @@ No run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/4022
 ### Pausa/retomada e momento do aviso MIDI — execução do SHA 252de2f
 
 O run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/40226052690 passou por biblioteca, busca, OSMD, mãos, teclado guia, retorno a `0.0`, andamento `25%`, pausa e retomada usando toques ADB. Falhou ao esperar o aviso MIDI imediatamente após selecionar Demonstração. A repetição anterior mostrou que o próprio app abre esse aviso somente quando o usuário toca `Iniciar` sem saída conectada; a verificação foi reposicionada para executar esse gesto, confirmar o aviso e ausência de `play=true mode=2`, fechar `OK` e prosseguir.
+
+
+
+### Prova final da jornada Android B — 2026-10-25
+
+No SHA de código `ffdda2fcc7081cee363560cb8f79336a5030f2da`, os workflows passaram no mesmo commit: build/JVM/Chromium [run 40227586693](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693) e emulador [run 40227586698](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698). O emulador registrou `STUDY_B_ANDROID_SESSION_PASS` para `Estudo livre 01` e `Gymnopédie nº 1`; em ambas: Espera, Contínuo, Demonstração sem saída física conectada, seleção das três opções de mãos, teclado guia, renderizadores OSMD/temporal/OSMD, início, pausa, retomada, posição inicial e retorno do background. A UI confirmou também o aviso ao tentar iniciar Demonstração sem MIDI; não houve playback fingido. Não houve Yamaha P-45, Realme 7 5G ou Lenovo Tab M9 neste CI.
+
+Build log: `STUDY_SESSION_INTEGRATION_PASS checks=15127`, `STUDY_LOOP_POSITION_PASS assertions=11`, `STUDY_NOTE_TIP_PASS checks=34`, `TEMPORAL_NOTE_TIP_BROWSER_PASS Mi4 · E4 viewport-safe and expires`, `BUILD SUCCESSFUL`. O emulador também passou por OSMD de 78 compassos, contexto fixo, mapeamento de 30 cabeças/eventos em polifonia, responsive baixo/alto/tablet, controles Android e `PUBLIC_ANDROID_EMULATOR_SMOKE_PASS`.
+
+Esta prova não integra PRs nem substitui aceite físico/editorial. A atualização documental subsequente mantém os mesmos arquivos de código; seu SHA precisa reexecutar os dois workflows antes de se declarar prova final do branch.
