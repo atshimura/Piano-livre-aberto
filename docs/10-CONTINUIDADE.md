@@ -254,3 +254,8 @@ Para completar a evidência do subsistema de identificação, acrescentei `Tempo
 ### Atualização da investigação da jornada Android — 2026-10-25
 
 No HEAD `04c2bd9bad68e795b48903c35f5a732979a79f1d`, o emulador chegou à biblioteca com o filtro explicitamente em `Todas`, mas a busca encontrou zero porque o roteiro enviou `Estudo livre%01`: o comando `adb shell input text` usa `%s` para representar espaço, e a query codificava somente o primeiro espaço. O catálogo empacotado continha o exercício e o filtro estava correto; a causa reproduzida foi a codificação do texto de entrada no teste, não uma falha de biblioteca ou de perfil. O roteiro agora converte todos os espaços via `adb_search_text`, e há regressão para a string exata `Estudo%slivre%s01`. A jornada no emulador precisa passar no SHA final atualizado antes de concluir a validação técnica. Run que reproduziu: https://github.com/atshimura/Piano-livre-aberto/actions/runs/40213805638 .
+
+
+### Atualização da jornada — resultado do SHA 5244184
+
+O build/Chromium/JVM passou no SHA `52441848911a23fc430af18e773d56237a8357a3` (run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40215362948). O emulador completou as verificações anteriores de UI e renderização responsiva, mas falhou na jornada quando, após abrir o filtro e tocar `Todas`, a hierarquia imediata não expôs o Spinner da linha de busca (`FILTER_CONTROL_MISSING`; run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40215362946). Isso ainda não prova defeito da biblioteca: a jornada não esperou a dispensa do popup do Spinner. O roteiro agora aguarda o retorno da busca, fecha somente um popup identificado e guarda XML/captura se o controle continuar ausente. A validação curta/longa permanece pendente no próximo SHA.
