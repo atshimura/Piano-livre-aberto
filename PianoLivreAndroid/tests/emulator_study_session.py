@@ -27,16 +27,23 @@ def _bounds(node):
     values=[int(value) for value in re.findall(r"\d+",node.attrib.get("bounds",""))]
     return values if len(values)==4 else None
 
+def library_search_field(root):
+    """Find the title EditText even when residual text has hidden its hint."""
+    fields=[node for node in root.iter("node")
+      if node.attrib.get("class")=="android.widget.EditText" and _bounds(node) is not None]
+    if len(fields)==1:return fields[0]
+    return next((node for node in fields
+      if "Buscar título" in (node.attrib.get("hint","")+node.attrib.get("content-desc",""))),None)
+
 def library_filter_spinner(root):
     """Find the catalog filter by its row, never by Spinner order.
 
     The fixed header also contains a profile Spinner. Upgrade fixtures make
     that Spinner display `Upgrade A/B`, so selecting the first Spinner opens
-    the profile menu instead of changing the catalog filter.
+    the profile menu instead of changing the catalog filter. A nonempty search
+    field has no hint, so row matching uses the EditText position.
     """
-    search=next((node for node in root.iter("node")
-      if "EditText" in node.attrib.get("class","")
-      and "Buscar título" in (node.attrib.get("hint","")+node.attrib.get("text",""))),None)
+    search=library_search_field(root)
     search_bounds=_bounds(search) if search is not None else None
     if search_bounds is None:
         return None
@@ -69,6 +76,17 @@ def verify_library_filter_locator():
       <node class="android.widget.Spinner" text="Todas" bounds="[310,102][455,138]"/>
     </hierarchy>'''
     found=library_filter_spinner(ET.fromstring(fixture))
+    residual='''<hierarchy>
+      <node class="android.widget.Spinner" text="Upgrade B" bounds="[20,10][120,44]"/>
+      <node class="android.widget.EditText" text="Gymnopédie" bounds="[20,100][300,140]"/>
+      <node class="android.widget.Spinner" text="Todas" bounds="[310,102][455,138]"/>
+    </hierarchy>'''
+    residual_root=ET.fromstring(residual)
+    assert library_search_field(residual_root) is not None, \
+        "LIBRARY_SEARCH_MISSING: populated EditText must remain discoverable without its hint"
+    residual_filter=library_filter_spinner(residual_root)
+    assert residual_filter is not None and residual_filter.attrib.get("text")=="Todas", \
+        "FILTER_CONTROL_MISSING: populated title search must still locate its row filter"
     assert found is not None and found.attrib.get("text")=="Todas", \
         "FILTER_CONTROL_MISSING: locator did not distinguish profile Spinner from catalog filter"
     blank=library_filter_spinner(ET.fromstring(fixture.replace('text="Todas"','text=""')))
@@ -120,6 +138,24 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         x=str((bounds[0]+bounds[2])//2)
         adb("shell","input","swipe",x,str(bounds[1]+20),x,str(bounds[3]-20),"350")
         time.sleep(.2)
+
+    # Search text can remain in this Activity after an earlier UI scenario.
+    # Clear only the temporary query so the journey starts from the full local
+    # catalog; never clear profile, imported files, favorites, or collections.
+    root=dump()
+    search=library_search_field(root)
+    if search is None:
+        raise AssertionError("LIBRARY_SEARCH_MISSING: library has no accessible title EditText; labels="+
+                             repr(labels()[:40]))
+    current=search.attrib.get("text","")
+    if current and current!="Buscar título ou arquivo":
+        bounds=_bounds(search)
+        adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
+        adb("shell","input","keyevent","123")
+        for _ in range(len(current)):
+            adb("shell","input","keyevent","67")
+        dismiss_keyboard()
+        time.sleep(.35)
 
     # Distinguish a zero result count from positive counts such as "10 de 10".
     # Do not infer that an item is missing just because its card is below the
@@ -175,8 +211,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     # Search is the library's supported navigation for scores outside the
     # first viewport. It also proves that positive results are not mislabeled
     # as a filter failure when the card is merely below the fold.
-    search=next((node for node in root.iter("node") if "EditText" in node.attrib.get("class","")
-                 and "Buscar título" in (node.attrib.get("hint","")+node.attrib.get("text",""))),None)
+    search=library_search_field(root)
     search_bounds=_bounds(search) if search is not None else None
     if search_bounds is None:
         raise AssertionError("LIBRARY_SEARCH_MISSING: loaded library has no title search field")
