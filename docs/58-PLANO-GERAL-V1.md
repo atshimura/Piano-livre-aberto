@@ -169,3 +169,8 @@ Canon foi conferida pelo SVG OSMD ativo: listas auxiliares ocultas, cifras manti
 A jornada Android curta/longa e a suíte de build passaram juntas no SHA `ffdda2fcc7081cee363560cb8f79336a5030f2da`: [build/JVM/Chromium](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693) e [emulador](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698). A prova inclui os recursos pedagógicos em conjunto e as correções de isolamento de busca/posição e interação durante playback.
 
 Ordem de revisão futura: preservar #51 (B1) como base; selecionar uma implementação por duplicação (#58 em vez de #52, #59 em vez de #54, #60 em vez de #53); incorporar a jornada #55 corrigida; usar #62 exclusivamente como evidência experimental B1+B, nunca como PR de merge. #56/#57/#61 permanecem experimentais. Integração à `main`, Release, distribuição do APK e aceite físico/editorial permanecem fora desta autorização. Este adendo acrescenta evidência sem substituir decisões anteriores do plano.
+
+
+## Resultado automatizado da prova integrada — 2026-10-25
+
+No SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`, passaram build/JVM/Chromium [run 40229478373](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478373) e emulador [run 40229478320](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478320). Esta evidência supersede notas históricas neste documento que aguardavam a execução de CI da atualização. Mantêm-se as decisões anteriores: B1 deve ser revisada primeiro; escolher #58/#59/#60 para componentes B e portar a jornada Android corrigida em revisão coordenada; #62 é prova experimental, não destino de merge. Main não foi alterada. Aceite físico/editorial continua pendente.
