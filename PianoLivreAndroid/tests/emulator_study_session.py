@@ -2,7 +2,7 @@
 """GPL-3.0-only. Full UI state transitions on a SHORT and a LONG public score.
 The emulator cannot replace a physical USB-MIDI piano or physical legibility.
 """
-import json,re,time
+import json,re,time,xml.etree.ElementTree as ET
 from pathlib import Path
 from emulator_ui import adb,dump,tap_text,screenshot,assert_running
 
@@ -22,6 +22,46 @@ def wait_new(marker,before,seconds=25):
         if log_count(marker)>before:return
         time.sleep(.5)
     raise AssertionError(marker+" did not arrive within "+str(seconds)+" s")
+
+def _bounds(node):
+    values=[int(value) for value in re.findall(r"\d+",node.attrib.get("bounds",""))]
+    return values if len(values)==4 else None
+
+def library_filter_spinner(root):
+    """Find the catalog filter by its row, never by Spinner order.
+
+    The fixed header also contains a profile Spinner. Upgrade fixtures make
+    that Spinner display `Upgrade A/B`, so selecting the first Spinner opens
+    the profile menu instead of changing the catalog filter.
+    """
+    search=next((node for node in root.iter("node")
+      if "EditText" in node.attrib.get("class","")
+      and "Buscar título" in (node.attrib.get("hint","")+node.attrib.get("text",""))),None)
+    search_bounds=_bounds(search) if search is not None else None
+    if search_bounds is None:
+        return None
+    search_y=(search_bounds[1]+search_bounds[3])//2
+    candidates=[]
+    for node in root.iter("node"):
+        if node.attrib.get("class")!="android.widget.Spinner":continue
+        bounds=_bounds(node)
+        if bounds is not None:
+            candidates.append((abs((bounds[1]+bounds[3])//2-search_y),node))
+    if not candidates:return None
+    distance,node=min(candidates,key=lambda pair:pair[0])
+    return node if distance<=max(24,(search_bounds[3]-search_bounds[1])//2+8) else None
+
+def verify_library_filter_locator():
+    # Regression fixture: profile Spinner intentionally comes first in the
+    # Android hierarchy; the search-row Spinner is the catalog filter.
+    fixture='''<hierarchy>
+      <node class="android.widget.Spinner" text="Upgrade B" bounds="[20,10][120,44]"/>
+      <node class="android.widget.EditText" hint="Buscar título ou arquivo" bounds="[20,100][300,140]"/>
+      <node class="android.widget.Spinner" text="Todas" bounds="[310,102][455,138]"/>
+    </hierarchy>'''
+    found=library_filter_spinner(ET.fromstring(fixture))
+    assert found is not None and found.attrib.get("text")=="Todas", \
+        "FILTER_CONTROL_MISSING: locator did not distinguish profile Spinner from catalog filter"
 
 def wait_for_library(seconds=20):
     """Wait for a stable library screen and classify common UI-state failures."""
@@ -68,14 +108,19 @@ def wait_for_library(seconds=20):
 
     # The filter is a screen control, not persisted library data. Explicitly
     # return to All so a prior scenario cannot hide an otherwise valid score.
-    spinner=next((n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.Spinner"),None)
+    spinner=library_filter_spinner(dump())
+    if spinner is None:
+        raise AssertionError("FILTER_CONTROL_MISSING: could not identify the catalog filter beside the library search field")
     if spinner is not None and spinner.attrib.get("text","").strip()!="Todas":
-        bounds=[int(x) for x in re.findall(r"\d+",spinner.attrib.get("bounds",""))]
-        if len(bounds)==4:
-            adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
-            time.sleep(.2)
-            tap_text(["Todas"],exact=True)
-            last=labels()
+        bounds=_bounds(spinner)
+        adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
+        time.sleep(.2)
+        options=labels()
+        if "Todas" not in options:
+            raise AssertionError("FILTER_CONTROL_MISMATCH: catalog filter opened unexpected menu; selected="+
+                                 repr(spinner.attrib.get("text",""))+" options="+repr(options[:40]))
+        tap_text(["Todas"],exact=True)
+        last=labels()
 
     # Give asynchronous layout work a bounded interval. Distinct errors make a
     # missing asset, a filtering issue and a library/navigation failure clear.
@@ -171,6 +216,7 @@ def exercise(title,slug):
             "pause":"stopped and restarted","background":"returned"}
 
 def main():
+    verify_library_filter_locator()
     # A force-stop clears transient Android popups/windows while preserving all
     # app preferences and files. This makes this UI journey order-independent
     # after upgrade/profile/library scenarios on the same emulator.
