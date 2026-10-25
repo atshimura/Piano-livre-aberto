@@ -269,3 +269,8 @@ O log do run Android https://github.com/atshimura/Piano-livre-aberto/actions/run
 ### Roteiro de abertura da sessão — execução do SHA dac396f
 
 A jornada passou pela busca isolada: encontrou `Estudo livre 01`, após limpar a consulta de tela e validar o catálogo. O run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/40218278046 falhou no passo seguinte: o teste tocou o rótulo do título e não recebeu `POC_OSMD_READY` em 25 s. O log não demonstra se a tela permaneceu na biblioteca ou se abriu sem renderização; portanto isso segue como navegação/renderização não resolvida, não como causa já atribuída. O roteiro foi ajustado para tocar o botão visível `Estudar` e salvar screenshot/labels se a prontidão não chegar. Build/JVM/Chromium passou (https://github.com/atshimura/Piano-livre-aberto/actions/runs/40218278030); a jornada curta/longa segue pendente.
+
+
+### Reprodução em início determinístico — execução do SHA df16327
+
+A abertura explícita pelo botão `Estudar` funcionou e o OSMD desenhou as duas pautas; o workflow falhou depois, ao procurar `Pausar`. As labels mostravam posição `16.0`, fim do exercício curto de 16 tempos, e `Iniciar`/ `Parar`: a execução residual anterior havia deixado o playhead no final, fazendo o start terminar imediatamente. Run: https://github.com/atshimura/Piano-livre-aberto/actions/runs/40219775224 . O roteiro agora aciona `Início` na UI e exige que a posição mostrada volte a `0.0` antes de iniciar. Esse estado de navegação/playhead é reiniciado sem limpar dados do perfil ou da biblioteca.
