@@ -42,4 +42,4 @@ As notas anteriores que diziam “CI pendente” ou apontavam SHA `ffdda2fcc7081
 
 ### Precisão de SHA após a revisão documental
 
-O SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9` é o SHA do código integrado exercitado pelos dois workflows. Revisões finais somente Markdown vieram depois e levaram o HEAD documental da branch a `a36766aa7bec624b66610de83733ceeb08a43995`; não alteraram arquivos de app/teste e não acionaram os workflows por causa dos filtros de paths. Assim, os dois resultados citados acima pertencem ao mesmo SHA exato de código; não se alega que Actions tenham sido executados no HEAD documental posterior.
+O SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9` é o SHA do código integrado exercitado pelos dois workflows. Depois do SHA de código validado, foram feitas revisões somente Markdown; elas não alteraram arquivos de app/teste e não acionaram os workflows por causa dos filtros de paths. Assim, os dois resultados citados acima pertencem ao mesmo SHA exato de código; não se alega que Actions tenham sido executados no HEAD documental posterior.
