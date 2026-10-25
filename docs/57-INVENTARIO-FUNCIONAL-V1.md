@@ -111,7 +111,7 @@ Para cada PR futuro, atualizar os IDs afetados: referência exata de commit e Ac
 
 
 
-### Reconcilição técnica da Entrega B — 2026-10-25
+### Reconciliação técnica da Entrega B — 2026-10-25
 
 A prova integrada no SHA `ffdda2fcc7081cee363560cb8f79336a5030f2da` passou em build/JVM/Chromium e emulador no mesmo SHA (runs [40227586693](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693) e [40227586698](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698)). A jornada curta `Estudo livre 01` e longa `Gymnopédie nº 1` exercitou conjuntamente Espera, Contínuo, Demonstração, mãos, teclado guia, pausa/retomada, renderer OSMD/temporal, busca, início e background. O teste de emulador não possui saída MIDI Yamaha física; a demonstração Android sem porta confirmou aviso explícito e nenhuma reprodução declarada.
 
