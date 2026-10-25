@@ -23,3 +23,13 @@ Não há merge de PRs, force-push, alteração da `main`, mudança no histórico
 
 **Status inicial:** implementação de integração preparada; **CI e inspeção editorial do SHA final pendentes**. Registre somente os resultados realmente recebidos dos Actions, incluindo falhas e bloqueios. Esta branch não estabelece aceite editorial/físico.
 
+
+
+
+## Revalidação integrada de B1 + Entrega B — 2026-10-25
+
+O branch de prova aplicou B sobre a B1 conhecida em `15f05d7463794409b64ed9b5efdfc7692ecb4127` e validou a combinação no SHA `ffdda2fcc7081cee363560cb8f79336a5030f2da`. Build/JVM/Chromium: [run 40227586693](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693). Emulador Android: [run 40227586698](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698). Ambos passaram nesse SHA.
+
+Evidências do mesmo ciclo: B1/OSMD Gymnopédie de 78 compassos, contexto de claves/armaduras/compasso fixo, duas pautas e rolagem vertical desativada; polifonia com 30 cabeças gráficas e 30 eventos nativos casados sem ambiguidades; loops A–B; etiquetas OSMD e temporal; sessões curta e longa com controles de mãos, guia, pausa/retomada e background; responsividade low/taller/tablet. A sessão usa eventos sintéticos onde aplicável e não representa teste físico com Yamaha P-45. O arquivo-base B1 e os fixtures do corpus não foram intencionalmente alterados.
+
+O SHA de documentação desta atualização ainda precisa passar nos workflows antes de ser tratado como SHA final da prova.
