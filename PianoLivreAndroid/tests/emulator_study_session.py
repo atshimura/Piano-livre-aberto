@@ -306,6 +306,23 @@ def exercise(title,slug):
             break
         time.sleep(.25)
     assert rewound, "STUDY_POSITION_RESIDUAL: rewind did not return to beat 0; labels="+repr(labels()[:40])
+    # The short fixture is only 16 beats; slow it through the visible tempo
+    # SeekBar so the pause control remains available during emulator UI latency.
+    root=dump()
+    tempo=next((node for node in root.iter("node")
+                if node.attrib.get("class")=="android.widget.SeekBar"),None)
+    tempo_bounds=_bounds(tempo) if tempo is not None else None
+    assert tempo_bounds is not None, "TEMPO_CONTROL_MISSING: visible tempo slider was not accessible"
+    y=str((tempo_bounds[1]+tempo_bounds[3])//2)
+    adb("shell","input","swipe",str((tempo_bounds[0]+tempo_bounds[2])//2),y,
+        str(tempo_bounds[0]+3),y,"350")
+    slow=False
+    for _ in range(20):
+        if any("25%" in value for value in labels()):
+            slow=True
+            break
+        time.sleep(.2)
+    assert slow, "TEMPO_CONTROL_FAILED: UI did not confirm 25% tempo; labels="+repr(labels()[:40])
     base=log_count("play=true mode=1")
     tap_text(["Iniciar"],scroll=True)
     wait_new("play=true mode=1",base)
