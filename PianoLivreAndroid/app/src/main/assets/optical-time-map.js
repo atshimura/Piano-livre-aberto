@@ -20,7 +20,7 @@
   });
   for(let i=1;i<stops.length;i++){
    if(stops[i].x+0.01<stops[i-1].x)
-    throw Error("OSMD coordinates move backwards; score may contain system breaks");
+    throw Error("OSMD coordinates move backwards; score may contain system breaks: "+JSON.stringify({previous:stops[i-1],current:stops[i]}));
    if(stops[i].x<stops[i-1].x)stops[i].x=stops[i-1].x;
   }
   function xAt(beat){
@@ -62,7 +62,15 @@
      if(!timestamp||!pos||!Number.isFinite(timestamp.RealValue))continue;
      const beat=timestamp.RealValue*4;
      const x=pos.x*10;
-     entries.push({beat:beat,x:x,staff:staffIndex+1,measure:measureIndex+1});
+     // A whole-measure rest is centred optically, although its timestamp is
+     // the measure start. It must not pull that onset past the next attack.
+     // The rest remains engraved; only its unsuitable clock anchor is omitted.
+     const anchorNotes=[];
+     for(const v of e.graphicalVoiceEntries||[])for(const n of v.notes||[])if(n.sourceNote)anchorNotes.push(n.sourceNote);
+     const onlyCentredRests=anchorNotes.length>0&&anchorNotes.every(function(n){
+      return n.isRestFlag&&(n.IsWholeMeasureRest||(typeof n.isWholeRest==='function'&&n.isWholeRest()));
+     });
+     if(!onlyCentredRests)entries.push({beat:beat,x:x,staff:staffIndex+1,measure:measureIndex+1});
      for(const voice of e.graphicalVoiceEntries||[])for(const gn of voice.notes||[]){
       const sourceVoice=voice.parentVoiceEntry&&voice.parentVoiceEntry.ParentVoice;
       const sourceVoiceId=sourceVoice&&sourceVoice.VoiceId;

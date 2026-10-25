@@ -1,0 +1,110 @@
+{
+  "sourceSha": "56efc51196612dd4c68755f05335199f2c29b2bf",
+  "checkoutMergeSha": "11bd02049f9286e8ac1b3556cdb7c43ff7b1e5f3",
+  "buildWorkflow": "https://github.com/atshimura/Piano-livre-aberto/actions/runs/39874373556",
+  "artifact": "adaptive-study-corpus/12468041113",
+  "scope": "Chromium CSS viewports, not physical acceptance",
+  "note": "This immutable baseline was measured before the later pinned-context reservation change; no subsequent SHA may claim these measurements without its own CI run.",
+  "regions": [
+    {
+      "name": "opening",
+      "beat": 0
+    },
+    {
+      "name": "middle",
+      "beat": 110
+    },
+    {
+      "name": "extreme",
+      "beat": 181
+    },
+    {
+      "name": "ending",
+      "beat": 223
+    }
+  ],
+  "views": [
+    {
+      "width": 738,
+      "height": 196,
+      "staffSpaces": [
+        5.4024125,
+        5.1624714,
+        4.8529406,
+        5.0309252
+      ],
+      "scale": [
+        0.54024125,
+        0.51624714,
+        0.48529406,
+        0.50309252
+      ],
+      "renderedHeight": 188
+    },
+    {
+      "width": 738,
+      "height": 351,
+      "staffSpaces": [
+        8.8543866,
+        8.8543866,
+        8.8543866,
+        8.8543866
+      ],
+      "scale": [
+        0.88543866,
+        0.88543866,
+        0.88543866,
+        0.88543866
+      ],
+      "renderedHeight": 343
+    },
+    {
+      "width": 883,
+      "height": 409,
+      "staffSpaces": [
+        10.3516298,
+        10.3516298,
+        10.3516298,
+        10.3516298
+      ],
+      "scale": [
+        1.03516298,
+        1.03516298,
+        1.03516298,
+        1.03516298
+      ],
+      "renderedHeight": 401
+    }
+  ],
+  "visible": {
+    "clippedPrimitives": 0,
+    "verticalScrollCss": 0,
+    "matchedWrittenHeads": 469
+  },
+  "namedVoicesTies": {
+    "sourceVoices": [
+      "upper",
+      "lower"
+    ],
+    "notes": 4,
+    "nativeEvents": 4,
+    "osmdHeads": 4,
+    "ambiguous": 4,
+    "matched": 0,
+    "unmatchedNative": 4,
+    "warning": "native-mapping",
+    "conclusion": "Musical multiset agrees; voice identities cannot be reconstructed from OSMD graphical notes",
+    "temporalAlternate": "four events verified"
+  },
+  "filesInArtifact": [
+    "b1-viewport-comparison.json",
+    "b1-context-transitions.json",
+    "gymnopedie.window-*.png",
+    "context-change.measure-*.png"
+  ],
+  "remaining": [
+    "Gymnopedie 4.85294 CSS px extreme",
+    "editorial variable-scale transition",
+    "physical Realme 7 5G Lenovo Tab M9 Yamaha P-45"
+  ]
+}
