@@ -296,6 +296,16 @@ def exercise(title,slug):
     time.sleep(.5)
     expect("Contínuo","Study controls did not return when closing guide")
     tap_text(["Contínuo"],exact=True,scroll=True)
+    tap_text(["Início"],scroll=True)
+    rewound=False
+    for _ in range(20):
+        position_label=next((value for value in labels() if "posição" in value.casefold()),"")
+        match=re.search(r"posição\s+(-?\d+(?:\.\d+)?)",position_label,flags=re.I)
+        if match and abs(float(match.group(1)))<0.05:
+            rewound=True
+            break
+        time.sleep(.25)
+    assert rewound, "STUDY_POSITION_RESIDUAL: rewind did not return to beat 0; labels="+repr(labels()[:40])
     base=log_count("play=true mode=1")
     tap_text(["Iniciar"],scroll=True)
     wait_new("play=true mode=1",base)
