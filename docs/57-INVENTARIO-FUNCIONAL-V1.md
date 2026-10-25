@@ -108,3 +108,11 @@ Para cada PR futuro, atualizar os IDs afetados: referência exata de commit e Ac
 ### B1 — revisão de legibilidade do Estudo (22/10/2026)
 
 **E/IP**, continuação no PR [#51](https://github.com/atshimura/Piano-livre-aberto/pull/51), head testado `d11a85845d7fa7d40f0fd7495a800502d62e7354`. Atualiza INV-02/03/15: Gymnopédie 738×196 CSS px passou de 4,77976 a 5,07480 CSS px (+6,17%), sem overflow vertical ou clipping; a pauta permanece abaixo do limiar diagnóstico de 6 px. Canon: OSMD SVG ativo, listas auxiliares de solfejo/dedilhado ocultas em cópia transitória e cifras não ocultadas. Für Elise: dinâmica `p` em compasso 13/beat 36 preservada e movida 7,15 CSS px após colisão mensurada de 3,15 px com G♯3. Corpus: 27/27, com 23 OSMD e quatro fallbacks explícitos conferidos. Capturas e dados: [evidências B1](evidence/study-profile/b1/); detalhamento e limitações em [59](59-ESTUDO-ADAPTAVEL.md). Aceite editorial/físico continua pendente; não conclui B/C nem V1. Os documentos-base 57/58 do PR #48 foram preservados; este é adendo, não substituição.
+
+
+
+### Reconcilição técnica da Entrega B — 2026-10-25
+
+A prova integrada no SHA `ffdda2fcc7081cee363560cb8f79336a5030f2da` passou em build/JVM/Chromium e emulador no mesmo SHA (runs [40227586693](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693) e [40227586698](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698)). A jornada curta `Estudo livre 01` e longa `Gymnopédie nº 1` exercitou conjuntamente Espera, Contínuo, Demonstração, mãos, teclado guia, pausa/retomada, renderer OSMD/temporal, busca, início e background. O teste de emulador não possui saída MIDI Yamaha física; a demonstração Android sem porta confirmou aviso explícito e nenhuma reprodução declarada.
+
+Reconciliação de branches para revisão, sem merge: manter uma implementação de etiquetas que cubra OSMD e temporal (preferência técnica #58 sobre #52); loops com parada/liberação/recomposição de rota (#59 sobre #54); cobertura musical curta/longa (#60 sobre #53); e jornada UI determinística corrigida a partir do #55. #56, #57 e #61 continuam experimentais; o PR #62 é apenas prova integrada, não destino de merge. Esta reconciliação é adendo e preserva o inventário e as contribuições editoriais anteriores.
