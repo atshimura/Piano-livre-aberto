@@ -161,3 +161,11 @@ Canon foi conferida pelo SVG OSMD ativo: listas auxiliares ocultas, cifras manti
 **E/IP**, branch `feat/analise-estudo-adaptavel`: análise estrutural por conteúdo, letras de canto ocultas em cópia transitória, auditoria geométrica OSMD, ampliação óptica limitada e indicação correta do fallback esquemático. Afeta INV-02/03/15 e Entrega B; não conclui B/C ou V1. [Critérios, testes e limites](59-ESTUDO-ADAPTAVEL.md). Catálogo e importação JVM aprovados localmente; auditoria gráfica/CI/Android dependem da execução do SHA da branch. Legibilidade física e segmentação vertical local continuam pendentes. Texto-base preservado do PR #48 (`62a9443`); reconciliar sobreposição documental ao integrar.
 
 **Evidência automatizada atualizada:** código `e1fac0ec`, [build 39676817138](https://github.com/atshimura/Piano-livre-aberto/actions/runs/39676817138) aprovado: 27 arquivos, dez partituras do catálogo, três dimensões; 23 gravuras OSMD e quatro alternativas temporais verificadas. Gymnopédie pequena em viewport baixo, alerta texto/cabeça em Für Elise e quatro incompatibilidades OSMD permanecem parciais. Resultado Android da HEAD no [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51); não declarar físico/V1. [Registro completo e reprovações](59-ESTUDO-ADAPTAVEL.md).
+
+
+
+### Adendo de validação da Entrega B — 2026-10-25
+
+A jornada Android curta/longa e a suíte de build passaram juntas no SHA `ffdda2fcc7081cee363560cb8f79336a5030f2da`: [build/JVM/Chromium](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693) e [emulador](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698). A prova inclui os recursos pedagógicos em conjunto e as correções de isolamento de busca/posição e interação durante playback.
+
+Ordem de revisão futura: preservar #51 (B1) como base; selecionar uma implementação por duplicação (#58 em vez de #52, #59 em vez de #54, #60 em vez de #53); incorporar a jornada #55 corrigida; usar #62 exclusivamente como evidência experimental B1+B, nunca como PR de merge. #56/#57/#61 permanecem experimentais. Integração à `main`, Release, distribuição do APK e aceite físico/editorial permanecem fora desta autorização. Este adendo acrescenta evidência sem substituir decisões anteriores do plano.
