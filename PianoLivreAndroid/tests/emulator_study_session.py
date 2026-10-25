@@ -4,7 +4,7 @@ The emulator cannot replace a physical USB-MIDI piano or physical legibility.
 """
 import json,re,time,xml.etree.ElementTree as ET
 from pathlib import Path
-from emulator_ui import adb,dump,tap_text,screenshot,assert_running
+from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard
 
 PACKAGE="br.org.pianolivre.opensource/br.org.pianolivre.MainActivity"
 
@@ -51,6 +51,10 @@ def library_filter_spinner(root):
     distance,node=min(candidates,key=lambda pair:pair[0])
     return node if distance<=max(24,(search_bounds[3]-search_bounds[1])//2+8) else None
 
+def library_result_count(text):
+    match=re.fullmatch(r"\s*(\d+)\s+de\s+(\d+)\s+partituras\s*",text)
+    return (int(match.group(1)),int(match.group(2))) if match else None
+
 def verify_library_filter_locator():
     # Regression fixture: profile Spinner intentionally comes first in the
     # Android hierarchy; the search-row Spinner is the catalog filter.
@@ -62,13 +66,16 @@ def verify_library_filter_locator():
     found=library_filter_spinner(ET.fromstring(fixture))
     assert found is not None and found.attrib.get("text")=="Todas", \
         "FILTER_CONTROL_MISSING: locator did not distinguish profile Spinner from catalog filter"
+    assert library_result_count("10 de 10 partituras")== (10,10), \
+        "LIBRARY_COUNT_PARSER_REGRESSION: positive two-digit counts must not become zero"
+    assert library_result_count("0 de 10 partituras")== (0,10), \
+        "LIBRARY_COUNT_PARSER_REGRESSION: exact empty counts must remain detectable"
 
-def wait_for_library(seconds=20):
+def wait_for_library(expected="Estudo livre 01",seconds=20):
     """Wait for a stable library screen and classify common UI-state failures."""
     catalog=json.loads(Path("app/src/main/assets/catalog.json").read_text(encoding="utf-8"))
     titles=[item["name"] for item in catalog]
-    expected="Estudo livre 01"
-    assert expected in titles, "SCORE_MISSING: expected short score is absent from the packaged catalog"
+    assert expected in titles, "SCORE_MISSING: expected score is absent from the packaged catalog: "+expected
     last=[]
     for _ in range(seconds*2):
         assert_running()
@@ -122,30 +129,60 @@ def wait_for_library(seconds=20):
         tap_text(["Todas"],exact=True)
         last=labels()
 
-    # Give asynchronous layout work a bounded interval. Distinct errors make a
-    # missing asset, a filtering issue and a library/navigation failure clear.
-    for _ in range(20):
+    # Distinguish a zero result count from positive counts such as "10 de 10".
+    # Do not infer that an item is missing just because its card is below the
+    # viewport; the short exercise is eighth in this catalog.
+    for _ in range(40):
         last=labels()
-        if any(expected in value for value in last):
-            return
-        if any("BIBLIOTECA MUSICAL" in value for value in last) and any(" de " in value and "partituras" in value for value in last):
-            break
+        if not any("BIBLIOTECA MUSICAL" in value for value in last):
+            raise AssertionError("NAVIGATION_FAILED: left the library while waiting; labels="+repr(last[:40]))
+        result=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
+        if result is not None:break
         time.sleep(.25)
-    if not any("BIBLIOTECA MUSICAL" in value for value in last):
-        raise AssertionError("NAVIGATION_FAILED: left the library while waiting; labels="+repr(last[:40]))
-    result=next((v for v in last if "partituras" in v),"")
-    filter_labels=[v for v in last if "Favoritos" in v or "Coleção:" in v or v.strip()=="Todas"]
-    if "0 de " in result or any("Favoritos" in v or "Coleção:" in v for v in filter_labels):
-        raise AssertionError("SCORE_HIDDEN_BY_FILTER: reset to Todas did not reveal the catalog score; result="+repr(result)+" filters="+repr(filter_labels))
     if not result:
-        raise AssertionError("LIBRARY_NOT_LOADED: library shell appeared without the catalog result count; labels="+repr(last[:40]))
-    raise AssertionError("SCORE_NOT_VISIBLE: packaged score exists and library is loaded; result="+repr(result)+" labels="+repr(last[:40]))
+        raise AssertionError("LIBRARY_NOT_LOADED: library shell appeared without a valid result count; labels="+repr(last[:40]))
 
-def library():
-    wait_for_library()
+    selected=library_filter_spinner(dump())
+    if selected is None or selected.attrib.get("text","").strip()!="Todas":
+        raise AssertionError("SCORE_HIDDEN_BY_FILTER: catalog filter is not Todas after reset; selected="+
+                             repr(selected.attrib.get("text","") if selected is not None else None))
+
+    # Search is the library's supported navigation for scores outside the
+    # first viewport. It also proves that positive results are not mislabeled
+    # as a filter failure when the card is merely below the fold.
+    root=dump()
+    search=next((node for node in root.iter("node") if "EditText" in node.attrib.get("class","")
+                 and "Buscar título" in (node.attrib.get("hint","")+node.attrib.get("text",""))),None)
+    search_bounds=_bounds(search) if search is not None else None
+    if search_bounds is None:
+        raise AssertionError("LIBRARY_SEARCH_MISSING: loaded library has no title search field")
+    query="Estudo%slivre%01" if expected=="Estudo livre 01" else "Gymnop"
+    current=search.attrib.get("text","")
+    if current=="Buscar título ou arquivo":current=""
+    adb("shell","input","tap",str((search_bounds[0]+search_bounds[2])//2),
+        str((search_bounds[1]+search_bounds[3])//2))
+    adb("shell","input","keyevent","123")
+    for _ in range(len(current)):
+        adb("shell","input","keyevent","67")
+    adb("shell","input","text",query)
+    dismiss_keyboard()
+    for _ in range(40):
+        last=labels()
+        if any(expected in value for value in last):return
+        if not any("BIBLIOTECA MUSICAL" in value for value in last):
+            raise AssertionError("NAVIGATION_FAILED: left the library while searching; labels="+repr(last[:40]))
+        searched=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
+        if searched is not None and searched[0]==0:
+            raise AssertionError("SCORE_NOT_VISIBLE: filter is Todas and title search found no match; score="+
+                                 repr(expected)+" result="+repr(searched)+" labels="+repr(last[:40]))
+        time.sleep(.25)
+    raise AssertionError("LIBRARY_NOT_LOADED: title search did not settle for "+repr(expected)+"; labels="+repr(last[:40]))
+
+def library(title):
+    wait_for_library(title)
 
 def exercise(title,slug):
-    library()
+    library(title)
     adb("logcat","-c")
     before=log_count("POC_OSMD_READY {")
     tap_text([title],scroll=True)
@@ -209,7 +246,7 @@ def exercise(title,slug):
     assert_running()
     expect(title,"return from background lost the selected study")
     screenshot("piano-entrega-b-"+slug+"-resumed.png")
-    library()
+    library(title)
     return {"score":title,"modes":["Espera","Contínuo","Demonstração (without output)"],
             "hands":["Direita","Esquerda","Ambas"],
             "guide":"opened and restored","renderer":"OSMD-temporal-OSMD",
@@ -222,7 +259,7 @@ def main():
     # after upgrade/profile/library scenarios on the same emulator.
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-S","-W","-n",PACKAGE)
-    wait_for_library()
+    wait_for_library("Estudo livre 01")
     result=[]
     for title,slug in [("Estudo livre 01","short"),("Gymnopédie nº 1","long")]:
         result.append(exercise(title,slug))
