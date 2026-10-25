@@ -43,3 +43,8 @@ As notas anteriores que diziam “CI pendente” ou apontavam SHA `ffdda2fcc7081
 ### Precisão de SHA após a revisão documental
 
 O SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9` é o SHA do código integrado exercitado pelos dois workflows. Depois do SHA de código validado, foram feitas revisões somente Markdown; elas não alteraram arquivos de app/teste e não acionaram os workflows por causa dos filtros de paths. Assim, os dois resultados citados acima pertencem ao mesmo SHA exato de código; não se alega que Actions tenham sido executados no HEAD documental posterior.
+
+
+## Proposta consolidada para revisão — 2026-10-25
+
+Depois da prova CI-only #62, o delta de 21 arquivos foi portado sobre o próprio HEAD B1 `15f05d7463794409b64ed9b5efdfc7692ecb4127` para o PR de implementação draft #63. A mesma implementação foi testada no SHA `9ddbd2749055d6fb95a2911225d50359e03f97a4` pela branch sombra #64: [build/JVM/Chromium 40231690624](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690624) e [emulador 40231690719](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690719), ambos aprovados. #64 não deve ser integrado. #63 é o PR de revisão apropriado depois do #51; não houve merge em `main`.
