@@ -167,8 +167,12 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         result=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
         if result is not None:break
         time.sleep(.25)
-    if not result:
+    if result is None:
         raise AssertionError("LIBRARY_NOT_LOADED: library shell appeared without a valid result count; labels="+repr(last[:40]))
+    if result[0]<len(titles):
+        raise AssertionError("CATALOG_FILTER_ACTIVE: after clearing residual search the visible result count "+
+                             str(result[0])+" is below packaged catalog size "+str(len(titles))+
+                             "; labels="+repr(last[:40]))
 
     root=dump()
     selected=library_filter_spinner(root)
@@ -191,9 +195,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         root=None
         for _ in range(24):
             candidate=dump()
-            candidate_search=next((node for node in candidate.iter("node")
-              if "EditText" in node.attrib.get("class","")
-              and "Buscar título" in (node.attrib.get("hint","")+node.attrib.get("text",""))),None)
+            candidate_search=library_search_field(candidate)
             if candidate_search is not None:
                 root=candidate
                 break
