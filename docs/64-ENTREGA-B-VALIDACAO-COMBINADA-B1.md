@@ -38,3 +38,8 @@ O SHA de documentação desta atualização ainda precisa passar nos workflows a
 ## Estado documental final da prova — 2026-10-25
 
 As notas anteriores que diziam “CI pendente” ou apontavam SHA `ffdda2fcc7081cee363560cb8f79336a5030f2da` como final são históricas e foram supersedidas. Resultado vigente: código e documentação no SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`; build/JVM/Chromium/APK CI aprovado em [40229478373](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478373) e emulador aprovado em [40229478320](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478320), ambos associados a esse mesmo SHA. A jornada Android passou com Estudo livre 01 e Gymnopédie nº 1. #62 continua experimental e não deve ser integrado; nenhuma alteração na `main`, Release ou distribuição foi feita. Aceite físico/editorial pendente.
+
+
+### Precisão de SHA após a revisão documental
+
+O SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9` é o SHA do código integrado exercitado pelos dois workflows. Revisões finais somente Markdown vieram depois e levaram o HEAD documental da branch a `a36766aa7bec624b66610de83733ceeb08a43995`; não alteraram arquivos de app/teste e não acionaram os workflows por causa dos filtros de paths. Assim, os dois resultados citados acima pertencem ao mesmo SHA exato de código; não se alega que Actions tenham sido executados no HEAD documental posterior.
