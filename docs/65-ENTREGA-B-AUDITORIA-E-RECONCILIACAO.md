@@ -38,6 +38,6 @@ Os atuais PRs #46, #47, #48 e #51 foram preservados. `docs/57` e `docs/58` mant�
 
 - Aceite editorial da escala/legibilidade da B1 continua pendente; métricas Chromium não são decisão editorial.
 - Testes físicos Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 não foram executados. A simulação MIDI automatizada não prova conexão física nem liberação após desconexão.
-- A UI validou rótulo OSMD (Mi4 · E4, viewport e expiração); a API de rótulos é compartilhada com temporal e a suíte JS passou localmente, mas a interação visual temporal ainda precisa de prova automatizada explícita. A jornada curta/longa também precisa passar após corrigir o seletor de filtro do roteiro.
-- Próxima ação: executar novamente build e emulador com a identificação do filtro por linha/bounds; verificar a jornada curta/longa, colher artifacts; depois atualizar esta auditoria com os SHAs e resultados finais. Revisar se a prova de toque de rótulo temporal pode ser acrescentada sem reduzir cobertura.
+- A UI Android validou rótulo OSMD (Mi4 · E4, viewport e expiração); a API de rótulos é compartilhada com temporal. Para não depender só dessa API comum, foi acrescentada uma prova Chromium que toca uma cabeça real do renderizador temporal e verifica grafia, viewport, não sobreposição, timeout e captura. O novo teste e a nova localização do filtro ainda precisam passar nos workflows.
+- Próxima ação: executar build/Chromium/JVM e emulador com os dois testes de regressão; verificar jornadas curta/longa, colher artifacts; depois atualizar esta auditoria com os SHAs e resultados finais.
 - Integração à `main`, Release, distribuição APK e aceite físico/editorial permanecem pendentes e exigem as condições/autorização já definidas.
