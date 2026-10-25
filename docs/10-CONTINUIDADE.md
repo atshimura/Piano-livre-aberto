@@ -284,3 +284,8 @@ O emulador confirmou que o botão `Início` levou a posição a zero, mas o play
 ### Toque durante playback sem esperar a árvore UI — execução do SHA 36cff100
 
 O emulador confirmou o SeekBar em `25%`, mas duas capturas de hierarquia falharam no `adb pull` enquanto a música tocava; juntas consumiram cerca de 38 s, tempo suficiente para o exercício atingir `16.0` e encerrar (run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40222887035). Não foi um timeout de reprodução do app: o log mostra início da execução e o fim normal antes de aparecer o botão de pausa. O teste agora captura previamente as coordenadas do controle visível e envia toques reais `adb input tap` para iniciar, pausar e retomar, verificando visualmente `Iniciar` quando pausado. A árvore não é consultada enquanto o relógio corre.
+
+
+### Aviso MIDI sem saída conectada — execução do SHA 569bda5
+
+No run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/40224464175, a jornada passou por posição inicial, andamento, renderizadores e retomada, mas ao entrar em Demonstração o app exibiu o aviso correto de ausência de saída MIDI. O roteiro não fechou o diálogo e então procurou o controle `Espera`, falhando porque só estavam acessíveis o aviso e `OK`. A regressão agora confirma o aviso, compara o contador `play=true mode=2` antes/depois para garantir que não iniciou saída MIDI inexistente e fecha com `OK` antes de continuar. O CI não possui porta Yamaha física; execução de saída MIDI é coberta por testes sintéticos da suíte JVM.
