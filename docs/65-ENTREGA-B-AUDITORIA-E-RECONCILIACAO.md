@@ -83,3 +83,8 @@ No run 40222887035, o andamento em `25%` foi confirmado, mas `uiautomator dump`/
 ## Demonstração sem porta MIDI no emulador
 
 O run 40224464175 chegou ao modo Demonstração e recebeu o aviso correto `Demonstração requer uma saída MIDI aberta para o Yamaha`, com ação `OK`. O teste deixou o diálogo aberto e falhou ao buscar `Espera`; a sequência agora verifica o aviso, garante que `play=true mode=2` não aumentou sem dispositivo e fecha o diálogo antes de continuar. O emulador não tem porta Yamaha física; envio MIDI e ciclo de vida sintético seguem cobertos na JVM.
+
+
+## Momento de acionamento do aviso MIDI
+
+O run 40226052690 confirmou a passagem pela pausa/retomada e falhou ao procurar o aviso após apenas selecionar Demonstração. O aviso é mostrado quando se tenta iniciar sem saída MIDI. O teste executa agora esse clique, verifica o aviso e que o contador de playback MIDI não avançou, fecha o diálogo e retoma a jornada.
