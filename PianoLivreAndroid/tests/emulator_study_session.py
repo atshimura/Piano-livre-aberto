@@ -59,6 +59,8 @@ def adb_search_text(text):
     return text.replace(" ","%s")
 
 def verify_library_filter_locator():
+    assert adb_search_text("Estudo livre 01")=="Estudo%slivre%s01", \
+        "LIBRARY_SEARCH_ENCODING_REGRESSION: every space must use Android input %s token"
     # Regression fixture: profile Spinner intentionally comes first in the
     # Android hierarchy; the search-row Spinner is the catalog filter.
     fixture='''<hierarchy>
