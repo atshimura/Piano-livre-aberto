@@ -58,3 +58,8 @@ No SHA `52441848911a23fc430af18e773d56237a8357a3`, o workflow de build passou (r
 ## Estado residual da busca em execução Android
 
 O run 40216924861 no SHA `9e0cb5a2ba4f910e73343305ef1d9b558d03e9d1` confirmou que a biblioteca exibia `Todas`, mas o contador era `1 de 10 partituras`. A consulta digitada antes persistiu na interface entre cenários e removeu o hint do EditText; o localizador baseado no hint deixou de reconhecer tanto o campo quanto o Spinner na mesma linha. O registro não prova bug funcional de catálogo: o roteiro havia deixado estado temporário de busca no Activity. A correção busca o único EditText pelo tipo/posição, apaga somente seu texto de consulta, exige que o contador inclua as dez partituras do catálogo empacotado e acrescenta fixture para campo preenchido sem hint. Preservam-se arquivos e dados persistentes. Build verde em 40216924903; a jornada Android completa segue pendente.
+
+
+## Navegação do título para Estudo
+
+No SHA `dac396fd5bc9f9934efc6d28cf8c6ae67124a494`, a busca determinística passou, localizando `Estudo livre 01` com o catálogo completo. A sequência tocou o texto do título e aguardou `POC_OSMD_READY`, que não apareceu (run 40218278046). O log não trouxe tela/estado suficiente para decidir entre clique sem navegação e abertura sem prontidão. A regressão agora aciona explicitamente o controle `Estudar` e captura screenshot/labels em timeout. Não classificar como resolvido até a jornada Android passar.
