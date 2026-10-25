@@ -66,6 +66,9 @@ def verify_library_filter_locator():
     found=library_filter_spinner(ET.fromstring(fixture))
     assert found is not None and found.attrib.get("text")=="Todas", \
         "FILTER_CONTROL_MISSING: locator did not distinguish profile Spinner from catalog filter"
+    blank=library_filter_spinner(ET.fromstring(fixture.replace('text="Todas"','text=""')))
+    assert blank is not None and blank.attrib.get("text")=="", \
+        "FILTER_CONTROL_MISSING: locator must still identify the filter when Android exposes no selected text"
     assert library_result_count("10 de 10 partituras")== (10,10), \
         "LIBRARY_COUNT_PARSER_REGRESSION: positive two-digit counts must not become zero"
     assert library_result_count("0 de 10 partituras")== (0,10), \
@@ -113,22 +116,6 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         adb("shell","input","swipe",x,str(bounds[1]+20),x,str(bounds[3]-20),"350")
         time.sleep(.2)
 
-    # The filter is a screen control, not persisted library data. Explicitly
-    # return to All so a prior scenario cannot hide an otherwise valid score.
-    spinner=library_filter_spinner(dump())
-    if spinner is None:
-        raise AssertionError("FILTER_CONTROL_MISSING: could not identify the catalog filter beside the library search field")
-    if spinner is not None and spinner.attrib.get("text","").strip()!="Todas":
-        bounds=_bounds(spinner)
-        adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
-        time.sleep(.2)
-        options=labels()
-        if "Todas" not in options:
-            raise AssertionError("FILTER_CONTROL_MISMATCH: catalog filter opened unexpected menu; selected="+
-                                 repr(spinner.attrib.get("text",""))+" options="+repr(options[:40]))
-        tap_text(["Todas"],exact=True)
-        last=labels()
-
     # Distinguish a zero result count from positive counts such as "10 de 10".
     # Do not infer that an item is missing just because its card is below the
     # viewport; the short exercise is eighth in this catalog.
@@ -143,9 +130,17 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         raise AssertionError("LIBRARY_NOT_LOADED: library shell appeared without a valid result count; labels="+repr(last[:40]))
 
     selected=library_filter_spinner(dump())
-    if selected is None or selected.attrib.get("text","").strip()!="Todas":
-        raise AssertionError("SCORE_HIDDEN_BY_FILTER: catalog filter is not Todas after reset; selected="+
-                             repr(selected.attrib.get("text","") if selected is not None else None))
+    if selected is None:
+        raise AssertionError("FILTER_CONTROL_MISSING: catalog filter beside the search row is not accessible")
+    if selected.attrib.get("text","").strip()!="Todas":
+        bounds=_bounds(selected)
+        adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
+        time.sleep(.2)
+        options=labels()
+        if "Todas" not in options:
+            raise AssertionError("FILTER_CONTROL_MISMATCH: search-row Spinner did not open catalog options; labels="+
+                                 repr(options[:40]))
+        tap_text(["Todas"],exact=True)
 
     # Search is the library's supported navigation for scores outside the
     # first viewport. It also proves that positive results are not mislabeled
@@ -164,6 +159,22 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     adb("shell","input","keyevent","123")
     for _ in range(len(current)):
         adb("shell","input","keyevent","67")
+    dismiss_keyboard()
+    for _ in range(40):
+        last=labels()
+        if not any("BIBLIOTECA MUSICAL" in value for value in last):
+            raise AssertionError("NAVIGATION_FAILED: left the library while clearing search; labels="+repr(last[:40]))
+        count=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
+        if count is not None:break
+        time.sleep(.25)
+    if count is None:
+        raise AssertionError("LIBRARY_NOT_LOADED: all-title count did not appear after clearing search; labels="+repr(last[:40]))
+    if count[0]<len(titles) or count[1]<len(titles):
+        raise AssertionError("SCORE_HIDDEN_BY_FILTER: selecting Todas did not reveal the packaged catalog; count="+
+                             repr(count)+" packaged="+str(len(titles)))
+
+    adb("shell","input","tap",str((search_bounds[0]+search_bounds[2])//2),
+        str((search_bounds[1]+search_bounds[3])//2))
     adb("shell","input","text",query)
     dismiss_keyboard()
     for _ in range(40):
