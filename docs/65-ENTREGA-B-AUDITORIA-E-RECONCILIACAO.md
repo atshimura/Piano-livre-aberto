@@ -68,3 +68,8 @@ No SHA `dac396fd5bc9f9934efc6d28cf8c6ae67124a494`, a busca determinística passo
 ## Playhead residual entre cenários
 
 No run 40219775224, o botão explícito `Estudar` levou ao OSMD e `SCORE_DRAWN` foi registrado. A falha ocorreu ao buscar `Pausar`; a interface mostrava `posição 16.0` e `Iniciar`, que corresponde ao fim da partitura curta de 16 tempos. A reprodução iniciada no fim terminou imediatamente. O roteiro passa a usar o controle visual `Início` e verificar posição `0.0` antes de iniciar, sem remover dados ou reduzir cobertura.
+
+
+## Duração do fixture curto e teste de pausa
+
+No run 40221311869, o teste reiniciou o playhead em zero, iniciou o exercício de 16 tempos e registrou `play=true mode=1`; na leitura seguinte, a música já estava em `16.0` e o botão `Pausar` havia desaparecido. Isso indica fim de execução durante a latência acumulada do fluxo UI no emulador. O teste agora altera o andamento pelo SeekBar para `25%`, confirma esse valor visível e só depois verifica pausa/retomada. A validação do gesto real e da posição inicial permanece assertada.
