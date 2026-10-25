@@ -304,3 +304,8 @@ No SHA de código `ffdda2fcc7081cee363560cb8f79336a5030f2da`, os workflows passa
 Build log: `STUDY_SESSION_INTEGRATION_PASS checks=15127`, `STUDY_LOOP_POSITION_PASS assertions=11`, `STUDY_NOTE_TIP_PASS checks=34`, `TEMPORAL_NOTE_TIP_BROWSER_PASS Mi4 · E4 viewport-safe and expires`, `BUILD SUCCESSFUL`. O emulador também passou por OSMD de 78 compassos, contexto fixo, mapeamento de 30 cabeças/eventos em polifonia, responsive baixo/alto/tablet, controles Android e `PUBLIC_ANDROID_EMULATOR_SMOKE_PASS`.
 
 Esta prova não integra PRs nem substitui aceite físico/editorial. A atualização documental subsequente mantém os mesmos arquivos de código; seu SHA precisa reexecutar os dois workflows antes de se declarar prova final do branch.
+
+
+## Fechamento da validação automatizada B1 + Entrega B — 2026-10-25
+
+Estado final de CI desta prova: SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`. Build/JVM/Chromium/APK de CI passou em [run 40229478373](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478373); emulador passou no mesmo SHA em [run 40229478320](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478320). Esse resultado supersede neste documento todas as notas anteriores que diziam que a reexecução documental estava pendente. A branch #62 segue experimental e não deve ser integrada. Main, Release e distribuição não foram alteradas; aceite físico/editorial segue pendente.
