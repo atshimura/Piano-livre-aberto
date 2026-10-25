@@ -421,15 +421,33 @@ if __name__=="__main__":
     ny=bounds[1]+round(first["y"]*h/professional["viewportHeight"])
     assert bounds[0]<=nx<bounds[2] and bounds[1]<=ny<bounds[3], "Mapped notehead outside visible WebView"
     adb("shell","input","tap",str(nx),str(ny))
-    time.sleep(.5)
+    # Capture the ACTUAL visible popup before multiple logcat/ADB round trips
+    # consume its required two-second lifetime.
+    time.sleep(.25)
+    screenshot("piano-osmd-poc-note-tap.png")
+    time.sleep(.25)
     touches=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_NOTE_TAP {" in line]
     assert touches, "Actual Android touch did not reach graphical notehead"
     hit=json.loads(touches[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
     assert hit["staff"]==1 and hit["midiEstimate"]==first["midiEstimate"], "Android head-touch resolved wrong note or staff"
     assert hit["mapped"] and hit["nativeMidi"]==first["midiEstimate"], "Actual Android note tap did not agree with native Score.java MIDI"
     assert hit.get("writtenName")=="Mi4" and hit.get("xmlNoteIndex") is not None, "OSMD head did not preserve the actual written pitch and XML identity"
-    screenshot("piano-osmd-poc-note-tap.png")
-    print("PASS: actual Android tap identified first upper-staff OSMD notehead",flush=True)
+    visible=[line for line in adb("logcat","-d","-v","brief").splitlines()
+             if "POC_NOTE_TIP_VISIBLE {" in line]
+    assert visible, "OSMD tap did not show a bounded temporary identification"
+    popup=json.loads(visible[-1].split("POC_NOTE_TIP_VISIBLE ",1)[1].split(" @",1)[0])
+    assert popup["label"]=="Mi4 · E4", "Note popup lost international written spelling: "+str(popup)
+    view=popup["viewport"]
+    assert view[0]-1<=popup["left"]<popup["right"]<=view[2]+1 and \
+           view[1]-1<=popup["top"]<popup["bottom"]<=view[3]+1, \
+           "Note popup escapes the actual score viewport: "+str(popup)
+    time.sleep(2.3)
+    timeline=adb("logcat","-d","-v","brief").splitlines()
+    visible_index=max(i for i,line in enumerate(timeline) if "POC_NOTE_TIP_VISIBLE {" in line)
+    assert any("POC_NOTE_TIP_HIDDEN" in line for line in timeline[visible_index+1:]), \
+           "Note identification persisted beyond two seconds"
+    screenshot("piano-osmd-poc-note-tap-expired.png")
+    print("PASS: Android OSMD notehead shows written Mi4/E4 inside viewport and expires",flush=True)
     tap_text(["Contínuo"],exact=True,scroll=True)
     playback_point=tap_text(["Iniciar"],return_point=True)
     time.sleep(2)
@@ -454,6 +472,48 @@ if __name__=="__main__":
       "OSMD score did not move under context fixed at the viewport's left edge")
     adb("shell","input","tap",*playback_point)
     print("PASS: experimental OSMD optical scroll follows native musical clock",flush=True)
+    # A user can change loop bounds while the native continuous clock is
+    # already running. The manual loop menu must stop it BEFORE changing
+    # the selected boundaries; no hanging output or route inconsistency.
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.4)
+    loop_nodes=[n for n in dump().iter("node") if "Trecho ↻" in n.attrib.get("text","")]
+    assert loop_nodes, "Study loop menu button unavailable during continuous playback"
+    box=[int(n) for n in re.findall(r"\d+",loop_nodes[0].attrib.get("bounds",""))]
+    assert len(box)==4, "Loop menu has no touchable bounds"
+    cx=(box[0]+box[2])//2;cy=(box[1]+box[3])//2
+    adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1050")
+    time.sleep(.3)
+    tap_text(["Marcar início na posição atual"],exact=True)
+    time.sleep(.3)
+    assert "STUDY_LOOP_MENU start" in adb("logcat","-d","-v","brief"), \
+        "Manual loop start did not use the safe native boundary transaction"
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
+        "Loop edit left native playback running instead of releasing MIDI"
+    print("STUDY_B_MANUAL_LOOP_ANDROID_PASS",flush=True)
+    # The musical B marker must also snap to a full sounding-note release and
+    # cancel playback before applying the checked route. Reuse cached button
+    # bounds so hierarchy dumps do not race a running WebView.
+    def open_loop_menu():
+        assert_running()
+        adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1000")
+        time.sleep(.3)
+        assert any("Marcar início na posição atual" in n.attrib.get("text","")
+                   for n in dump().iter("node")), "Loop menu did not reopen"
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.8)
+    open_loop_menu()
+    tap_text(["Marcar fim na posição atual"],exact=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
+        "Applying B left continuous playback running"
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.45)
+    open_loop_menu()
+    tap_text(["Remover repetição"],exact=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
+        "Clearing the active A-B loop left playback running"
+    tap_text(["Início"],scroll=True)
+
     # Graphical loop selection must use TWO native-reconciled noteheads,
     # then call the existing native callback, not edit the MusicXML.
     tap_text(["Início"],scroll=True)
