@@ -22,6 +22,7 @@ const xml=`<score-partwise version="4.0">
  try{
   const page=await browser.newPage({viewport:{width:738,height:220}});
   await page.goto('file://'+path.resolve('app/src/main/assets/notation.html'));
+  await page.evaluate(()=>document.body.classList.add('continuous'));
   await page.evaluate(xml=>TemporalNotation.render(xml,document.getElementById('score'),
    document.getElementById('viewport'),0),xml);
   await page.waitForFunction(()=>{
