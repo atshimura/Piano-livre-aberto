@@ -279,3 +279,8 @@ A abertura explícita pelo botão `Estudar` funcionou e o OSMD desenhou as duas 
 ### Tempo suficiente para testar pausa no exercício curto — execução do SHA 773026d
 
 O emulador confirmou que o botão `Início` levou a posição a zero, mas o playback alcançou o fim em `16.0` antes de a consulta seguinte à hierarquia encontrar `Pausar` (run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40221311869). O OSMD carregou e a reprodução começou; o log marca `play=true mode=1`. Para evitar que o overhead de UI do emulador consuma o fixture curto de 16 tempos, o roteiro agora move o SeekBar de andamento até `25%`, confirma o rótulo visível e então testa pausa/retomada. Isso exercita o ajuste real de andamento e mantém a asserção de pausa.
+
+
+### Toque durante playback sem esperar a árvore UI — execução do SHA 36cff100
+
+O emulador confirmou o SeekBar em `25%`, mas duas capturas de hierarquia falharam no `adb pull` enquanto a música tocava; juntas consumiram cerca de 38 s, tempo suficiente para o exercício atingir `16.0` e encerrar (run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40222887035). Não foi um timeout de reprodução do app: o log mostra início da execução e o fim normal antes de aparecer o botão de pausa. O teste agora captura previamente as coordenadas do controle visível e envia toques reais `adb input tap` para iniciar, pausar e retomar, verificando visualmente `Iniciar` quando pausado. A árvore não é consultada enquanto o relógio corre.
