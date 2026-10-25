@@ -3,6 +3,7 @@
 **Esta documentação trata do repositório público.** O código provém de um desenvolvimento prévio privado, mas não depende do histórico ou de arquivos restritos para compilar.
 
 ## Documentos vigentes
+- [65 — Auditoria e reconciliação da Entrega B](65-ENTREGA-B-AUDITORIA-E-RECONCILIACAO.md): falha da jornada Android, reconciliação de PRs e estado da prova B1+B.
 - [01 — Visão e requisitos](01-VISAO-E-REQUISITOS.md): decisões de produto e critérios para V1.
 - [02 — Arquitetura](02-ARQUITETURA.md): Android, MIDI, MusicXML e renderização.
 - [03 — Notação e tempo](03-NOTACAO-TEMPO.md): renderizador, rolagem, claves e representação.
