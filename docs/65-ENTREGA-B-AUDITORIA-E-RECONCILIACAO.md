@@ -48,3 +48,8 @@ Os atuais PRs #46, #47, #48 e #51 foram preservados. `docs/57` e `docs/58` mant�
 ## Evidência posterior: codificação da busca Android
 
 A execução `40213805638` do HEAD `04c2bd9bad68e795b48903c35f5a732979a79f1d` falhou após confirmar filtro `Todas`: o teste transmitiu a query literal `Estudo livre%01`, que não representa o espaço antes de `01` no comando Android `input text`. O pacote tinha `Estudo livre 01`; filtro, perfil e carregamento da biblioteca não explicam esse resultado. O defeito estava na codificação da query de UI do próprio roteiro. A jornada agora usa uma função que codifica cada espaço como `%s` e inclui asserção para `Estudo%slivre%s01`. Resultado dos workflows no novo SHA será registrado após a conclusão; a execução anterior não certifica a jornada.
+
+
+## Resultado do filtro no emulador — 2026-10-25
+
+No SHA `52441848911a23fc430af18e773d56237a8357a3`, o workflow de build passou (run 40215362948), mas a jornada Android falhou no run 40215362946 depois de abrir o Spinner da biblioteca e selecionar `Todas`: a captura imediata da hierarquia não continha novamente o controle de filtro. A busca ainda não havia começado; portanto a correção de query não foi exercitada nessa execução. Como os logs não demonstram que a biblioteca deixou a tela, não classificamos isso como defeito de produção nem como simples falha do teste sem nova evidência. A regressão agora espera a linha de busca voltar após a escolha, dispensa apenas popup identificado e captura XML/screenshot se permanecer ausente. A jornada curta e longa continua pendente do próximo SHA.
