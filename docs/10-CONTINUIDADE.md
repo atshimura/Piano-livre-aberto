@@ -274,3 +274,8 @@ A jornada passou pela busca isolada: encontrou `Estudo livre 01`, após limpar a
 ### Reprodução em início determinístico — execução do SHA df16327
 
 A abertura explícita pelo botão `Estudar` funcionou e o OSMD desenhou as duas pautas; o workflow falhou depois, ao procurar `Pausar`. As labels mostravam posição `16.0`, fim do exercício curto de 16 tempos, e `Iniciar`/ `Parar`: a execução residual anterior havia deixado o playhead no final, fazendo o start terminar imediatamente. Run: https://github.com/atshimura/Piano-livre-aberto/actions/runs/40219775224 . O roteiro agora aciona `Início` na UI e exige que a posição mostrada volte a `0.0` antes de iniciar. Esse estado de navegação/playhead é reiniciado sem limpar dados do perfil ou da biblioteca.
+
+
+### Tempo suficiente para testar pausa no exercício curto — execução do SHA 773026d
+
+O emulador confirmou que o botão `Início` levou a posição a zero, mas o playback alcançou o fim em `16.0` antes de a consulta seguinte à hierarquia encontrar `Pausar` (run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40221311869). O OSMD carregou e a reprodução começou; o log marca `play=true mode=1`. Para evitar que o overhead de UI do emulador consuma o fixture curto de 16 tempos, o roteiro agora move o SeekBar de andamento até `25%`, confirma o rótulo visível e então testa pausa/retomada. Isso exercita o ajuste real de andamento e mantém a asserção de pausa.
