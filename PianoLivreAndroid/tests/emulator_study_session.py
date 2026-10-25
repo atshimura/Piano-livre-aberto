@@ -41,9 +41,13 @@ def wait_for_library(seconds=20):
                 or any("Buscar título" in value for value in last)
                 or any(title in value for title in titles for value in last)):
             break
-        # Dismiss a stale spinner/dialog left by a preceding UI scenario. This
-        # changes no app data; it only closes transient Android window state.
-        adb("shell","input","keyevent","4")
+        # Dismiss only a positively identified profile/filter popup. While the
+        # Activity is still rendering, a Back key could exit the app and mask
+        # the asynchronous load as a navigation failure.
+        profile_popup=bool(last) and all("Upgrade A" in v or "Upgrade B" in v for v in last)
+        filter_popup=bool(last) and all(v.strip() in ("Todas","Favoritos") or v.startswith("Coleção:") for v in last)
+        if profile_popup or filter_popup:
+            adb("shell","input","keyevent","4")
         time.sleep(.35)
     else:
         raise AssertionError("NAVIGATION_FAILED: library header did not appear; labels="+repr(last[:40]))
