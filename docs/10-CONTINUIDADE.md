@@ -235,3 +235,77 @@ Código `e1fac0ec`, branch `feat/analise-estudo-adaptavel`: build/JVM/JS/XML/MID
 Continuação no PR #51, ainda aberto, baseada na `main` `801543c`; #46 e #48 seguem intocados. O Chromium do head `d11a85845d7fa7d40f0fd7495a800502d62e7354` passou a regressão de 27 arquivos. Gymnopédie 738×196 melhorou 4,77976→5,07480 CSS px (+6,17%), com overflow vertical zero e alerta de pauta pequena ainda ativo. Canon foi validada pelo OSMD SVG, cifras preservadas. Em Für Elise, colisão do `p` de dinâmica com G♯3 (compasso 13, beat 36) foi confirmada em 3,15 px e corrigida movendo a anotação 7,15 px para cima só na apresentação do Estudo. Quatro fixtures incompletas seguem em fallback temporal explícito e conferido.
 
 O artefato durável e as capturas estão em `docs/evidence/study-profile/b1/`; detalhes atualizados em docs 57/58/59. Build completo e emulador devem ser registrados somente após conclusão para o head final que também inclua este adendo documental. Nenhum ensaio físico: aceite editorial e issue #11 continuam pendentes; não integrar, publicar APK, concluir B/C ou declarar V1.
+
+## Auditoria Entrega B — 25/10/2026
+
+`main` conferida em `801543cc8c26d2c1c216cc7a43b01211dc07a4ad`, `0.9.47-open-beta`. Falha do roteiro Android #55 confirmada pela evidência do Actions: a jornada procura Estudo livre 01 enquanto `uiautomator` mostra somente Upgrade A/B. A investigação atribui a causa provável a pop-up/estado transitório de UI reutilizado entre roteiros na mesma sessão de emulador; o upgrade sintético não altera `catalog.json` e os filtros da Biblioteca são estado da tela. Isso não prova que a navegação real está livre de defeito: a jornada corrigida precisa demonstrá-lo.
+
+Criada branch experimental `ci/entrega-b-integral-20261025` a partir da prova #57, sem alterar #56/#57/#61 nem #46/#47/#48/#51. O roteiro curto/longo reinicia somente a Activity no emulador, preserva SharedPreferences e arquivos, normaliza a navegação para Biblioteca, verifica o catálogo empacotado e distingue falhas de filtro/coleção, navegação, carga e item ausente. `python3 -m py_compile tests/emulator_study_session.py` passou. Esta máquina não tem `adb`, Gradle ou Android SDK; ainda não há Actions da branch nova nem prova B1+B final. #52/#58, #54/#59 e #53/#60 continuam exigindo reconciliação de código, não apenas CI individual. Ver [doc 65](65-ENTREGA-B-AUDITORIA-E-RECONCILIACAO.md).
+
+**Continuação da auditoria B — resultado da primeira prova composta:** build/Chromium/JVM passou no Actions 40209082130; UI Android no Actions 40209082077 chegou às jornadas longas, mas falhou antes de abrir o primeiro exercício. A causa exata foi o localizador do teste escolher o primeiro `android.widget.Spinner`, que é o seletor de perfil (“Upgrade A/B”), em vez do filtro “Todas” na mesma linha do campo de busca. Corrigido o roteiro para localizar o filtro pela posição relativa ao campo de busca, verificar que o menu aberto contém “Todas” e falhar com diagnóstico específico se não. Adicionada fixture de regressão local `LIBRARY_FILTER_LOCATOR_PASS`; `py_compile` também passou. O código do aplicativo não foi modificado por este defeito de teste. A próxima execução de CI precisa validar a jornada no emulador e o build do SHA final; ainda não declarar conclusão B. Detalhes e evidências em [doc 65](65-ENTREGA-B-AUDITORIA-E-RECONCILIACAO.md).
+
+Para completar a evidência do subsistema de identificação, acrescentei `TemporalNoteTipBrowserTest.js`: clique real no elemento `<ellipse>` do renderizador temporal em Chromium, conferência de Mi4 · E4, limites do viewport, não sobreposição, expiração e screenshot no artifact de medidas. O Android já prova o clique OSMD por `adb`; este browser test complementa a jornada. Execução e artifact aguardam CI no próximo HEAD. O filtro corrigido e este teste são mudanças de roteiro/prova, sem alteração dos arquivos MusicXML.
+
+**Continuação da jornada Android:** no HEAD `349a7fd`, build/Chromium/JVM passou (15.127 asserções de sessão, rótulo temporal Chromium aprovado), mas o emulador 40210751936 parou no verificador do catálogo. A hierarquia `window.xml` da captura mostra o filtro `Todas`, `10 de 10 partituras` e `Estudo livre 01` na oitava posição, fora do primeiro viewport. O parser antigo procurava a substring `0 de ` e confundiu `10 de 10` com resultado zero. Corrigido para interpretar inteiros com correspondência total; a jornada agora pesquisa o título pela busca nativa, limpa a consulta anterior entre exercício curto e longo e diferencia contagem zero de card fora da dobra. Fixture local testa `10 de 10` e `0 de 10`. A biblioteca e a navegação do app funcionaram no caso registrado; a jornada final curta/longa ainda não passou e deve ser reexecutada no próximo SHA antes da conclusão B.
+
+**Continuação da jornada Android:** o run `40212363484` no HEAD `e8d9ada` passou build/Chromium/JVM e repetiu a falha na verificação de filtro. A hierarquia expõe `text=''` para ambos os Spinners, enquanto a captura `piano-library.png` mostra visualmente perfil no cabeçalho e `Todas` no filtro. Corrigi o roteiro para abrir o Spinner identificado pela linha do campo de busca, escolher explicitamente `Todas`, limpar a busca, validar o total do catálogo e então pesquisar o exercício. A regressão local também cobre Spinner sem texto acessível. Não há defeito funcional da biblioteca reproduzido até agora; a jornada final curta/longa continua pendente de CI no novo SHA.
+
+
+### Atualização da investigação da jornada Android — 2026-10-25
+
+No HEAD `04c2bd9bad68e795b48903c35f5a732979a79f1d`, o emulador chegou à biblioteca com o filtro explicitamente em `Todas`, mas a busca encontrou zero porque o roteiro enviou `Estudo livre%01`: o comando `adb shell input text` usa `%s` para representar espaço, e a query codificava somente o primeiro espaço. O catálogo empacotado continha o exercício e o filtro estava correto; a causa reproduzida foi a codificação do texto de entrada no teste, não uma falha de biblioteca ou de perfil. O roteiro agora converte todos os espaços via `adb_search_text`, e há regressão para a string exata `Estudo%slivre%s01`. A jornada no emulador precisa passar no SHA final atualizado antes de concluir a validação técnica. Run que reproduziu: https://github.com/atshimura/Piano-livre-aberto/actions/runs/40213805638 .
+
+
+### Atualização da jornada — resultado do SHA 5244184
+
+O build/Chromium/JVM passou no SHA `52441848911a23fc430af18e773d56237a8357a3` (run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40215362948). O emulador completou as verificações anteriores de UI e renderização responsiva, mas falhou na jornada quando, após abrir o filtro e tocar `Todas`, a hierarquia imediata não expôs o Spinner da linha de busca (`FILTER_CONTROL_MISSING`; run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40215362946). Isso ainda não prova defeito da biblioteca: a jornada não esperou a dispensa do popup do Spinner. O roteiro agora aguarda o retorno da busca, fecha somente um popup identificado e guarda XML/captura se o controle continuar ausente. A validação curta/longa permanece pendente no próximo SHA.
+
+
+### Causa confirmada de estado residual da busca — execução do SHA 9e0cb5a
+
+O log do run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/40216924861 mostrou a biblioteca aberta, `Todas` visível e contador `1 de 10 partituras`; o localizador falhou porque o campo de busca mantinha texto de um cenário anterior, fazendo o Android ocultar o hint `Buscar título`. Isso confirma estado de consulta residual entre cenários no mesmo emulador; não foi evidenciada perda de partitura nem corrupção de coleção. O roteiro passou a localizar o campo pelo tipo e posição, limpar somente a consulta visual, preservar dados de perfil/arquivos/coleções e exigir que o contador cubra ao menos todas as partituras empacotadas. Fixtures agora cobrem EditText preenchido sem hint. O build do mesmo SHA passou (https://github.com/atshimura/Piano-livre-aberto/actions/runs/40216924903); a jornada curta/longa ainda precisa ser repetida no SHA seguinte.
+
+
+### Roteiro de abertura da sessão — execução do SHA dac396f
+
+A jornada passou pela busca isolada: encontrou `Estudo livre 01`, após limpar a consulta de tela e validar o catálogo. O run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/40218278046 falhou no passo seguinte: o teste tocou o rótulo do título e não recebeu `POC_OSMD_READY` em 25 s. O log não demonstra se a tela permaneceu na biblioteca ou se abriu sem renderização; portanto isso segue como navegação/renderização não resolvida, não como causa já atribuída. O roteiro foi ajustado para tocar o botão visível `Estudar` e salvar screenshot/labels se a prontidão não chegar. Build/JVM/Chromium passou (https://github.com/atshimura/Piano-livre-aberto/actions/runs/40218278030); a jornada curta/longa segue pendente.
+
+
+### Reprodução em início determinístico — execução do SHA df16327
+
+A abertura explícita pelo botão `Estudar` funcionou e o OSMD desenhou as duas pautas; o workflow falhou depois, ao procurar `Pausar`. As labels mostravam posição `16.0`, fim do exercício curto de 16 tempos, e `Iniciar`/ `Parar`: a execução residual anterior havia deixado o playhead no final, fazendo o start terminar imediatamente. Run: https://github.com/atshimura/Piano-livre-aberto/actions/runs/40219775224 . O roteiro agora aciona `Início` na UI e exige que a posição mostrada volte a `0.0` antes de iniciar. Esse estado de navegação/playhead é reiniciado sem limpar dados do perfil ou da biblioteca.
+
+
+### Tempo suficiente para testar pausa no exercício curto — execução do SHA 773026d
+
+O emulador confirmou que o botão `Início` levou a posição a zero, mas o playback alcançou o fim em `16.0` antes de a consulta seguinte à hierarquia encontrar `Pausar` (run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40221311869). O OSMD carregou e a reprodução começou; o log marca `play=true mode=1`. Para evitar que o overhead de UI do emulador consuma o fixture curto de 16 tempos, o roteiro agora move o SeekBar de andamento até `25%`, confirma o rótulo visível e então testa pausa/retomada. Isso exercita o ajuste real de andamento e mantém a asserção de pausa.
+
+
+### Toque durante playback sem esperar a árvore UI — execução do SHA 36cff100
+
+O emulador confirmou o SeekBar em `25%`, mas duas capturas de hierarquia falharam no `adb pull` enquanto a música tocava; juntas consumiram cerca de 38 s, tempo suficiente para o exercício atingir `16.0` e encerrar (run https://github.com/atshimura/Piano-livre-aberto/actions/runs/40222887035). Não foi um timeout de reprodução do app: o log mostra início da execução e o fim normal antes de aparecer o botão de pausa. O teste agora captura previamente as coordenadas do controle visível e envia toques reais `adb input tap` para iniciar, pausar e retomar, verificando visualmente `Iniciar` quando pausado. A árvore não é consultada enquanto o relógio corre.
+
+
+### Aviso MIDI sem saída conectada — execução do SHA 569bda5
+
+No run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/40224464175, a jornada passou por posição inicial, andamento, renderizadores e retomada, mas ao entrar em Demonstração o app exibiu o aviso correto de ausência de saída MIDI. O roteiro não fechou o diálogo e então procurou o controle `Espera`, falhando porque só estavam acessíveis o aviso e `OK`. A regressão agora confirma o aviso, compara o contador `play=true mode=2` antes/depois para garantir que não iniciou saída MIDI inexistente e fecha com `OK` antes de continuar. O CI não possui porta Yamaha física; execução de saída MIDI é coberta por testes sintéticos da suíte JVM.
+
+
+### Pausa/retomada e momento do aviso MIDI — execução do SHA 252de2f
+
+O run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/40226052690 passou por biblioteca, busca, OSMD, mãos, teclado guia, retorno a `0.0`, andamento `25%`, pausa e retomada usando toques ADB. Falhou ao esperar o aviso MIDI imediatamente após selecionar Demonstração. A repetição anterior mostrou que o próprio app abre esse aviso somente quando o usuário toca `Iniciar` sem saída conectada; a verificação foi reposicionada para executar esse gesto, confirmar o aviso e ausência de `play=true mode=2`, fechar `OK` e prosseguir.
+
+
+
+### Prova final da jornada Android B — 2026-10-25
+
+No SHA de código `ffdda2fcc7081cee363560cb8f79336a5030f2da`, os workflows passaram no mesmo commit: build/JVM/Chromium [run 40227586693](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693) e emulador [run 40227586698](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698). O emulador registrou `STUDY_B_ANDROID_SESSION_PASS` para `Estudo livre 01` e `Gymnopédie nº 1`; em ambas: Espera, Contínuo, Demonstração sem saída física conectada, seleção das três opções de mãos, teclado guia, renderizadores OSMD/temporal/OSMD, início, pausa, retomada, posição inicial e retorno do background. A UI confirmou também o aviso ao tentar iniciar Demonstração sem MIDI; não houve playback fingido. Não houve Yamaha P-45, Realme 7 5G ou Lenovo Tab M9 neste CI.
+
+Build log: `STUDY_SESSION_INTEGRATION_PASS checks=15127`, `STUDY_LOOP_POSITION_PASS assertions=11`, `STUDY_NOTE_TIP_PASS checks=34`, `TEMPORAL_NOTE_TIP_BROWSER_PASS Mi4 · E4 viewport-safe and expires`, `BUILD SUCCESSFUL`. O emulador também passou por OSMD de 78 compassos, contexto fixo, mapeamento de 30 cabeças/eventos em polifonia, responsive baixo/alto/tablet, controles Android e `PUBLIC_ANDROID_EMULATOR_SMOKE_PASS`.
+
+Esta prova não integra PRs nem substitui aceite físico/editorial. A atualização documental subsequente mantém os mesmos arquivos de código; seu SHA precisa reexecutar os dois workflows antes de se declarar prova final do branch.
+
+
+## Fechamento da validação automatizada B1 + Entrega B — 2026-10-25
+
+Estado final de CI desta prova: SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`. Build/JVM/Chromium/APK de CI passou em [run 40229478373](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478373); emulador passou no mesmo SHA em [run 40229478320](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478320). Esse resultado supersede neste documento todas as notas anteriores que diziam que a reexecução documental estava pendente. A branch #62 segue experimental e não deve ser integrada. Main, Release e distribuição não foram alteradas; aceite físico/editorial segue pendente.
