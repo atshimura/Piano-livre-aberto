@@ -363,13 +363,14 @@ def exercise(title,slug):
     # rather than silently claiming sound from the visual keyboard.
     demo_before=log_count("play=true mode=2")
     tap_text(["Demonstração"],exact=True,scroll=True)
+    tap_text(["Iniciar"],scroll=True)
     warning=[]
     for _ in range(20):
         warning=labels()
         if any("Demonstração requer uma saída MIDI aberta" in value for value in warning):break
         time.sleep(.2)
     assert any("Demonstração requer uma saída MIDI aberta" in value for value in warning), \
-        "DEMONSTRATION_OUTPUT_WARNING_MISSING: unavailable MIDI output was not explained"
+        "DEMONSTRATION_OUTPUT_WARNING_MISSING: unavailable MIDI output was not explained after start"
     assert log_count("play=true mode=2")==demo_before, "Demonstration claimed MIDI without an output device"
     tap_text(["OK"],exact=True)
     time.sleep(.3)
