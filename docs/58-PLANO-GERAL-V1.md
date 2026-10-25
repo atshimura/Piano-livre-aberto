@@ -174,3 +174,8 @@ Ordem de revisão futura: preservar #51 (B1) como base; selecionar uma implement
 ## Resultado automatizado da prova integrada — 2026-10-25
 
 No SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`, passaram build/JVM/Chromium [run 40229478373](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478373) e emulador [run 40229478320](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478320). Esta evidência supersede notas históricas neste documento que aguardavam a execução de CI da atualização. Mantêm-se as decisões anteriores: B1 deve ser revisada primeiro; escolher #58/#59/#60 para componentes B e portar a jornada Android corrigida em revisão coordenada; #62 é prova experimental, não destino de merge. Main não foi alterada. Aceite físico/editorial continua pendente.
+
+
+## Revisão coordenada da Entrega B sobre B1 — 2026-10-25
+
+A branch de implementação está no PR draft #63, cuja base é o HEAD B1 #51. O SHA de código `9ddbd2749055d6fb95a2911225d50359e03f97a4` passou build/JVM/Chromium [40231690624](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690624) e emulador [40231690719](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690719), no mesmo SHA. #64 é somente disparador CI sobre `main`, nunca destino de merge. A ordem recomendada é revisar #51 e depois #63; #52/#53/#54 são alternativas superadas por #58/#60/#59. Merge, Release/distribuição e aceite físico/editorial continuam pendentes.
