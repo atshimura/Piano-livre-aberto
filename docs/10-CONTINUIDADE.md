@@ -289,3 +289,8 @@ O emulador confirmou o SeekBar em `25%`, mas duas capturas de hierarquia falhara
 ### Aviso MIDI sem saída conectada — execução do SHA 569bda5
 
 No run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/40224464175, a jornada passou por posição inicial, andamento, renderizadores e retomada, mas ao entrar em Demonstração o app exibiu o aviso correto de ausência de saída MIDI. O roteiro não fechou o diálogo e então procurou o controle `Espera`, falhando porque só estavam acessíveis o aviso e `OK`. A regressão agora confirma o aviso, compara o contador `play=true mode=2` antes/depois para garantir que não iniciou saída MIDI inexistente e fecha com `OK` antes de continuar. O CI não possui porta Yamaha física; execução de saída MIDI é coberta por testes sintéticos da suíte JVM.
+
+
+### Pausa/retomada e momento do aviso MIDI — execução do SHA 252de2f
+
+O run Android https://github.com/atshimura/Piano-livre-aberto/actions/runs/40226052690 passou por biblioteca, busca, OSMD, mãos, teclado guia, retorno a `0.0`, andamento `25%`, pausa e retomada usando toques ADB. Falhou ao esperar o aviso MIDI imediatamente após selecionar Demonstração. A repetição anterior mostrou que o próprio app abre esse aviso somente quando o usuário toca `Iniciar` sem saída conectada; a verificação foi reposicionada para executar esse gesto, confirmar o aviso e ausência de `play=true mode=2`, fechar `OK` e prosseguir.
