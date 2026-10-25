@@ -262,8 +262,22 @@ def exercise(title,slug):
     library(title)
     adb("logcat","-c")
     before=log_count("POC_OSMD_READY {")
-    tap_text([title],scroll=True)
-    wait_new("POC_OSMD_READY {",before)
+    # Open through the explicit study action, rather than relying on a
+    # noninteractive title label to bubble a touch to its parent card.
+    tap_text(["Estudar"],scroll=True)
+    try:
+        wait_new("POC_OSMD_READY {",before)
+    except AssertionError as exc:
+        current=labels()
+        screenshot("piano-"+slug+"-study-open-failure.png")
+        if any("BIBLIOTECA MUSICAL" in value for value in current):
+            cause="study action returned to or remained in the library"
+        elif any("BIBLIOTECA" in value for value in current):
+            cause="library navigation did not enter Study"
+        else:
+            cause="Study opened without OSMD readiness"
+        raise AssertionError("STUDY_NAVIGATION_FAILED: "+cause+"; labels="+repr(current[:50])+
+                             "; "+str(exc)) from exc
     expect(title,"Study lost its selected score name")
     for text in ["Espera","Contínuo","Demonstração","Teclado guia"]:
         expect(text,"Study missing essential control: "+text)
