@@ -55,6 +55,9 @@ def library_result_count(text):
     match=re.fullmatch(r"\s*(\d+)\s+de\s+(\d+)\s+partituras\s*",text)
     return (int(match.group(1)),int(match.group(2))) if match else None
 
+def adb_search_text(text):
+    return text.replace(" ","%s")
+
 def verify_library_filter_locator():
     # Regression fixture: profile Spinner intentionally comes first in the
     # Android hierarchy; the search-row Spinner is the catalog filter.
@@ -151,7 +154,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     search_bounds=_bounds(search) if search is not None else None
     if search_bounds is None:
         raise AssertionError("LIBRARY_SEARCH_MISSING: loaded library has no title search field")
-    query="Estudo%slivre%01" if expected=="Estudo livre 01" else "Gymnop"
+    query=adb_search_text("Estudo livre 01" if expected=="Estudo livre 01" else "Gymnop")
     current=search.attrib.get("text","")
     if current=="Buscar título ou arquivo":current=""
     adb("shell","input","tap",str((search_bounds[0]+search_bounds[2])//2),
