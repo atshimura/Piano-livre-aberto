@@ -41,6 +41,10 @@ Fontes confrontadas: [AGENTS](../AGENTS.md), [visão e requisitos](01-VISAO-E-RE
 
 Estados: **I** = implementação presente na `main`; **IP** = implementação parcial; **E** = implementação em branch experimental, não integrada; **P** = pendência de desenvolvimento; **F** = aceitação em hardware real pendente. Um módulo ou teste no repositório é prova de **existência**, não de aprovação de todos os seus comportamentos. `PASS` em CI refere-se ao SHA executado, nunca automaticamente a commits posteriores.
 
+### Revisão da Entrega B e reconciliação com PR #48 (25/10/2026)
+
+Este inventário preserva o levantamento e os requisitos do PR #48 (`62a9443`), incluindo a separação entre funcionalidade já presente na main, decisão aprovada e trabalho futuro do Laboratório. O texto principal continua descrevendo a `main` em `801543c`; não representa os PRs abertos como integrados. A Entrega B tem inventário adicional nos docs 60–65, que discriminam as diferenças entre os PRs de etiquetas (#52/#58), loops (#54/#59), sessões (#53/#60), UI Android (#55) e provas compostas (#56/#57/#61). A leitura atualizada está em [doc 65](65-ENTREGA-B-AUDITORIA-E-RECONCILIACAO.md); não somar aprovações individuais como aprovação da combinação.
+
 ### Matriz do aplicativo integrado (`main`)
 
 | ID | Subsistema | Estado / evidência de implementação | Lacuna concreta / limite |
@@ -104,3 +108,16 @@ Para cada PR futuro, atualizar os IDs afetados: referência exata de commit e Ac
 ### B1 — revisão de legibilidade do Estudo (22/10/2026)
 
 **E/IP**, continuação no PR [#51](https://github.com/atshimura/Piano-livre-aberto/pull/51), head testado `d11a85845d7fa7d40f0fd7495a800502d62e7354`. Atualiza INV-02/03/15: Gymnopédie 738×196 CSS px passou de 4,77976 a 5,07480 CSS px (+6,17%), sem overflow vertical ou clipping; a pauta permanece abaixo do limiar diagnóstico de 6 px. Canon: OSMD SVG ativo, listas auxiliares de solfejo/dedilhado ocultas em cópia transitória e cifras não ocultadas. Für Elise: dinâmica `p` em compasso 13/beat 36 preservada e movida 7,15 CSS px após colisão mensurada de 3,15 px com G♯3. Corpus: 27/27, com 23 OSMD e quatro fallbacks explícitos conferidos. Capturas e dados: [evidências B1](evidence/study-profile/b1/); detalhamento e limitações em [59](59-ESTUDO-ADAPTAVEL.md). Aceite editorial/físico continua pendente; não conclui B/C nem V1. Os documentos-base 57/58 do PR #48 foram preservados; este é adendo, não substituição.
+
+
+
+### Reconciliação técnica da Entrega B — 2026-10-25
+
+A prova integrada no SHA `ffdda2fcc7081cee363560cb8f79336a5030f2da` passou em build/JVM/Chromium e emulador no mesmo SHA (runs [40227586693](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693) e [40227586698](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698)). A jornada curta `Estudo livre 01` e longa `Gymnopédie nº 1` exercitou conjuntamente Espera, Contínuo, Demonstração, mãos, teclado guia, pausa/retomada, renderer OSMD/temporal, busca, início e background. O teste de emulador não possui saída MIDI Yamaha física; a demonstração Android sem porta confirmou aviso explícito e nenhuma reprodução declarada.
+
+Reconciliação de branches para revisão, sem merge: manter uma implementação de etiquetas que cubra OSMD e temporal (preferência técnica #58 sobre #52); loops com parada/liberação/recomposição de rota (#59 sobre #54); cobertura musical curta/longa (#60 sobre #53); e jornada UI determinística corrigida a partir do #55. #56, #57 e #61 continuam experimentais; o PR #62 é apenas prova integrada, não destino de merge. Esta reconciliação é adendo e preserva o inventário e as contribuições editoriais anteriores.
+
+
+## Estado de validação automatizada — 2026-10-25
+
+A composição experimental B1+B foi validada no SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`: build/JVM/Chromium [40229478373](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478373) e emulador [40229478320](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478320), ambos aprovados no mesmo SHA. O roteiro Android passou para Estudo livre 01 e Gymnopédie nº 1; a suíte inclui cobertura musical sintética adicional. As notas anteriores deste adendo que mantinham a validação pendente foram supersedidas. Preserva-se o inventário e o conteúdo vindo do PR #48. #62 continua prova CI-only, sem integração; aceite físico/editorial pendente.
