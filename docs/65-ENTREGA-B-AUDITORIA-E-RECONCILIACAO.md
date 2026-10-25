@@ -123,4 +123,4 @@ A conclusão aqui é de implementação e validação automatizada da composiç�
 
 ### Precisão de SHA após a revisão documental
 
-O SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9` é o SHA exato do código integrado testado em ambos os workflows. As cinco revisões finais somente Markdown posteriores levaram o HEAD documental da branch a `a36766aa7bec624b66610de83733ceeb08a43995`; nenhum arquivo do app ou dos testes mudou depois do SHA testado. Os workflows não foram acionados pelo filtro de paths para documentação. Portanto, o resultado reportado é reproduzível para a árvore de código SHA `89541ba`; não se afirma que os Actions executaram no HEAD documental posterior.
+O SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9` é o SHA exato do código integrado testado em ambos os workflows. Revisões somente Markdown posteriores alteraram a documentação; nenhum arquivo do app ou dos testes mudou depois do SHA testado. Os workflows não foram acionados pelo filtro de paths para documentação. Portanto, o resultado reportado é reproduzível para a árvore de código SHA `89541ba`; não se afirma que os Actions executaram no HEAD documental posterior.
