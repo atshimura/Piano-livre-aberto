@@ -63,3 +63,8 @@ O run 40216924861 no SHA `9e0cb5a2ba4f910e73343305ef1d9b558d03e9d1` confirmou qu
 ## Navegação do título para Estudo
 
 No SHA `dac396fd5bc9f9934efc6d28cf8c6ae67124a494`, a busca determinística passou, localizando `Estudo livre 01` com o catálogo completo. A sequência tocou o texto do título e aguardou `POC_OSMD_READY`, que não apareceu (run 40218278046). O log não trouxe tela/estado suficiente para decidir entre clique sem navegação e abertura sem prontidão. A regressão agora aciona explicitamente o controle `Estudar` e captura screenshot/labels em timeout. Não classificar como resolvido até a jornada Android passar.
+
+
+## Playhead residual entre cenários
+
+No run 40219775224, o botão explícito `Estudar` levou ao OSMD e `SCORE_DRAWN` foi registrado. A falha ocorreu ao buscar `Pausar`; a interface mostrava `posição 16.0` e `Iniciar`, que corresponde ao fim da partitura curta de 16 tempos. A reprodução iniciada no fim terminou imediatamente. O roteiro passa a usar o controle visual `Início` e verificar posição `0.0` antes de iniciar, sem remover dados ou reduzir cobertura.
