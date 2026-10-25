@@ -124,3 +124,8 @@ A conclusão aqui é de implementação e validação automatizada da composiç�
 ### Precisão de SHA após a revisão documental
 
 O SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9` é o SHA exato do código integrado testado em ambos os workflows. Revisões somente Markdown posteriores alteraram a documentação; nenhum arquivo do app ou dos testes mudou depois do SHA testado. Os workflows não foram acionados pelo filtro de paths para documentação. Portanto, o resultado reportado é reproduzível para a árvore de código SHA `89541ba`; não se afirma que os Actions executaram no HEAD documental posterior.
+
+
+## Encerramento da consolidação para revisão — 2026-10-25
+
+PR draft #63 agora contém o delta de 21 arquivos sobre o HEAD exato da B1 #51; a comparação confirma zero commits/fixes B1 incluídos além dessa base e preserva o corpus herdado. O SHA de código `9ddbd2749055d6fb95a2911225d50359e03f97a4` passou nos workflows da sombra #64 (mesmo SHA): build/JVM/Chromium [40231690624](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690624) e emulador [40231690719](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690719). Logs: `STUDY_SESSION_INTEGRATION_PASS checks=15127`, `STUDY_LOOP_POSITION_PASS assertions=11`, `STUDY_NOTE_TIP_PASS checks=34`, `TEMPORAL_NOTE_TIP_BROWSER_PASS Mi4 · E4 viewport-safe and expires`, `STUDY_PROFILE_BROWSER_PASS files=27`, `STUDY_B_ANDROID_SESSION_PASS` para as partituras curta e longa e `PUBLIC_ANDROID_EMULATOR_SMOKE_PASS`. #62 permanece prova histórica; #64 é CI-only e não deve ser integrado. Revisar #51 e #63 nessa ordem. Nenhum merge, Release ou APK distribuído; Realme 7 5G, Lenovo Tab M9, Yamaha P-45 e aceite editorial permanecem pendentes.
