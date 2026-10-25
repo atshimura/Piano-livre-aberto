@@ -78,3 +78,8 @@ No run 40221311869, o teste reiniciou o playhead em zero, iniciou o exercício d
 ## Latência de captura UI durante playback
 
 No run 40222887035, o andamento em `25%` foi confirmado, mas `uiautomator dump`/pull falhou por duas tentativas enquanto a execução estava ativa. O bloqueio consumiu ~38 s e o exercício de 16 tempos alcançou o final em `16.0`; a leitura tardia não encontrou `Pausar`. O roteiro agora armazena as coordenadas do controle de playback antes do início e executa os toques de iniciar/pausar/retomar por `adb input tap`, validando a UI em estado pausado. Isso mantém interação real Android e remove a captura lenta da seção crítica.
+
+
+## Demonstração sem porta MIDI no emulador
+
+O run 40224464175 chegou ao modo Demonstração e recebeu o aviso correto `Demonstração requer uma saída MIDI aberta para o Yamaha`, com ação `OK`. O teste deixou o diálogo aberto e falhou ao buscar `Espera`; a sequência agora verifica o aviso, garante que `play=true mode=2` não aumentou sem dispositivo e fecha o diálogo antes de continuar. O emulador não tem porta Yamaha física; envio MIDI e ciclo de vida sintético seguem cobertos na JVM.
