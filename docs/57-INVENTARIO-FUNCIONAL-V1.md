@@ -121,3 +121,8 @@ Reconciliação de branches para revisão, sem merge: manter uma implementação
 ## Estado de validação automatizada — 2026-10-25
 
 A composição experimental B1+B foi validada no SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`: build/JVM/Chromium [40229478373](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478373) e emulador [40229478320](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40229478320), ambos aprovados no mesmo SHA. O roteiro Android passou para Estudo livre 01 e Gymnopédie nº 1; a suíte inclui cobertura musical sintética adicional. As notas anteriores deste adendo que mantinham a validação pendente foram supersedidas. Preserva-se o inventário e o conteúdo vindo do PR #48. #62 continua prova CI-only, sem integração; aceite físico/editorial pendente.
+
+
+## PR de implementação e prova exata — 2026-10-25
+
+#63 consolida o delta de 21 arquivos sobre o SHA B1 #51 `15f05d7`, selecionando #58/#59/#60 e portando a jornada Android determinística corrigida. O HEAD de código `9ddbd2749055d6fb95a2911225d50359e03f97a4` passou build/JVM/Chromium [40231690624](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690624) e emulador [40231690719](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690719), ambos success. #64 é somente CI, mesmo SHA, não integrar. #52/#53/#54 permanecem alternativas históricas; contribuições anteriores do PR #48 são preservadas neste inventário.
