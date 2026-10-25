@@ -73,3 +73,8 @@ No run 40219775224, o botão explícito `Estudar` levou ao OSMD e `SCORE_DRAWN` 
 ## Duração do fixture curto e teste de pausa
 
 No run 40221311869, o teste reiniciou o playhead em zero, iniciou o exercício de 16 tempos e registrou `play=true mode=1`; na leitura seguinte, a música já estava em `16.0` e o botão `Pausar` havia desaparecido. Isso indica fim de execução durante a latência acumulada do fluxo UI no emulador. O teste agora altera o andamento pelo SeekBar para `25%`, confirma esse valor visível e só depois verifica pausa/retomada. A validação do gesto real e da posição inicial permanece assertada.
+
+
+## Latência de captura UI durante playback
+
+No run 40222887035, o andamento em `25%` foi confirmado, mas `uiautomator dump`/pull falhou por duas tentativas enquanto a execução estava ativa. O bloqueio consumiu ~38 s e o exercício de 16 tempos alcançou o final em `16.0`; a leitura tardia não encontrou `Pausar`. O roteiro agora armazena as coordenadas do controle de playback antes do início e executa os toques de iniciar/pausar/retomar por `adb input tap`, validando a UI em estado pausado. Isso mantém interação real Android e remove a captura lenta da seção crítica.
