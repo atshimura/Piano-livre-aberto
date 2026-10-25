@@ -88,3 +88,27 @@ O run 40224464175 chegou ao modo Demonstração e recebeu o aviso correto `Demon
 ## Momento de acionamento do aviso MIDI
 
 O run 40226052690 confirmou a passagem pela pausa/retomada e falhou ao procurar o aviso após apenas selecionar Demonstração. O aviso é mostrado quando se tenta iniciar sem saída MIDI. O teste executa agora esse clique, verifica o aviso e que o contador de playback MIDI não avançou, fecha o diálogo e retoma a jornada.
+
+
+
+## Prova final reproduzível de Entrega B integrada à B1 — 2026-10-25
+
+### SHA e workflows
+
+- SHA de código testado: `ffdda2fcc7081cee363560cb8f79336a5030f2da`, sobre a B1 #51 em `15f05d7463794409b64ed9b5efdfc7692ecb4127`.
+- Build, JVM, JS/Chromium, auditorias e APK de CI: [run 40227586693](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586693) — success.
+- Emulador Android, mesmas alterações e mesmo SHA: [run 40227586698](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40227586698) — success.
+
+### Evidência de cobertura
+
+O build registrou `STUDY_SESSION_INTEGRATION_PASS checks=15127`, `STUDY_LOOP_POSITION_PASS assertions=11`, `STUDY_NOTE_TIP_PASS checks=34`, `TEMPORAL_NOTE_TIP_BROWSER_PASS Mi4 · E4 viewport-safe and expires` e `BUILD SUCCESSFUL`. A jornada Android registrou `STUDY_B_ANDROID_SESSION_PASS` para a curta `Estudo livre 01` e longa `Gymnopédie nº 1`, ambas exercitando Espera, Contínuo, Demonstração sem saída física, mãos direita/esquerda/ambas, teclado guia, OSMD/temporal, início, pausa/retomada e background. Também passaram os fluxos de loops, busca, UI da biblioteca, responsive low/taller/tablet, Gymnopédie de 78 compassos, contexto fixo, polifonia 30/30 e o smoke Android público. As verificações de catálogo mantiveram fixtures e conteúdo fonte; nenhuma limpeza de arquivos de usuário foi adicionada.
+
+### Reconcilição dos PRs
+
+Para revisão futura, a combinação escolhe #58 para etiquetas OSMD/temporal, #59 para loops/MIDI, #60 para sessões musicais e a jornada UI do #55 após os ajustes de isolamento. #52/#54/#53 são variantes redundantes a não integrar junto com as versões escolhidas. #56/#57/#61 continuam provas experimentais; #62 também é apenas uma branch de validação e **não deve ser integrado**. Ordem planejada: #51 (B1) e, depois, os componentes B escolhidos em uma revisão coordenada, incluindo jornada Android. A main não foi alterada.
+
+### Limitações
+
+O emulador Android API 29 usou interações ADB e dados sintéticos; não tinha Yamaha P-45 conectado. O aviso de saída ausente foi confirmado e não se alegou som sem dispositivo. Realme 7 5G, Lenovo Tab M9, leitura editorial e aceite físico ainda dependem do usuário. Build validou APK de CI apenas; não houve distribuição, Release ou merge.
+
+A atualização documental ocorre após os workflows do SHA acima; o próximo SHA de documentação deve repetir build e emulador para fechar a prova no estado final do branch.
