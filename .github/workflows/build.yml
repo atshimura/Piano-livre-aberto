@@ -100,10 +100,10 @@ jobs:
             app/src/main/java/br/org/pianolivre/MidiPlayback.java \
             tests/StudySessionIntegrationTest.java
           java -Xmx512m -cp build/score-tests StudySessionIntegrationTest
-      - name: Manual loop edit and Note Off ordering (JVM)
+      - name: Music-aligned A-B loop markers (JVM)
         run: |
-          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/StudyLoopEditing.java tests/StudyLoopEditingTest.java
-          java -cp build/score-tests StudyLoopEditingTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/StudyLoopPosition.java tests/StudyLoopPositionTest.java
+          java -cp build/score-tests StudyLoopPositionTest
       - name: Test Laboratory music theory (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java tests/MusicTheoryTest.java
@@ -160,6 +160,7 @@ jobs:
           node tests/EngravingProofContractTest.js
           node tests/VerticalNavigationTest.js
           node tests/OpticalTimeMapTest.js
+          node tests/StudyLoopTransportContractTest.js
           node tests/StudyNoteTipTest.js
           node --check app/src/main/assets/study-note-tip.js
           node tests/PolyphonyFidelityTest.js

@@ -41,6 +41,10 @@ Fontes confrontadas: [AGENTS](../AGENTS.md), [visão e requisitos](01-VISAO-E-RE
 
 Estados: **I** = implementação presente na `main`; **IP** = implementação parcial; **E** = implementação em branch experimental, não integrada; **P** = pendência de desenvolvimento; **F** = aceitação em hardware real pendente. Um módulo ou teste no repositório é prova de **existência**, não de aprovação de todos os seus comportamentos. `PASS` em CI refere-se ao SHA executado, nunca automaticamente a commits posteriores.
 
+### Revisão da Entrega B e reconciliação com PR #48 (25/10/2026)
+
+Este inventário preserva o levantamento e os requisitos do PR #48 (`62a9443`), incluindo a separação entre funcionalidade já presente na main, decisão aprovada e trabalho futuro do Laboratório. O texto principal continua descrevendo a `main` em `801543c`; não representa os PRs abertos como integrados. A Entrega B tem inventário adicional nos docs 60–65, que discriminam as diferenças entre os PRs de etiquetas (#52/#58), loops (#54/#59), sessões (#53/#60), UI Android (#55) e provas compostas (#56/#57/#61). A leitura atualizada está em [doc 65](65-ENTREGA-B-AUDITORIA-E-RECONCILIACAO.md); não somar aprovações individuais como aprovação da combinação.
+
 ### Matriz do aplicativo integrado (`main`)
 
 | ID | Subsistema | Estado / evidência de implementação | Lacuna concreta / limite |

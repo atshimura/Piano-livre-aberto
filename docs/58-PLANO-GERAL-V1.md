@@ -1,5 +1,7 @@
 # 58 — Plano Geral de Desenvolvimento do Piano Livre até a versão 1.0
 
+> **Aditivo 25/10/2026:** mantenha as dependências da Entrega B separadas da B1. O inventário documental do PR #48 permanece preservado neste plano; a revisão de status, causas e reconciliação de #52–#61 fica em [doc 65](65-ENTREGA-B-AUDITORIA-E-RECONCILIACAO.md). A branch de CI `ci/entrega-b-integral-20261025` é experimental, não deve ser integrada. Não altere #46/#47/#48/#51 e não faça merge, Release ou distribuição. A prova final só pode ser afirmada para um SHA único com workflows de build e emulador aprovados.
+
 ### Evidência medida da reserva do contexto fixo (SHA b8ed11e, build 39875463421)
 
 O teste da fixture `engraving-context-change.musicxml` encontrou na implementação anterior uma faixa fixa que podia ocupar 168,94 CSS px enquanto o cursor permanecia próximo de 167 px no terceiro compasso. A revisão passou a reservar, antes do planejamento de janela e cursor, a **largura máxima do contexto efetivamente gravado** na partitura. No Chromium 738×196 a faixa mede 168,94 CSS px e o cursor está em 180,94 px, com 12 px livres e sem recorte nas transições 1→2→3→2→1. No tablet 883×409, faixa 360,34 px e cursor 372,34 px, igualmente com 12 px de folga. Ambos preservam a origem vertical. Isso demonstra ausência da colisão detectada nessa fixture, não prova legibilidade editorial universal.

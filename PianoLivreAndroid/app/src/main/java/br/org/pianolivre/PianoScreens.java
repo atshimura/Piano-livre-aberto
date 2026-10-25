@@ -359,21 +359,11 @@ class PianoScreens {
  void loopMenu(){
   new AlertDialog.Builder(a).setTitle("Repetição de trecho")
    .setItems(new String[]{"Marcar início na posição atual","Marcar fim na posição atual","Remover repetição","Voltar ao início"},(dlg,i)->{
-    if(i==2){a.clearLoop();updateSelections();return;}
-    if(i==3){a.seekPrevious();updateSelections();return;}
-    if(a.score==null)return;
-    StudyLoopEditing.Bounds selected=StudyLoopEditing.mark(a.position,a.loopStart,
-      a.loopEnd,a.score.end(),i==0);
-    if(selected==null){a.message("Trecho inválido: escolha posições musicais diferentes.");return;}
-    // The previous implementation changed loop boundaries while a MIDI
-    // demonstration was already sounding. Stop and release notes before
-    // rebuilding the route, including when marking just the first boundary.
-    a.stopPlayback();
-    a.loopStart=selected.start;a.loopEnd=selected.end;
-    a.resetWrittenRoute();
-    a.saveSession();a.updateInfo();updateSelections();
-    android.util.Log.i("PianoLivreUI","STUDY_LOOP_MENU "+(i==0?"start":"end")+
-      " from="+a.loopStart+" to="+a.loopEnd);
+    if(i==0)a.markLoopStart();
+    else if(i==1)a.markLoopEnd();
+    else if(i==2)a.clearLoop();
+    else a.seekPrevious();
+    updateSelections();
    }).show();
  }
  void showWaitFeedback(String message){

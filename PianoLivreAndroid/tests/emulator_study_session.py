@@ -2,7 +2,7 @@
 """GPL-3.0-only. Full UI state transitions on a SHORT and a LONG public score.
 The emulator cannot replace a physical USB-MIDI piano or physical legibility.
 """
-import json,time
+import json,re,time
 from pathlib import Path
 from emulator_ui import adb,dump,tap_text,screenshot,assert_running
 
@@ -23,23 +23,77 @@ def wait_new(marker,before,seconds=25):
         time.sleep(.5)
     raise AssertionError(marker+" did not arrive within "+str(seconds)+" s")
 
+def wait_for_library(seconds=20):
+    """Wait for a stable library screen and classify common UI-state failures."""
+    catalog=json.loads(Path("app/src/main/assets/catalog.json").read_text(encoding="utf-8"))
+    titles=[item["name"] for item in catalog]
+    expected="Estudo livre 01"
+    assert expected in titles, "SCORE_MISSING: expected short score is absent from the packaged catalog"
+    last=[]
+    for _ in range(seconds*2):
+        assert_running()
+        last=labels()
+        if any("← Biblioteca" in value for value in last):
+            tap_text(["← Biblioteca"],exact=True)
+            time.sleep(.35)
+            last=labels()
+        if (any("BIBLIOTECA MUSICAL" in value for value in last)
+                or any("Buscar título" in value for value in last)
+                or any(title in value for title in titles for value in last)):
+            break
+        # Dismiss a stale spinner/dialog left by a preceding UI scenario. This
+        # changes no app data; it only closes transient Android window state.
+        adb("shell","input","keyevent","4")
+        time.sleep(.35)
+    else:
+        raise AssertionError("NAVIGATION_FAILED: library header did not appear; labels="+repr(last[:40]))
+
+    # Reopen at the catalog's first rows so title lookup does not inherit a
+    # previous screen's ScrollView offset.
+    for _ in range(6):
+        if any("BIBLIOTECA MUSICAL" in value for value in labels()):break
+        root=dump()
+        scroll=next((n for n in root.iter("node") if n.attrib.get("scrollable")=="true"
+                     and "Horizontal" not in n.attrib.get("class","")),None)
+        if scroll is None:break
+        bounds=[int(x) for x in re.findall(r"\d+",scroll.attrib.get("bounds",""))]
+        if len(bounds)!=4:break
+        x=str((bounds[0]+bounds[2])//2)
+        adb("shell","input","swipe",x,str(bounds[1]+20),x,str(bounds[3]-20),"350")
+        time.sleep(.2)
+
+    # The filter is a screen control, not persisted library data. Explicitly
+    # return to All so a prior scenario cannot hide an otherwise valid score.
+    spinner=next((n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.Spinner"),None)
+    if spinner is not None and spinner.attrib.get("text","").strip()!="Todas":
+        bounds=[int(x) for x in re.findall(r"\d+",spinner.attrib.get("bounds",""))]
+        if len(bounds)==4:
+            adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
+            time.sleep(.2)
+            tap_text(["Todas"],exact=True)
+            last=labels()
+
+    # Give asynchronous layout work a bounded interval. Distinct errors make a
+    # missing asset, a filtering issue and a library/navigation failure clear.
+    for _ in range(20):
+        last=labels()
+        if any(expected in value for value in last):
+            return
+        if any("BIBLIOTECA MUSICAL" in value for value in last) and any(" de " in value and "partituras" in value for value in last):
+            break
+        time.sleep(.25)
+    if not any("BIBLIOTECA MUSICAL" in value for value in last):
+        raise AssertionError("NAVIGATION_FAILED: left the library while waiting; labels="+repr(last[:40]))
+    result=next((v for v in last if "partituras" in v),"")
+    filter_labels=[v for v in last if "Favoritos" in v or "Coleção:" in v or v.strip()=="Todas"]
+    if "0 de " in result or any("Favoritos" in v or "Coleção:" in v for v in filter_labels):
+        raise AssertionError("SCORE_HIDDEN_BY_FILTER: reset to Todas did not reveal the catalog score; result="+repr(result)+" filters="+repr(filter_labels))
+    if not result:
+        raise AssertionError("LIBRARY_NOT_LOADED: library shell appeared without the catalog result count; labels="+repr(last[:40]))
+    raise AssertionError("SCORE_NOT_VISIBLE: packaged score exists and library is loaded; result="+repr(result)+" labels="+repr(last[:40]))
+
 def library():
-    # On cold launch we are ALREADY on the library page, where Biblioteca
-    # appears as a non-clickable description. Do not tap it as a control.
-    visible=labels()
-    if any("← Biblioteca" in v for v in visible):
-        tap_text(["← Biblioteca"],scroll=True)
-        time.sleep(.5)
-        visible=labels()
-    assert_running()
-    assert not any("← Biblioteca" in v for v in visible), \
-           "Study back button remained after returning to library"
-    # The ScrollView keeps its earlier scroll position. A hero subtitle at
-    # the top is not required to be visible after reopening the library.
-    known={item["name"] for item in json.loads(
-      Path("app/src/main/assets/catalog.json").read_text(encoding="utf-8"))}
-    assert any(title in label for title in known for label in visible), \
-           "No catalog score visible after library return"
+    wait_for_library()
 
 def exercise(title,slug):
     library()
@@ -113,8 +167,12 @@ def exercise(title,slug):
             "pause":"stopped and restarted","background":"returned"}
 
 def main():
+    # A force-stop clears transient Android popups/windows while preserving all
+    # app preferences and files. This makes this UI journey order-independent
+    # after upgrade/profile/library scenarios on the same emulator.
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-S","-W","-n",PACKAGE)
-    time.sleep(1)
+    wait_for_library()
     result=[]
     for title,slug in [("Estudo livre 01","short"),("Gymnopédie nº 1","long")]:
         result.append(exercise(title,slug))

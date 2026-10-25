@@ -491,6 +491,27 @@ if __name__=="__main__":
     assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
         "Loop edit left native playback running instead of releasing MIDI"
     print("STUDY_B_MANUAL_LOOP_ANDROID_PASS",flush=True)
+    # The musical B marker must also snap to a full sounding-note release and
+    # cancel playback before applying the checked route. Reuse cached button
+    # bounds so hierarchy dumps do not race a running WebView.
+    def open_loop_menu():
+        assert_running()
+        adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1000")
+        time.sleep(.3)
+        assert any("Marcar início na posição atual" in n.attrib.get("text","")
+                   for n in dump().iter("node")), "Loop menu did not reopen"
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.8)
+    open_loop_menu()
+    tap_text(["Marcar fim na posição atual"],exact=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
+        "Applying B left continuous playback running"
+    tap_text(["Iniciar"],scroll=True)
+    time.sleep(.45)
+    open_loop_menu()
+    tap_text(["Remover repetição"],exact=True)
+    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
+        "Clearing the active A-B loop left playback running"
     tap_text(["Início"],scroll=True)
 
     # Graphical loop selection must use TWO native-reconciled noteheads,
