@@ -30,6 +30,26 @@ jobs:
       - name: Android SDK 35
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Adaptive Study profile and complete corpus (desktop Chromium)
+        env:
+          PIANO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          node tests/StudyProfileTest.js
+          node tests/StudyWindowTest.js
+          mkdir -p build/score-tests
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java tests/StudyProfileCorpus.java
+          java -cp build/score-tests StudyProfileCorpus > build/study-corpus.tsv
+          gradle --no-daemon :app:prepareOfflineNotation
+          npm install --prefix build/study-browser --no-audit --no-fund playwright@1.49.1
+          build/study-browser/node_modules/.bin/playwright install --with-deps chromium
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/StudyProfileBrowserTest.js
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/TemporalNoteTipBrowserTest.js
+      - name: Save adaptive Study measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adaptive-study-corpus
+          path: docs/evidence/study-profile/
       - name: Task 06 exact source and native fidelity
         run: |
           python3 tests/complex_notation_source_test.py
@@ -72,6 +92,19 @@ jobs:
           java -Xmx512m -cp build/score-tests KeyboardGuideLoadTest
           javac -cp build/score-tests -d build/score-tests tests/MusicTimelineConsistencyTest.java
           java -cp build/score-tests MusicTimelineConsistencyTest
+      - name: End-to-end musical Study journeys on short and long scores (JVM)
+        run: |
+          javac -cp build/score-tests -d build/score-tests \
+            app/src/main/java/br/org/pianolivre/WaitPreparation.java \
+            app/src/main/java/br/org/pianolivre/WaitRecognizer.java \
+            app/src/main/java/br/org/pianolivre/KeyboardGuide.java \
+            app/src/main/java/br/org/pianolivre/MidiPlayback.java \
+            tests/StudySessionIntegrationTest.java
+          java -Xmx512m -cp build/score-tests StudySessionIntegrationTest
+      - name: Music-aligned A-B loop markers (JVM)
+        run: |
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/StudyLoopPosition.java tests/StudyLoopPositionTest.java
+          java -cp build/score-tests StudyLoopPositionTest
       - name: Test Laboratory music theory (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java tests/MusicTheoryTest.java
@@ -128,6 +161,9 @@ jobs:
           node tests/EngravingProofContractTest.js
           node tests/VerticalNavigationTest.js
           node tests/OpticalTimeMapTest.js
+          node tests/StudyLoopTransportContractTest.js
+          node tests/StudyNoteTipTest.js
+          node --check app/src/main/assets/study-note-tip.js
           node tests/PolyphonyFidelityTest.js
           node tests/EnharmonicReconciliationTest.js
           node tests/AccidentalConventionsTest.js

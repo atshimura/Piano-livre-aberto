@@ -264,14 +264,25 @@ class PianoScreens {
   notation=new NotationView(a,new NotationView.Listener(){
    public void onRendered(){
     legacyFallback.setVisibility(View.INVISIBLE);
+    if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+       &&a.getIntent().getBooleanExtra("study_failure_selftest",false)){
+     a.getIntent().removeExtra("study_failure_selftest");
+     notation.evaluateJavascript("window.opensheetmusicdisplay=null;PianoNotation.load('<score-partwise/>',0,'engraving-poc',[])",null);
+    }
+    if(rendererButtons[1]!=null)rendererButtons[1].setText("Anterior · temporal");
+    updateSelections();
     followScore(a.position,true);
     android.util.Log.i("PianoLivreNotation","NOTATION_RENDERED");
    }
    public void onError(String cause){
     notation.setVisibility(View.INVISIBLE);
     legacyFallback.setVisibility(View.VISIBLE);
-    android.util.Log.w("PianoLivreNotation","Notation fallback: "+cause);
+    if(rendererButtons[1]!=null)rendererButtons[1].setText("Esquemático · ativo");
+    updateSelections();
+    android.widget.Toast.makeText(a,"Visualização esquemática ativa; falha na notação: "+cause,android.widget.Toast.LENGTH_LONG).show();
+    android.util.Log.w("PianoLivreNotation","ACTIVE_RENDERER schematic; Notation fallback: "+cause);
    }
+   @Override public void onPresentation(String message){if(!message.isEmpty())android.widget.Toast.makeText(a,message,android.widget.Toast.LENGTH_LONG).show();}
    @Override public void onLoopSelected(double start,double end){
     editingLoop=false;
     a.applyLoopSelection(start,end);
@@ -348,11 +359,11 @@ class PianoScreens {
  void loopMenu(){
   new AlertDialog.Builder(a).setTitle("Repetição de trecho")
    .setItems(new String[]{"Marcar início na posição atual","Marcar fim na posição atual","Remover repetição","Voltar ao início"},(dlg,i)->{
-    if(i==0)a.loopStart=a.position;else if(i==1)a.loopEnd=a.position;
-    else if(i==2){a.clearLoop();return;}
-    else {a.seekPrevious();return;}
-    if(a.loopEnd<a.loopStart){double tmp=a.loopEnd;a.loopEnd=a.loopStart;a.loopStart=tmp;}
-    a.saveSession();a.updateInfo();
+    if(i==0)a.markLoopStart();
+    else if(i==1)a.markLoopEnd();
+    else if(i==2)a.clearLoop();
+    else a.seekPrevious();
+    updateSelections();
    }).show();
  }
  void showWaitFeedback(String message){
@@ -380,7 +391,7 @@ class PianoScreens {
   if(loopButton!=null)loopButton.setText(editingLoop?"Selecionando…":"Trecho ↻");
  }
  void selectStudyRenderer(boolean useOsmd){
-  if(notation==null||a.score==null||notation.isEngravingProof()==useOsmd)return;
+  if(notation==null||a.score==null||notation.isEngravingProof()==useOsmd&&!notation.hasRendererFailure())return;
   // A renderer change is presentational: leave beat, playback, MusicXML,
   // profile, and saved study data untouched.
   notation.setEngravingProof(useOsmd);

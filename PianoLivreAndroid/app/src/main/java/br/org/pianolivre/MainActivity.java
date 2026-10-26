@@ -683,7 +683,26 @@ public class MainActivity extends Activity {
   else if(screens!=null)screens.followScore(position,true);
   saveSession();updateInfo();
  }
+ /** Menu start is a pending A marker; it must not mutate a running MIDI route. */
+ void markLoopStart(){
+  if(score==null)return;
+  stopPlayback();
+  loopStart=StudyLoopPosition.start(score,position);
+  loopEnd=Double.MAX_VALUE;
+  resetWrittenRoute();
+  saveSession();updateInfo();
+  android.util.Log.i("PianoLivreUI","STUDY_LOOP_MENU start from="+loopStart);
+ }
+ /** Commit B at a complete musical release using the validated loop path. */
+ void markLoopEnd(){
+  if(score==null)return;
+  double release=StudyLoopPosition.end(score,position);
+  applyLoopSelection(Math.min(loopStart,release),Math.max(loopStart,release));
+  android.util.Log.i("PianoLivreUI","STUDY_LOOP_MENU end from="+loopStart+" to="+loopEnd);
+ }
  void clearLoop(){
+  // Release active MIDI notes before replacing the route and loop bounds.
+  stopPlayback();
   loopStart=0;loopEnd=Double.MAX_VALUE;resetWrittenRoute();
   if(screens!=null)screens.clearLoopSelection();
   saveSession();updateInfo();
