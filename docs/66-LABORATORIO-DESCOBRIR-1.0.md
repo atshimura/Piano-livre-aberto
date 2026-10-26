@@ -51,3 +51,16 @@ Código final auditado no SHA `7ce5d2fcd99c49349fabefe17341ccd431073dd4` da bran
 - Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 exigem aceite físico do usuário. Nenhum desses ensaios é declarado feito remotamente.
 - A versão proposta para o APK da branch é `0.9.49-open-beta`, code 58. A beta 0.9.48 existente não é substituída ou republicada por esta branch; Release/publicação aguardam autorização expressa.
 - A Entrega C e o Laboratório Musical 1.0 integrado permanecem trabalho separado; este PR não conclui a versão 1.0.
+
+
+## Integração e publicação da beta 0.9.49 — 26/10/2026
+
+O PR #65 foi integrado em `main` no merge commit `abfd4b51213be17df091288e436eef7e19453e9a`. Durante a validação da `main`, a suíte encontrou uma expectativa obsoleta no teste de atualização (0.9.48/code 57); foi corrigida no PR #66. O PR #67 ajustou os filtros para executar o emulador quando scripts/testes mudarem e permitir os checks do mesmo SHA. Ambos foram integrados; o SHA de distribuição final é `9d5c3793f1b3e97132dfebec3a36e25c20723993`.
+
+- [Build/JVM/JavaScript/Chromium/MusicXML/APK — run 40401082178](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40401082178): sucesso, incluindo 49 checks de sessão, certificado estável e APK release não depurável.
+- [Emulador — run 40401082464](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40401082464): sucesso no mesmo SHA; 215 checks de UI Descobrir, 13 asserções MIDI e smoke público. Também passou a atualização in-place da beta pública 0.9.46 para 0.9.49 (code 55→58), com o mesmo certificado e dados sintéticos preservados.
+- Release oficial: [v0.9.49-open-beta](https://github.com/atshimura/Piano-livre-aberto/releases/tag/v0.9.49-open-beta). [Baixar APK](https://github.com/atshimura/Piano-livre-aberto/releases/download/v0.9.49-open-beta/PianoLivre-0.9.49-open-beta.apk).
+- Arquivo: `PianoLivre-0.9.49-open-beta.apk`, 592.580 bytes. SHA-256 `9a4343c232a175d7b420e1dfbc6d2268c88bb776ef1129ea015a98c8fd697e59`; coincide com digest GitHub do APK e checksum publicado.
+- Metadados verificados: package `br.org.pianolivre.opensource`, `versionCode=58`, `versionName=0.9.49-open-beta`, release sem depuração. Certificado permanente `7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290`, igual ao da beta 0.9.48.
+
+O conteúdo inclui correção visual da clave de fá, verificações por renderização rasterizada, notas/acordes/padrões suportados e preservação do resultado durante análise. Escalas/arpejos continuam limitados a padrões completos já reconhecidos pelo motor. Yamaha P-45, Realme 7 5G e Lenovo Tab M9 ainda exigem validação física; emulador e MIDI sintético não substituem esse aceite. A beta 0.9.49 não declara a versão 1.0 concluída. Próxima etapa: Entrega C.
