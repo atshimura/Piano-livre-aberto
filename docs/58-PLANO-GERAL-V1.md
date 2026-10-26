@@ -179,3 +179,8 @@ No SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`, passaram build/JVM/Chromium [
 ## Revisão coordenada da Entrega B sobre B1 — 2026-10-25
 
 A branch de implementação está no PR draft #63, cuja base é o HEAD B1 #51. O SHA de código `9ddbd2749055d6fb95a2911225d50359e03f97a4` passou build/JVM/Chromium [40231690624](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690624) e emulador [40231690719](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690719), no mesmo SHA. #64 é somente disparador CI sobre `main`, nunca destino de merge. A ordem recomendada é revisar #51 e depois #63; #52/#53/#54 são alternativas superadas por #58/#60/#59. Merge, Release/distribuição e aceite físico/editorial continuam pendentes.
+
+
+## D2 — fechamento técnico do Laboratório Descobrir — 2026-10-26
+
+A rodada `e3f6e48a9329eb81fab957a6f46f2c7941d75e81` passou em [build/JVM/JS/Chromium/MusicXML/APK 40365991237](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40365991237) e [emulador 40365991508](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40365991508). A auditoria corrigiu a clave de fá da pauta grave, fortaleceu os glifos ancorados em F3/G4 e adicionou regressão por pixels rasterizados; os testes também cobriram identificação e retenção de resultados. O artifact do emulador guarda nove capturas da pauta. Uma última extensão adiciona sequência longa dimensionada para viewports equivalentes a telefone (360 dp) e tablet (800 dp); aguarda os Actions do SHA atualizado. Aceite físico Yamaha P-45/Realme 7 5G/Lenovo Tab M9 continua pendente. A versão proposta continua `0.9.49-open-beta`, code 58; este fechamento não autoriza merge, Release ou distribuição de APK. Ver [doc 66](66-LABORATORIO-DESCOBRIR-1.0.md).

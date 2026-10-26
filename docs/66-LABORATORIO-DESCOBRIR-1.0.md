@@ -29,17 +29,17 @@ O teste Android agora renderiza a `DiscoveryStaffView` em bitmaps reais, confere
 
 `MusicDiscoverySessionTest` cobre registros grave/médio/agudo, oitavas, grafia, acordes simultâneos e rolados dentro da janela calibrada, escalas e arpejos nos dois sentidos, incompletude, ambiguidade, repetição/rearticulação, cancelamento, callbacks de conexão antiga e retenção do resultado.
 
-`MusicLabDiscoverySelfTest` é executado somente no APK debug do workflow de emulador. Ele percorre o botão inicial, barra e estado vazio, injeta MIDI sintético e valida a posição/clave/linha suplementar de C4, a mesma coluna das notas de acorde, e a ordem/altura das cabeças da sequência, além de persistência e retorno. A injeção sintética comprova o fluxo interno e não comprova conexão física com Yamaha P-45.
+`MusicLabDiscoverySelfTest` é executado somente no APK debug do workflow de emulador. Ele percorre o botão inicial, barra e estado vazio, injeta MIDI sintético e valida por pixels rasterizados os glifos de clave, as linhas suplementares e as posições de C2, C3, F3, C4, G4 e C6; também confere acordes graves/agudos/abrangentes e ordem/altura das notas de sequência. A regressão de sequência longa mede o conteúdo em viewports equivalentes a telefone (360 dp) e tablet (800 dp), exige espaçamento mínimo de 41 dp, todas as cabeças dentro do conteúdo rolável e rasterização da primeira e última notas. A injeção sintética comprova o fluxo interno e não comprova conexão física com Yamaha P-45.
 
 O workflow existente volta a executar testes JVM do catálogo, demonstração, prática, `MusicTheory`, `MusicPatternTracker`, além da bateria MusicXML/MIDI/JavaScript, build Android e jornadas de emulador. O relatório da entrega deve citar somente os Actions do SHA deste PR.
 
 ## Resultados executados em 26/10/2026
 
-Código validado: `a95c909497cf52471afcb129ed7812b5dc285039`. A árvore de código contém o resultado final; os checks foram executados no PR #65:
+A rodada anterior de fechamento passou no SHA `e3f6e48a9329eb81fab957a6f46f2c7941d75e81` no PR #65:
 
-- [Build, JavaScript, Chromium, MusicXML, testes JVM e APK](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40340408772) — sucesso. A nova sessão concluiu com `MUSIC_DISCOVERY_SESSION_PASS checks=29`; a suíte manteve os testes de `MusicTheory`, `MusicPatternTracker`, `MusicSequenceAnalyzer`, catálogo, demonstração, prática e os testes de regressão existentes.
-- [Emulador Android](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40340408802) — sucesso. Marcadores: `MIDI_SESSION_SELFTEST_PASS assertions=13`, `DISCOVERY_UI_SELFTEST_PASS checks=23` e `PUBLIC_ANDROID_EMULATOR_SMOKE_PASS`. A geometria verificou C4 na clave de sol com uma linha suplementar, C2 na clave de fá, C6 na clave de sol, acorde com cabeças simultâneas e sequência de oito notas em ordem.
-- O teste de emulador injeta MIDI sintético. Ele verifica o fluxo de software; não representa uma conexão física com o Yamaha P-45.
+- [Build/JVM/JavaScript/Chromium/MusicXML/APK](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40365991237) — sucesso; `MUSIC_DISCOVERY_SESSION_PASS checks=47`, teoria musical, padrões/sequências, catálogo, demonstração e prática passaram.
+- [Emulador Android](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40365991508) — sucesso; `MIDI_SESSION_SELFTEST_PASS assertions=13`, `DISCOVERY_UI_SELFTEST_PASS checks=53` e `PUBLIC_ANDROID_EMULATOR_SMOKE_PASS`. O artefato inclui nove capturas 990×440 px para C2/C3/F3/G4/C6, acordes grave/agudo/abrangente e sequência em duas pautas.
+- Essa rodada injeta MIDI sintético e não representa uma conexão física com o Yamaha P-45. A regressão adicional telefone/tablet foi incluída depois dessa execução; os workflows do novo SHA são a prova final dessa ampliação.
 
 ## Limites e aceite
 

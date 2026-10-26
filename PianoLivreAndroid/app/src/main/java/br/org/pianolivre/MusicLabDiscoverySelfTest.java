@@ -50,6 +50,8 @@ final class MusicLabDiscoverySelfTest {
   check(pos.get(0).clef.equals("fá")&&pos.get(1).clef.equals("sol")&&pos.get(2).clef.equals("sol"),"wide chord assigns bass below C4 and treble from C4");captureAndCheck(a,d.staff,false,"discovery-staff-grand-chord.png");
   setStaff(a,d.staff,Arrays.asList(55,59,60,62),true);pos=d.staff.layoutSnapshot();
   check(pos.size()==4&&pos.get(0).clef.equals("fá")&&pos.get(2).clef.equals("sol")&&pos.get(0).x<pos.get(3).x,"sequence crossing C4 preserves order and both staves");captureAndCheck(a,d.staff,true,"discovery-staff-grand-sequence.png");
+  verifyResponsiveSequence(a,d.staff,360,160,"discovery-staff-phone-sequence.png");
+  verifyResponsiveSequence(a,d.staff,800,260,"discovery-staff-tablet-sequence.png");
   d.session.reconnect(conn,null);d.midiAttack(60,200,2,conn,ui);d.midiAttack(64,200,2,conn,ui);d.midiAttack(67,200,2,conn,ui);d.midiRelease(60,conn,ui);d.midiRelease(64,conn,ui);d.midiRelease(67,conn,ui);d.midiBatchEnd(2,201,ui);
   MusicDiscoverySession.Result chord=d.session.result();check(chord.kind==MusicDiscoverySession.Kind.CHORD&&chord.notes.size()==3,"synthetic chord classification");setStaff(a,d.staff,chord.notes,false);pos=d.staff.layoutSnapshot();
   check(pos.size()==3&&pos.get(0).x==pos.get(2).x,"chord heads share a simultaneity column");
@@ -78,6 +80,16 @@ final class MusicLabDiscoverySelfTest {
   if(grand||!treble){float f3=bassBottom-30*d;check(inkNear(image,31*d,f3-5*d,d),"actual bass symbol upper dot flanks F3: "+name);check(inkNear(image,31*d,f3+5*d,d),"actual bass symbol lower dot flanks F3: "+name);}
   for(DiscoveryStaffView.NotePosition n:positions)if(n.midi==36||n.midi==84){float staffBottom=n.clef.equals("sol")?trebleBottom:bassBottom;float y=n.midi==36?staffBottom+20*d:staffBottom-60*d;check(inkNear(image,n.x+10*d,y,d),"actual supplementary ledger is at C2/C6 pitch: "+name);}
   try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),name))){image.compress(Bitmap.CompressFormat.PNG,100,out);}catch(Exception ex){throw new IllegalStateException("Unable to save staff capture "+name,ex);}finally{image.recycle();}
+ }
+ private static void verifyResponsiveSequence(Activity a,DiscoveryStaffView staff,int viewportDp,int heightDp,String name){
+  float d=density(staff);ArrayList<Integer> phrase=new ArrayList<>();int[] pattern={48,50,52,53,55,57,59,60,62,64,65,67,69,71,72,74,76,77,79,84};for(int n:pattern)phrase.add(n);
+  staff.setNotes(phrase,true);int contentDp=Math.max(viewportDp,70+phrase.size()*42);int w=Math.round(contentDp*d),h=Math.round(heightDp*d);
+  staff.measure(View.MeasureSpec.makeMeasureSpec(w,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(h,View.MeasureSpec.EXACTLY));staff.layout(0,0,w,h);
+  List<DiscoveryStaffView.NotePosition> pos=staff.layoutSnapshot();check(pos.size()==phrase.size(),"responsive sequence retains every identified pitch at "+viewportDp+"dp viewport");
+  for(int i=0;i<pos.size();i++){check(pos.get(i).midi==pattern[i],"responsive sequence pitch/order "+viewportDp+"dp index "+i);check(pos.get(i).x-11*d>=0&&pos.get(i).x+11*d<=w,"responsive notehead remains inside scroll content "+viewportDp+"dp index "+i);if(i>0)check(pos.get(i).x-pos.get(i-1).x>=41*d,"responsive horizontal spacing supports accidentals "+viewportDp+"dp index "+i);}
+  Bitmap image=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888);staff.draw(new Canvas(image));
+  check(inkNear(image,pos.get(0).x,pos.get(0).y,d)&&inkNear(image,pos.get(pos.size()-1).x,pos.get(pos.size()-1).y,d),"responsive raster includes first and last noteheads "+viewportDp+"dp viewport");
+  try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),name))){image.compress(Bitmap.CompressFormat.PNG,100,out);}catch(Exception ex){throw new IllegalStateException("Unable to save responsive staff capture "+name,ex);}finally{image.recycle();}
  }
  private static boolean inkNear(Bitmap image,float x,float y,float d){int cx=Math.round(x),cy=Math.round(y),r=Math.max(1,Math.round(d*1.5f));for(int yy=Math.max(0,cy-r);yy<=Math.min(image.getHeight()-1,cy+r);yy++)for(int xx=Math.max(0,cx-r);xx<=Math.min(image.getWidth()-1,cx+r);xx++){int p=image.getPixel(xx,yy);if(Color.red(p)<100&&Color.green(p)<120&&Color.blue(p)<150)return true;}return false;}
 }

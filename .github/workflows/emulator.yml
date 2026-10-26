@@ -92,7 +92,7 @@ jobs:
             adb logcat -d -v brief | grep 'XML_INPUT_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'HISTORY_ACTIVITY_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'DISCOVERY_UI_SELFTEST_PASS'
-            for image in c2 c3 f3 g4 c6 low-chord high-chord grand-chord grand-sequence; do adb shell run-as br.org.pianolivre.opensource cat "cache/discovery-staff-$image.png" > "piano-discovery-staff-$image.png"; done
+            for image in c2 c3 f3 g4 c6 low-chord high-chord grand-chord grand-sequence phone-sequence tablet-sequence; do adb shell run-as br.org.pianolivre.opensource cat "cache/discovery-staff-$image.png" > "piano-discovery-staff-$image.png"; done
             python3 tests/emulator_ui.py
             python3 tests/emulator_study_failure.py
             python3 tests/emulator_polyphony.py
@@ -147,6 +147,8 @@ jobs:
               "piano-discovery-staff-high-chord.png",
               "piano-discovery-staff-grand-chord.png",
               "piano-discovery-staff-grand-sequence.png",
+              "piano-discovery-staff-phone-sequence.png",
+              "piano-discovery-staff-tablet-sequence.png",
           ]
           report = []
           for name in names:
