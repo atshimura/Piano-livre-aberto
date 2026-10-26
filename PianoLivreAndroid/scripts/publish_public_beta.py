@@ -6,17 +6,19 @@ def gh(*args):
     return subprocess.run(['gh',*args],check=True,text=True,stdout=subprocess.PIPE).stdout
 repo=os.environ['GITHUB_REPOSITORY'];sha=os.environ['GITHUB_SHA'];before=os.environ['BEFORE_SHA']
 changed=subprocess.run(['git','diff','--quiet',before,sha,'--','PianoLivreAndroid/gradle.properties']).returncode
-if changed==0:
-    print('No version change; prerelease not created');raise SystemExit(0)
-if changed!=1:raise RuntimeError('Cannot compare version commit')
+if changed not in (0,1):raise RuntimeError('Cannot compare version commit')
 properties=dict(line.split('=',1) for line in pathlib.Path('PianoLivreAndroid/gradle.properties').read_text().splitlines() if '=' in line and not line.startswith('#'))
 version=properties['pianolivre.beta.versionName'];code=properties['pianolivre.beta.versionCode'];tag='v'+version
 if not version.endswith('-open-beta'):raise RuntimeError('Automatic publication accepts open-beta versions only')
-# Idempotent reruns never replace an existing release or its assets.
+# Idempotent recovery also supports a later main commit when this version's
+# publication was blocked by a failed check. Existing assets are never replaced.
 existing=subprocess.run(['gh','release','view',tag,'--repo',repo,'--json','targetCommitish'],text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 if existing.returncode==0:
-    if json.loads(existing.stdout)['targetCommitish']!=sha:raise RuntimeError('Version already published from another commit; increment version')
-    print('This commit already has a prerelease; assets preserved');raise SystemExit(0)
+    if json.loads(existing.stdout)['targetCommitish']==sha:
+        print('This commit already has a prerelease; assets preserved');raise SystemExit(0)
+    if changed==0:
+        print('This version is already published; existing release preserved');raise SystemExit(0)
+    raise RuntimeError('Version already published from another commit; increment version')
 for attempt in range(90):
     runs=json.loads(gh('api',f'repos/{repo}/commits/{sha}/check-runs?per_page=100'))['check_runs']
     selected=[next((r for r in runs if r['name']==name),None) for name in ['build','emulator']]
