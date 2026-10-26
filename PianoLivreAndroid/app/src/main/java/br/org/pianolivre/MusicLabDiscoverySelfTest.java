@@ -111,7 +111,7 @@ final class MusicLabDiscoverySelfTest {
   }
   staff.setRenderListener(new DiscoveryStaffView.RenderListener(){
    @Override public void onError(String message){throw new IllegalStateException("Discovery OSMD rendering failed "+sample.file+": "+message);}
-   @Override public void onRendered(){staff.inspectRenderedClefs(raw->{
+   @Override public void onRendered(){staff.setRenderListener(null);staff.inspectRenderedClefs(raw->{
     try{
      String payload=(String)new JSONTokener(raw).nextValue();JSONArray array=new JSONArray(payload);
      check(array.length()==sample.clefCount,"actual OSMD clef glyph count matches staff count: "+sample.file);
