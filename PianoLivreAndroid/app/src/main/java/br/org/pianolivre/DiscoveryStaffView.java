@@ -48,7 +48,9 @@ final class DiscoveryStaffView extends View {
   float[] bottoms=grand?new float[]{top+8*noteStep,top+gap+8*noteStep}:new float[]{top+8*noteStep};
   for(float b:bottoms)for(int i=0;i<5;i++)c.drawLine(42*density,b-i*2*noteStep,w-8*density,b-i*2*noteStep,p);
   p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.2f*density);
-  drawTrebleClef(c,19*density,bottoms[0],p);if(grand)drawBassClef(c,19*density,bottoms[1],p);
+  if(grand){drawTrebleClef(c,19*density,bottoms[0],p);drawBassClef(c,19*density,bottoms[1],p);}
+  else if(max>=60)drawTrebleClef(c,19*density,bottoms[0],p);
+  else drawBassClef(c,19*density,bottoms[0],p);
   layoutNotes(w,h);p.setTextSize(14*density);
   for(NotePosition n:positions){int d=diatonic(n.midi),base=n.clef.equals("sol")?4*7+2:2*7+4,delta=d-base;
    float bottom=n.clef.equals("sol")?bottoms[0]:bottoms[grand?1:0];
@@ -58,9 +60,9 @@ final class DiscoveryStaffView extends View {
   }
  }
  private void drawTrebleClef(Canvas c,float x,float bottom,Paint paint){
-  float d=getResources().getDisplayMetrics().density;Path path=new Path();path.moveTo(x,bottom+11*d);path.cubicTo(x-9*d,bottom+4*d,x+8*d,bottom-5*d,x+2*d,bottom-18*d);path.cubicTo(x-5*d,bottom-31*d,x+8*d,bottom-43*d,x+3*d,bottom-51*d);path.cubicTo(x-1*d,bottom-58*d,x-7*d,bottom-52*d,x-3*d,bottom-48*d);c.drawPath(path,paint);c.drawLine(x,bottom+12*d,x,bottom-62*d,paint);paint.setStyle(Paint.Style.FILL);c.drawCircle(x,bottom-20*d,2.5f*d,paint);paint.setStyle(Paint.Style.STROKE);
+  float d=getResources().getDisplayMetrics().density;Path path=new Path();path.moveTo(x,bottom+11*d);path.cubicTo(x-9*d,bottom+4*d,x+8*d,bottom-5*d,x+2*d,bottom-10*d);path.cubicTo(x-5*d,bottom-17*d,x+8*d,bottom-31*d,x+3*d,bottom-39*d);path.cubicTo(x-1*d,bottom-46*d,x-7*d,bottom-40*d,x-3*d,bottom-36*d);c.drawPath(path,paint);c.drawLine(x,bottom+12*d,x,bottom-50*d,paint);paint.setStyle(Paint.Style.FILL);c.drawCircle(x,bottom-10*d,2.5f*d,paint);paint.setStyle(Paint.Style.STROKE);
  }
  private void drawBassClef(Canvas c,float x,float bottom,Paint paint){
-  float d=getResources().getDisplayMetrics().density;Path path=new Path();path.moveTo(x+8*d,bottom-31*d);path.cubicTo(x-12*d,bottom-44*d,x-15*d,bottom-20*d,x-3*d,bottom-15*d);path.cubicTo(x+8*d,bottom-10*d,x+12*d,bottom-25*d,x+4*d,bottom-32*d);c.drawPath(path,paint);paint.setStyle(Paint.Style.FILL);c.drawCircle(x+10*d,bottom-29*d,1.7f*d,paint);c.drawCircle(x+10*d,bottom-19*d,1.7f*d,paint);paint.setStyle(Paint.Style.STROKE);
+  float d=getResources().getDisplayMetrics().density;float f3=bottom-6*noteStep;Path path=new Path();path.moveTo(x+8*d,f3-d);path.cubicTo(x-12*d,f3-14*d,x-15*d,f3+10*d,x-3*d,f3+16*d);path.cubicTo(x+8*d,f3+21*d,x+12*d,f3+6*d,x+4*d,f3);c.drawPath(path,paint);paint.setStyle(Paint.Style.FILL);c.drawCircle(x+10*d,f3-5*d,1.7f*d,paint);c.drawCircle(x+10*d,f3+5*d,1.7f*d,paint);paint.setStyle(Paint.Style.STROKE);
  }
 }

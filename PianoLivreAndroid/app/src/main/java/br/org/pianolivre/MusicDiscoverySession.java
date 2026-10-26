@@ -110,8 +110,14 @@ public final class MusicDiscoverySession {
  private void commitPending(){
   if(pending.isEmpty())return;
   ArrayList<Integer> exact=new ArrayList<>();for(Attack a:pending)exact.add(a.pitch);
-  if(exact.size()==1){int n=exact.get(0);result=new Result(Kind.NOTE,exact,
-    MusicNoteSpelling.portuguese(n)+" - "+MusicNoteSpelling.international(n),"");pending.clear();chordEvidence=false;return;}
+  if(exact.size()==1){int n=exact.get(0);
+   // The first released pitch is a valid note result. Once a second isolated
+   // attack joins the same phrase, keep that result stable while the sequence
+   // tracker waits for a complete pattern or a phrase boundary. This avoids
+   // replacing the result with every intermediate scale/arpeggio note.
+   if(phraseNotes.size()<=1||result==null)result=new Result(Kind.NOTE,exact,
+    MusicNoteSpelling.portuguese(n)+" - "+MusicNoteSpelling.international(n),"");
+   pending.clear();chordEvidence=false;return;}
   else {
    List<MusicTheory.Chord> chords=chordEvidence?MusicTheory.recognize(exact):Collections.emptyList();
    if(chords.size()==1)result=new Result(Kind.CHORD,exact,chords.get(0).symbol+" · "+chords.get(0).description,"");

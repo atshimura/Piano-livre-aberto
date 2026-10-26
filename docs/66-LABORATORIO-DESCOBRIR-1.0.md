@@ -17,6 +17,14 @@ Nota isolada usa grafia convencional fixa sem inferir tonalidade: DÓ/C, DÓ♯/
 
 `MusicPatternTracker` e `MusicSequenceAnalyzer` continuam reconhecendo somente padrões completos exatos de uma oitava previstos pelo motor atual. A tela substitui o resultado apenas ao confirmar outra nota, acorde ou padrão. Um padrão parcial não é anunciado como escala/arpejo. Após quatro ataques isolados, a pausa de frase usa duas vezes a mediana dos intervalos que a própria pessoa acabou de tocar (sem limite universal em ms); a pauta mostra todas as notas como sequência ambígua/incompleta. O último resultado permanece durante essa análise.
 
+### Auditoria final solicitada — 26/10/2026
+
+A revisão do SHA `701332dcb358f0d3052490a38c730bc235f67f42` reproduziu uma falha gráfica: a pauta de clave única chamava sempre `drawTrebleClef`, mesmo quando as notas estavam mapeadas para clave de fá. A regressão anterior consultava apenas `NotePosition.clef`, sem inspecionar o símbolo rasterizado. A correção seleciona clave de fá em pauta exclusivamente grave, mantém sol acima e fá abaixo na pauta dupla, e ancora os pontos da clave de fá ao redor da linha F3; a volta da clave de sol passa pela linha G4.
+
+A sessão sem calibração também era capaz de trocar o resultado por cada nota liberada durante uma frase. A regra implementada nesta revisão trata a primeira nota liberada como uma identificação válida; as notas seguintes da mesma frase não trocam esse resultado até que um padrão completo seja reconhecido ou o delimitador adaptativo finalize a frase como incompleta/ambígua. Acordes substituem o resultado quando as teclas simultâneas são confirmadas. Essa decisão não usa janela temporal fixa.
+
+O teste Android agora renderiza a `DiscoveryStaffView` em bitmaps reais, confere pixels do símbolo esperado e das linhas suplementares e salva capturas para C2, C3, F3, G4, C6, acordes graves/agudos/abrangentes e sequência que atravessa o C4. As capturas são incluídas no artefato do workflow de emulador. Também foram adicionadas transições de resultado nota→acorde, acorde→escala, escala→arpejo, arpejo→nota e resultado válido→frase incompleta. A validação dessas alterações deve ser citada somente após os dois workflows concluírem no mesmo SHA.
+
 ## Validação automatizada
 
 `MusicDiscoverySessionTest` cobre registros grave/médio/agudo, oitavas, grafia, acordes simultâneos e rolados dentro da janela calibrada, escalas e arpejos nos dois sentidos, incompletude, ambiguidade, repetição/rearticulação, cancelamento, callbacks de conexão antiga e retenção do resultado.

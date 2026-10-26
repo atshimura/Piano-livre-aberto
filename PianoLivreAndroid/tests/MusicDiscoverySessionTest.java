@@ -18,6 +18,11 @@ public final class MusicDiscoverySessionTest {
   Rig chord=new Rig(null);chord.on(60);chord.on(64);chord.on(67);chord.off(60);chord.off(64);chord.off(67);chord.s.finishBatch(chord.batch,chord.time);
   check(chord.s.result().kind==MusicDiscoverySession.Kind.CHORD,"acorde simultâneo");
   check(chord.s.result().notes.equals(Arrays.asList(60,64,67)),"notas exatas de acorde");
+  Rig noteToChord=new Rig(null);noteToChord.hit(55);check(noteToChord.s.result().kind==MusicDiscoverySession.Kind.NOTE,"transition starts from confirmed note");
+  noteToChord.on(60);noteToChord.on(64);noteToChord.on(67);
+  check(noteToChord.s.result().notes.equals(Collections.singletonList(55)),"confirmed note remains while chord keys are held");
+  noteToChord.off(60);noteToChord.off(64);noteToChord.off(67);noteToChord.s.finishBatch(noteToChord.batch,noteToChord.time);
+  check(noteToChord.s.result().kind==MusicDiscoverySession.Kind.CHORD&&noteToChord.s.result().notes.equals(Arrays.asList(60,64,67)),"confirmed chord replaces note atomically");
   Rig rolled=new Rig(100L);rolled.on(60);rolled.time=25;rolled.on(64);rolled.off(60);rolled.time=70;rolled.on(67);rolled.off(64);rolled.off(67);
   check(rolled.s.phase()==MusicDiscoverySession.Phase.PENDING,"acorde em formação fica pendente");
   check(!rolled.s.advance(99),"não antecipar janela calibrada");check(rolled.s.advance(100),"concluir na janela medida");
@@ -36,6 +41,26 @@ public final class MusicDiscoverySessionTest {
   Rig incomplete=new Rig(null);for(int n:new int[]{60,62,64,65,67,69})incomplete.hit(n);
   check(incomplete.s.result().kind==MusicDiscoverySession.Kind.NOTE,"sequência incompleta não é escala antes do delimitador");
   check(incomplete.s.advance(incomplete.time+2)&&incomplete.s.result().kind==MusicDiscoverySession.Kind.AMBIGUOUS&&incomplete.s.result().notes.size()==6,"pausa relativa ao andamento observado delimita frase incompleta");
+  Rig chordToScale=new Rig(null);chordToScale.on(60);chordToScale.on(64);chordToScale.on(67);chordToScale.off(60);chordToScale.off(64);chordToScale.off(67);chordToScale.s.finishBatch(chordToScale.batch,chordToScale.time);
+  check(chordToScale.s.result().kind==MusicDiscoverySession.Kind.CHORD,"transition starts from confirmed chord");
+  int[] transitionScale={60,62,64,65,67,69,71,72};String firstScaleNote="DÓ - C4";
+  for(int i=0;i<transitionScale.length;i++){
+   chordToScale.hit(transitionScale[i]);
+   if(i==0)check(chordToScale.s.result().title.equals(firstScaleNote),"released first pitch is a valid note result");
+   else if(i<transitionScale.length-1)check(chordToScale.s.result().title.equals(firstScaleNote),"intermediate scale note does not replace the stable result");
+  }
+  check(chordToScale.s.result().kind==MusicDiscoverySession.Kind.SEQUENCE&&chordToScale.s.result().notes.equals(Arrays.asList(transitionScale[0],transitionScale[1],transitionScale[2],transitionScale[3],transitionScale[4],transitionScale[5],transitionScale[6],transitionScale[7])),"scale replaces stable note only when complete");
+  Rig scaleToArpeggio=new Rig(null);for(int n:transitionScale)scaleToArpeggio.hit(n);
+  check(scaleToArpeggio.s.result().kind==MusicDiscoverySession.Kind.SEQUENCE,"transition starts from confirmed scale");
+  for(int n:new int[]{60,64,67,72})scaleToArpeggio.hit(n);
+  check(scaleToArpeggio.s.result().kind==MusicDiscoverySession.Kind.SEQUENCE&&scaleToArpeggio.s.result().notes.equals(Arrays.asList(60,64,67,72)),"arpeggio replaces scale only when complete");
+  Rig arpeggioToNote=new Rig(null);for(int n:new int[]{60,64,67,72})arpeggioToNote.hit(n);
+  arpeggioToNote.hit(55);check(arpeggioToNote.s.result().kind==MusicDiscoverySession.Kind.NOTE&&arpeggioToNote.s.result().notes.equals(Collections.singletonList(55)),"isolated note replaces completed arpeggio");
+  Rig validToIncomplete=new Rig(null);for(int n:new int[]{60,64,67,72})validToIncomplete.hit(n);String priorArpeggio=validToIncomplete.s.result().title;
+  for(int n:new int[]{48,50,51,53,55,56})validToIncomplete.hit(n);
+  check(validToIncomplete.s.result().title.equals("DÓ - C3"),"incomplete phrase does not churn into individual-note results");
+  check(validToIncomplete.s.advance(validToIncomplete.time+2)&&validToIncomplete.s.result().kind==MusicDiscoverySession.Kind.AMBIGUOUS,"incomplete phrase ends as ambiguous, not complete pattern");
+  check(!priorArpeggio.isEmpty(),"prior confirmed pattern remains a valid transition baseline");
   Rig ambiguous=new Rig(null);ambiguous.on(60);ambiguous.on(61);ambiguous.off(60);ambiguous.off(61);ambiguous.s.finishBatch(ambiguous.batch,ambiguous.time);
   check(ambiguous.s.result().kind==MusicDiscoverySession.Kind.AMBIGUOUS,"conjunto sem acorde defensável é ambíguo");
   Rig repeated=new Rig(null);repeated.on(60);check(!repeated.s.attack(60,1,repeated.batch,repeated.gen),"Note On redundante enquanto pressionada");
