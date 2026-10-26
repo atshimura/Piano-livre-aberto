@@ -1,0 +1,89 @@
+plugins { id 'com.android.application' }
+android {
+  namespace 'br.org.pianolivre'
+  compileSdk 35
+  defaultConfig { applicationId 'br.org.pianolivre'; minSdk 26; targetSdk 28; versionCode 20; versionName '0.9.11-open-beta' }
+  // Public builds do not use the historical private-beta signing certificate.
+  // Ordinary pull requests run with their own ephemeral Android debug key.
+  def publicKeys = [
+    'PIANOLIVRE_PUBLIC_KEYSTORE_FILE',
+    'PIANOLIVRE_PUBLIC_STORE_PASSWORD',
+    'PIANOLIVRE_PUBLIC_KEY_ALIAS',
+    'PIANOLIVRE_PUBLIC_KEY_PASSWORD'
+  ]
+  def hasPublicSigning = publicKeys.every { System.getenv(it)?.trim() }
+  if (hasPublicSigning) {
+    signingConfigs {
+      publicBeta {
+        storeFile file(System.getenv('PIANOLIVRE_PUBLIC_KEYSTORE_FILE'))
+        storePassword System.getenv('PIANOLIVRE_PUBLIC_STORE_PASSWORD')
+        keyAlias System.getenv('PIANOLIVRE_PUBLIC_KEY_ALIAS')
+        keyPassword System.getenv('PIANOLIVRE_PUBLIC_KEY_PASSWORD')
+      }
+    }
+  }
+  buildTypes {
+    release {
+      applicationIdSuffix '.opensource'
+      debuggable false
+      minifyEnabled false
+      // PR/emulator builds use only the runner's disposable debug certificate.
+      // Trusted main configures publicBeta exclusively from Actions Secrets.
+      signingConfig = hasPublicSigning ? signingConfigs.publicBeta : signingConfigs.debug
+    }
+    debug {
+      applicationIdSuffix '.opensource'
+      if (hasPublicSigning) signingConfig signingConfigs.publicBeta
+    }
+  }
+  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+
+/**
+ * Pin and bundle the sheet music rendering engine at build time.
+ * The installed app remains completely offline and has no INTERNET permission.
+ */
+tasks.register('prepareOfflineNotation') {
+  def assetDir=file('src/main/assets/osmd')
+  def notationJs=file('src/main/assets/osmd/opensheetmusicdisplay.min.js')
+  def licenseFile=file('src/main/assets/osmd/LICENSE')
+  outputs.file(notationJs)
+  outputs.file(licenseFile)
+  doLast {
+    assetDir.mkdirs()
+    def download={String address, File target ->
+      URL url=new URL(address)
+      java.net.URLConnection connection=url.openConnection()
+      connection.setConnectTimeout(30000)
+      connection.setReadTimeout(120000)
+      File temp=new File(target.absolutePath+'.partial')
+      connection.getInputStream().withCloseable { stream ->
+        temp.withOutputStream { out -> out << stream }
+      }
+      if(temp.length()<1000 && target.name.endsWith('.js'))throw new GradleException('Notation engine download invalid')
+      if(!temp.renameTo(target))throw new GradleException('Cannot save notation asset')
+    }
+    if(!notationJs.exists() || notationJs.length()<100000) {
+      File upstream=new File(assetDir,'osmd-upstream.js')
+      try {
+        download('https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.9.8/build/opensheetmusicdisplay.min.js',upstream)
+        // Older Android WebView versions cannot parse optional chaining etc.
+        // Transpile the UMD bundle while preserving its global export.
+        def command=['npx','--yes','esbuild@0.25.10',upstream.absolutePath,
+          '--target=chrome60','--minify','--outfile='+notationJs.absolutePath]
+        def process=new ProcessBuilder(command).inheritIO().start()
+        if(process.waitFor()!=0 || !notationJs.exists() || notationJs.length()<100000) {
+          throw new GradleException('Unable to build Android-compatible notation engine')
+        }
+      } finally {
+        upstream.delete()
+      }
+    }
+    if(!licenseFile.exists() || licenseFile.length()<300) {
+      download('https://raw.githubusercontent.com/opensheetmusicdisplay/opensheetmusicdisplay/develop/LICENSE',licenseFile)
+    }
+  }
+}
+tasks.matching { it.name == 'preBuild' }.configureEach {
+  dependsOn(tasks.named('prepareOfflineNotation'))
+}
