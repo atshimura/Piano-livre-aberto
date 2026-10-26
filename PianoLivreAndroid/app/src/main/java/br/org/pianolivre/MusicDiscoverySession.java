@@ -120,7 +120,7 @@ public final class MusicDiscoverySession {
    pending.clear();chordEvidence=false;return;}
   else {
    List<MusicTheory.Chord> chords=chordEvidence?MusicTheory.recognize(exact):Collections.emptyList();
-   if(chords.size()==1)result=new Result(Kind.CHORD,exact,chords.get(0).symbol+" · "+chords.get(0).description,"");
+   if(chords.size()==1)result=new Result(Kind.CHORD,exact,chords.get(0).symbol+" · "+chords.get(0).description,chords.get(0).inversion);
    else if(chords.size()>1){StringBuilder s=new StringBuilder("Possibilidades: ");
     for(int i=0;i<chords.size();i++){if(i>0)s.append(" / ");s.append(chords.get(i).symbol);}
     result=new Result(Kind.AMBIGUOUS,exact,"Acorde ambíguo",s.toString());

@@ -18,6 +18,10 @@ public final class MusicDiscoverySessionTest {
   Rig chord=new Rig(null);chord.on(60);chord.on(64);chord.on(67);chord.off(60);chord.off(64);chord.off(67);chord.s.finishBatch(chord.batch,chord.time);
   check(chord.s.result().kind==MusicDiscoverySession.Kind.CHORD,"acorde simultâneo");
   check(chord.s.result().notes.equals(Arrays.asList(60,64,67)),"notas exatas de acorde");
+  Rig firstInversion=new Rig(null);firstInversion.on(64);firstInversion.on(67);firstInversion.on(72);firstInversion.off(64);firstInversion.off(67);firstInversion.off(72);firstInversion.s.finishBatch(firstInversion.batch,firstInversion.time);
+  check(firstInversion.s.result().kind==MusicDiscoverySession.Kind.CHORD&&firstInversion.s.result().title.startsWith("C ·")&&firstInversion.s.result().detail.equals("1ª inversão"),"first inversion is recognized and exposed to the result view");
+  Rig secondInversion=new Rig(null);secondInversion.on(67);secondInversion.on(72);secondInversion.on(76);secondInversion.off(67);secondInversion.off(72);secondInversion.off(76);secondInversion.s.finishBatch(secondInversion.batch,secondInversion.time);
+  check(secondInversion.s.result().kind==MusicDiscoverySession.Kind.CHORD&&secondInversion.s.result().title.startsWith("C ·")&&secondInversion.s.result().detail.equals("2ª inversão"),"second inversion is recognized and exposed to the result view");
   Rig noteToChord=new Rig(null);noteToChord.hit(55);check(noteToChord.s.result().kind==MusicDiscoverySession.Kind.NOTE,"transition starts from confirmed note");
   noteToChord.on(60);noteToChord.on(64);noteToChord.on(67);
   check(noteToChord.s.result().notes.equals(Collections.singletonList(55)),"confirmed note remains while chord keys are held");
