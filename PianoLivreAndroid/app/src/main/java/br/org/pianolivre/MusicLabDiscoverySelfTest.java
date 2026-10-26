@@ -85,7 +85,9 @@ final class MusicLabDiscoverySelfTest {
    d.back.performClick();check(!a.screens.isLabOpen(),"Voltar returns to library");
    android.util.Log.i("PianoLivreDiscovery","DISCOVERY_UI_SELFTEST_PASS checks="+checks+" synthetic_midi=true clefs=OSMD-study-renderer captures="+cases.size()+" c_major=true ciphers=true");return;
   }
-  StaffCase sample=cases.get(index);DiscoveryStaffView staff=d.staff;staff.setNotes(sample.notes,sample.sequence);
+  StaffCase sample=cases.get(index);DiscoveryStaffView staff=d.staff;
+  // Clear the prior fixture so equal notes at different viewport sizes still trigger a fresh OSMD render callback.
+  staff.setNotes(Collections.emptyList(),false);staff.setNotes(sample.notes,sample.sequence);
   layoutStaff(a,staff,sample.widthDp,sample.heightDp);List<DiscoveryStaffView.NotePosition> positions=staff.layoutSnapshot();
   check(positions.size()==sample.notes.size(),"all notes retained in rendered layout: "+sample.file);
   check(staff.renderedMusicXml().contains("<sign>G</sign>")==sample.clefs.contains("G"),"MusicXML requests treble clef where expected: "+sample.file);
