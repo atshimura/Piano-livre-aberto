@@ -76,7 +76,7 @@ final class MusicLabDiscoverySelfTest {
   if(treble){check(inkNear(image,19*d,trebleBottom-10*d,d),"actual treble symbol contains G4 curl anchor: "+name);}
   if(!grand&&!treble)check(!inkNear(image,19*d,trebleBottom-10*d,d),"actual bass rendering omits treble curl: "+name);
   if(grand||!treble){float f3=bassBottom-30*d;check(inkNear(image,29*d,f3-5*d,d),"actual bass symbol upper dot flanks F3: "+name);check(inkNear(image,29*d,f3+5*d,d),"actual bass symbol lower dot flanks F3: "+name);}
-  for(DiscoveryStaffView.NotePosition n:positions)if(n.midi==36||n.midi==84){float staffBottom=n.clef.equals("sol")?trebleBottom:bassBottom;float y=n.midi==36?staffBottom+20*d:staffBottom-60*d;check(inkNear(image,50*d,y,d),"actual supplementary ledger is at C2/C6 pitch: "+name);}
+  for(DiscoveryStaffView.NotePosition n:positions)if(n.midi==36||n.midi==84){float staffBottom=n.clef.equals("sol")?trebleBottom:bassBottom;float y=n.midi==36?staffBottom+20*d:staffBottom-60*d;check(inkNear(image,n.x+10*d,y,d),"actual supplementary ledger is at C2/C6 pitch: "+name);}
   try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),name))){image.compress(Bitmap.CompressFormat.PNG,100,out);}catch(Exception ex){throw new IllegalStateException("Unable to save staff capture "+name,ex);}finally{image.recycle();}
  }
  private static boolean inkNear(Bitmap image,float x,float y,float d){int cx=Math.round(x),cy=Math.round(y),r=Math.max(1,Math.round(d*1.5f));for(int yy=Math.max(0,cy-r);yy<=Math.min(image.getHeight()-1,cy+r);yy++)for(int xx=Math.max(0,cx-r);xx<=Math.min(image.getWidth()-1,cx+r);xx++){int p=image.getPixel(xx,yy);if(Color.red(p)<100&&Color.green(p)<120&&Color.blue(p)<150)return true;}return false;}
