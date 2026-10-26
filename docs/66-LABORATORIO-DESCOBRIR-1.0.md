@@ -25,6 +25,14 @@ Nota isolada usa grafia convencional fixa sem inferir tonalidade: DÓ/C, DÓ♯/
 
 O workflow existente volta a executar testes JVM do catálogo, demonstração, prática, `MusicTheory`, `MusicPatternTracker`, além da bateria MusicXML/MIDI/JavaScript, build Android e jornadas de emulador. O relatório da entrega deve citar somente os Actions do SHA deste PR.
 
+## Resultados executados em 26/10/2026
+
+Código validado: `a95c909497cf52471afcb129ed7812b5dc285039`. A árvore de código contém o resultado final; os checks foram executados no PR #65:
+
+- [Build, JavaScript, Chromium, MusicXML, testes JVM e APK](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40340408772) — sucesso. A nova sessão concluiu com `MUSIC_DISCOVERY_SESSION_PASS checks=29`; a suíte manteve os testes de `MusicTheory`, `MusicPatternTracker`, `MusicSequenceAnalyzer`, catálogo, demonstração, prática e os testes de regressão existentes.
+- [Emulador Android](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40340408802) — sucesso. Marcadores: `MIDI_SESSION_SELFTEST_PASS assertions=13`, `DISCOVERY_UI_SELFTEST_PASS checks=23` e `PUBLIC_ANDROID_EMULATOR_SMOKE_PASS`. A geometria verificou C4 na clave de sol com uma linha suplementar, C2 na clave de fá, C6 na clave de sol, acorde com cabeças simultâneas e sequência de oito notas em ordem.
+- O teste de emulador injeta MIDI sintético. Ele verifica o fluxo de software; não representa uma conexão física com o Yamaha P-45.
+
 ## Limites e aceite
 
 - A identificação de escalas e arpejos cobre apenas padrões completos exatos já reconhecidos pelo `MusicSequenceAnalyzer`; improvisação, padrões parciais e sequência com sobreposição de teclas não são classificados como escala/arpejo.
