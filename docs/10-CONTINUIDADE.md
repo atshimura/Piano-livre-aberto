@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 14286)
-Total output lines: 352
-
 # 10 — Como continuar o Piano Livre aberto
 
 ## B1 — continuidade operacional (23/10/2026)
@@ -171,7 +168,63 @@ Codificação XML corrigida e aplicada ao container antes da validação: UTF-8/
 
 ## Continuação 0.9.34
 
-Compatibilidade de nomes de importações antigas corrigida sem renomear arquivos. Documento 43; SessionCompatibilityTest local passou 20 verificações; exigir backup Android ampliado. Pré-release durável 0.9.31 confirmada, atualização offline no emulador aprovada; PR #30 integrado e #31 apro…2286 tokens truncated… Sem migração de dados, serviços ou telemetria. Ver [55](55-LAB-PRATICA-SEQUENCIAL.md), teste JVM e emulador. Exigir CI no SHA da branch/merge e release assinada 0.9.46/code55. Faltam dedilhado, métricas rítmicas/metrônomo, calibração, histórico do Lab e testes físicos #11. Não declarar V1.
+Compatibilidade de nomes de importações antigas corrigida sem renomear arquivos. Documento 43; SessionCompatibilityTest local passou 20 verificações; exigir backup Android ampliado. Pré-release durável 0.9.31 confirmada, atualização offline no emulador aprovada; PR #30 integrado e #31 aprovado. Próxima ação: integrar sequência aprovada, verificar APK/assinatura/pré-release do merge e registrar em #11/#4; hardware permanece pendente e V1 não concluída.
+
+A mesma entrega 0.9.34 prepara backup antes de abrir o destino externo, prevenindo truncamento em falha de preparação. Teste Android verifica abertura zero em falha e exportação válida completa; confirmar CI do HEAD atualizado de #32 antes de integrar.
+
+## Continuação 0.9.35
+
+PR #32 integrado em 175e9e9c0ce5e6acdbc6606318b9f44e73501cad com CI aprovada, backup Android 36 verificações. Preparada distribuição release não depurável, pacote aberto e mesmo certificado; emulador exige atualização debug→release preservando perfil/teclado/velocidade e ignorando flags de teste. Documento 44. Confirmar CI própria, integrar e verificar assinatura/pré-release do merge. Próxima ação após consolidação: aceite físico em #11/#4, sem declarar V1 por CI.
+
+## Nova linha de produto: Laboratório Musical (17/10/2026)
+
+A issue [#34](https://github.com/atshimura/Piano-livre-aberto/issues/34) concentra as melhorias aprovadas e o novo Laboratório; a especificação autoritativa, distinção implementado/pendente e próximos passos estão em [doc 45](45-LABORATORIO-ESCOPO-E-CONTINUIDADE.md). Primeira entrega em branch `feat/laboratorio-musical-primeira-entrega` (versão proposta code45). Conferir PR/Actions do SHA exato antes de declarar integrada. Não declarar V1: aceite físico continua em #11.
+
+## Entrega incremental: biblioteca compacta
+
+Branch de trabalho: `feat/biblioteca-grade-compacta`; documento [46](46-BIBLIOTECA-GRADE-COMPACTA.md). A branch foi iniciada da primeira entrega do Laboratório (`feat/laboratorio-musical-primeira-entrega`) e só deve entrar na `main` quando a base anterior (#35) estiver integrada com todos os checks aprovados. Alterações propostas: layout, responsividade e densidade da grade; dados, backups, MIDI e arquivos importados não se alteram. Confirmar o SHA exato do novo PR e seus Actions antes do merge; seguir com #34 e #11. Versão proposta 0.9.37-open-beta/code46.
+
+## Entrega incremental: etiqueta de notas sobre a partitura
+
+Branch `feat/partitura-nome-nota-ao-toque`; consultar [47](47-NOME-DA-NOTA-TOQUE.md). Branch criada a partir da segunda entrega, já integrada no PR #36; abrir PR para `main`, conferir no **mesmo SHA** todos os testes e o emulador antes de integrar. A funcionalidade é apenas do estudo temporal, lê a grafia real das notas e cifra explícita MusicXML quando disponível, não inventa acorde. Próximas tarefas seguem em #34 e #11. Versão proposta `0.9.38-open-beta` / code47.
+
+## Entrega incremental: análise de sequências do Laboratório
+
+Branch `feat/lab-analise-sequencias`, construída da entrega de tooltip (#37). Consulte [doc 48](48-LAB-SEQUENCIAS.md), a issue #34 e o documento 45. Implementa apenas análise **delimitada por Iniciar/Concluir** de padrões completos de uma oitava no Descobrir, por ataques USB-MIDI/virtual Tocar. Automaticidade espontânea, mão/dedos, áudio, progresso e práticas de sequências permanecem pendentes. Verificar CI e emulador do SHA do PR antes de merge; V1 só após #11. Versão proposta 0.9.39-open-beta/code48.
+
+## Retomada 0.9.40 — cursor visual
+
+A alteração inicial da branch `fix/espera-cursor-antes-notas` foi reaproveitada sobre a `main` no PR seguinte (verificar CI antes de integrar). O cursor fixo precede as notas por distância limitada, sem alterar o tempo musical. Documento 49. Próxima tarefa: preparação visual gradual do Espera comandada por Iniciar com duração configurável e sem penalidade; depois notação e funcionalidades do Laboratório da issue #34.
+
+## Retomada 0.9.41 — Iniciar e preparação do Espera
+
+Implementação proposta na branch `feat/espera-iniciar-preparacao` sobre o cursor do PR #39. Ver documento 50: cinco segundos iniciais configuráveis por perfil, bloqueio de reconhecimento apenas durante a entrada, animação desacoplada do tempo musical, cancelamento seguro. Exigir CI (JVM/JS/APK) e emulador no mesmo head antes de integrar. Seguir para claves/hastes/vigas na notação temporal, depois catálogo/demonstração/prática/histórico do Laboratório (#34). Hardware físico em #11.
+
+## Retomada 0.9.42 — vigas MusicXML ausentes
+
+Função `inferConventionalBeams` introduz agrupamento conservador por compasso/voz/pulso quando faltam marcas de vigas explícitas. Documento 51, testes JS. Confirmar CI/Android da branch `feat/notacao-vigas-inferidas` e dos PRs anteriores; depois aprimorar claves/hastes e seguir Laboratório (catálogo, análise espontânea, demonstração, prática, histórico) da issue #34.
+
+## Retomada 0.9.43 — reconhecimento livre
+
+`MusicPatternTracker` analisa sufixos monofônicos completos sem início/fim manual. Documento 52, PR empilhado `feat/laboratorio-reconhecimento-livre`. Validar Actions na HEAD correta após integrar PRs dependentes. Próximos passos: catálogo pesquisável de notas, acordes, escalas e arpejos, demonstração/ritmo offline e histórico por perfil. Hardware pendente #11.
+
+### Revisão corretiva do PR #42 (0.9.43)
+
+Conferir a revisão de `MusicPatternTracker` e `MusicLabScreen` na branch `feat/laboratorio-reconhecimento-livre`: a verificação de monofonia considera MIDI e teclado virtual em conjunto; status sem correspondência não deve preservar resultado anterior; reentrar no Laboratório ou alternar Tocar/Montar reinicia o rastreio. `MusicPatternTrackerTest` cobre esses casos. Exigir CI de build, MusicXML/JS/MIDI, compilação Android e emulador do **último SHA** após as correções; merge protegido e assinatura/release só após sucesso dos checks. Atualizar a issue #34 com evidências. Não integrar o PR #43 nesta tarefa: sua branch é empilhada e deverá ser rebaseada/retargeteada para `main` após o #42. Nenhum ensaio físico foi feito nesta revisão (#11).
+
+## Retomada 0.9.44 — catálogo pesquisável (PR #43)
+
+Entrega proposta na branch `feat/laboratorio-catalogo-consulta`, reconciliada por merge não destrutivo com a `main` 0.9.43. Mantém reconhecimento automático USB-MIDI/teclado virtual, prevenção de sobreposição e resultados obsoletos, botão manual Iniciar/Concluir e reinício Tocar/Montar/reencontro do Laboratório. `MusicLabCatalog` oferece consulta offline de 12 classes cromáticas, notas, 13 intervalos, acordes/inversões, escalas/modos, arpejos e os cinco exercícios antigos. Busca tolera acentos e sustenido `#`/`♯`; resultados vazios desabilitam prática e a alteração da busca reinicia exercício.
+
+**Não confundir consulta com avaliação:** a prática apenas compara conjuntos de classes de altura, sem ordem, quantidade de notas, duração, ritmo, pedal, oitava, dedilhado ou mão. Grafia enarmônica não é inferida da tonalidade. Teste `MusicLabCatalogTest` ampliado e smoke UI do emulador cobrem busca e reset, além da regressão `MusicPatternTrackerTest`. Conferir ações no SHA final do PR e novamente no merge da `main`, certificado permanente e pré-release `0.9.44-open-beta` / code53. #44 demonstração MIDI, #45 prática sequencial e hardware físico #11 permanecem futuros; **não incluir antecipadamente**.
+
+## Retomada 0.9.45 — demonstração musical offline (PR #44)
+
+Branch `feat/laboratorio-demonstracao-midi` reconciliada com `main` 0.9.44 sem reescrever commits. Demonstração do catálogo pela saída USB-MIDI existente: nota/acorde/intervalo juntos, escalas/arpejos em sequência, velocidade 50–150% e repetição opcional, sem sintetizador Android. `MusicLabPlaybackPlan.Session` distingue reprodução ativa de notas sustentadas, invalida callbacks após parada (inclusive entre notas e repetições), troca de busca/exercício/modo, saída para Biblioteca/Estudo, segundo plano e desconexão. Libera notas ligadas **antes** do fechamento da porta USB. Tests JVM cobrem pausas entre notas, sustentações, repetição, mudança e callbacks antigos. A perda física da porta pode impedir Note Off final; não afirmar ausência de notas presas em piano real sem ensaio. Confirmar checks do PR/merge, release assinada `0.9.45-open-beta` / code54, e atualizar issue #34. PR #45 permanece intocado para próxima tarefa; Yamaha P-45, Realme 7 5G e Lenovo Tab M9 aguardam #11.
+
+## Retomada 0.9.46 — prática sequencial (PR #45)
+
+Branch `feat/laboratorio-pratica-sequencial` reconciliada por merge não destrutivo com a `main` 0.9.45. Preservados reconhecimento espontâneo/manual, catálogo, USB-MIDI/virtual e demonstração MIDI/cancelamento do PR #44. Escalas e arpejos avançam por ataque **novo, isolado** na ordem da altura MIDI; extras isoladas são indicadas sem bloquear e demora não penaliza. Notas repetidas exigem novo ataque; ataques simultâneos/sobrepostos e mistura com notas já mantidas no MIDI/virtual não fabricam ordenação. Reprodução de demonstração nunca avança prática. Busca, troca de exercício/modo, saída/pausa/desconexão cancelam estado; mão Ambas/Direita/Esquerda é referência, não inferência. Acordes/intervalos preservam a comparação por classes cromáticas. Sem migração de dados, serviços ou telemetria. Ver [55](55-LAB-PRATICA-SEQUENCIAL.md), teste JVM e emulador. Exigir CI no SHA da branch/merge e release assinada 0.9.46/code55. Faltam dedilhado, métricas rítmicas/metrônomo, calibração, histórico do Lab e testes físicos #11. Não declarar V1.
 
 ## Checkpoint — análise automática em PR #51
 
