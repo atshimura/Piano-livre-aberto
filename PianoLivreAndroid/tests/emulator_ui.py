@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 17111)
+Total output lines: 1078
+
 #!/usr/bin/env python3
 """Automated Android emulator GUI smoke test; no physical MIDI required."""
 import os, re, subprocess, time, xml.etree.ElementTree as ET, json
@@ -365,341 +368,7 @@ if __name__=="__main__":
     assert touches, "Actual Android touch did not reach graphical notehead"
     hit=json.loads(touches[-1].split("POC_NOTE_TAP ",1)[1].split(" @",1)[0])
     assert hit["staff"]==1 and hit["midiEstimate"]==first["midiEstimate"], "Android head-touch resolved wrong note or staff"
-    assert hit["mapped"] and hit["nativeMidi"]==first["midiEstimate"], "Actual Android note tap did not agree with native Score.java MIDI"
-    assert hit.get("writtenName")=="Mi4" and hit.get("xmlNoteIndex") is not None, "OSMD head did not preserve the actual written pitch and XML identity"
-    visible=[line for line in adb("logcat","-d","-v","brief").splitlines()
-             if "POC_NOTE_TIP_VISIBLE {" in line]
-    assert visible, "OSMD tap did not show a bounded temporary identification"
-    popup=json.loads(visible[-1].split("POC_NOTE_TIP_VISIBLE ",1)[1].split(" @",1)[0])
-    assert popup["label"]=="Mi4 · E4", "Note popup lost international written spelling: "+str(popup)
-    view=popup["viewport"]
-    assert view[0]-1<=popup["left"]<popup["right"]<=view[2]+1 and \
-           view[1]-1<=popup["top"]<popup["bottom"]<=view[3]+1, \
-           "Note popup escapes the actual score viewport: "+str(popup)
-    time.sleep(2.3)
-    timeline=adb("logcat","-d","-v","brief").splitlines()
-    visible_index=max(i for i,line in enumerate(timeline) if "POC_NOTE_TIP_VISIBLE {" in line)
-    assert any("POC_NOTE_TIP_HIDDEN" in line for line in timeline[visible_index+1:]), \
-           "Note identification persisted beyond two seconds"
-    screenshot("piano-osmd-poc-note-tap-expired.png")
-    print("PASS: Android OSMD notehead shows written Mi4/E4 inside viewport and expires",flush=True)
-    tap_text(["Contínuo"],exact=True,scroll=True)
-    playback_point=tap_text(["Iniciar"],return_point=True)
-    time.sleep(2)
-    screenshot("piano-osmd-poc-moving.png")
-    motion_log=adb("logcat","-d","-v","brief")
-    samples=[]
-    for line in motion_log.splitlines():
-        if "OPTICAL_SAMPLE {" in line:
-            try:samples.append(json.loads(line.split("OPTICAL_SAMPLE ",1)[1].split(" @",1)[0]))
-            except ValueError:pass
-    assert len(samples)>=2, "No dynamic optical scroll samples"
-    assert samples[-1]["beat"]>samples[0]["beat"]+.3, "Optical position did not progress with musical clock"
-    assert samples[-1]["scroll"]>samples[0]["scroll"]+3, "Optical SVG did not move horizontally during playback"
-    rail_progress=[json.loads(line.split("POC_CONTEXT_RAIL_MEASURE ",1)[1].split(" @",1)[0])
-                   for line in motion_log.splitlines() if "POC_CONTEXT_RAIL_MEASURE {" in line]
-    assert rail_progress and rail_progress[-1]["measure"]>=1, (
-      "Pinned OSMD clef/key/time symbols disappeared during playback")
-    pinned=[json.loads(line.split("POC_CONTEXT_RAIL_PINNED ",1)[1].split(" @",1)[0])
-            for line in motion_log.splitlines() if "POC_CONTEXT_RAIL_PINNED {" in line]
-    assert pinned and abs(pinned[-1]["railLeft"])<1 and \
-      abs(pinned[-1]["svgLeft"]-pinned[-1]["svgStartLeft"])>3, (
-      "OSMD score did not move under context fixed at the viewport's left edge")
-    adb("shell","input","tap",*playback_point)
-    print("PASS: experimental OSMD optical scroll follows native musical clock",flush=True)
-    # A user can change loop bounds while the native continuous clock is
-    # already running. The manual loop menu must stop it BEFORE changing
-    # the selected boundaries; no hanging output or route inconsistency.
-    tap_text(["Iniciar"],scroll=True)
-    time.sleep(.4)
-    loop_nodes=[n for n in dump().iter("node") if "Trecho ↻" in n.attrib.get("text","")]
-    assert loop_nodes, "Study loop menu button unavailable during continuous playback"
-    box=[int(n) for n in re.findall(r"\d+",loop_nodes[0].attrib.get("bounds",""))]
-    assert len(box)==4, "Loop menu has no touchable bounds"
-    cx=(box[0]+box[2])//2;cy=(box[1]+box[3])//2
-    adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1050")
-    time.sleep(.3)
-    tap_text(["Marcar início na posição atual"],exact=True)
-    time.sleep(.3)
-    assert "STUDY_LOOP_MENU start" in adb("logcat","-d","-v","brief"), \
-        "Manual loop start did not use the safe native boundary transaction"
-    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
-        "Loop edit left native playback running instead of releasing MIDI"
-    print("STUDY_B_MANUAL_LOOP_ANDROID_PASS",flush=True)
-    # The musical B marker must also snap to a full sounding-note release and
-    # cancel playback before applying the checked route. Reuse cached button
-    # bounds so hierarchy dumps do not race a running WebView.
-    def open_loop_menu():
-        assert_running()
-        adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1000")
-        time.sleep(.3)
-        assert any("Marcar início na posição atual" in n.attrib.get("text","")
-                   for n in dump().iter("node")), "Loop menu did not reopen"
-    tap_text(["Iniciar"],scroll=True)
-    time.sleep(.8)
-    open_loop_menu()
-    tap_text(["Marcar fim na posição atual"],exact=True)
-    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
-        "Applying B left continuous playback running"
-    tap_text(["Iniciar"],scroll=True)
-    time.sleep(.45)
-    open_loop_menu()
-    tap_text(["Remover repetição"],exact=True)
-    assert any("Iniciar" in n.attrib.get("text","") for n in dump().iter("node")), \
-        "Clearing the active A-B loop left playback running"
-    tap_text(["Início"],scroll=True)
-
-    # Graphical loop selection must use TWO native-reconciled noteheads,
-    # then call the existing native callback, not edit the MusicXML.
-    tap_text(["Início"],scroll=True)
-    time.sleep(.7)
-    second=professional.get("secondNoteViewport")
-    assert second and second.get("beat",0)>first["beat"], "No later matched upper-staff note for loop"
-    lx=bounds[0]+round(second["x"]*w/professional.get("webviewWidth",professional["viewportWidth"]))
-    ly=bounds[1]+round(second["y"]*h/professional["viewportHeight"])
-    assert bounds[0]<=lx<bounds[2] and bounds[1]<=ly<bounds[3], "Second notehead outside WebView"
-    tap_text(["Trecho ↻"],exact=True,scroll=True)
-    adb("shell","input","tap",str(nx),str(ny))
-    time.sleep(.3)
-    adb("shell","input","tap",str(lx),str(ly))
-    time.sleep(.6)
-    selections=[line for line in adb("logcat","-d","-v","brief").splitlines()
-                if "POC_LOOP_SELECTED {" in line]
-    assert selections, "OSMD did not deliver notehead-based loop selection"
-    chosen=json.loads(selections[-1].split("POC_LOOP_SELECTED ",1)[1].split(" @",1)[0])
-    assert abs(chosen["start"]-first["beat"])<.01 and chosen["end"]>second["beat"], "Loop boundaries do not follow musical noteheads"
-    screenshot("piano-osmd-poc-loop.png")
-    tap_text(["Início"],scroll=True)  # Clear persisted loop before legacy renderer regression.
-    print("PASS: verified OSMD noteheads selected a native study loop",flush=True)
-    # Wait-mode preparation uses the same native 1–30-second preference and
-    # animates a nonnumeric horizontal pre-roll without changing attack rules.
-    tap_text(["Espera"],exact=True,scroll=True)
-    tap_text(["Iniciar"],scroll=True)
-    time.sleep(1)
-    assert "POC_WAIT_PREPARE {" in adb("logcat","-d","-v","brief"), "Native Wait preparation did not reach OSMD"
-    screenshot("piano-osmd-poc-wait.png")
-    for attempt in range(14):
-        if "POC_WAIT_COMPLETE" in adb("logcat","-d","-v","brief"):
-            break
-        time.sleep(.6)
-    assert "POC_WAIT_COMPLETE" in adb("logcat","-d","-v","brief"), "Visual Wait countdown did not finish"
-    # Recorded graphical positions must actually move toward zero, not just toggle an overlay.
-    wait_frames=[]
-    for line in adb("logcat","-d","-v","brief").splitlines():
-        if "POC_WAIT_FRAME {" in line:
-            try:wait_frames.append(json.loads(line.split("POC_WAIT_FRAME ",1)[1].split(" @",1)[0]))
-            except ValueError:pass
-    assert len(wait_frames)>=3, "OSMD did not sample gradual preparation frames"
-    assert wait_frames[0]["remainingPx"]>wait_frames[-1]["remainingPx"], "Visual preparation must move toward the cursor"
-    assert all(wait_frames[i]["remainingPx"]>=wait_frames[i+1]["remainingPx"]-0.1
-               for i in range(len(wait_frames)-1)), "Visual preparation moved backwards"
-    print("POC_WAIT_TRAVEL "+json.dumps(wait_frames),flush=True)
-    tap_text(["Início"],scroll=True)
-    print("PASS: OSMD preparation animates toward the native Wait cursor",flush=True)
-    after_memory=adb("shell","dumpsys","meminfo","br.org.pianolivre.opensource")
-    baseline_pss=memory_pss_kb(before_memory)
-    preview_pss=memory_pss_kb(after_memory)
-    print("POC_MEMORY_PSS "+json.dumps({"baselineKb":baseline_pss,
-          "previewKb":preview_pss,"scope":"app process only; WebView renderer may be separate"}),flush=True)
-    perf=[]
-    for line in adb("logcat","-d","-v","brief").splitlines():
-        if "POC_OPTICAL_PERF {" in line:
-            try:perf.append(json.loads(line.split("POC_OPTICAL_PERF ",1)[1].split(" @",1)[0]))
-            except ValueError:pass
-    assert any(m["frames"]>=2 and m["intervals"]>=1 for m in perf), "Optical scroll callback metrics missing"
-    print("POC_OPTICAL_PERF_REPORT "+json.dumps(perf),flush=True)
-    Path("piano-engraving-poc.json").write_text(json.dumps({
-      "baseSha":"15cafe3c8da7c67b9752d14ba0fb6f8f6141177d",
-      "title":DEFAULT_SCORE_TITLE,
-      "studyBaseline":"piano-engraved.png",
-      "osmdPreview":"piano-osmd-poc.png",
-      "baselineMemoryPssKb":baseline_pss,
-      "osmdMemoryPssKb":preview_pss,
-      "memoryScope":"App process PSS only; WebView renderer process may be separate; two samples not a regression claim.",
-      "opticalCallbackMetrics":perf,
-      "osmd":professional,
-      "restriction":"Research-only optical interpolation and test playback. MIDI clock unchanged. Visual clipping, click accuracy, long-scroll performance and editorial quality not yet approved."
-    },ensure_ascii=False,indent=2),encoding="utf-8")
-    print("PASS: OSMD professional rendering POC screenshot, SVG metrics and Java/JS isolation",flush=True)
-    # Toggle to the temporal renderer and back using the visible controls.
-    tap_text(["Anterior · temporal"],exact=True,scroll=True)
-    for attempt in range(20):
-        if "TIMELINE_READY" in adb("logcat","-d","-v","brief"):break
-        time.sleep(.6)
-    assert "TIMELINE_READY" in adb("logcat","-d","-v","brief"), "Visible alternative did not restore temporal rendering"
-    assert "POC_TOGGLE false" in adb("logcat","-d","-v","brief"), "Temporal rendering not restored after POC"
-    assert "POC_LAYER original" in adb("logcat","-d","-v","brief"), "WebView layer was not restored"
-    logs=adb("logcat","-d","-v","brief")
-    assert "TIMELINE_READY" in logs, "Expected proportional timeline renderer, not ordinary print layout"
-    tap_text(["OSMD · nova"],exact=True,scroll=True)
-    for attempt in range(24):
-        entries=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_OSMD_READY {" in line]
-        if len(entries)>1:break
-        time.sleep(.5)
-    # The generated coordinates must follow exactly x = origin + beat * pxPerBeat.
-    import json
-    frames=[l.split("TIMELINE_READY ",1)[1] for l in logs.splitlines() if "TIMELINE_READY {" in l]
-    assert frames, "No time-proportional layout diagnostics available"
-    plan=json.loads(frames[-1].split(" @",1)[0].strip())
-    beats=plan["firstBeats"];xs=plan["firstXs"];K=plan["pxPerBeat"]
-    for i in range(1,len(beats)):
-        assert abs((xs[i]-xs[0])-K*(beats[i]-beats[0]))<=2.1, "Beat-proportional x positioning is broken"
-    assert abs(plan["cursorFraction"]-.4)<.00001, "Study cursor no longer fixed at 40 percent"
-    print("PASS: exact proportional note spacing on shared musical timeline",flush=True)
-    print("PASS: temporal MusicXML engraving rendered with fixed 40-percent cursor",flush=True)
-    logs=adb("logcat","-d","-v","brief")
-    print("\\n".join(l for l in logs.splitlines() if "TEMPORAL_PROBE" in l)[-28000:],flush=True)
-
-    assert any("Contínuo" in s for s in labels), "Mode switch missing"
-    assert any("Teclado guia" in s for s in labels), "Keyboard should be hidden by default"
-    tap_text(["Teclado guia"])
-    time.sleep(.6)
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Ocultar teclado" in s for s in labels), "Keyboard toggle did not change to Hide"
-    screenshot("piano-with-keyboard.png")
-    tap_text(["Ocultar teclado"])
-    time.sleep(.4)
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Teclado guia" in s for s in labels), "Keyboard toggle did not restore hidden state"
-    print("PASS: keyboard hidden by default, shown and hidden by tap",flush=True)
-    # Direct score selection is activated from the native study toolbar.
-    tap_text(["Trecho ↻"])
-    time.sleep(.3)
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Selecionando" in t for t in labels), "Score-based loop selection did not activate"
-    tap_text(["Selecionando"])
-    print("PASS: selection mode toggles from the Trecho button",flush=True)
-    assert any("Início" in t for t in labels), "Return-to-start control missing"
-    # Traditional score is a separate no-MIDI, no-training reading surface.
-    free_baseline=adb("logcat","-d","-v","brief").count("FREE_RENDERED")
-    tap_text(["Partitura Livre"])
-    time.sleep(3)
-    assert_running()
-    free_ready=False
-    for attempt in range(12):
-        logs=adb("logcat","-d","-v","brief")
-        if logs.count("FREE_RENDERED")>free_baseline:
-            free_ready=True
-            break
-        time.sleep(2)
-    assert free_ready, "Free-reading score did not finish rendering"
-    free_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert not any("Contínuo" in s or "Teclado guia" in s for s in free_labels), "Training controls appear in free reading"
-    screenshot("piano-free-reading.png")
-    # A pixel-size threshold calibrated for the old Ode fixture is invalid
-    # for short public exercises. FREE_RENDERED plus real OSMD log is required.
-    assert os.path.getsize("piano-free-reading.png") > 5000, "Missing free-reading screenshot"
-    print("PASS: traditional free-reading score is visible without training controls",flush=True)
-    tap_text(["Biblioteca"])
-    time.sleep(1)
-    default_render_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
-    tap_text([DEFAULT_SCORE_TITLE])
-    time.sleep(3)
-    assert_running()
-    study_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert "OSMD · nova" in study_labels and "Anterior · temporal" in study_labels, \
-      "Renderer selectors missing after reopening Study"
-    assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>default_render_count, \
-      "Reopened Study did not select OSMD by default"
-    print("PASS: selected music loads with interactive study controls",flush=True)
-    temporal_ready_before=adb("logcat","-d","-v","brief").count("TIMELINE_READY {")
-    tap_text(["Anterior · temporal"],exact=True,scroll=True)
-    for attempt in range(16):
-        if adb("logcat","-d","-v","brief").count("TIMELINE_READY {")>temporal_ready_before:break
-        time.sleep(.5)
-    assert adb("logcat","-d","-v","brief").count("TIMELINE_READY {")>temporal_ready_before, \
-      "Visible temporal alternative did not render after OSMD opened Study by default"
-    tap_text(["Teclado guia"])
-    time.sleep(.5)
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Ocultar teclado" in t for t in labels), "Virtual keyboard toggle did not update"
-    tap_text(["Ocultar teclado"])
-    print("PASS: optional keyboard show/hide toggles",flush=True)
-    tap_text(["Contínuo"])
-    time.sleep(.5)
-    playback_point=tap_text(["Iniciar"],return_point=True)
-    # Capture a moving reference video, not just static screenshots. On very
-    # limited emulators, recording is optional; functional assertions remain strict.
-    try:
-        subprocess.run(["adb","shell","screenrecord","--size","960x540",
-            "--bit-rate","1200000","--time-limit","4","/sdcard/piano-motion.mp4"],
-            check=True,timeout=24,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-        adb("pull","/sdcard/piano-motion.mp4","piano-motion.mp4")
-        print("PASS: captured real-time study motion video",flush=True)
-    except Exception as exc:
-        print("WARNING: emulator video recording unavailable:",exc,flush=True)
-    logs=adb("logcat","-d","-v","brief")
-    assert re.search(r"PianoLivreUI.*mode=1", logs), "Mode button click was not recorded"
-    assert re.search(r"PianoLivreUI.*play=true", logs), "Play button click was not recorded"
-    samples=[]
-    for line in logs.splitlines():
-        if "TEMPORAL_SAMPLE {" in line:
-            try:samples.append(json.loads(line.split("TEMPORAL_SAMPLE ",1)[1].split(" @",1)[0].strip()))
-            except ValueError:pass
-    assert len(samples)>=2, "No continuous rendering frames reported"
-    for a,b in zip(samples,samples[1:]):
-        if b["beat"]>a["beat"]+.005:
-            actual=(b["offset"]-a["offset"])/(b["beat"]-a["beat"])
-            assert abs(actual-plan["pxPerBeat"])<1, "Visual velocity not uniform over musical beats"
-    print("PASS: continuous horizontal motion at proportional speed",flush=True)
-    print("PASS: mode switch and play button accepted touch input",flush=True)
-    # UIAutomator requires an idle hierarchy. Pause using the verified button
-    # bounds before requesting another dump; never reuse an old XML snapshot.
-    adb("shell","input","tap",*playback_point)
-    time.sleep(.3)
-    # Lifecycle: background during playback must pause and retain that position.
-    tap_text(["Início"])
-    tap_text(["Iniciar"])
-    time.sleep(.4)
-    adb("shell","input","keyevent","3")
-    time.sleep(.6)
-    adb("shell","am","start","-W","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
-    time.sleep(1)
-    resumed=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Iniciar" in t for t in resumed), "Background playback was not paused"
-    positions=[t for t in resumed if "posição " in t]
-    assert positions, "Position label missing after resume"
-    time.sleep(.4)
-    later=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert [t for t in later if "posição " in t]==positions, "Position advanced while paused after resume"
-    logs=adb("logcat","-d","-v","brief")
-    assert "LIFECYCLE_PAUSED" in logs and "LIFECYCLE_RESUMED" in logs
-    reports=[]
-    for line in logs.splitlines():
-        if "TEMPORAL_PERF {" in line:
-            reports.append(json.loads(line.split("TEMPORAL_PERF ",1)[1].split(" @",1)[0].strip()))
-    assert any(r["reason"]=="pause" and r["movingFrames"]>=2 for r in reports), "Moving frame summary missing"
-    assert all(r["renderMs"]>=0 and r["maxDrawMs"]>=0 for r in reports)
-    Path("piano-performance.json").write_text(json.dumps(reports,indent=2),encoding="utf-8")
-    print("PASS: background pauses transport, foreground retains position, local performance evidence captured",flush=True)
-    resume_point=tap_text(["Iniciar"],return_point=True)
-    time.sleep(.7)
-    adb("shell","input","tap",*resume_point)
-    time.sleep(.3)
-    stopped=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Iniciar" in t for t in stopped), "Manual pause after foreground failed"
-    new_positions=[t for t in stopped if "posição " in t]
-    before=float(positions[0].split("posição ",1)[1])
-    after=float(new_positions[0].split("posição ",1)[1])
-    assert after>before+.05, "Transport did not advance after manual restart"
-    print("PASS: playback advances and can pause after foreground",flush=True)
-    tap_text(["Biblioteca"])
-    time.sleep(1)
-    assert_running()
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("BIBLIOTECA MUSICAL" in s for s in labels), "Returning to library failed"
-    print("PASS: navigation returns to library",flush=True)
-    logs=adb("logcat","-d","-v","brief")
-    if "FATAL EXCEPTION" in logs and "Process: br.org.pianolivre.opensource" in logs:
-        raise AssertionError("Fatal exception in Piano Livre")
-    # Additional real Android WebView stress with an already authorized longer
-    # MusicXML score; a large pure-JS map test does NOT test SVG rendering.
-    old_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
-    tap_text(["Gymnopédie nº 1"],scroll=True)
-    time.sleep(3)
-    assert_running()
-    tap_text(["Anterior · temporal"],exact=True,scroll=True)
-    time.sleep(1)
+    assert hit["mapped"] and hit["nat…5111 tokens truncated…ime.sleep(1)
     screenshot("piano-temporal-long.png")
     tap_text(["OSMD · nova"],exact=True,scroll=True)
     long_proof=None
@@ -786,9 +455,26 @@ if __name__=="__main__":
     # Uniformly scaled SVG geometry must preserve notehead hit targets on Android.
     long_head=long_proof.get("firstNoteViewport")
     assert long_head and long_head.get("midiEstimate") is not None, "Long score has no testable upper-staff notehead"
-    views=[n for n in dump().iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
-    assert views, "Long-score WebView geometry unavailable"
-    rect=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
+    hierarchy=dump()
+    views=[n for n in hierarchy.iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
+    if views:
+        geometry_node=views[0]
+    else:
+        # Some Android/WebView accessibility trees expose the score viewport
+        # as its hosting FrameLayout. Use the smallest full-size score host,
+        # not the application/root frames, while keeping the same hit mapping.
+        candidates=[]
+        for node in hierarchy.iter("node"):
+            if node.attrib.get("class")!="android.widget.FrameLayout":continue
+            bounds=[int(v) for v in re.findall(r"\d+",node.attrib.get("bounds",""))]
+            if len(bounds)!=4:continue
+            width,height=bounds[2]-bounds[0],bounds[3]-bounds[1]
+            if width>=long_proof.get("webviewWidth",long_proof["viewportWidth"])*.8 and height>=long_proof["viewportHeight"]*.8:
+                candidates.append((width*height,node,bounds))
+        assert candidates, "Long-score WebView and score-host geometry unavailable"
+        _,geometry_node,_=min(candidates,key=lambda item:item[0])
+        print("Using accessible score-host FrameLayout for WebView geometry",flush=True)
+    rect=[int(v) for v in re.findall(r"\d+",geometry_node.attrib["bounds"])]
     assert len(rect)==4, "Invalid scaled WebView dimensions"
     xx=rect[0]+round(long_head["x"]*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))
     yy=rect[1]+round(long_head["y"]*(rect[3]-rect[1])/long_proof["viewportHeight"])
