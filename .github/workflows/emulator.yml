@@ -6,12 +6,15 @@ on:
     paths:
       - 'PianoLivreAndroid/app/**'
       - 'PianoLivreAndroid/tests/**'
+      - 'PianoLivreAndroid/scripts/**'
       - 'PianoLivreAndroid/gradle.properties'
       - '.github/workflows/emulator.yml'
   push:
     branches: [main]
     paths:
       - 'PianoLivreAndroid/app/**'
+      - 'PianoLivreAndroid/tests/**'
+      - 'PianoLivreAndroid/scripts/**'
       - 'PianoLivreAndroid/gradle.properties'
       - 'PianoLivreAndroid/settings.gradle'
       - '.github/workflows/emulator.yml'
