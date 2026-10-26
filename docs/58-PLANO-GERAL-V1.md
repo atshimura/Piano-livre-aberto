@@ -184,3 +184,10 @@ A branch de implementação está no PR draft #63, cuja base é o HEAD B1 #51. O
 ## D2 — fechamento técnico do Laboratório Descobrir — 2026-10-26
 
 No SHA `7ce5d2fcd99c49349fabefe17341ccd431073dd4`, passaram [build/JVM/JS/Chromium/MusicXML/APK 40369894641](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40369894641) e [emulador 40369894644](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40369894644). A auditoria corrigiu a clave de fá em pauta grave, ancorou os símbolos em F3/G4, acrescentou exposição das inversões e comparação por pixels rasterizados; os testes de sessão, transições e 11 capturas passaram. A primeira falha no teste responsivo preexistente do Estudo não se repetiu: o mesmo job passou nos perfis 1440×2160 e 1600×2560. Aceite físico Yamaha P-45/Realme 7 5G/Lenovo Tab M9 continua pendente. A versão proposta é `0.9.49-open-beta`, code 58; não houve merge, Release nem APK distribuído. Ver [doc 66](66-LABORATORIO-DESCOBRIR-1.0.md).
+
+
+## Estado após a publicação do Laboratório Descobrir — 26/10/2026
+
+A implementação do Laboratório Descobrir foi integrada em #65; #66 e #67 corrigiram, respectivamente, o teste de atualização para a nova versão e o acionamento do emulador para mudanças em scripts/testes. A beta aberta `0.9.49-open-beta` (versionCode 58) está publicada. O SHA que originou o APK é `9d5c3793f1b3e97132dfebec3a36e25c20723993`. Os workflows finais passaram: [build 40401082178](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40401082178) e [emulador 40401082464](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40401082464).
+
+A publicação não conclui a versão 1.0. O reconhecimento de escalas/arpejos continua limitado a padrões completos suportados. Aceite físico em Yamaha P-45, Realme 7 5G e Lenovo Tab M9 permanece pendente, e não é inferido dos testes sintéticos do emulador. Próxima etapa de desenvolvimento: Entrega C.
