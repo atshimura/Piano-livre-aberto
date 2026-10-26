@@ -26,6 +26,12 @@ final class MusicLabDiscoverySelfTest {
   check(d.title.getText().toString().equals("DÓ - C4"),"single note label");
   layoutStaff(a,d.staff);List<DiscoveryStaffView.NotePosition> pos=d.staff.layoutSnapshot();
   check(pos.size()==1&&pos.get(0).midi==60&&pos.get(0).clef.equals("sol")&&pos.get(0).ledgerLines==1,"C4 treble ledger geometry");
+  d.staff.setNotes(Collections.singletonList(36),false);layoutStaff(a,d.staff);pos=d.staff.layoutSnapshot();
+  check(pos.get(0).clef.equals("fá")&&pos.get(0).ledgerLines==2,"C2 bass ledger geometry");
+  d.staff.setNotes(Collections.singletonList(84),false);layoutStaff(a,d.staff);pos=d.staff.layoutSnapshot();
+  check(pos.get(0).clef.equals("sol")&&pos.get(0).ledgerLines==2,"C6 treble ledger geometry");
+  d.staff.setNotes(Arrays.asList(48,72),true);layoutStaff(a,d.staff);pos=d.staff.layoutSnapshot();
+  check(pos.get(0).clef.equals("fá")&&pos.get(1).clef.equals("sol"),"grand staff switches clef across C4");
   d.session.reconnect(conn,null);d.midiAttack(60,200,2,conn,ui);d.midiAttack(64,200,2,conn,ui);d.midiAttack(67,200,2,conn,ui);d.midiRelease(60,conn,ui);d.midiRelease(64,conn,ui);d.midiRelease(67,conn,ui);d.midiBatchEnd(2,201,ui);
   MusicDiscoverySession.Result chord=d.session.result();check(chord.kind==MusicDiscoverySession.Kind.CHORD&&chord.notes.size()==3,"synthetic chord classification");layoutStaff(a,d.staff);pos=d.staff.layoutSnapshot();
   check(pos.size()==3&&pos.get(0).x==pos.get(2).x,"chord heads share a simultaneity column");
