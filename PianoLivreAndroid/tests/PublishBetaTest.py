@@ -37,8 +37,10 @@ class PublishBetaTest(unittest.TestCase):
   calls,error=self.scenario(certificate='different');self.assertIsNotNone(error);self.assertFalse(any(c[:3]==['gh','release','create'] for c in calls))
  def test_debuggable_artifact_blocks(self):
   calls,error=self.scenario(debuggable=True);self.assertIsNotNone(error);self.assertFalse(any(c[:3]==['gh','release','create'] for c in calls))
- def test_docs_without_version_skip(self):
-  calls,error=self.scenario(change=0);self.assertIsNone(error);self.assertEqual(len(calls),1)
+ def test_missing_release_can_recover_without_version_change(self):
+  calls,error=self.scenario(change=0);self.assertIsNone(error);self.assertTrue(any(c[:3]==['gh','release','create'] for c in calls))
+ def test_existing_release_is_preserved_without_version_change(self):
+  calls,error=self.scenario(change=0,existing={'targetCommitish':'older'});self.assertIsNone(error);self.assertFalse(any(c[:3]==['gh','release','create'] for c in calls))
  def test_existing_same_commit_preserved(self):
   calls,error=self.scenario(existing={'targetCommitish':'abc'});self.assertIsNone(error);self.assertFalse(any(c[:3]==['gh','release','create'] for c in calls))
  def test_existing_different_commit_blocks(self):
