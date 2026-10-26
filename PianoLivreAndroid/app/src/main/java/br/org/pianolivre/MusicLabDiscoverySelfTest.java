@@ -73,11 +73,11 @@ final class MusicLabDiscoverySelfTest {
   StaffCase(String file,List<Integer> notes,boolean sequence,String clefs,int count){this(file,notes,sequence,clefs,count,640,300);}
   StaffCase(String file,List<Integer> notes,boolean sequence,String clefs,int count,int widthDp,int heightDp){this.file=file;this.notes=notes;this.sequence=sequence;this.clefs=clefs;clefCount=count;this.widthDp=widthDp;this.heightDp=heightDp;}
  }
- private static void renderCases(Activity a,MusicLabDiscoveryScreen d,List<StaffCase> cases,int index,Map<String,String> glyphs){
+ private static void renderCases(MainActivity a,MusicLabDiscoveryScreen d,List<StaffCase> cases,int index,Map<String,String> glyphs){
   if(index>=cases.size()){
    check(glyphs.containsKey("G")&&glyphs.containsKey("F")&&!glyphs.get("G").equals(glyphs.get("F")),"rendered treble and bass glyphs are distinct actual SVG symbols");
    d.session.reconnect(a.midiGeneration,null);d.midiAttack(60,900,90,a.midiGeneration,d.sessionGeneration());d.midiRelease(60,a.midiGeneration,d.sessionGeneration());d.midiBatchEnd(90,901,d.sessionGeneration());
-   String prior=d.title.getText().toString();d.midiAttack(62,902,91,a.midiGeneration,d.sessionGeneration());
+   d.midiAttack(62,902,91,a.midiGeneration,d.sessionGeneration());
    check(d.session.result().kind==MusicDiscoverySession.Kind.NOTE&&d.session.result().notes.equals(Collections.singletonList(60)),"held note result remains until next note is released");
    d.midiRelease(62,a.midiGeneration,d.sessionGeneration());
    check(d.session.result().notes.equals(Collections.singletonList(62))&&d.title.getText().toString().equals("RÉ - D4"),"next isolated note updates immediately on release");
