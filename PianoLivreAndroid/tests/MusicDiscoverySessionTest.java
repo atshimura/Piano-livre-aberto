@@ -22,6 +22,8 @@ public final class MusicDiscoverySessionTest {
   check(rolled.s.phase()==MusicDiscoverySession.Phase.PENDING,"acorde em formação fica pendente");
   check(!rolled.s.advance(99),"não antecipar janela calibrada");check(rolled.s.advance(100),"concluir na janela medida");
   check(rolled.s.result().kind==MusicDiscoverySession.Kind.CHORD,"acorde com ataques escalonados");
+  Rig packetSequence=new Rig(100L);packetSequence.on(60);packetSequence.off(60);packetSequence.time=20;packetSequence.on(64);packetSequence.off(64);packetSequence.time=40;packetSequence.on(67);packetSequence.off(67);
+  check(packetSequence.s.result().kind==MusicDiscoverySession.Kind.AMBIGUOUS,"note offs within one USB packet preserve successive order, not chord simultaneity");
   int[] up={60,62,64,65,67,69,71,72};Rig scaleUp=new Rig(null);for(int n:up)scaleUp.hit(n);
   check(scaleUp.s.result().kind==MusicDiscoverySession.Kind.SEQUENCE,"escala ascendente");
   check(scaleUp.s.result().notes.equals(Arrays.asList(60,62,64,65,67,69,71,72)),"todas notas na ordem ascendente");

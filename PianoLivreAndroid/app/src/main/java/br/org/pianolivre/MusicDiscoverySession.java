@@ -48,7 +48,7 @@ public final class MusicDiscoverySession {
    boolean sameBatch=pending.get(0).batch==batchId;
    if(repeatedPitch||elapsed<0||(!sameBatch&&!priorHeld&&chordWindowMs==null)||
       (!sameBatch&&chordWindowMs!=null&&elapsed>chordWindowMs))commitPending();
-   else if(sameBatch||priorHeld)chordEvidence=true;
+   else if(priorHeld)chordEvidence=true;
   }
   pending.add(new Attack(pitch,timeMs,batchId));
   if(down.size()!=1){patterns.clear();phraseNotes.clear();phraseTimes.clear();}
