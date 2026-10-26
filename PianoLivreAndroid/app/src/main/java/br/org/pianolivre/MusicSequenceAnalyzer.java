@@ -37,8 +37,10 @@ public final class MusicSequenceAnalyzer {
  };
  public static final class Finding {
   public final String category,description,tonic,direction;
-  Finding(String category,String description,String tonic,String direction){
+  public final int noteCount;
+  Finding(String category,String description,String tonic,String direction,int noteCount){
    this.category=category;this.description=description;this.tonic=tonic;this.direction=direction;
+   this.noteCount=noteCount;
   }
   public String display(){
    return category+": "+description+" iniciada em "+tonic+" · "+direction;
@@ -65,7 +67,7 @@ public final class MusicSequenceAnalyzer {
    if(!Arrays.equals(differences,p.steps))continue;
    // Descending classical melodic minor generally differs from ascending.
    if(descending&&p.name.startsWith("menor melódica"))continue;
-   found.add(new Finding(p.type,p.name,tonic,ascending?"ascendente":"descendente"));
+   found.add(new Finding(p.type,p.name,tonic,ascending?"ascendente":"descendente",attacks.size()));
   }
   return Collections.unmodifiableList(found);
  }

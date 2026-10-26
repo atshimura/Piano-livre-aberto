@@ -126,3 +126,8 @@ A composição experimental B1+B foi validada no SHA `89541ba7f0ffb9f76ca2446320
 ## PR de implementação e prova exata — 2026-10-25
 
 #63 consolida o delta de 21 arquivos sobre o SHA B1 #51 `15f05d7`, selecionando #58/#59/#60 e portando a jornada Android determinística corrigida. O HEAD de código `9ddbd2749055d6fb95a2911225d50359e03f97a4` passou build/JVM/Chromium [40231690624](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690624) e emulador [40231690719](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690719), ambos success. #64 é somente CI, mesmo SHA, não integrar. #52/#53/#54 permanecem alternativas históricas; contribuições anteriores do PR #48 são preservadas neste inventário.
+
+
+## D2 — Laboratório Descobrir 1.0 em preparação (26/10/2026)
+
+A tela pública foi implementada na branch `feat/laboratorio-descobrir-1.0` sobre a main `14489deef06d02e85a8bd43ecfc24f53aed22a03`: botão Laboratório Musical, Descobrir selecionado, Aprender desabilitado, entrada USB-MIDI e pauta nativa com notas/oitavas. Catálogo, demonstração e prática preexistentes permanecem no código fora da experiência pública. Consulte [doc 66](66-LABORATORIO-DESCOBRIR-1.0.md). Build, JVM e emulador da branch ainda precisam ser confirmados pelos Actions do SHA do PR; aceite físico Yamaha/Realme/Lenovo continua pendente.

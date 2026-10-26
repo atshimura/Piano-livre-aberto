@@ -1,8 +1,0 @@
-.gradle/
-build/
-PianoLivreAndroid/.gradle/
-PianoLivreAndroid/build/
-PianoLivreAndroid/app/build/
-PianoLivreAndroid/local.properties
-*.jks
-*.keystore

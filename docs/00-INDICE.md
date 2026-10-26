@@ -2,6 +2,9 @@
 
 **Esta documentação trata do repositório público.** O código provém de um desenvolvimento prévio privado, mas não depende do histórico ou de arquivos restritos para compilar.
 
+## Entregas em preparação
+- [66 — Laboratório Descobrir 1.0](66-LABORATORIO-DESCOBRIR-1.0.md): interface mínima pública, reconhecimento USB-MIDI, pauta nativa, testes e pendências de aceite.
+
 ## Documentos vigentes
 - [65 — Auditoria e reconciliação da Entrega B](65-ENTREGA-B-AUDITORIA-E-RECONCILIACAO.md): falha da jornada Android, reconciliação de PRs e estado da prova B1+B.
 - [01 — Visão e requisitos](01-VISAO-E-REQUISITOS.md): decisões de produto e critérios para V1.

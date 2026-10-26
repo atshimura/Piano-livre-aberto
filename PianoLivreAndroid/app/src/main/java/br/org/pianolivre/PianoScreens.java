@@ -26,6 +26,7 @@ class PianoScreens {
  String libraryQuery="",selectedLibraryFilter="";int libraryUser=-1;boolean libraryFiltersDirty=true;
  NotationView notation,freeNotation;
  MusicLabScreen lab;
+ MusicLabDiscoveryScreen discovery;
  PianoView virtualKeys,legacyFallback;
  PianoScreens(MainActivity a){this.a=a;}
  int d(float n){return (int)(n*a.getResources().getDisplayMetrics().density+.5f);}
@@ -77,6 +78,7 @@ class PianoScreens {
   buildStudio();screens.addView(studio,new FrameLayout.LayoutParams(-1,-1));
   buildFree();screens.addView(freeRoot,new FrameLayout.LayoutParams(-1,-1));
   lab=new MusicLabScreen(a,()->showHome());screens.addView(lab,new FrameLayout.LayoutParams(-1,-1));
+  discovery=new MusicLabDiscoveryScreen(a,()->showHome());screens.addView(discovery,new FrameLayout.LayoutParams(-1,-1));
   showHome();
  }
  void buildLibrary(){
@@ -93,7 +95,7 @@ class PianoScreens {
   LinearLayout section=row();section.setPadding(0,d(8),0,d(5));
   section.addView(text("BIBLIOTECA MUSICAL",14,ink,true),new LinearLayout.LayoutParams(0,d(28),1));
   section.addView(btn("Importar partitura",false,()->a.importScore()),lp(147,36));addGap(section,8);
-  section.addView(btn("Laboratório",true,()->showLab()),lp(118,36));addGap(section,8);
+  section.addView(btn("Laboratório Musical",true,()->showLab()),lp(170,36));addGap(section,8);
   section.addView(btn("Histórico",false,()->a.showHistory()),lp(87,36));addGap(section,8);
   section.addView(btn("Opções",false,()->options()),lp(73,36));
   libraryInner.addView(section,lp(-1,-2));
@@ -422,6 +424,7 @@ class PianoScreens {
   if(a.scoreView!=null&&a.scoreView.showKeyboard)setKeyboardOpen(false);
   header.setVisibility(View.GONE);library.setVisibility(View.GONE);studio.setVisibility(View.GONE);
   if(lab!=null)lab.setVisibility(View.GONE);
+  if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
   freeRoot.setVisibility(View.VISIBLE);
   freeTitle.setText((a.currentName==null?a.score.title:a.currentName)+" · Partitura Livre");
   freeNotation.loadScore(a.score,0,true);
@@ -429,11 +432,13 @@ class PianoScreens {
   android.util.Log.i("PianoLivreUI","free_open");
  }
  void showLab(){
+  stopLabDemonstration();
   a.stopPlayback();a.finishStudyWindow();
   if(a.scoreView!=null&&a.scoreView.showKeyboard)setKeyboardOpen(false);
-  header.setVisibility(View.VISIBLE);
+  header.setVisibility(View.GONE);
   library.setVisibility(View.GONE);studio.setVisibility(View.GONE);freeRoot.setVisibility(View.GONE);
-  if(lab!=null){lab.beginObservation();lab.onMidiPressed(a.downKeys);lab.setVisibility(View.VISIBLE);}
+  if(lab!=null)lab.setVisibility(View.GONE);
+  if(discovery!=null){discovery.setVisibility(View.VISIBLE);discovery.enter();}
  }
  void showHome(){
   stopLabDemonstration();
@@ -442,6 +447,7 @@ class PianoScreens {
   header.setVisibility(View.VISIBLE);
   freeRoot.setVisibility(View.GONE);
   studio.setVisibility(View.GONE);if(lab!=null)lab.setVisibility(View.GONE);
+  if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
   library.setVisibility(View.VISIBLE);refreshLibrary();
  }
  void showStudy(){
@@ -450,6 +456,7 @@ class PianoScreens {
   header.setVisibility(View.VISIBLE);
   freeRoot.setVisibility(View.GONE);
   library.setVisibility(View.GONE);if(lab!=null)lab.setVisibility(View.GONE);
+  if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
   studio.setVisibility(View.VISIBLE);
   songTitle.setText(a.currentName==null||a.currentName.isEmpty()?a.score.title:a.currentName);
   // Restores the expected mode if a prior view closed while keyboard was open.
@@ -496,6 +503,13 @@ class PianoScreens {
  void onLabMidiAttack(int pitch){
   if(lab!=null&&lab.getVisibility()==View.VISIBLE)lab.onMidiAttack(pitch);
  }
+ void onLabMidiAttack(int pitch,long time,long batch,long generation,long uiGeneration){if(discovery!=null)discovery.midiAttack(pitch,time,batch,generation,uiGeneration);}
+ void onLabMidiRelease(int pitch,long generation,long uiGeneration){if(discovery!=null)discovery.midiRelease(pitch,generation,uiGeneration);}
+ void onLabMidiBatchEnd(long batch,long now,long uiGeneration){if(discovery!=null)discovery.midiBatchEnd(batch,now,uiGeneration);}
+ long discoveryGeneration(){return discovery==null?-1:discovery.sessionGeneration();}
+ void onMidiConnectionChanged(long generation){if(discovery!=null)discovery.connectionChanged(generation);}
+ void pauseDiscovery(){if(discovery!=null)discovery.pause();}
+ void resumeDiscovery(){if(discovery!=null)discovery.resume();}
  void updatePressed(java.util.Set<Integer> notes){
   if(lab!=null)lab.onMidiPressed(notes);
   if(virtualKeys==null)return;
@@ -510,6 +524,7 @@ class PianoScreens {
  void destroyNotation(){if(notation!=null){notation.dispose();notation=null;}
   if(freeNotation!=null){freeNotation.dispose();freeNotation=null;}}
  boolean isFreeOpen(){return freeRoot!=null&&freeRoot.getVisibility()==View.VISIBLE;}
+ boolean isLabOpen(){return discovery!=null&&discovery.getVisibility()==View.VISIBLE;}
  boolean isStudyOpen(){return studio!=null&&studio.getVisibility()==View.VISIBLE;}
 
 }

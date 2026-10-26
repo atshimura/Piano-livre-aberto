@@ -314,3 +314,7 @@ Estado final de CI desta prova: SHA `89541ba7f0ffb9f76ca2446320cfc83ba3665fd9`. 
 ## Consolidação revisável B1 + B — 2026-10-25
 
 A implementação revisável está no PR draft #63, baseado no HEAD da B1 #51. A branch #64 é apenas sombra CI com o mesmo SHA de código `9ddbd2749055d6fb95a2911225d50359e03f97a4`. Build/JVM/Chromium: [40231690624](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690624), success; emulador: [40231690719](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40231690719), success. A jornada Android passou para Estudo livre 01 e Gymnopédie nº 1. O PR #62 continua prova histórica CI-only, sem merge. Nenhuma integração à main, Release ou distribuição foi feita; aceite físico/editorial continua pendente.
+
+## Laboratório Descobrir 1.0 — implementação em PR próprio
+
+Branch `feat/laboratorio-descobrir-1.0`, iniciada após o commit main `14489deef06d02e85a8bd43ecfc24f53aed22a03`. O botão inicial e a tela pública agora seguem a decisão de 20/10: barra Descobrir/Aprender desabilitado, instrução vazia única, entrada USB-MIDI, pauta nativa e retenção do último resultado. A `MusicLabScreen` antiga permanece no código para os recursos posteriores. `MusicDiscoverySessionTest` e `MusicLabDiscoverySelfTest` foram incluídos; a validação remota e o SHA final serão registrados após as execuções da branch. A beta 0.9.48 existente não é republicada, e esta tarefa não autoriza merge nem Release. Aceite físico Yamaha/Realme/Lenovo permanece pendente.
