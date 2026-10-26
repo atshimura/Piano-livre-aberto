@@ -35,11 +35,13 @@ O workflow existente volta a executar testes JVM do catálogo, demonstração, p
 
 ## Resultados executados em 26/10/2026
 
-A rodada anterior de fechamento passou no SHA `e3f6e48a9329eb81fab957a6f46f2c7941d75e81` no PR #65:
+Código final auditado no SHA `7ce5d2fcd99c49349fabefe17341ccd431073dd4` da branch #65:
 
-- [Build/JVM/JavaScript/Chromium/MusicXML/APK](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40365991237) — sucesso; `MUSIC_DISCOVERY_SESSION_PASS checks=47`, teoria musical, padrões/sequências, catálogo, demonstração e prática passaram.
-- [Emulador Android](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40365991508) — sucesso; `MIDI_SESSION_SELFTEST_PASS assertions=13`, `DISCOVERY_UI_SELFTEST_PASS checks=53` e `PUBLIC_ANDROID_EMULATOR_SMOKE_PASS`. O artefato inclui nove capturas 990×440 px para C2/C3/F3/G4/C6, acordes grave/agudo/abrangente e sequência em duas pautas.
-- Essa rodada injeta MIDI sintético e não representa uma conexão física com o Yamaha P-45. A regressão adicional telefone/tablet foi incluída depois dessa execução; os workflows do novo SHA são a prova final dessa ampliação.
+- [Build/JVM/JavaScript/Chromium/MusicXML/APK — run 40369894641](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40369894641) — sucesso. Marcadores: `MUSIC_THEORY_TEST_PASS checks=34`, `MUSIC_SEQUENCE_ANALYZER_PASS checks=30`, `MUSIC_PATTERN_TRACKER_PASS checks=33`, `MUSIC_DISCOVERY_SESSION_PASS checks=49`, catálogo 177, demonstração 54, prática 54 e `PUBLIC_DISTRIBUTION_APK_PASS`.
+- [Emulador Android — run 40369894644](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40369894644) — sucesso após repetir o job no mesmo SHA. Marcadores: `MIDI_SESSION_SELFTEST_PASS assertions=13`, `DISCOVERY_UI_SELFTEST_PASS checks=215`, `PUBLIC_ANDROID_EMULATOR_SMOKE_PASS`; os perfis responsivos do Estudo de 1440×2160 e 1600×2560 também passaram.
+- Uma primeira execução do emulador falhou no teste responsivo preexistente do Estudo, com a tela aberta e a pauta vazia. O mesmo job, no mesmo SHA, passou na repetição; não houve nova falha nem alteração para reduzir asserções.
+- [Artefato com capturas do emulador](https://github.com/atshimura/Piano-livre-aberto/actions/runs/40369894644/artifacts/12674092710): 11 PNGs. Inclui C2/C3/F3/G4/C6, acorde grave/agudo/abrangente, sequência que cruza as pautas e sequência longa renderizada nos viewports equivalentes a telefone (360×420 dp) e tablet (800×600 dp). As capturas individuais têm 990×440 px; as duas sequências longas, 2503×1155 e 2503×1650 px. Os pixels das claves, pontos F3, linha G4 e linhas suplementares são conferidos pelo teste.
+- O emulador usa MIDI sintético. Esta evidência valida o software, não a ligação física com Yamaha P-45.
 
 ## Limites e aceite
 
