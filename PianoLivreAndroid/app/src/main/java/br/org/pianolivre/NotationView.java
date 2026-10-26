@@ -6,6 +6,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
+import android.webkit.ValueCallback;
 import android.webkit.ConsoleMessage;
 import android.util.Log;
 import android.webkit.WebResourceRequest;
@@ -161,6 +162,11 @@ public final class NotationView extends WebView {
  }
  /** Select the Study renderer without changing score data or native playback state. */
  public boolean isEngravingProof(){return engravingProof;}
+ /** Returns the actual rendered clef glyph groups for visual regression tests. */
+ void inspectRenderedClefs(ValueCallback<String> callback){
+  if(disposed||!htmlReady||!scoreRendered){if(callback!=null)callback.onReceiveValue("null");return;}
+  evaluateJavascript("(function(){var a=Array.from(document.querySelectorAll('#score svg .vf-clef'));return JSON.stringify(a.map(function(n){return n.outerHTML}))})()",callback);
+ }
  public boolean hasRendererFailure(){return rendererFailed;}
  public void setEngravingProof(boolean enabled){
   if(disposed||freeLayout||pendingScore==null||engravingProof==enabled&&!rendererFailed)return;

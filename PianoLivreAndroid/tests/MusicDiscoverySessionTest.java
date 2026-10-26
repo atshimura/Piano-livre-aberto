@@ -36,6 +36,10 @@ public final class MusicDiscoverySessionTest {
   int[] up={60,62,64,65,67,69,71,72};Rig scaleUp=new Rig(null);for(int n:up)scaleUp.hit(n);
   check(scaleUp.s.result().kind==MusicDiscoverySession.Kind.SEQUENCE,"escala ascendente");
   check(scaleUp.s.result().notes.equals(Arrays.asList(60,62,64,65,67,69,71,72)),"todas notas na ordem ascendente");
+  Rig slowCmajor=new Rig(null);for(int n:up){slowCmajor.hit(n);slowCmajor.time+=2000;}
+  check(slowCmajor.s.result().kind==MusicDiscoverySession.Kind.SEQUENCE&&slowCmajor.s.result().title.contains("maior"),"Dó maior uma oitava reconhecida com pausas humanas de dois segundos");
+  Rig twoIndependentNotes=new Rig(null);twoIndependentNotes.hit(60);twoIndependentNotes.time+=2000;twoIndependentNotes.hit(62);
+  check(twoIndependentNotes.s.result().kind==MusicDiscoverySession.Kind.NOTE&&twoIndependentNotes.s.result().notes.equals(Collections.singletonList(62))&&twoIndependentNotes.s.result().title.equals("RÉ - D4"),"Ré aparece como nova nota independente depois de Dó e pausa de dois segundos");
   int[] down={72,71,69,67,65,64,62,60};Rig scaleDown=new Rig(null);for(int n:down)scaleDown.hit(n);
   check(scaleDown.s.result().kind==MusicDiscoverySession.Kind.SEQUENCE,"escala descendente");
   int[] arpUp={60,64,67,72};Rig au=new Rig(null);for(int n:arpUp)au.hit(n);
@@ -51,7 +55,7 @@ public final class MusicDiscoverySessionTest {
   for(int i=0;i<transitionScale.length;i++){
    chordToScale.hit(transitionScale[i]);
    if(i==0)check(chordToScale.s.result().title.equals(firstScaleNote),"released first pitch is a valid note result");
-   else if(i<transitionScale.length-1)check(chordToScale.s.result().title.equals(firstScaleNote),"intermediate scale note does not replace the stable result");
+   else if(i<transitionScale.length-1)check(chordToScale.s.result().kind==MusicDiscoverySession.Kind.NOTE&&chordToScale.s.result().notes.equals(Collections.singletonList(transitionScale[i])),"each released scale pitch is shown while full pattern analysis continues");
   }
   check(chordToScale.s.result().kind==MusicDiscoverySession.Kind.SEQUENCE&&chordToScale.s.result().notes.equals(Arrays.asList(transitionScale[0],transitionScale[1],transitionScale[2],transitionScale[3],transitionScale[4],transitionScale[5],transitionScale[6],transitionScale[7])),"scale replaces stable note only when complete");
   Rig scaleToArpeggio=new Rig(null);for(int n:transitionScale)scaleToArpeggio.hit(n);
@@ -62,7 +66,7 @@ public final class MusicDiscoverySessionTest {
   arpeggioToNote.hit(55);check(arpeggioToNote.s.result().kind==MusicDiscoverySession.Kind.NOTE&&arpeggioToNote.s.result().notes.equals(Collections.singletonList(55)),"isolated note replaces completed arpeggio");
   Rig validToIncomplete=new Rig(null);for(int n:new int[]{60,64,67,72})validToIncomplete.hit(n);String priorArpeggio=validToIncomplete.s.result().title;
   for(int n:new int[]{48,50,51,53,55,56})validToIncomplete.hit(n);
-  check(validToIncomplete.s.result().title.equals("DÓ - C3"),"incomplete phrase does not churn into individual-note results");
+  check(validToIncomplete.s.result().kind==MusicDiscoverySession.Kind.NOTE&&validToIncomplete.s.result().notes.equals(Collections.singletonList(56)),"incomplete phrase shows each last independently identified note without calling it a scale");
   check(validToIncomplete.s.advance(validToIncomplete.time+2)&&validToIncomplete.s.result().kind==MusicDiscoverySession.Kind.AMBIGUOUS,"incomplete phrase ends as ambiguous, not complete pattern");
   check(!priorArpeggio.isEmpty(),"prior confirmed pattern remains a valid transition baseline");
   Rig ambiguous=new Rig(null);ambiguous.on(60);ambiguous.on(61);ambiguous.off(60);ambiguous.off(61);ambiguous.s.finishBatch(ambiguous.batch,ambiguous.time);

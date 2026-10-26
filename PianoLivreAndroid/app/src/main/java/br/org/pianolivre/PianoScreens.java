@@ -522,7 +522,8 @@ class PianoScreens {
   if(isStudyOpen())followScore(a.position,true);
  }
  void destroyNotation(){if(notation!=null){notation.dispose();notation=null;}
-  if(freeNotation!=null){freeNotation.dispose();freeNotation=null;}}
+  if(freeNotation!=null){freeNotation.dispose();freeNotation=null;}
+  if(discovery!=null)discovery.dispose();}
  boolean isFreeOpen(){return freeRoot!=null&&freeRoot.getVisibility()==View.VISIBLE;}
  boolean isLabOpen(){return discovery!=null&&discovery.getVisibility()==View.VISIBLE;}
  boolean isStudyOpen(){return studio!=null&&studio.getVisibility()==View.VISIBLE;}
