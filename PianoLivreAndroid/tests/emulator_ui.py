@@ -142,83 +142,18 @@ if __name__=="__main__":
     names=[n.attrib.get("text","") for n in home.iter("node")]
     assert any(DEFAULT_SCORE_TITLE in n for n in names), "Music library must be visible on launch: "+str(names[:30])
     print("PASS: library visible at startup",flush=True)
-    # Laboratory entry and its deliberately limited first Learn/Practice slice.
-    tap_text(["Laboratório"],exact=True)
+    # Public Laboratory 1.0 exposes only the approved Discover experience.
+    tap_text(["Laboratório Musical"],exact=True)
     lab_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Descobrir" in t for t in lab_labels), "Discovery screen not shown"
-    assert any("Toque uma nota ou acorde" in t for t in lab_labels), "MusicLab initial state missing"
-    tap_text(["Iniciar sequência"],exact=True)
-    assert any("Concluir análise" in n.attrib.get("text","") for n in dump().iter("node")), "Manual sequence recording did not start"
-    tap_text(["Concluir análise"],exact=True)
-    assert any("Nenhuma nota registrada" in n.attrib.get("text","") for n in dump().iter("node")), "Empty sequence must not be guessed"
-    tap_text(["Aprender / Praticar"],exact=True)
-    learn_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Lá menor" in t for t in learn_labels), "Learn chord example missing"
-    tap_text(["Praticar"],exact=True)
-    practice_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("classes de altura faltando" in t for t in practice_labels), "Free chord practice feedback missing"
-    # Search while practicing must stop old exercise and update the highlights.
-    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    assert fields, "Catalog search field missing"
-    coords=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
-    adb("shell","input","text","arpejo")
-    dismiss_keyboard()
-    filtered=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Arpejo ·" in t for t in filtered), "Catalog category filter did not show arpeggios"
-    assert "Praticar" in filtered, "Editing search must stop any running practice"
-    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    coords=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
-    adb("shell","input","keyevent","123")
-    for _ in range(6):adb("shell","input","keyevent","67")
-    adb("shell","input","text","zzzx")
-    dismiss_keyboard()
-    assert any("Nenhum item encontrado" in n.attrib.get("text","") for n in dump().iter("node")), "Catalog no-results state missing"
-    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    coords=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
-    adb("shell","input","keyevent","123")
-    for _ in range(4):adb("shell","input","keyevent","67")
-    dismiss_keyboard()
-    assert any("Lá menor" in n.attrib.get("text","") for n in dump().iter("node")), "Catalog reset lost five legacy exercises"
-    print("PASS: Laboratory catalog filtering, empty state and practice reset",flush=True)
-    # Guided scale/arpeggio starts from zero and resets on filter/mode changes.
-    search_fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    assert search_fields, "Laboratory search missing for guided practice"
-    coords=[int(x) for x in re.findall(r"\d+",search_fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
-    adb("shell","input","text","escala")
-    dismiss_keyboard()
-    assert any("Escala ·" in n.attrib.get("text","") for n in dump().iter("node")), "Scale filter missing"
-    tap_text(["Praticar"],exact=True,scroll=True)
-    assert any("Próxima:" in n.attrib.get("text","") and "0/" in n.attrib.get("text","") and "mão (referência): Ambas" in n.attrib.get("text","") for n in dump().iter("node")), "Sequential practice or hand reference not shown"
-    search_fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    coords=[int(x) for x in re.findall(r"\d+",search_fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
-    adb("shell","input","keyevent","123")
-    for _ in range(6):adb("shell","input","keyevent","67")
-    adb("shell","input","text","arpejo")
-    dismiss_keyboard()
-    assert any("Arpejo ·" in n.attrib.get("text","") for n in dump().iter("node")), "Arpeggio filter missing"
-    assert any(n.attrib.get("text")=="Praticar" for n in dump().iter("node")), "Filter change retained previous practice"
-    tap_text(["Praticar"],exact=True,scroll=True)
-    assert any("Próxima:" in n.attrib.get("text","") for n in dump().iter("node")), "Arpeggio practice did not restart"
-    tap_text(["Descobrir"],exact=True,scroll=True)
-    tap_text(["Aprender / Praticar"],exact=True,scroll=True)
-    assert any(n.attrib.get("text")=="Praticar" for n in dump().iter("node")), "Mode switch retained old progress"
-    print("PASS: Laboratory ordered practice, hand reference, filter and mode reset",flush=True)
-    tap_text(["Demonstrar"],scroll=True)
-    assert any("Demonstração requer saída USB-MIDI" in n.attrib.get("text","") for n in dump().iter("node")), "Demo erroneously played without MIDI"
-    tap_text(["OK"],exact=True)
-    assert any("Demonstrar" in n.attrib.get("text","") for n in dump().iter("node")), "Failed demo did not remain stopped"
-    print("PASS: Laboratory demonstration unavailable without MIDI output",flush=True)
-    tap_text(["Montar"],exact=True,scroll=True)
-    screenshot("piano-laboratorio.png")
-    tap_text(["Biblioteca"])
+    assert any(t=="Descobrir" for t in lab_labels), "Discover screen not shown"
+    assert any(t=="Aprender" for t in lab_labels), "Disabled Learn tab missing"
+    assert any(t=="toque uma nota, acorde ou escala musical" for t in lab_labels), "Exact initial instruction missing"
+    forbidden={"Iniciar","Gravar","Praticar","Metrônomo","Demonstração","Montar","Teclado"}
+    assert not (forbidden & set(lab_labels)), "Legacy controls leaked into Discover: "+str(forbidden & set(lab_labels))
+    tap_text(["Voltar"],exact=True)
     assert_running()
     assert any("BIBLIOTECA MUSICAL" in n.attrib.get("text","") for n in dump().iter("node")), "Laboratory return lost library"
-    print("PASS: Laboratory discovery, keyboard mode and guided chord practice",flush=True)
+    print("PASS: public Laboratory Discover entry, minimal empty state and deterministic return",flush=True)
     # MIDI diagnostics must be discoverable even without a physical piano.
     tap_text(["Conecte seu piano","MIDI indisponível"])
     time.sleep(.6)
