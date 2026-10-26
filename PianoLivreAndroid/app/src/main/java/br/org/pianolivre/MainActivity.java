@@ -43,6 +43,8 @@ public class MainActivity extends Activity {
   if(routeCursor!=null){routeCursor.reset();routeCursor.align(position);}
  }
  volatile long midiGeneration=0;
+ private volatile long midiPacketSequence=0;
+ private long currentMidiPacket=0,currentUiSession=-1,currentMidiEventTime=0;
  boolean foreground=false;
  int openingMidiId=-1, receivedMessages=0, sentMessages=0, lastMidiChannel=0;
  int lastMidiNote=-1, lastMidiVelocity=0;
@@ -58,9 +60,17 @@ public class MainActivity extends Activity {
   return new MidiReceiver(){
    @Override public void onSend(byte[] data,int offset,int count,long timestamp){
     if(generation!=midiGeneration)return;
-    decoder.feed(data,offset,count,(st,d1,d2)->handler.post(()->{
-     if(generation==midiGeneration)onMidiMessage(st,d1,d2);
-    }));
+    final ArrayList<int[]> decoded=new ArrayList<>();
+    decoder.feed(data,offset,count,(st,d1,d2)->decoded.add(new int[]{st,d1,d2}));
+    if(decoded.isEmpty())return;
+    final long packet=++midiPacketSequence;
+    final long arrivalTime=SystemClock.uptimeMillis();
+    final long uiSession=screens==null?-1:screens.discoveryGeneration();
+    handler.post(()->{
+     if(generation!=midiGeneration)return;
+     for(int[] event:decoded)onMidiMessage(event[0],event[1],event[2],packet,arrivalTime,uiSession);
+     if(screens!=null)screens.onLabMidiBatchEnd(packet,arrivalTime,uiSession);
+    });
    }
   };
  }
@@ -175,6 +185,8 @@ public class MainActivity extends Activity {
   }
   if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("midi_selftest",false))handler.post(()->MidiSessionSelfTest.run(this));
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("discovery_selftest",false))handler.post(()->MusicLabDiscoverySelfTest.run(this));
  }
  private String readAsset(String asset)throws IOException{try(InputStream in=getAssets().open(asset)){return new String(all(in),StandardCharsets.UTF_8);}}
  private byte[] all(InputStream in)throws IOException{ByteArrayOutputStream o=new ByteArrayOutputStream();byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)o.write(b,0,n);return o.toByteArray();}
@@ -395,6 +407,7 @@ public class MainActivity extends Activity {
   receiver=null;downKeys.clear();midiSources.clear();waitRecognizer.clear();performance.disconnect();chordCalibration.stop();activeNotes.clear();sustainDown=false;
   if(scoreView!=null){scoreView.pressed.clear();scoreView.invalidate();}
   if(screens!=null)screens.updatePressed(downKeys);
+  if(screens!=null)screens.onMidiConnectionChanged(midiGeneration);
  }
  void send(int pitch,boolean on){send(pitch,on,74);}
  void send(int pitch,boolean on,int velocity){
@@ -421,6 +434,10 @@ public class MainActivity extends Activity {
   sustainDown=false;for(int ch=0;ch<16;ch++)if(performance.pedalDown(ch)){sustainDown=true;break;}
  }
  void onMidiMessage(int statusCode,int data1,int data2){
+  onMidiMessage(statusCode,data1,data2,++midiPacketSequence,SystemClock.uptimeMillis(),screens==null?-1:screens.discoveryGeneration());
+ }
+ private void onMidiMessage(int statusCode,int data1,int data2,long packet,long eventTime,long uiSession){
+  currentMidiPacket=packet;currentMidiEventTime=eventTime;currentUiSession=uiSession;
   int command=statusCode&0xF0;
   receivedMessages++;lastMidiChannel=(statusCode&0x0f)+1;
   if(command==0x90&&data2>0){
@@ -501,7 +518,8 @@ public class MainActivity extends Activity {
   if(pitch<0||pitch>127||channel<0||channel>15)return;
   int source=(channel<<7)|pitch;
   boolean newAttack=false;
-  long now=SystemClock.uptimeMillis();
+  boolean releasedLast=false;
+  long now=currentMidiEventTime>0?currentMidiEventTime:SystemClock.uptimeMillis();
   if(pressed){
    if(midiSources.add(source))newAttack=downKeys.add(pitch);
    if(newAttack&&foreground&&chordCalibration.recording())chordCalibration.noteOn(pitch,now);
@@ -510,6 +528,7 @@ public class MainActivity extends Activity {
    boolean stillPressed=false;
    for(int ch=0;ch<16;ch++)if(midiSources.contains((ch<<7)|pitch)){stillPressed=true;break;}
    if(!stillPressed){
+    releasedLast=true;
     downKeys.remove(pitch);waitRecognizer.noteOff(pitch);
     if(chordCalibration.recording()&&chordCalibration.noteOff(pitch,now))updateChordCalibrationStatus();
    }
@@ -517,7 +536,10 @@ public class MainActivity extends Activity {
   scoreView.pressed.clear();scoreView.pressed.addAll(downKeys);scoreView.invalidate();
   if(screens!=null){
    screens.updatePressed(downKeys);
-   if(newAttack&&foreground)screens.onLabMidiAttack(pitch);
+   if(foreground){
+    if(newAttack)screens.onLabMidiAttack(pitch,now,currentMidiPacket,midiGeneration,currentUiSession);
+    else if(releasedLast)screens.onLabMidiRelease(pitch,midiGeneration,currentUiSession);
+   }
   }
   if(!foreground||chordCalibration.recording()||score==null||mode!=0||!waitStarted||waitPreparing||!pressed||waitTraveling||
       (screens!=null&&!screens.isStudyOpen()))return;
@@ -959,19 +981,27 @@ public class MainActivity extends Activity {
  void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
  void message(String m){new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
  @Override public void onBackPressed(){
+  if(screens!=null&&screens.isLabOpen()){screens.showHome();return;}
   if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.showHome();return;}
   super.onBackPressed();
  }
  @Override protected void onResume(){
   super.onResume();foreground=true;
+  midiSources.clear();downKeys.clear();waitRecognizer.clear();if(scoreView!=null){scoreView.pressed.clear();scoreView.invalidate();}
+  if(screens!=null)screens.updatePressed(downKeys);
   // Exactly one ticker chain, including after repeated background/foreground.
   handler.removeCallbacks(ticker);previousTick=SystemClock.uptimeMillis();handler.post(ticker);
   if(screens!=null)screens.resumeNotation();
+  if(screens!=null)screens.resumeDiscovery();
   rearmWaitIfStudying();beginStudyWindow();
   android.util.Log.i("PianoLivreUI","LIFECYCLE_RESUMED");
  }
  @Override protected void onPause(){
-  foreground=false;super.onPause();if(screens!=null)screens.stopLabDemonstration();stopPlayback();finishStudyWindow();saveSession();handler.removeCallbacks(ticker);
+  foreground=false;super.onPause();if(screens!=null){screens.stopLabDemonstration();screens.pauseDiscovery();}
+  // Drop held-key bookkeeping across backgrounding; a later Note Off remains harmless.
+  midiSources.clear();downKeys.clear();waitRecognizer.clear();if(scoreView!=null){scoreView.pressed.clear();scoreView.invalidate();}
+  if(screens!=null)screens.updatePressed(downKeys);
+  stopPlayback();finishStudyWindow();saveSession();handler.removeCallbacks(ticker);
   chordCalibration.stop();
   if(screens!=null)screens.pauseNotation();
   android.util.Log.i("PianoLivreUI","LIFECYCLE_PAUSED");
