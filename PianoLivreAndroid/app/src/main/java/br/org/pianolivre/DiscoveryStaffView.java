@@ -60,9 +60,9 @@ final class DiscoveryStaffView extends View {
   }
  }
  private void drawTrebleClef(Canvas c,float x,float bottom,Paint paint){
-  float d=getResources().getDisplayMetrics().density;Path path=new Path();path.moveTo(x,bottom+11*d);path.cubicTo(x-9*d,bottom+4*d,x+8*d,bottom-5*d,x+2*d,bottom-10*d);path.cubicTo(x-5*d,bottom-17*d,x+8*d,bottom-31*d,x+3*d,bottom-39*d);path.cubicTo(x-1*d,bottom-46*d,x-7*d,bottom-40*d,x-3*d,bottom-36*d);c.drawPath(path,paint);c.drawLine(x,bottom+12*d,x,bottom-50*d,paint);paint.setStyle(Paint.Style.FILL);c.drawCircle(x,bottom-10*d,2.5f*d,paint);paint.setStyle(Paint.Style.STROKE);
+  float d=getResources().getDisplayMetrics().density;Path path=new Path();path.moveTo(x-1*d,bottom+12*d);path.cubicTo(x-14*d,bottom+4*d,x-14*d,bottom-13*d,x-1*d,bottom-18*d);path.cubicTo(x+12*d,bottom-23*d,x+13*d,bottom-6*d,x+1*d,bottom-3*d);path.cubicTo(x-12*d,bottom+1*d,x-14*d,bottom-14*d,x-2*d,bottom-21*d);path.cubicTo(x+6*d,bottom-28*d,x+4*d,bottom-42*d,x+2*d,bottom-50*d);path.cubicTo(x,bottom-60*d,x-10*d,bottom-59*d,x-12*d,bottom-51*d);path.cubicTo(x-14*d,bottom-43*d,x-2*d,bottom-40*d,x+1*d,bottom-47*d);c.drawPath(path,paint);c.drawLine(x,bottom+12*d,x,bottom-61*d,paint);
  }
  private void drawBassClef(Canvas c,float x,float bottom,Paint paint){
-  float d=getResources().getDisplayMetrics().density;float f3=bottom-6*noteStep;Path path=new Path();path.moveTo(x+8*d,f3-d);path.cubicTo(x-12*d,f3-14*d,x-15*d,f3+10*d,x-3*d,f3+16*d);path.cubicTo(x+8*d,f3+21*d,x+12*d,f3+6*d,x+4*d,f3);c.drawPath(path,paint);paint.setStyle(Paint.Style.FILL);c.drawCircle(x+10*d,f3-5*d,1.7f*d,paint);c.drawCircle(x+10*d,f3+5*d,1.7f*d,paint);paint.setStyle(Paint.Style.STROKE);
+  float d=getResources().getDisplayMetrics().density;float f3=bottom-6*noteStep;Path path=new Path();path.moveTo(x+6*d,f3-15*d);path.cubicTo(x-7*d,f3-23*d,x-14*d,f3-13*d,x-14*d,f3);path.cubicTo(x-14*d,f3+12*d,x-5*d,f3+19*d,x+5*d,f3+13*d);path.cubicTo(x+12*d,f3+9*d,x+10*d,f3+3*d,x+2*d,f3);c.drawPath(path,paint);paint.setStyle(Paint.Style.FILL);c.drawCircle(x+12*d,f3-5*d,1.7f*d,paint);c.drawCircle(x+12*d,f3+5*d,1.7f*d,paint);paint.setStyle(Paint.Style.STROKE);
  }
 }

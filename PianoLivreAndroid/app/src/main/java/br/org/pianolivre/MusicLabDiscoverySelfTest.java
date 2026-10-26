@@ -73,9 +73,9 @@ final class MusicLabDiscoverySelfTest {
   float top=grand?Math.max(18*d,staff.getHeight()*.14f):Math.max(18*d,staff.getHeight()*.25f),trebleBottom=top+40*d;
   float bassBottom=grand?top+Math.max(76*d,staff.getHeight()*.43f)+40*d:trebleBottom;
   Bitmap image=Bitmap.createBitmap(staff.getWidth(),staff.getHeight(),Bitmap.Config.ARGB_8888);staff.draw(new Canvas(image));
-  if(treble){check(inkNear(image,19*d,trebleBottom-10*d,d),"actual treble symbol contains G4 curl anchor: "+name);}
+  if(treble){check(inkNear(image,29*d,trebleBottom-10*d,d),"actual treble symbol curls around G4: "+name);}
   if(!grand&&!treble)check(!inkNear(image,19*d,trebleBottom-10*d,d),"actual bass rendering omits treble curl: "+name);
-  if(grand||!treble){float f3=bassBottom-30*d;check(inkNear(image,29*d,f3-5*d,d),"actual bass symbol upper dot flanks F3: "+name);check(inkNear(image,29*d,f3+5*d,d),"actual bass symbol lower dot flanks F3: "+name);}
+  if(grand||!treble){float f3=bassBottom-30*d;check(inkNear(image,31*d,f3-5*d,d),"actual bass symbol upper dot flanks F3: "+name);check(inkNear(image,31*d,f3+5*d,d),"actual bass symbol lower dot flanks F3: "+name);}
   for(DiscoveryStaffView.NotePosition n:positions)if(n.midi==36||n.midi==84){float staffBottom=n.clef.equals("sol")?trebleBottom:bassBottom;float y=n.midi==36?staffBottom+20*d:staffBottom-60*d;check(inkNear(image,n.x+10*d,y,d),"actual supplementary ledger is at C2/C6 pitch: "+name);}
   try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),name))){image.compress(Bitmap.CompressFormat.PNG,100,out);}catch(Exception ex){throw new IllegalStateException("Unable to save staff capture "+name,ex);}finally{image.recycle();}
  }
