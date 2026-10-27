@@ -82,8 +82,8 @@ jobs:
             adb shell pidof br.org.pianolivre.opensource
             adb logcat -c || echo 'WARNING: logcat clear unavailable on this emulator'
             adb shell am force-stop br.org.pianolivre.opensource
-            adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity --ez upgrade_selftest true --ez backup_selftest true --ez midi_selftest true --ez profiles_selftest true --ez library_selftest true --ez history_selftest true --ez xml_input_selftest true --ez midifile_selftest true --ez midi_import_ui_selftest true --ez discovery_selftest true
-            for attempt in $(seq 1 30); do adb logcat -d -v brief | grep -q 'DISCOVERY_UI_SELFTEST_PASS' && break; sleep 1; done
+            adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity --ez upgrade_selftest true --ez backup_selftest true --ez midi_selftest true --ez profiles_selftest true --ez library_selftest true --ez history_selftest true --ez xml_input_selftest true --ez midifile_selftest true --ez midi_import_ui_selftest true
+            for attempt in $(seq 1 60); do adb logcat -d -v brief | grep -q 'HISTORY_ACTIVITY_SELFTEST_PASS' && break; sleep 1; done
             adb logcat -d -v brief > piano-selftests.log
             adb logcat -d -v brief | grep 'UPGRADE_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'BACKUP_SELFTEST_PASS'
@@ -94,9 +94,15 @@ jobs:
             adb logcat -d -v brief | grep 'MIDIFILE_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'XML_INPUT_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'HISTORY_ACTIVITY_SELFTEST_PASS'
-            adb logcat -d -v brief | grep 'DISCOVERY_UI_SELFTEST_PASS'
-            for image in c2 c3 f3 g4 c6 low-chord high-chord grand-chord grand-sequence phone-sequence tablet-sequence; do adb shell run-as br.org.pianolivre.opensource cat "cache/discovery-staff-$image.png" > "piano-discovery-staff-$image.png"; done
             python3 tests/emulator_ui.py
+            adb shell am force-stop br.org.pianolivre.opensource
+            adb logcat -c || echo 'WARNING: logcat clear unavailable before isolated Descobrir test'
+            adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity --ez discovery_selftest true
+            for attempt in $(seq 1 180); do adb logcat -d -v brief | grep -q 'DISCOVERY_UI_SELFTEST_PASS' && break; sleep 1; done
+            adb logcat -d -v brief > piano-discovery-selftest.log
+            adb logcat -d -v brief | grep 'DISCOVERY_UI_SELFTEST_BEGIN'
+            adb logcat -d -v brief | grep 'DISCOVERY_UI_SELFTEST_PASS'
+            for image in c2 c3 f3 c4 eb4 g4 c6 low-chord high-chord grand-chord grand-sequence c-major phone-sequence tablet-sequence; do adb shell run-as br.org.pianolivre.opensource cat "cache/discovery-staff-$image.png" > "piano-discovery-staff-$image.png"; done
             python3 tests/emulator_study_failure.py
             python3 tests/emulator_polyphony.py
             python3 tests/emulator_notation06.py
@@ -144,12 +150,15 @@ jobs:
               "piano-discovery-staff-c2.png",
               "piano-discovery-staff-c3.png",
               "piano-discovery-staff-f3.png",
+              "piano-discovery-staff-c4.png",
+              "piano-discovery-staff-eb4.png",
               "piano-discovery-staff-g4.png",
               "piano-discovery-staff-c6.png",
               "piano-discovery-staff-low-chord.png",
               "piano-discovery-staff-high-chord.png",
               "piano-discovery-staff-grand-chord.png",
               "piano-discovery-staff-grand-sequence.png",
+              "piano-discovery-staff-c-major.png",
               "piano-discovery-staff-phone-sequence.png",
               "piano-discovery-staff-tablet-sequence.png",
           ]
@@ -243,4 +252,5 @@ jobs:
             PianoLivreAndroid/piano-osmd-context-probe.txt
             PianoLivreAndroid/window.xml
             PianoLivreAndroid/piano-selftests.log
+            PianoLivreAndroid/piano-discovery-selftest.log
             PianoLivreAndroid/piano-discovery-staff-*.png

@@ -64,3 +64,16 @@ O PR #65 foi integrado em `main` no merge commit `abfd4b51213be17df091288e436eef
 - Metadados verificados: package `br.org.pianolivre.opensource`, `versionCode=58`, `versionName=0.9.49-open-beta`, release sem depuração. Certificado permanente `7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290`, igual ao da beta 0.9.48.
 
 O conteúdo inclui correção visual da clave de fá, verificações por renderização rasterizada, notas/acordes/padrões suportados e preservação do resultado durante análise. Escalas/arpejos continuam limitados a padrões completos já reconhecidos pelo motor. Yamaha P-45, Realme 7 5G e Lenovo Tab M9 ainda exigem validação física; emulador e MIDI sintético não substituem esse aceite. A beta 0.9.49 não declara a versão 1.0 concluída. Próxima etapa: Entrega C.
+
+## Ajustes solicitados pelo usuário — nova revisão, 26/10/2026
+
+A beta `0.9.49-open-beta` permanece publicada sem alteração. Esta revisão, ainda não publicada, trata quatro observações reportadas após o uso:
+
+- Notas isoladas confirmadas em `Note Off` passam a atualizar a identificação na tela, inclusive durante uma frase em análise. A captura contínua da sequência permanece independente; assim uma nota isolada não bloqueia a classificação posterior de uma escala/arpejo. A detecção de acorde continua dependente de sobreposição MIDI ou da janela medida pelo perfil, sem um novo limite fixo.
+- A pauta Descobrir passa a usar `NotationView` e o OpenSheetMusicDisplay local, o mesmo mecanismo de gravura usado no Estudar. MusicXML sintético mantém notas, acidentes, oitavas, acordes simultâneos e sequências ordenadas. As claves resultam do mesmo renderer, em vez dos caminhos desenhados separadamente pela tela Descobrir.
+- A análise de escala maior é exercitada no fluxo MIDI da sessão com a sequência completa de Dó4 a Dó5 e pausas de 2 s entre ataques. O reconhecedor continua conservador: exige a oitava completa, em ordem e sem sobreposição que a classifique como acorde.
+- A tela acrescenta uma faixa horizontal de cifras com as alturas identificadas: uma cifra por nota, todas as notas de acorde em ordem de altura e todas as notas de escala/arpejo em ordem de execução. O título mantém o símbolo/qualidade do acorde e a inversão aparece no detalhe.
+
+A suíte do emulador agora aguarda a renderização assíncrona do OSMD, verifica que o DOM contém os glifos reais de clave, compara as formas de sol/fá e exporta capturas C2, C3, F3, C4, G4, C6, acordes grave/agudo/abrangente, sequência entre pautas e Dó maior. Os testes JVM exercitam Dó→Ré após 2 s, escala completa com o mesmo espaçamento, nota atualizada a cada liberação e transições para padrões completos/incompletos.
+
+A versão de próxima build sobe para `0.9.50-open-beta`, versionCode 59, para permitir atualização da beta aberta 0.9.49 com o mesmo pacote e o publicador oficial, após revisão e autorização específica de publicação. A `main`, a Release `v0.9.49-open-beta` e o APK publicado não foram modificados. Testes locais aprovados: teoria (34), sequência (30), tracker (33), sessão MIDI (51), MusicXML Descobrir (41), contrato OSMD (77), clefs JS (46), perfil/janela, auditoria do pacote público e publicação (8). Build Android, emulador e capturas finais ainda dependem do workflow no SHA do PR. Testes físicos Yamaha P-45, Realme 7 5G e Lenovo Tab M9 permanecem pendentes.

@@ -16,7 +16,8 @@ final class MusicLabDiscoveryScreen extends LinearLayout {
  final MainActivity activity;
  final MusicDiscoverySession session=new MusicDiscoverySession();
  final Button back,discover,learn;
- final TextView instruction,title,detail;
+ final TextView instruction,title,detail,ciphers;
+ final HorizontalScrollView ciphersScroll;
  final DiscoveryStaffView staff;
  private final Handler handler=new Handler();private volatile long callbackGeneration=0;
  private boolean observing=false;
@@ -30,6 +31,8 @@ final class MusicLabDiscoveryScreen extends LinearLayout {
   LinearLayout result=new LinearLayout(a);result.setOrientation(VERTICAL);result.setPadding(dp(12),dp(10),dp(12),dp(12));result.setVisibility(GONE);content.addView(result,new FrameLayout.LayoutParams(-1,-1));
   title=new TextView(a);title.setTextSize(22);title.setTypeface(null,Typeface.BOLD);title.setTextColor(0xff172A44);title.setGravity(Gravity.CENTER);result.addView(title,new LayoutParams(-1,dp(40)));
   detail=new TextView(a);detail.setTextSize(15);detail.setTextColor(0xff52677F);detail.setGravity(Gravity.CENTER);detail.setVisibility(GONE);result.addView(detail,new LayoutParams(-1,dp(30)));
+  ciphers=new TextView(a);ciphers.setTextSize(14);ciphers.setTextColor(0xff314963);ciphers.setGravity(Gravity.CENTER);ciphers.setSingleLine(true);ciphers.setContentDescription("Cifras das notas identificadas");
+  ciphersScroll=new HorizontalScrollView(a);ciphersScroll.setHorizontalScrollBarEnabled(false);ciphersScroll.setFillViewport(true);ciphersScroll.addView(ciphers,new HorizontalScrollView.LayoutParams(-1,-1));result.addView(ciphersScroll,new LayoutParams(-1,dp(30)));
   HorizontalScrollView staffScroll=new HorizontalScrollView(a);staffScroll.setFillViewport(true);staffScroll.setHorizontalScrollBarEnabled(true);result.addView(staffScroll,new LayoutParams(-1,0,1));
   staff=new DiscoveryStaffView(a);staffScroll.addView(staff,new HorizontalScrollView.LayoutParams(-1,-1));
   this.resultView=result;
@@ -38,14 +41,15 @@ final class MusicLabDiscoveryScreen extends LinearLayout {
  long sessionGeneration(){return callbackGeneration;}
  private int dp(float v){return Math.round(v*getResources().getDisplayMetrics().density);}
  private Button button(String text,boolean selected){Button b=new Button(activity);b.setText(text);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(null,Typeface.BOLD);b.setTextColor(selected?Color.WHITE:0xffDCE6F1);GradientDrawable bg=new GradientDrawable();bg.setColor(selected?0xff286BCB:Color.TRANSPARENT);bg.setCornerRadius(dp(8));b.setBackground(bg);b.setPadding(dp(4),0,dp(4),0);return b;}
- void enter(){observing=true;callbackGeneration++;session.reset();session.reconnect(activity.midiGeneration,activity.waitRecognizer.chordWindowMs());showState();}
- void leave(){observing=false;callbackGeneration++;session.cancelPending();}
- void pause(){observing=false;callbackGeneration++;session.cancelPending();}
- void resume(){if(getVisibility()==VISIBLE){observing=true;callbackGeneration++;session.reconnect(activity.midiGeneration,activity.waitRecognizer.chordWindowMs());}}
+ void enter(){staff.onResume();observing=true;callbackGeneration++;session.reset();session.reconnect(activity.midiGeneration,activity.waitRecognizer.chordWindowMs());showState();}
+ void leave(){observing=false;callbackGeneration++;session.cancelPending();staff.onPause();}
+ void pause(){observing=false;callbackGeneration++;session.cancelPending();staff.onPause();}
+ void resume(){if(getVisibility()==VISIBLE){staff.onResume();observing=true;callbackGeneration++;session.reconnect(activity.midiGeneration,activity.waitRecognizer.chordWindowMs());}}
  void midiAttack(int pitch,long time,long batch,long generation,long uiGeneration){if(!observing||getVisibility()!=VISIBLE||uiGeneration!=callbackGeneration)return;session.attack(pitch,time,batch,generation);showState();scheduleBoundary();}
  void midiRelease(int pitch,long generation,long uiGeneration){if(observing&&uiGeneration==callbackGeneration){session.release(pitch,generation);showState();}}
  void midiBatchEnd(long batch,long now,long uiGeneration){if(!observing||uiGeneration!=callbackGeneration)return;session.finishBatch(batch,now);showState();}
  private void scheduleBoundary(){long delay=session.nextDelayMs(android.os.SystemClock.uptimeMillis());if(delay<=0)return;long token=callbackGeneration;handler.postDelayed(()->{if(token==callbackGeneration&&observing){session.advance(android.os.SystemClock.uptimeMillis());showState();scheduleBoundary();}},delay);}
  void connectionChanged(long generation){session.reconnect(generation,activity.waitRecognizer.chordWindowMs());showState();}
- private void showState(){MusicDiscoverySession.Result r=session.result();if(r==null){instruction.setText(session.phase()==MusicDiscoverySession.Phase.PENDING?"analisando a entrada musical…":EMPTY_TEXT);instruction.setVisibility(VISIBLE);resultView.setVisibility(GONE);return;}instruction.setVisibility(GONE);resultView.setVisibility(VISIBLE);title.setText(r.title);detail.setText(r.detail);detail.setVisibility(r.detail.isEmpty()?GONE:VISIBLE);staff.setNotes(r.notes,r.ordered);int need=dp(r.ordered?70+r.notes.size()*42:300);int width=Math.max(getResources().getDisplayMetrics().widthPixels-dp(24),need);ViewGroup.LayoutParams lp=staff.getLayoutParams();lp.width=width;staff.setLayoutParams(lp);}
+ private void showState(){MusicDiscoverySession.Result r=session.result();if(r==null){instruction.setText(session.phase()==MusicDiscoverySession.Phase.PENDING?"analisando a entrada musical…":EMPTY_TEXT);instruction.setVisibility(VISIBLE);resultView.setVisibility(GONE);return;}instruction.setVisibility(GONE);resultView.setVisibility(VISIBLE);title.setText(r.title);detail.setText(r.detail);detail.setVisibility(r.detail.isEmpty()?GONE:VISIBLE);ArrayList<Integer> pitches=new ArrayList<>(r.notes);if(r.kind==MusicDiscoverySession.Kind.CHORD)Collections.sort(pitches);StringBuilder symbols=new StringBuilder("Cifras: ");for(int i=0;i<pitches.size();i++){if(i>0)symbols.append(" · ");symbols.append(MusicNoteSpelling.international(pitches.get(i)));}ciphers.setText(symbols.toString());staff.setNotes(r.notes,r.ordered);int need=dp(r.ordered?70+r.notes.size()*42:300);int width=Math.max(getResources().getDisplayMetrics().widthPixels-dp(24),need);ViewGroup.LayoutParams lp=staff.getLayoutParams();lp.width=width;staff.setLayoutParams(lp);}
+ void dispose(){observing=false;callbackGeneration++;staff.dispose();}
 }

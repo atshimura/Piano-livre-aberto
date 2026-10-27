@@ -111,11 +111,11 @@ public final class MusicDiscoverySession {
   if(pending.isEmpty())return;
   ArrayList<Integer> exact=new ArrayList<>();for(Attack a:pending)exact.add(a.pitch);
   if(exact.size()==1){int n=exact.get(0);
-   // The first released pitch is a valid note result. Once a second isolated
-   // attack joins the same phrase, keep that result stable while the sequence
-   // tracker waits for a complete pattern or a phrase boundary. This avoids
-   // replacing the result with every intermediate scale/arpeggio note.
-   if(phraseNotes.size()<=1||result==null)result=new Result(Kind.NOTE,exact,
+   // Every released isolated pitch is a valid note result. PatternTracker has
+   // its own rolling stream, so presenting this note cannot consume or block a
+   // later complete scale/arpeggio. The complete pattern replaces it on the
+   // attack that finishes the exact pattern.
+   result=new Result(Kind.NOTE,exact,
     MusicNoteSpelling.portuguese(n)+" - "+MusicNoteSpelling.international(n),"");
    pending.clear();chordEvidence=false;return;}
   else {

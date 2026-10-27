@@ -3,93 +3,127 @@ package br.org.pianolivre;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.*;
 import android.widget.*;
+import org.json.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.*;
 
-/** Debug-only emulator UI contract test. All notes are synthetic, never hardware evidence. */
+/** Debug-only emulator UI contract test; score glyphs come from the Study renderer. */
 final class MusicLabDiscoverySelfTest {
  private static int checks;
- private static void check(boolean ok,String label){checks++;if(!ok)throw new IllegalStateException("Discovery UI: "+label);}
+ private static void check(boolean ok,String explanation){checks++;if(!ok)throw new IllegalStateException("Discovery UI: "+explanation);}
  private static void collect(View v,List<View> out){out.add(v);if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++)collect(g.getChildAt(i),out);}}
  private static List<View> tree(View root){ArrayList<View> out=new ArrayList<>();collect(root,out);return out;}
  private static void clickButton(Activity a,String label){for(View v:tree(a.getWindow().getDecorView()))if(v instanceof Button&&label.equals(((Button)v).getText().toString())){v.performClick();return;}throw new IllegalStateException("Missing button "+label);}
+
  static void run(MainActivity a){
-  PianoScreens s=a.screens;MusicLabDiscoveryScreen d=s.discovery;
-  clickButton(a,"Laboratório Musical");check(s.isLabOpen(),"home entry opens Descobrir");
+  checks=0;PianoScreens screens=a.screens;MusicLabDiscoveryScreen d=screens.discovery;
+  clickButton(a,"Laboratório Musical");check(screens.isLabOpen(),"home entry opens Descobrir");
   check(d.discover.getVisibility()==View.VISIBLE&&!d.discover.isEnabled(),"Descobrir selected");
   check(d.learn.getVisibility()==View.VISIBLE&&!d.learn.isEnabled(),"Aprender visible and disabled");
   check(d.instruction.getText().toString().equals(MusicLabDiscoveryScreen.EMPTY_TEXT),"exact empty instruction");
   List<View> elements=tree(d);int buttons=0;for(View v:elements)if(v instanceof Button)buttons++;
   check(buttons==3,"only toolbar controls in empty state");
   for(View v:elements)if(v instanceof TextView){String t=((TextView)v).getText().toString();check(!Arrays.asList("Tocar","Montar","Iniciar","Gravar","Praticar","Metrônomo","Demonstração").contains(t),"legacy control absent: "+t);}
-  long conn=a.midiGeneration,ui=s.discoveryGeneration();d.session.reconnect(conn,null);
+  long conn=a.midiGeneration,ui=screens.discoveryGeneration();d.session.reconnect(conn,null);
   d.midiAttack(60,100,1,conn,ui);d.midiRelease(60,conn,ui);d.midiBatchEnd(1,101,ui);
   check(d.title.getText().toString().equals("DÓ - C4"),"single note label");
-  setStaff(a,d.staff,Collections.singletonList(60),false);List<DiscoveryStaffView.NotePosition> pos=d.staff.layoutSnapshot();
-  check(pos.size()==1&&pos.get(0).midi==60&&pos.get(0).clef.equals("sol")&&pos.get(0).ledgerLines==1,"C4 treble ledger geometry");
-  setStaff(a,d.staff,Collections.singletonList(36),false);pos=d.staff.layoutSnapshot();
-  check(pos.get(0).clef.equals("fá")&&pos.get(0).ledgerLines==2,"C2 bass ledger geometry");
-  check(Math.abs(pos.get(0).y-(bottom(d.staff)+20*density(d.staff)))<1,"C2 is on second bass ledger");captureAndCheck(a,d.staff,false,"discovery-staff-c2.png");
-  setStaff(a,d.staff,Collections.singletonList(48),false);pos=d.staff.layoutSnapshot();
-  check(pos.get(0).clef.equals("fá")&&pos.get(0).ledgerLines==0,"C3 remains on bass staff");captureAndCheck(a,d.staff,false,"discovery-staff-c3.png");
-  setStaff(a,d.staff,Collections.singletonList(53),false);pos=d.staff.layoutSnapshot();
-  check(pos.get(0).clef.equals("fá")&&Math.abs(pos.get(0).y-(bottom(d.staff)-30*density(d.staff)))<1,"F3 is on fourth bass line");captureAndCheck(a,d.staff,false,"discovery-staff-f3.png");
-  setStaff(a,d.staff,Collections.singletonList(67),false);pos=d.staff.layoutSnapshot();
-  check(pos.get(0).clef.equals("sol")&&Math.abs(pos.get(0).y-(bottom(d.staff)-10*density(d.staff)))<1,"G4 is on second treble line");captureAndCheck(a,d.staff,true,"discovery-staff-g4.png");
-  setStaff(a,d.staff,Collections.singletonList(84),false);pos=d.staff.layoutSnapshot();
-  check(pos.get(0).clef.equals("sol")&&pos.get(0).ledgerLines==2,"C6 treble ledger geometry");captureAndCheck(a,d.staff,true,"discovery-staff-c6.png");
-  setStaff(a,d.staff,Arrays.asList(36,48,53),false);pos=d.staff.layoutSnapshot();
-  check(pos.size()==3&&pos.get(0).x==pos.get(2).x&&pos.get(0).clef.equals("fá")&&pos.get(2).clef.equals("fá"),"low chord shares a bass-clef column");captureAndCheck(a,d.staff,false,"discovery-staff-low-chord.png");
-  setStaff(a,d.staff,Arrays.asList(60,64,67,72),false);pos=d.staff.layoutSnapshot();
-  check(pos.size()==4&&pos.get(0).clef.equals("sol")&&pos.get(3).clef.equals("sol"),"high chord uses treble clef");captureAndCheck(a,d.staff,true,"discovery-staff-high-chord.png");
-  setStaff(a,d.staff,Arrays.asList(48,60,67,72),false);pos=d.staff.layoutSnapshot();
-  check(pos.get(0).clef.equals("fá")&&pos.get(1).clef.equals("sol")&&pos.get(2).clef.equals("sol"),"wide chord assigns bass below C4 and treble from C4");captureAndCheck(a,d.staff,false,"discovery-staff-grand-chord.png");
-  setStaff(a,d.staff,Arrays.asList(55,59,60,62),true);pos=d.staff.layoutSnapshot();
-  check(pos.size()==4&&pos.get(0).clef.equals("fá")&&pos.get(2).clef.equals("sol")&&pos.get(0).x<pos.get(3).x,"sequence crossing C4 preserves order and both staves");captureAndCheck(a,d.staff,true,"discovery-staff-grand-sequence.png");
-  verifyResponsiveSequence(a,d.staff,360,420,"discovery-staff-phone-sequence.png");
-  verifyResponsiveSequence(a,d.staff,800,600,"discovery-staff-tablet-sequence.png");
-  d.session.reconnect(conn,null);d.midiAttack(60,200,2,conn,ui);d.midiAttack(64,200,2,conn,ui);d.midiAttack(67,200,2,conn,ui);d.midiRelease(60,conn,ui);d.midiRelease(64,conn,ui);d.midiRelease(67,conn,ui);d.midiBatchEnd(2,201,ui);
-  MusicDiscoverySession.Result chord=d.session.result();check(chord.kind==MusicDiscoverySession.Kind.CHORD&&chord.notes.size()==3,"synthetic chord classification");setStaff(a,d.staff,chord.notes,false);pos=d.staff.layoutSnapshot();
-  check(pos.size()==3&&pos.get(0).x==pos.get(2).x,"chord heads share a simultaneity column");
+  check(d.ciphers.getText().toString().equals("Cifras: C4"),"note cipher is visible");
+
+  d.session.reconnect(conn,null);d.midiAttack(64,200,2,conn,ui);d.midiAttack(67,200,2,conn,ui);d.midiAttack(72,200,2,conn,ui);d.midiRelease(64,conn,ui);d.midiRelease(67,conn,ui);d.midiRelease(72,conn,ui);d.midiBatchEnd(2,201,ui);
+  check(d.session.result().kind==MusicDiscoverySession.Kind.CHORD&&d.session.result().detail.equals("1ª inversão"),"chord symbol includes its inversion");
+  check(d.ciphers.getText().toString().equals("Cifras: E4 · G4 · C5"),"chord note ciphers are visible in pitch order");
+
   d.session.reconnect(conn,null);int[] scale={60,62,64,65,67,69,71,72};long batch=3,time=300;
-  for(int n:scale){d.midiAttack(n,time,batch,conn,ui);d.midiBatchEnd(batch,time+1,ui);d.midiRelease(n,conn,ui);batch++;time+=2;}
-  MusicDiscoverySession.Result seq=d.session.result();check(seq.kind==MusicDiscoverySession.Kind.SEQUENCE&&seq.notes.size()==8,"full sequence displayed");setStaff(a,d.staff,seq.notes,true);pos=d.staff.layoutSnapshot();
-  check(pos.size()==8&&pos.get(0).midi==60&&pos.get(7).midi==72&&pos.get(0).x<pos.get(7).x,"ordered sequence staff geometry");
-  d.session.reconnect(conn,null);d.midiAttack(60,time,batch,conn,ui);d.midiRelease(60,conn,ui);d.midiBatchEnd(batch++,time+1,ui);
-  String prior=d.title.getText().toString();d.midiAttack(62,time+2,batch++,conn,ui);
-  check(d.session.phase()==MusicDiscoverySession.Phase.PENDING_WITH_RESULT&&d.session.result().notes.size()==1,"old result persists while new note is pending");
-  d.pause();d.resume();check(d.session.result().notes.size()==1,"pause and return preserve last result");
-  d.back.performClick();check(!s.isLabOpen(),"Voltar returns to library");
-  android.util.Log.i("PianoLivreDiscovery","DISCOVERY_UI_SELFTEST_PASS checks="+checks+" synthetic_midi=true treble=C4 ledger=1 bass=C2,C3,F3 chord_heads=3 sequence_heads=8 title="+prior);
+  for(int n:scale){d.midiAttack(n,time,batch,conn,ui);d.midiRelease(n,conn,ui);d.midiBatchEnd(batch,time+1,ui);batch++;time+=2000;}
+  check(d.session.result().kind==MusicDiscoverySession.Kind.SEQUENCE&&d.session.result().notes.size()==8,"complete C major classified through live MIDI events with two-second inter-onset intervals");
+  check(d.ciphers.getText().toString().equals("Cifras: C4 · D4 · E4 · F4 · G4 · A4 · B4 · C5"),"all scale pitch ciphers are visible in order");
+  d.back.performClick();check(!screens.isLabOpen(),"Voltar returns to library");
+  clickButton(a,"Laboratório Musical");
+  d.staff.setRenderListener(new DiscoveryStaffView.RenderListener(){
+   @Override public void onRendered(){ }
+   @Override public void onError(String message){throw new IllegalStateException("Discovery OSMD rendering failed: "+message);}
+  });
+  renderCases(a,d,staffCases(),0,new HashMap<>());
  }
- private static float density(DiscoveryStaffView v){return v.getResources().getDisplayMetrics().density;}
- private static float bottom(DiscoveryStaffView v){float d=density(v);return Math.max(18*d,v.getHeight()*.25f)+40*d;}
- private static void setStaff(Activity a,DiscoveryStaffView v,List<Integer> notes,boolean sequence){v.setNotes(notes,sequence);layoutStaff(a,v);}
- private static void layoutStaff(Activity a,DiscoveryStaffView v){float d=a.getResources().getDisplayMetrics().density;int w=(int)(360*d),h=(int)(160*d);v.measure(View.MeasureSpec.makeMeasureSpec(w,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(h,View.MeasureSpec.EXACTLY));v.layout(0,0,w,h);}
- private static void captureAndCheck(Activity a,DiscoveryStaffView staff,boolean treble,String name){
-  float d=density(staff);List<DiscoveryStaffView.NotePosition> positions=staff.layoutSnapshot();boolean grand=positions.stream().anyMatch(n->n.clef.equals("fá"))&&positions.stream().anyMatch(n->n.clef.equals("sol"));
-  float top=grand?Math.max(18*d,staff.getHeight()*.14f):Math.max(18*d,staff.getHeight()*.25f),trebleBottom=top+40*d;
-  float bassBottom=grand?top+Math.max(76*d,staff.getHeight()*.43f)+40*d:trebleBottom;
-  Bitmap image=Bitmap.createBitmap(staff.getWidth(),staff.getHeight(),Bitmap.Config.ARGB_8888);staff.draw(new Canvas(image));
-  if(treble){check(inkNear(image,29*d,trebleBottom-10*d,d),"actual treble symbol curls around G4: "+name);}
-  if(!grand&&!treble)check(!inkNear(image,19*d,trebleBottom-10*d,d),"actual bass rendering omits treble curl: "+name);
-  if(grand||!treble){float f3=bassBottom-30*d;check(inkNear(image,31*d,f3-5*d,d),"actual bass symbol upper dot flanks F3: "+name);check(inkNear(image,31*d,f3+5*d,d),"actual bass symbol lower dot flanks F3: "+name);}
-  for(DiscoveryStaffView.NotePosition n:positions)if(n.midi==36||n.midi==84){float staffBottom=n.clef.equals("sol")?trebleBottom:bassBottom;float y=n.midi==36?staffBottom+20*d:staffBottom-60*d;check(inkNear(image,n.x+10*d,y,d),"actual supplementary ledger is at C2/C6 pitch: "+name);}
-  try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),name))){image.compress(Bitmap.CompressFormat.PNG,100,out);}catch(Exception ex){throw new IllegalStateException("Unable to save staff capture "+name,ex);}finally{image.recycle();}
+
+ private static List<StaffCase> staffCases(){return Arrays.asList(
+  new StaffCase("discovery-staff-c2.png",Arrays.asList(36),false,"F",1),
+  new StaffCase("discovery-staff-c3.png",Arrays.asList(48),false,"F",1),
+  new StaffCase("discovery-staff-f3.png",Arrays.asList(53),false,"F",1),
+  new StaffCase("discovery-staff-c4.png",Arrays.asList(60),false,"G",1),
+  new StaffCase("discovery-staff-eb4.png",Arrays.asList(63),false,"G",1),
+  new StaffCase("discovery-staff-g4.png",Arrays.asList(67),false,"G",1),
+  new StaffCase("discovery-staff-c6.png",Arrays.asList(84),false,"G",1),
+  new StaffCase("discovery-staff-low-chord.png",Arrays.asList(36,48,53),false,"F",1),
+  new StaffCase("discovery-staff-high-chord.png",Arrays.asList(60,64,67,72),false,"G",1),
+  new StaffCase("discovery-staff-grand-chord.png",Arrays.asList(48,60,67,72),false,"GF",2),
+  new StaffCase("discovery-staff-grand-sequence.png",Arrays.asList(55,59,60,62),true,"GF",2),
+  new StaffCase("discovery-staff-c-major.png",Arrays.asList(60,62,64,65,67,69,71,72),true,"G",1),
+  new StaffCase("discovery-staff-phone-sequence.png",longSequence(),true,"GF",2,910,420),
+  new StaffCase("discovery-staff-tablet-sequence.png",longSequence(),true,"GF",2,910,600));
  }
- private static void verifyResponsiveSequence(Activity a,DiscoveryStaffView staff,int viewportDp,int heightDp,String name){
-  float d=density(staff);ArrayList<Integer> phrase=new ArrayList<>();int[] pattern={48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,84};for(int n:pattern)phrase.add(n);
-  staff.setNotes(phrase,true);int contentDp=Math.max(viewportDp,70+phrase.size()*42);int w=Math.round(contentDp*d),h=Math.round(heightDp*d);
-  staff.measure(View.MeasureSpec.makeMeasureSpec(w,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(h,View.MeasureSpec.EXACTLY));staff.layout(0,0,w,h);
-  List<DiscoveryStaffView.NotePosition> pos=staff.layoutSnapshot();check(pos.size()==phrase.size(),"responsive sequence retains every identified pitch at "+viewportDp+"dp viewport");
-  for(int i=0;i<pos.size();i++){check(pos.get(i).midi==pattern[i],"responsive sequence pitch/order "+viewportDp+"dp index "+i);check(pos.get(i).x-11*d>=0&&pos.get(i).x+11*d<=w,"responsive notehead remains inside scroll content "+viewportDp+"dp index "+i);check(pos.get(i).y-4*d>=0&&pos.get(i).y+4*d<=h,"responsive notehead remains vertically visible "+viewportDp+"dp index "+i);if(i>0)check(pos.get(i).x-pos.get(i-1).x>=41*d,"responsive horizontal spacing supports accidentals "+viewportDp+"dp index "+i);}
-  Bitmap image=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888);staff.draw(new Canvas(image));
-  check(inkNear(image,pos.get(0).x,pos.get(0).y,d)&&inkNear(image,pos.get(pos.size()-1).x,pos.get(pos.size()-1).y,d),"responsive raster includes first and last noteheads "+viewportDp+"dp viewport");
-  try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),name))){image.compress(Bitmap.CompressFormat.PNG,100,out);}catch(Exception ex){throw new IllegalStateException("Unable to save responsive staff capture "+name,ex);}finally{image.recycle();}
+ private static List<Integer> longSequence(){ArrayList<Integer> values=new ArrayList<>();for(int n=48;n<=66;n++)values.add(n);values.add(84);return values;}
+ private static final class StaffCase{
+  final String file;final List<Integer> notes;final boolean sequence;final String clefs;final int clefCount,widthDp,heightDp;
+  StaffCase(String file,List<Integer> notes,boolean sequence,String clefs,int count){this(file,notes,sequence,clefs,count,640,300);}
+  StaffCase(String file,List<Integer> notes,boolean sequence,String clefs,int count,int widthDp,int heightDp){this.file=file;this.notes=notes;this.sequence=sequence;this.clefs=clefs;clefCount=count;this.widthDp=widthDp;this.heightDp=heightDp;}
  }
- private static boolean inkNear(Bitmap image,float x,float y,float d){int cx=Math.round(x),cy=Math.round(y),r=Math.max(1,Math.round(d*1.5f));for(int yy=Math.max(0,cy-r);yy<=Math.min(image.getHeight()-1,cy+r);yy++)for(int xx=Math.max(0,cx-r);xx<=Math.min(image.getWidth()-1,cx+r);xx++){int p=image.getPixel(xx,yy);if(Color.red(p)<100&&Color.green(p)<120&&Color.blue(p)<150)return true;}return false;}
+ private static void renderCases(MainActivity a,MusicLabDiscoveryScreen d,List<StaffCase> cases,int index,Map<String,String> glyphs){
+  if(index>=cases.size()){
+   check(glyphs.containsKey("G")&&glyphs.containsKey("F")&&!glyphs.get("G").equals(glyphs.get("F")),"rendered treble and bass glyphs are distinct actual SVG symbols");
+   d.session.reconnect(a.midiGeneration,null);d.midiAttack(60,900,90,a.midiGeneration,d.sessionGeneration());d.midiRelease(60,a.midiGeneration,d.sessionGeneration());d.midiBatchEnd(90,901,d.sessionGeneration());
+   d.midiAttack(62,902,91,a.midiGeneration,d.sessionGeneration());
+   check(d.session.result().kind==MusicDiscoverySession.Kind.NOTE&&d.session.result().notes.equals(Collections.singletonList(60)),"held note result remains until next note is released");
+   d.midiRelease(62,a.midiGeneration,d.sessionGeneration());
+   check(d.session.result().notes.equals(Collections.singletonList(62))&&d.title.getText().toString().equals("RÉ - D4"),"next isolated note updates immediately on release");
+   d.pause();d.resume();check(d.session.result().notes.equals(Collections.singletonList(62)),"pause and return preserve last result");
+   d.back.performClick();check(!a.screens.isLabOpen(),"Voltar returns to library");
+   android.util.Log.i("PianoLivreDiscovery","DISCOVERY_UI_SELFTEST_PASS checks="+checks+" synthetic_midi=true clefs=OSMD-study-renderer captures="+cases.size()+" c_major=true ciphers=true");return;
+  }
+  StaffCase sample=cases.get(index);DiscoveryStaffView staff=d.staff;
+  // Clear the prior fixture so equal notes at different viewport sizes still trigger a fresh OSMD render callback.
+  staff.setNotes(Collections.emptyList(),false);staff.setNotes(sample.notes,sample.sequence);
+  layoutStaff(a,staff,sample.widthDp,sample.heightDp);List<DiscoveryStaffView.NotePosition> positions=staff.layoutSnapshot();
+  check(positions.size()==sample.notes.size(),"all notes retained in rendered layout: "+sample.file);
+  check(staff.renderedMusicXml().contains("<sign>G</sign>")==sample.clefs.contains("G"),"MusicXML requests treble clef where expected: "+sample.file);
+  check(staff.renderedMusicXml().contains("<sign>F</sign>")==sample.clefs.contains("F"),"MusicXML requests bass clef where expected: "+sample.file);
+  if(sample.notes.contains(63))check(staff.renderedMusicXml().contains("<step>E</step><alter>-1</alter><octave>4</octave>")&&staff.renderedMusicXml().contains("<accidental>flat</accidental>"),"Eb4 pitch and flat accidental survive Study engraving input");
+  int chordTags=count(staff.renderedMusicXml(),"<chord/>");check(chordTags==(sample.sequence?0:sample.notes.size()-1),"chord simultaneity/order encoded in MusicXML: "+sample.file);
+  float density=a.getResources().getDisplayMetrics().density;float top=sample.clefs.equals("GF")?Math.max(18*density,staff.getHeight()*.14f):Math.max(18*density,staff.getHeight()*.25f);
+  float bassBottom=top+(sample.clefs.equals("GF")?Math.max(76*density,staff.getHeight()*.43f):0)+40*density,trebleBottom=top+40*density;
+  for(int i=0;i<positions.size();i++){
+   DiscoveryStaffView.NotePosition p=positions.get(i);check(p.midi==sample.notes.get(i),"staff preserves MIDI pitch/order: "+sample.file);
+   check(p.clef.equals(sample.clefs.equals("F")||sample.clefs.equals("GF")&&p.midi<60?"fá":"sol"),"pitch remains assigned to its correct clef: "+sample.file);
+   if(i>0)check(sample.sequence?p.x>positions.get(i-1).x:p.x==positions.get(0).x,"sequence order or chord simultaneity preserved: "+sample.file);
+   check(p.x>=0&&p.x<=staff.getWidth()&&p.y>=0&&p.y<=staff.getHeight(),"note remains inside scrollable staff content: "+sample.file);
+   if((sample.file.contains("phone-sequence")||sample.file.contains("tablet-sequence"))&&i>0)check(p.x-positions.get(i-1).x>=41*density,"long sequence keeps cipher/accidental clearance in responsive content: "+sample.file);
+   if(p.midi==36)check(p.ledgerLines==2&&Math.abs(p.y-(bassBottom+20*density))<density,"C2 uses two bass ledger lines at correct height");
+   if(p.midi==48)check(p.ledgerLines==0,"C3 lies on bass staff");
+   if(p.midi==53)check(Math.abs(p.y-(bassBottom-30*density))<density,"F3 lies on the bass clef reference line");
+   if(p.midi==60)check(p.ledgerLines==1&&Math.abs(p.y-(trebleBottom+10*density))<density,"C4 has its treble ledger line");
+   if(p.midi==67)check(Math.abs(p.y-(trebleBottom-10*density))<density,"G4 lies on the treble clef reference line");
+   if(p.midi==84)check(p.ledgerLines==2&&Math.abs(p.y-(trebleBottom-60*density))<density,"C6 has two correct treble ledger lines");
+  }
+  staff.setRenderListener(new DiscoveryStaffView.RenderListener(){
+   @Override public void onError(String message){throw new IllegalStateException("Discovery OSMD rendering failed "+sample.file+": "+message);}
+   @Override public void onRendered(){staff.setRenderListener(null);staff.inspectRenderedClefs(raw->{
+    try{
+     String payload=(String)new JSONTokener(raw).nextValue();JSONArray array=new JSONArray(payload);
+     check(array.length()==sample.clefCount,"actual OSMD clef glyph count matches staff count: "+sample.file);
+     StringBuilder joined=new StringBuilder();for(int i=0;i<array.length();i++){String mark=array.getString(i);check(mark.contains("vf-clef")&&(mark.contains("path")||mark.contains("text")),"actual SVG clef symbol was rendered, not just a clef metadata field: "+sample.file);joined.append(mark);}
+     if(sample.clefs.equals("G"))glyphs.put("G",joined.toString());if(sample.clefs.equals("F"))glyphs.put("F",joined.toString());
+     Bitmap image=Bitmap.createBitmap(staff.getWidth(),staff.getHeight(),Bitmap.Config.ARGB_8888);staff.draw(new Canvas(image));
+     try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),sample.file))){image.compress(Bitmap.CompressFormat.PNG,100,out);}finally{image.recycle();}
+     renderCases(a,d,cases,index+1,glyphs);
+    }catch(Exception ex){throw new IllegalStateException("Unable to verify rendered clef "+sample.file,ex);}
+   });}
+  });
+ }
+ private static int count(String source,String part){int found=0,at=0;while((at=source.indexOf(part,at))>=0){found++;at+=part.length();}return found;}
+ private static void layoutStaff(Activity a,DiscoveryStaffView v,int widthDp,int heightDp){float density=a.getResources().getDisplayMetrics().density;int width=(int)(widthDp*density),height=(int)(heightDp*density);v.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY));v.layout(0,0,width,height);}
 }

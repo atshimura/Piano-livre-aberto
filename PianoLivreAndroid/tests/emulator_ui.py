@@ -786,9 +786,26 @@ if __name__=="__main__":
     # Uniformly scaled SVG geometry must preserve notehead hit targets on Android.
     long_head=long_proof.get("firstNoteViewport")
     assert long_head and long_head.get("midiEstimate") is not None, "Long score has no testable upper-staff notehead"
-    views=[n for n in dump().iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
-    assert views, "Long-score WebView geometry unavailable"
-    rect=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
+    hierarchy=dump()
+    views=[n for n in hierarchy.iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
+    if views:
+        geometry_node=views[0]
+    else:
+        # Some Android/WebView accessibility trees expose the score viewport
+        # as its hosting FrameLayout. Use the smallest full-size score host,
+        # not the application/root frames, while keeping the same hit mapping.
+        candidates=[]
+        for node in hierarchy.iter("node"):
+            if node.attrib.get("class")!="android.widget.FrameLayout":continue
+            bounds=[int(v) for v in re.findall(r"\d+",node.attrib.get("bounds",""))]
+            if len(bounds)!=4:continue
+            width,height=bounds[2]-bounds[0],bounds[3]-bounds[1]
+            if width>=long_proof.get("webviewWidth",long_proof["viewportWidth"])*.8 and height>=long_proof["viewportHeight"]*.8:
+                candidates.append((width*height,node,bounds))
+        assert candidates, "Long-score WebView and score-host geometry unavailable"
+        _,geometry_node,_=min(candidates,key=lambda item:item[0])
+        print("Using accessible score-host FrameLayout for WebView geometry",flush=True)
+    rect=[int(v) for v in re.findall(r"\d+",geometry_node.attrib["bounds"])]
     assert len(rect)==4, "Invalid scaled WebView dimensions"
     xx=rect[0]+round(long_head["x"]*(rect[2]-rect[0])/long_proof.get("webviewWidth",long_proof["viewportWidth"]))
     yy=rect[1]+round(long_head["y"]*(rect[3]-rect[1])/long_proof["viewportHeight"])
