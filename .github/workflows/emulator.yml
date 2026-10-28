@@ -9,6 +9,7 @@ on:
       - 'PianoLivreAndroid/scripts/**'
       - 'PianoLivreAndroid/gradle.properties'
       - '.github/workflows/emulator.yml'
+      - 'docs/70-TELA-INICIAL-PROMPT-01.md'
   push:
     branches: [main]
     paths:
@@ -205,7 +206,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PianoLivre-public-emulator-evidence
-          retention-days: 3
+          retention-days: 14
           if-no-files-found: warn
           path: |
             PianoLivreAndroid/piano-screen.png
