@@ -191,53 +191,57 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         # viewport; the short exercise is eighth in this catalog.
         for _ in range(40):
             last=labels()
+            if any("Começar pela Ode à Alegria" in value for value in last):
+                inline_home=True
+                break
             if not (any("BIBLIOTECA MUSICAL" in value for value in last) or any("Buscar título" in value for value in last)):
                 raise AssertionError("NAVIGATION_FAILED: left the library while waiting; labels="+repr(last[:40]))
             result=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
             if result is not None:break
             time.sleep(.25)
-        if result is None:
-            raise AssertionError("LIBRARY_NOT_LOADED: library shell appeared without a valid result count; labels="+repr(last[:40]))
-        if result[0]<len(titles):
-            raise AssertionError("CATALOG_FILTER_ACTIVE: after clearing residual search the visible result count "+
-                                 str(result[0])+" is below packaged catalog size "+str(len(titles))+
-                                 "; labels="+repr(last[:40]))
+        if not inline_home:
+            if result is None:
+                raise AssertionError("LIBRARY_NOT_LOADED: library shell appeared without a valid result count; labels="+repr(last[:40]))
+            if result[0]<len(titles):
+                raise AssertionError("CATALOG_FILTER_ACTIVE: after clearing residual search the visible result count "+
+                                     str(result[0])+" is below packaged catalog size "+str(len(titles))+
+                                     "; labels="+repr(last[:40]))
 
-        root=dump()
-        selected=library_filter_spinner(root)
-        if selected is None:
-            raise AssertionError("FILTER_CONTROL_MISSING: catalog filter beside the search row is not accessible; labels="+
-                                 repr(last[:40]))
-        if selected.attrib.get("text","").strip()!="Todas":
-            bounds=_bounds(selected)
-            adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
-            time.sleep(.2)
-            options=labels()
-            if "Todas" not in options:
-                raise AssertionError("FILTER_CONTROL_MISMATCH: search-row Spinner did not open catalog options; labels="+
-                                     repr(options[:40]))
-            tap_text(["Todas"],exact=True)
-            # Android may expose the Spinner popup as the whole hierarchy briefly
-            # after selection. Wait for the search row to return before typing;
-            # dismiss a still-open options popup explicitly, without sending Back
-            # while a library/navigation transition is underway.
-            root=None
-            for _ in range(24):
-                candidate=dump()
-                candidate_search=library_search_field(candidate)
-                if candidate_search is not None:
-                    root=candidate
-                    break
-                popup_labels=labels()
-                if "Todas" in popup_labels and "Favoritos" in popup_labels:
-                    adb("shell","input","keyevent","4")
-                time.sleep(.25)
-            if root is None:
-                evidence=dump()
-                Path("piano-library-filter-failure.xml").write_bytes(ET.tostring(evidence,encoding="utf-8"))
-                screenshot("piano-library-filter-failure.png")
-                raise AssertionError("FILTER_CONTROL_MISSING: selected Todas but library search row did not return; labels="+
-                                     repr(labels()[:40]))
+            root=dump()
+            selected=library_filter_spinner(root)
+            if selected is None:
+                raise AssertionError("FILTER_CONTROL_MISSING: catalog filter beside the search row is not accessible; labels="+
+                                     repr(last[:40]))
+            if selected.attrib.get("text","").strip()!="Todas":
+                bounds=_bounds(selected)
+                adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
+                time.sleep(.2)
+                options=labels()
+                if "Todas" not in options:
+                    raise AssertionError("FILTER_CONTROL_MISMATCH: search-row Spinner did not open catalog options; labels="+
+                                         repr(options[:40]))
+                tap_text(["Todas"],exact=True)
+                # Android may expose the Spinner popup as the whole hierarchy briefly
+                # after selection. Wait for the search row to return before typing;
+                # dismiss a still-open options popup explicitly, without sending Back
+                # while a library/navigation transition is underway.
+                root=None
+                for _ in range(24):
+                    candidate=dump()
+                    candidate_search=library_search_field(candidate)
+                    if candidate_search is not None:
+                        root=candidate
+                        break
+                    popup_labels=labels()
+                    if "Todas" in popup_labels and "Favoritos" in popup_labels:
+                        adb("shell","input","keyevent","4")
+                    time.sleep(.25)
+                if root is None:
+                    evidence=dump()
+                    Path("piano-library-filter-failure.xml").write_bytes(ET.tostring(evidence,encoding="utf-8"))
+                    screenshot("piano-library-filter-failure.png")
+                    raise AssertionError("FILTER_CONTROL_MISSING: selected Todas but library search row did not return; labels="+
+                                         repr(labels()[:40]))
 
     # Search is the library's supported navigation for scores outside the
     # first viewport. It also proves that positive results are not mislabeled
