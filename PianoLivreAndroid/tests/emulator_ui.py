@@ -330,7 +330,7 @@ if __name__=="__main__":
     # a seeded record from a previous test or emulator snapshot.
     home_scroll_to_top();tap_text(["Partitura livre"],exact=True,scroll=True)
     wait_for_text("← Biblioteca");time.sleep(1)
-    tap_text(["← Biblioteca"],exact=True);wait_for_text("Todas as categorias")
+    tap_text(["← Biblioteca"],exact=True);wait_for_text("Estudar Ode à Alegria")
     home_scroll_to_top();tap_text(["Histórico"],exact=True,scroll=True)
     history_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Tempo na tela de estudo" in t for t in history_labels), "Native history totals missing"
