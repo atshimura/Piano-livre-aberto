@@ -135,7 +135,7 @@ class PianoScreens {
   TextView title=text("Bem-vindo ao\nPiano Livre!",compact?27:shortScreen?21:35,0xff102344,true);title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
   TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?14:shortScreen?10:16,0xff455F7D,false);
   if(shortScreen)description.setMaxWidth(d(280));
-  description.setPadding(0,d(5),0,d(shortScreen?6:13));copy.addView(description,lp(-1,-2));
+  description.setPadding(0,d(5),0,d(shortScreen?6:13));copy.addView(description,lp(shortScreen?280:-1,-2));
   LinearLayout actions=compact&&!shortScreen?column():row();
   Button start=btn("▶  Começar pela Ode à Alegria",true,()->a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true));
   start.setContentDescription("Começar pela Ode à Alegria no modo Estudar");actions.addView(start,lp(shortScreen?190:compact?-1:250,shortScreen?34:compact?45:46));if(shortScreen)start.setTextSize(10);
@@ -151,7 +151,7 @@ class PianoScreens {
   LinearLayout nav=column();LinearLayout navRow=null;
   String[] titles={"Biblioteca Musical","Laboratório Musical","Histórico","Opções"};
   String[] descriptions={"Suas partituras para estudar e tocar","Notas, escalas, acordes e exercícios","Acompanhe seu progresso","Configurações e personalização"};
-  String[] icons={"♫","♜","◴","⚙"};int[] colors={0xff2471D5,0xff128263,0xff6540CC,0xff9A6500};int[] tints={0xffE5F1FF,0xffE5F8F0,0xffF0EAFE,0xfffff5df};
+  String[] icons={"♫","⚗","◴","⚙"};int[] colors={0xff2471D5,0xff128263,0xff6540CC,0xff9A6500};int[] tints={0xffE5F1FF,0xffE5F8F0,0xffF0EAFE,0xfffff5df};
   for(int i=0;i<4;i++){
    if(i%cols==0){navRow=row();LinearLayout.LayoutParams rp=lp(-1,-2);rp.topMargin=d(shortLandscape()?7:12);nav.addView(navRow,rp);}
    final int index=i;LinearLayout card=row();card.setPadding(d(12),d(10),d(10),d(10));

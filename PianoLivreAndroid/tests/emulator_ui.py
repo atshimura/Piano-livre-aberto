@@ -46,8 +46,15 @@ def home_responsive_screenshots():
     assert any("Bem-vindo ao" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width home lost the welcome banner"
     phone_labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in phone.iter("node")]
     assert any("PIANO LIVRE" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width header lost the Piano Livre identity"
+    description=next((n for n in phone.iter("node") if n.attrib.get("text","").startswith("Escolha uma música, pratique")),None)
+    assert description is not None, "Phone-width welcome description is missing"
+    description_bounds=[int(x) for x in re.findall(r"\d+",description.attrib.get("bounds",""))]
+    assert len(description_bounds)==4 and description_bounds[2]<=540, "Phone-width banner description overlaps the piano artwork"
     for essential in ("Começar pela Ode à Alegria","Como usar"):
         assert any(essential.casefold() in value.casefold() for value in phone_labels), "Phone-width banner control is missing: "+essential
+        node=next(n for n in phone.iter("node") if essential.casefold() in (n.attrib.get("text","") or n.attrib.get("content-desc","")).casefold())
+        bounds=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
+        assert len(bounds)==4 and bounds[0]>=0 and bounds[1]>=0 and bounds[2]<=720 and bounds[3]<=480, "Phone-width banner control is cut off: "+essential
     adb("shell", "wm", "size", "1920x1080")
     adb("shell", "wm", "density", "240")
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
@@ -69,7 +76,7 @@ def home_scroll_to_top():
         if scroll is None:break
         box=[int(x) for x in re.findall(r"\d+",scroll.attrib.get("bounds",""))]
         if len(box)!=4:break
-        x=(box[0]+box[2])//2;top=box[1];height=box[3]-box[1]
+        x=box[0]+max(8,(box[2]-box[0])//100);top=box[1];height=box[3]-box[1]
         adb("shell","input","swipe",str(x),str(top+height//5),str(x),str(top+height*4//5),"220")
         time.sleep(.15)
     time.sleep(.3)
@@ -252,6 +259,8 @@ if __name__=="__main__":
     tap_text(["Biblioteca"])
     time.sleep(.4)
     print("PASS: welcome actions, offline help, and phone/tablet responsive captures",flush=True)
+    tap_text(["Favoritar Ode à Alegria"],scroll=True);tap_text(["Remover favorito Ode à Alegria"],scroll=True)
+    home_scroll_to_top()
     tap_text(["Importar partitura"],scroll=True)
     time.sleep(.5)
     adb("shell","input","keyevent","4")
@@ -280,7 +289,7 @@ if __name__=="__main__":
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
     time.sleep(1.5);assert_running();return_to_library_if_study_was_restored();assert_collection_filter_option("Colecao_Renomeada",present=False)
-    home_scroll_to_top();tap_text(["Favoritar Ode à Alegria"],scroll=True);tap_text(["Remover favorito Ode à Alegria"],scroll=True)
+    home_scroll_to_top()
     print("PASS: import entry, collections, and favorite controls",flush=True)
     home_scroll_to_top()
     # Public Laboratory 1.0 exposes only the approved Discover experience.
