@@ -355,9 +355,8 @@ if __name__=="__main__":
     tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Excluir perfil"]);tap_text(["Excluir"],exact=True)
     after_delete=[n.attrib.get("text","") for n in dump().iter("node")]
     assert not any("Perfil_Teste" in t for t in after_delete), "Deleted profile remains selected"
-    if not any("Biblioteca Musical" in t for t in after_delete):tap_text(["Biblioteca"])
+    tap_text(["Biblioteca Musical"],exact=True)
     print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
-    home_scroll_to_top()
     wait_for_text("Buscar título ou arquivo")
     fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
     assert fields, "Library search input missing"
@@ -365,8 +364,7 @@ if __name__=="__main__":
     adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
     adb("shell","input","text","gymnopedie")
     dismiss_keyboard()
-    search_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("1 de 10 partituras" in t for t in search_labels), "Accent-insensitive library search did not filter"
+    wait_for_text("1 de 10 partituras")
     fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
     box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
     adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
@@ -377,7 +375,7 @@ if __name__=="__main__":
     adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
     adb("shell","input","text","lago-dos-cisnes")
     dismiss_keyboard()
-    assert any("1 de 10 partituras" in n.attrib.get("text","") for n in dump().iter("node")), "Library search did not match a score filename"
+    wait_for_text("1 de 10 partituras")
     fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
     box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
     adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
