@@ -147,6 +147,35 @@ def wait_for_text(target, timeout=8):
         time.sleep(.25)
     raise AssertionError("Timed out waiting for UI text "+repr(target)+"; visible="+repr(last[:50]))
 
+def focus_library_search_field(timeout=12):
+    """Wait for the library search row to stop moving, tap it, and confirm focus."""
+    deadline=time.monotonic()+timeout
+    previous=None;stable=0;last=[]
+    while time.monotonic()<deadline:
+        root=dump()
+        fields=[n for n in root.iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+        search=next((n for n in fields if "buscar título" in (n.attrib.get("hint","")+n.attrib.get("text","")+n.attrib.get("content-desc","")).casefold()),None)
+        if search is None and len(fields)==1:search=fields[0]
+        if search is not None:
+            bounds=[int(x) for x in re.findall(r"\\d+",search.attrib.get("bounds",""))]
+            signature=tuple(bounds) if len(bounds)==4 else None
+            stable=stable+1 if signature is not None and signature==previous else 0
+            previous=signature;last=[n.attrib.get("text","") for n in root.iter("node")]
+            if stable>=1 and signature is not None:
+                for _ in range(3):
+                    adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
+                    time.sleep(.25)
+                    focused_root=dump()
+                    focused_fields=[n for n in focused_root.iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+                    focused=next((n for n in focused_fields if n.attrib.get("focused")=="true"),None)
+                    if focused is not None:return focused
+                    state=adb("shell","dumpsys","input_method")
+                    if re.search(r"(?:mInputShown|mIsInputViewShown|isInputViewShown)=true",state):
+                        return next((n for n in focused_fields if "buscar título" in (n.attrib.get("hint","")+n.attrib.get("text","")+n.attrib.get("content-desc","")).casefold()),search)
+                time.sleep(.25)
+        time.sleep(.2)
+    raise AssertionError("LIBRARY_SEARCH_FOCUS_FAILED: field did not settle/focus; labels="+repr(last[:40]))
+
 def assert_collection_filter_option(name, present=True):
     """Inspect the Spinner's real dropdown; closed spinners expose only selection."""
     home_scroll_to_top()
