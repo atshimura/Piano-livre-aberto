@@ -872,7 +872,11 @@ if __name__=="__main__":
     print("PASS: navigation returns to library",flush=True)
     logs=adb("logcat","-d","-v","brief")
     if "FATAL EXCEPTION" in logs and "Process: br.org.pianolivre.opensource" in logs:
-        raise AssertionError("Fatal exception in Piano Livre")
+        start=logs.rfind("FATAL EXCEPTION")
+        fatal=logs[start:start+12000]
+        Path("piano-fatal-exception.log").write_text(fatal,encoding="utf-8")
+        print("ANDROID_FATAL_EXCEPTION\\n"+fatal,flush=True)
+        raise AssertionError("Fatal exception in Piano Livre; see piano-fatal-exception.log")
     # Additional real Android WebView stress with an already authorized longer
     # MusicXML score; a large pure-JS map test does NOT test SVG rendering.
     old_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
