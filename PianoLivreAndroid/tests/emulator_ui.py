@@ -410,31 +410,24 @@ if __name__=="__main__":
     tap_text(["Biblioteca Musical"],exact=True)
     print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
     wait_for_text("Buscar título ou arquivo")
-    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    assert fields, "Library search input missing"
-    box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    focus_library_search_field()
     adb("shell","input","text","gymnopedie")
     dismiss_keyboard()
     wait_for_text("1 de 10 partituras")
-    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    focus_library_search_field()
     adb("shell","input","keyevent","123")
     adb("shell","input","keyevent",*(["67"]*10))
     dismiss_keyboard()
-    assert any("10 de 10 partituras" in n.attrib.get("text","") for n in dump().iter("node")), "Clearing search did not restore library"
-    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    wait_for_text("10 de 10 partituras")
+    focus_library_search_field()
     adb("shell","input","text","lago-dos-cisnes")
     dismiss_keyboard()
     wait_for_text("1 de 10 partituras")
-    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    focus_library_search_field()
     adb("shell","input","keyevent","123")
-    adb("shell","input","keyevent",*( ["67"]*20 ))
+    adb("shell","input","keyevent",*(["67"]*20))
     dismiss_keyboard()
-    assert any("10 de 10 partituras" in n.attrib.get("text","") for n in dump().iter("node")), "Filename search clearing did not restore the library"
+    wait_for_text("10 de 10 partituras")
     print("PASS: native library search ignores accents and clearing restores results",flush=True)
     render_baseline=adb("logcat","-d","-v","brief").count("NOTATION_RENDERED")
     tap_text([DEFAULT_SCORE_TITLE])
