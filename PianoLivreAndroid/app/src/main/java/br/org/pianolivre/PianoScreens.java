@@ -121,18 +121,19 @@ class PianoScreens {
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
   final boolean shortScreen=shortLandscape();final boolean compact=widthDp<620;
   FrameLayout hero=new FrameLayout(a);hero.setBackground(bg(0xffD9EAFB,22,0xffC9DDF6));hero.setClipToOutline(true);
-  int heroHeight=shortScreen?138:compact?285:215;
+  int heroHeight=shortScreen?178:compact?285:215;
   ImageView art=new ImageView(a);art.setImageResource(R.drawable.home_hero_art);art.setScaleType(ImageView.ScaleType.CENTER_CROP);
-  art.setAlpha(compact?.67f:.96f);
-  FrameLayout.LayoutParams artLp=new FrameLayout.LayoutParams(compact?-1:d(widthDp<900?410:590),-1,compact?Gravity.RIGHT|Gravity.TOP:Gravity.RIGHT);
+  art.setAlpha(1f);
+  int artWidth=compact?Math.max(220,(int)(widthDp*.62f)):widthDp<900?410:590;
+  FrameLayout.LayoutParams artLp=new FrameLayout.LayoutParams(d(artWidth),-1,Gravity.RIGHT|Gravity.CENTER_VERTICAL);
   hero.addView(art,artLp);
   View fade=new View(a);android.graphics.drawable.GradientDrawable fadeDrawable=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xffDFEDFC,0xffDFEDFC,0x00DFEDFC});fade.setBackground(fadeDrawable);
-  hero.addView(fade,new FrameLayout.LayoutParams(compact?d(250):d(widthDp<900?430:610),-1,Gravity.LEFT));
-  LinearLayout copy=column();copy.setGravity(Gravity.CENTER_VERTICAL);copy.setPadding(d(30),d(20),d(18),d(20));
+  hero.addView(fade,new FrameLayout.LayoutParams(compact?d(Math.max(230,(int)(widthDp*.68f))):d(widthDp<900?430:610),-1,Gravity.LEFT));
+  LinearLayout copy=column();copy.setGravity(Gravity.CENTER_VERTICAL);copy.setPadding(d(shortScreen?16:30),d(shortScreen?10:20),d(shortScreen?12:18),d(shortScreen?10:20));
   FrameLayout.LayoutParams copyLp=new FrameLayout.LayoutParams(compact?-1:d(widthDp<900?500:660),-1,Gravity.LEFT);
   hero.addView(copy,copyLp);
-  TextView title=text("Bem-vindo ao\nPiano Livre!",compact?27:shortScreen?24:35,0xff102344,true);title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
-  TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?14:shortScreen?11:16,0xff455F7D,false);
+  TextView title=text("Bem-vindo ao\nPiano Livre!",compact?27:shortScreen?21:35,0xff102344,true);title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
+  TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?14:shortScreen?10:16,0xff455F7D,false);
   description.setPadding(0,d(5),0,d(shortScreen?6:13));copy.addView(description,lp(-1,-2));
   LinearLayout actions=compact&&!shortScreen?column():row();
   Button start=btn("▶  Começar pela Ode à Alegria",true,()->a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true));
@@ -240,7 +241,7 @@ class PianoScreens {
     favorite.setContentDescription((metadata.favorites.contains(scoreKey)?"Remover favorito ":"Favoritar ")+entry[0]);
     LinearLayout title=row();TextView name=text(entry[0],shortScreen?10:14,ink,true);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);
     title.addView(name,new LinearLayout.LayoutParams(0,d(shortScreen?20:34),1));title.addView(favorite,lp(shortScreen?24:36,shortScreen?20:32));card.addView(title,lp(-1,shortScreen?20:36));
-    LinearLayout details=row();ImageView thumbnail=new ImageView(a);thumbnail.setImageResource(R.drawable.home_score_placeholder);
+    LinearLayout details=row();ImageView thumbnail=new ImageView(a);thumbnail.setImageResource(scoreThumbnail(entry[1]));
     thumbnail.setScaleType(ImageView.ScaleType.CENTER_CROP);thumbnail.setBackground(bg(0xffE8F1FA,10,0xffDAE6F2));details.addView(thumbnail,lp(shortScreen?42:70,shortScreen?32:54));addGap(details,shortScreen?5:9);
     TextView source=text(entry[1].startsWith("scores/")?"Partitura da biblioteca":"Partitura importada",shortScreen?8:11,muted,false);source.setSingleLine(true);source.setEllipsize(TextUtils.TruncateAt.END);details.addView(source,new LinearLayout.LayoutParams(0,-2,1));card.addView(details,lp(-1,shortScreen?34:58));
     LinearLayout actions=row();Button study=compact("▶  Estudar",true,()->a.loadScore(entry[1],true));if(shortScreen)study.setTextSize(8);actions.addView(study,new LinearLayout.LayoutParams(0,d(shortScreen?22:37),1));addGap(actions,shortScreen?4:7);
@@ -251,6 +252,13 @@ class PianoScreens {
     card.setOnLongClickListener(v->{organizeScore(entry[0],scoreKey);return true;});
    }
   }
+ }
+ int scoreThumbnail(String scorePath){
+  String key=scorePath==null?"":scorePath.toLowerCase(Locale.ROOT);
+  if(key.endsWith("ode-to-joy-ludwig-van-beethoven.mxl"))return R.drawable.home_score_ode;
+  if(key.endsWith("fur-elise-easy-ver.mxl"))return R.drawable.home_score_fur_elise;
+  if(key.endsWith("lago-dos-cisnes.mxl"))return R.drawable.home_score_swan;
+  return R.drawable.home_score_placeholder;
  }
  void refreshLibraryFilters(LibraryStore.Snapshot metadata){
   if(libraryUser!=a.user){libraryUser=a.user;selectedLibraryFilter="";libraryFiltersDirty=true;}

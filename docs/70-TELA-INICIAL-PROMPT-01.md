@@ -16,11 +16,23 @@
 
 Os arquivos, preferências, favoritos, coleções, perfis, histórico e rotas de estudo existentes continuam usando os stores e telas já presentes. A mudança da apresentação não recria nem migra dados. A seleção de perfil no cabeçalho novo sincroniza com o seletor mantido no cabeçalho de Estudar. Nenhuma dependência remota, permissão de internet ou serviço novo foi adicionado.
 
+## Correções da auditoria do Prompt 1
+
+Na versão inicial do PR #71, o recurso `home_hero_art.webp` ainda incluía um fragmento do botão antigo da referência aprovada. O recorte foi refeito na área artística à direita: agora só contém piano, ambiente e notas. Título, descrição e ações continuam sendo controles nativos. No modo paisagem de baixa altura, o banner passou de 138 para 178 dp, reduziu o preenchimento e o tamanho do texto e reserva largura para os dois botões; a ilustração fica confinada ao lado direito com transição suave atrás do texto.
+
+Os três cartões que têm miniaturas individuais na referência agora usam recortes locais próprios daquela arte aprovada, vinculados pelos nomes de arquivo MusicXML já existentes. Os demais itens, inclusive importados, continuam sendo dinâmicos e mantêm a miniatura neutra de fallback. Nenhum compositor, nível, gênero ou categoria é criado.
+
+A falha `Created collection did not appear in library filters` veio da inspeção do teste, não de perda de dados: a árvore de acessibilidade de um `Spinner` fechado expõe a opção selecionada, não a lista inteira de opções. A criação já atualizava o `LibraryStore` e reconstruía o adaptador; o teste procurava uma opção não selecionada sem abrir a lista. A regressão agora abre o filtro e consulta a opção real, aguarda as atualizações nativas e exercita criar, renomear, confirmar persistência após reiniciar o processo e excluir a coleção.
+
 ## Validação
 
-O workflow `emulator.yml` foi ampliado para capturar a tela inicial em perfis de paisagem estreito e largo e conferir banner, ajuda local, importação, coleções, favoritos, navegação e acesso USB-MIDI. Um teste JVM cobre os estados de indicador desconectado, nome real retornado pelo Android e dispositivo aberto sem nome identificável. Também se mantêm as regressões existentes da biblioteca e do modo Estudar. As capturas e os resultados deste SHA devem ser anexados/consultados no PR; somente resultados do SHA final contam como evidência.
+O workflow `emulator.yml` mantém as capturas de tela de home estreita (720 × 540) e larga (1920 × 1080) e agora exige que os botões “Começar pela Ode à Alegria” e “Como usar” constem no layout estreito. O teste de coleções inspeciona o dropdown verdadeiro após salvar/renomear, reinicia o app para conferir persistência e comprova a remoção após excluir. As regressões existentes da biblioteca, navegação, modos de estudo e MIDI continuam habilitadas. O build geral continua cobrindo o teste JVM do indicador USB-MIDI.
 
-**Resultados do commit final:** preencher após CI e emulador.
+Comparação visual esperada: o banner preserva a composição aprovada, removendo apenas o conteúdo antigo que estava embutido no recorte; o cabeçalho mantém a exceção textual aprovada para USB-MIDI; atalhos e biblioteca permanecem componentes reais e dinâmicos. As miniaturas individuais seguem os elementos ilustrados vistos na referência, enquanto as limitações de metadados do catálogo continuam explícitas.
+
+**Verificações locais desta correção:** `verify_public_snapshot.py`, `py_compile` de `tests/emulator_ui.py` e `git diff --check` passaram. Este ambiente não contém Gradle, JDK/`javac` nem Android SDK; APK, testes JVM/Android e capturas finais dependem dos workflows do commit final.
+
+**Resultados dos workflows e evidências do commit final:** registrar depois da execução do Actions desta revisão; os links da execução anterior em `c88b256` não comprovam este código.
 
 **Ainda não testado fisicamente:** Lenovo Tab M9, Realme 7 5G e conexão Yamaha P-45. O emulador não comprova tamanho de fonte, toque, qualidade da arte nem identificação MIDI em hardware real.
 

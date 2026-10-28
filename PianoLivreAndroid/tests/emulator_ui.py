@@ -44,6 +44,9 @@ def home_responsive_screenshots():
     screenshot("piano-home-phone.png")
     phone=dump()
     assert any("Bem-vindo ao" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width home lost the welcome banner"
+    phone_labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in phone.iter("node")]
+    for essential in ("Começar pela Ode à Alegria","Como usar"):
+        assert any(essential.casefold() in value.casefold() for value in phone_labels), "Phone-width banner control is missing: "+essential
     adb("shell", "wm", "size", "1920x1080")
     adb("shell", "wm", "density", "240")
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
@@ -111,6 +114,30 @@ def dump():
             print("UI dump retry", retry+1, exc, flush=True)
             time.sleep(4)
     raise AssertionError("Android UI hierarchy inaccessible")
+
+def wait_for_text(target, timeout=8):
+    """Wait for a native UI update to become observable after an input event."""
+    deadline=time.monotonic()+timeout
+    last=[]
+    while time.monotonic()<deadline:
+        last=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in dump().iter("node")]
+        if any(target.casefold() in value.casefold() for value in last):return last
+        time.sleep(.25)
+    raise AssertionError("Timed out waiting for UI text "+repr(target)+"; visible="+repr(last[:50]))
+
+def assert_collection_filter_option(name, present=True):
+    """Inspect the Spinner's real dropdown; closed spinners expose only selection."""
+    tap_text(["Todas as categorias"],exact=True,scroll=True)
+    target="Coleção: "+name
+    if present:
+        wait_for_text(target)
+    else:
+        time.sleep(.35)
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    found=any(value==target for value in labels)
+    adb("shell","input","keyevent","4")
+    if found!=present:
+        raise AssertionError("Collection filter option presence mismatch for "+repr(target)+"; options="+repr(labels))
 
 def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pass=0):
     root=dump()
@@ -222,8 +249,23 @@ if __name__=="__main__":
     adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
     adb("shell","input","text","Colecao_Teste_UI")
     dismiss_keyboard();tap_text(["Salvar"],exact=True)
-    assert any("Colecao_Teste_UI" in n.attrib.get("text","") for n in dump().iter("node")), "Created collection did not appear in library filters"
-    tap_text(["Coleções"],scroll=True);tap_text(["Excluir coleção"],exact=True);tap_text(["Colecao_Teste_UI"],exact=True);tap_text(["Excluir"],exact=True)
+    assert_collection_filter_option("Colecao_Teste_UI")
+    tap_text(["Coleções"],scroll=True);tap_text(["Renomear coleção"],exact=True);tap_text(["Colecao_Teste_UI"],exact=True)
+    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+    assert fields, "Rename collection input missing"
+    box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
+    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    adb("shell","input","keyevent","123");adb("shell","input","keyevent",*( ["67"]*30 ))
+    adb("shell","input","text","Colecao_Renomeada")
+    dismiss_keyboard();tap_text(["Salvar"],exact=True);assert_collection_filter_option("Colecao_Renomeada")
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running();assert_collection_filter_option("Colecao_Renomeada")
+    tap_text(["Coleções"],scroll=True);tap_text(["Excluir coleção"],exact=True);tap_text(["Colecao_Renomeada"],exact=True);tap_text(["Excluir"],exact=True)
+    assert_collection_filter_option("Colecao_Renomeada",present=False)
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running();assert_collection_filter_option("Colecao_Renomeada",present=False)
     tap_text(["Favoritar Ode à Alegria"],scroll=True);tap_text(["Remover favorito Ode à Alegria"],scroll=True)
     print("PASS: import entry, collections, and favorite controls",flush=True)
     home_scroll_to_top()
