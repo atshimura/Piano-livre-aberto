@@ -202,7 +202,13 @@ def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pas
                         adb("shell","input","swipe",str(box[2]-12),y,str(box[0]+12),y,"400")
                 else:
                     x=str((box[0]+box[2])//2)
-                    adb("shell","input","swipe",x,str(box[3]-15),x,str(box[1]+15),"400")
+                    # The target may be above or below the current viewport.
+                    # Alternate scroll directions so controls in a fixed top
+                    # library row remain reachable after returning from imports.
+                    start_y,end_y=(box[3]-15,box[1]+15)
+                    if _scroll_pass%2:
+                        start_y,end_y=end_y,start_y
+                    adb("shell","input","swipe",x,str(start_y),x,str(end_y),"400")
                 return tap_text(targets,return_point,exact,True,_scroll_pass+1)
     labels=[n.attrib.get("text","") for n in root.iter("node") if n.attrib.get("text")]
     print(adb("logcat","-d","-s","PianoLivreUI:I","PianoLivreNotation:I","PianoLivreTimeline:I")[-18000:],flush=True)
