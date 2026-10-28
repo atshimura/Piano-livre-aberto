@@ -355,6 +355,8 @@ if __name__=="__main__":
     tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Excluir perfil"]);tap_text(["Excluir"],exact=True)
     after_delete=[n.attrib.get("text","") for n in dump().iter("node")]
     assert not any("Perfil_Teste" in t for t in after_delete), "Deleted profile remains selected"
+    if any(value=="← Biblioteca" for value in after_delete):
+        tap_text(["← Biblioteca"],exact=True);wait_for_text("Estudar Ode à Alegria")
     tap_text(["Biblioteca Musical"],exact=True)
     print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
     wait_for_text("Buscar título ou arquivo")
