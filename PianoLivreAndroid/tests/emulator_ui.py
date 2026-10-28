@@ -45,6 +45,7 @@ def home_responsive_screenshots():
     phone=dump()
     assert any("Bem-vindo ao" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width home lost the welcome banner"
     phone_labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in phone.iter("node")]
+    assert any("PIANO LIVRE" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width header lost the Piano Livre identity"
     for essential in ("Começar pela Ode à Alegria","Como usar"):
         assert any(essential.casefold() in value.casefold() for value in phone_labels), "Phone-width banner control is missing: "+essential
     adb("shell", "wm", "size", "1920x1080")
@@ -272,7 +273,7 @@ if __name__=="__main__":
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
     time.sleep(1.5);assert_running();return_to_library_if_study_was_restored();assert_collection_filter_option("Colecao_Renomeada",present=False)
-    tap_text(["Favoritar Ode à Alegria"],scroll=True);tap_text(["Remover favorito Ode à Alegria"],scroll=True)
+    home_scroll_to_top();tap_text(["Favoritar Ode à Alegria"],scroll=True);tap_text(["Remover favorito Ode à Alegria"],scroll=True)
     print("PASS: import entry, collections, and favorite controls",flush=True)
     home_scroll_to_top()
     # Public Laboratory 1.0 exposes only the approved Discover experience.

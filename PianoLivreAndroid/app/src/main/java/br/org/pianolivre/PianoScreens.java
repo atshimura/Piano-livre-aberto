@@ -101,7 +101,7 @@ class PianoScreens {
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<620;
   boolean shortScreen=shortLandscape();homeHeader=row();homeHeader.setPadding(d(compact?8:shortScreen?12:24),d(shortScreen?1:4),d(compact?8:shortScreen?12:24),d(shortScreen?1:4));homeHeader.setBackgroundColor(navy);
   libraryInner.addView(homeHeader,lp(-1,shortScreen?36:compact?54:58));
-  TextView brand=text(compact?"♫":"♫  PIANO LIVRE",shortScreen?15:compact?20:22,Color.WHITE,true);brand.setContentDescription("Piano Livre");homeHeader.addView(brand,new LinearLayout.LayoutParams(0,-1,1));
+  TextView brand=text("♫  PIANO LIVRE",shortScreen?11:compact?12:22,Color.WHITE,true);brand.setContentDescription("Piano Livre");brand.setSingleLine(true);brand.setEllipsize(TextUtils.TruncateAt.END);homeHeader.addView(brand,new LinearLayout.LayoutParams(0,-1,1));
   homeProfiles=new Spinner(a);homeProfiles.setBackground(bg(0xffF6F9FD,12,0xffD7E4F3));homeProfiles.setPadding(d(7),0,d(7),0);
   homeProfiles.setMinimumWidth(d(shortScreen?68:90));homeProfiles.setContentDescription("Selecionar perfil");homeHeader.addView(homeProfiles,lp(shortScreen?100:compact?92:138,shortScreen?28:40));
   addGap(homeHeader,compact?4:shortScreen?5:8);
@@ -134,6 +134,7 @@ class PianoScreens {
   hero.addView(copy,copyLp);
   TextView title=text("Bem-vindo ao\nPiano Livre!",compact?27:shortScreen?21:35,0xff102344,true);title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
   TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?14:shortScreen?10:16,0xff455F7D,false);
+  if(shortScreen)description.setMaxWidth(d(280));
   description.setPadding(0,d(5),0,d(shortScreen?6:13));copy.addView(description,lp(-1,-2));
   LinearLayout actions=compact&&!shortScreen?column():row();
   Button start=btn("▶  Começar pela Ode à Alegria",true,()->a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true));
