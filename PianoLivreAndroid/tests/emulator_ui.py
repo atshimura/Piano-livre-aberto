@@ -63,8 +63,15 @@ def home_responsive_screenshots():
     time.sleep(1.5);assert_running()
 
 def home_scroll_to_top():
-    for _ in range(4):
-        adb("shell", "input", "swipe", "500", "120", "500", "700", "400")
+    for _ in range(8):
+        root=dump()
+        scroll=next((n for n in root.iter("node") if n.attrib.get("class")=="android.widget.ScrollView" and n.attrib.get("scrollable")=="true"),None)
+        if scroll is None:break
+        box=[int(x) for x in re.findall(r"\d+",scroll.attrib.get("bounds",""))]
+        if len(box)!=4:break
+        x=(box[0]+box[2])//2;top=box[1];height=box[3]-box[1]
+        adb("shell","input","swipe",str(x),str(top+height//5),str(x),str(top+height*4//5),"220")
+        time.sleep(.15)
     time.sleep(.3)
 
 def responsive_evidence(name):
