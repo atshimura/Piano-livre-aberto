@@ -49,7 +49,7 @@ def home_responsive_screenshots():
     description=next((n for n in phone.iter("node") if n.attrib.get("text","").startswith("Escolha uma música, pratique")),None)
     assert description is not None, "Phone-width welcome description is missing"
     description_bounds=[int(x) for x in re.findall(r"\d+",description.attrib.get("bounds",""))]
-    assert len(description_bounds)==4 and description_bounds[2]<=540, "Phone-width banner description overlaps the piano artwork"
+    assert len(description_bounds)==4 and description_bounds[2]<=375, "Phone-width banner description overlaps the piano artwork"
     for essential in ("Começar pela Ode à Alegria","Como usar"):
         assert any(essential.casefold() in value.casefold() for value in phone_labels), "Phone-width banner control is missing: "+essential
         node=next(n for n in phone.iter("node") if essential.casefold() in (n.attrib.get("text","") or n.attrib.get("content-desc","")).casefold())
