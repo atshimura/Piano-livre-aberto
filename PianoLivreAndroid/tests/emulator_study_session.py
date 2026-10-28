@@ -122,7 +122,8 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
             if (any("Começar pela Ode à Alegria" in value for value in last)
                     and not any("← Biblioteca" in value for value in last)):
                 home_scroll_to_top()
-                tap_text(["Biblioteca Musical"],exact=True)
+                # Tap the clickable card container by its accessible description.
+                tap_text(["Biblioteca Musical. Suas partituras para estudar e tocar"],exact=True)
                 time.sleep(.35)
                 last=labels()
         if (any("BIBLIOTECA MUSICAL" in value for value in last)
