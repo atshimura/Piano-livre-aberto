@@ -5,9 +5,13 @@ from pathlib import Path
 DEFAULT_SCORE_TITLE = json.loads(Path('app/src/main/assets/catalog.json').read_text(encoding='utf-8'))[0]['name']
 
 def adb(*args, timeout=70):
-    return subprocess.run(["adb", *args], check=True, text=True,
+    result=subprocess.run(["adb", *args], check=False, text=True,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                          timeout=timeout).stdout
+                          timeout=timeout)
+    if result.returncode:
+        print(result.stdout,flush=True)
+        raise subprocess.CalledProcessError(result.returncode,["adb",*args],output=result.stdout)
+    return result.stdout
 
 def dismiss_keyboard():
     state=adb("shell","dumpsys","input_method")
@@ -33,21 +37,21 @@ def home_responsive_screenshots():
     # landscape widths without changing the library or profile state.
     adb("shell", "wm", "size", "720x540")
     adb("shell", "wm", "density", "240")
-    adb("shell","am","start","-S","-W","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity","-a","android.intent.action.MAIN","-c","android.intent.category.LAUNCHER","--activity-clear-task","--activity-new-task")
+    adb("shell","am","start","-S","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity","-f","0x10008000")
     time.sleep(1.5);assert_running()
     screenshot("piano-home-phone.png")
     phone=dump()
     assert any("Bem-vindo ao" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width home lost the welcome banner"
     adb("shell", "wm", "size", "1920x1080")
     adb("shell", "wm", "density", "240")
-    adb("shell","am","start","-S","-W","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity","-a","android.intent.action.MAIN","-c","android.intent.category.LAUNCHER","--activity-clear-task","--activity-new-task")
+    adb("shell","am","start","-S","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity","-f","0x10008000")
     time.sleep(1.5);assert_running()
     screenshot("piano-home-tablet.png")
     tablet=dump()
     assert any("Biblioteca Musical" in n.attrib.get("text","") for n in tablet.iter("node")), "Tablet-width home lost the library"
     adb("shell", "wm", "size", "reset")
     adb("shell", "wm", "density", "reset")
-    adb("shell","am","start","-S","-W","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity","-a","android.intent.action.MAIN","-c","android.intent.category.LAUNCHER","--activity-clear-task","--activity-new-task")
+    adb("shell","am","start","-S","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity","-f","0x10008000")
     time.sleep(1.5);assert_running()
 
 def home_scroll_to_top():
