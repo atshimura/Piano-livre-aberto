@@ -254,6 +254,13 @@ class PianoScreens {
     card.setOnLongClickListener(v->{organizeScore(entry[0],scoreKey);return true;});
    }
   }
+  // Searching replaces the score cards. When the user returns from studying a
+  // lower row, the old ScrollView offset can hide the newly filtered result.
+  // Keep the search row and matching cards in the viewport after each rebuild.
+  if(!libraryQuery.isEmpty()){
+   final String queryAtRender=libraryQuery;
+   library.post(()->{if(queryAtRender.equals(libraryQuery))library.scrollTo(0,libraryPanel.getTop());});
+  }
  }
  int scoreThumbnail(String scorePath){
   String key=scorePath==null?"":scorePath.toLowerCase(Locale.ROOT);
