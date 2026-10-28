@@ -4,7 +4,7 @@ The emulator cannot replace a physical USB-MIDI piano or physical legibility.
 """
 import json,re,time,xml.etree.ElementTree as ET
 from pathlib import Path
-from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard
+from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard,home_scroll_to_top
 
 PACKAGE="br.org.pianolivre.opensource/br.org.pianolivre.MainActivity"
 
@@ -121,6 +121,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
             # counter appears after activating the real Library navigation.
             if (any("Começar pela Ode à Alegria" in value for value in last)
                     and not any("← Biblioteca" in value for value in last)):
+                home_scroll_to_top()
                 tap_text(["Biblioteca Musical"],exact=True)
                 time.sleep(.35)
                 last=labels()
