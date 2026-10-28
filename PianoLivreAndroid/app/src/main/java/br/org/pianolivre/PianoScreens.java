@@ -169,7 +169,7 @@ class PianoScreens {
  void buildLibraryPanel(){
   boolean shortScreen=shortLandscape();libraryPanel=column();libraryPanel.setPadding(d(shortScreen?2:16),d(shortScreen?2:12),d(shortScreen?2:16),d(shortScreen?2:13));libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
   LinearLayout.LayoutParams panelLp=lp(-1,-2);panelLp.topMargin=d(shortScreen?7:13);libraryInner.addView(libraryPanel,panelLp);
-  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<620;
+  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<900;
   LinearLayout section=row();section.addView(text("♫",shortScreen?13:25,blue,true),lp(shortScreen?18:35,shortScreen?16:40));
   TextView title=text("Biblioteca Musical",compact?18:shortScreen?15:23,0xff102344,true);title.setSingleLine(true);
   LinearLayout.LayoutParams titleLp=compact?new LinearLayout.LayoutParams(0,d(shortScreen?16:42),1):lp(-2,shortScreen?16:42);section.addView(title,titleLp);
