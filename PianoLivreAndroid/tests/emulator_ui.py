@@ -159,9 +159,9 @@ def assert_collection_filter_option(name, present=True):
 
 def return_to_library_if_study_was_restored():
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    if not any("Todas as categorias" in value for value in labels):
+    if any(value=="← Biblioteca" for value in labels):
         tap_text(["← Biblioteca"],exact=True)
-        wait_for_text("Todas as categorias")
+        wait_for_text("Estudar Ode à Alegria")
 
 def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pass=0):
     root=dump()
