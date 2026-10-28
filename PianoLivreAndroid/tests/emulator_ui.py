@@ -163,8 +163,9 @@ def return_to_library_if_study_was_restored():
 def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pass=0):
     root=dump()
     for node in root.iter("node"):
-        label=node.attrib.get("text","") or node.attrib.get("content-desc","")
-        if any((value.casefold()==label.casefold()) if exact else (value.casefold() in label.casefold()) for value in targets):
+        labels=[node.attrib.get("text",""),node.attrib.get("content-desc","")]
+        match=next((label for label in labels if label and any((value.casefold()==label.casefold()) if exact else (value.casefold() in label.casefold()) for value in targets)),None)
+        if match is not None:
             nums=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
             if len(nums)==4:
                 x,y=(nums[0]+nums[2])//2,(nums[1]+nums[3])//2
@@ -173,7 +174,7 @@ def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pas
                 # dimensions on some Android emulator versions, which can
                 # incorrectly reject valid landscape taps.
                 adb("shell", "input", "tap", str(x),str(y))
-                print("Tapped",label,flush=True)
+                print("Tapped",match,flush=True)
                 return (str(x),str(y)) if return_point else label
     if scroll and _scroll_pass<5:
         scroll_nodes=[node for node in root.iter("node") if node.attrib.get("scrollable")=="true"]
