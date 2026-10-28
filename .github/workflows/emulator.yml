@@ -268,5 +268,6 @@ jobs:
             PianoLivreAndroid/piano-osmd-context-probe.txt
             PianoLivreAndroid/window.xml
             PianoLivreAndroid/piano-selftests.log
+            PianoLivreAndroid/piano-fatal-exception.log
             PianoLivreAndroid/piano-discovery-selftest.log
             PianoLivreAndroid/piano-discovery-staff-*.png
