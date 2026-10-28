@@ -1,4 +1,4 @@
-Warning: truncated output (original token count: 20048)
+Warning: truncated output (original token count: 20046)
 Total output lines: 1254
 
 #!/usr/bin/env python3
@@ -171,7 +171,7 @@ def return_to_library_if_study_was_restored():
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
     if any(value=="← Biblioteca" for value in labels):
         tap_text(["← Biblioteca"],exact=True)
-        wait_for_text("Estudar Ode à Alegria")
+        wait_for_text("Bem-vindo ao")
 
 def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pass=0):
     root=dump()
@@ -606,7 +606,7 @@ if __name__=="__main__":
         "Loop edit left native playback running instead of releasing MIDI"
     print("STUDY_B_MANUAL_LOOP_ANDROID_PASS",flush=True)
     # The musical B marker must also snap to a full sounding-note release and
-    # cancel playback before applying the checked route. Reuse…48 tokens truncated…r(cy),"1000")
+    # cancel playback before applying the checked route. Reuse cached bu…46 tokens truncated…r(cy),"1000")
         time.sleep(.3)
         assert any("Marcar início na posição atual" in n.attrib.get("text","")
                    for n in dump().iter("node")), "Loop menu did not reopen"
