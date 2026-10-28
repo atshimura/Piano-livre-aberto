@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 20048)
+Total output lines: 1254
+
 #!/usr/bin/env python3
 """Automated Android emulator GUI smoke test; no physical MIDI required."""
 import os, re, subprocess, time, xml.etree.ElementTree as ET, json
@@ -63,6 +66,13 @@ def home_responsive_screenshots():
     screenshot("piano-home-tablet.png")
     tablet=dump()
     assert any("Biblioteca Musical" in n.attrib.get("text","") for n in tablet.iter("node")), "Tablet-width home lost the library"
+    tablet_labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in tablet.iter("node")]
+    for essential in ("Buscar título ou arquivo","Todas as categorias","Coleções","Importar partitura","▶  Estudar","Partitura livre"):
+        assert any(essential.casefold() in value.casefold() for value in tablet_labels), "Tablet-width library control is missing: "+essential
+    for essential in ("▶  Estudar","Partitura livre"):
+        node=next(n for n in tablet.iter("node") if essential.casefold() in (n.attrib.get("text","") or n.attrib.get("content-desc","")).casefold())
+        bounds=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
+        assert len(bounds)==4 and bounds[0]>=0 and bounds[2]<=1920 and bounds[3]<=1024, "Tablet-width score action is cut off: "+essential
     adb("shell", "wm", "size", "reset")
     adb("shell", "wm", "density", "reset")
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
@@ -596,11 +606,7 @@ if __name__=="__main__":
         "Loop edit left native playback running instead of releasing MIDI"
     print("STUDY_B_MANUAL_LOOP_ANDROID_PASS",flush=True)
     # The musical B marker must also snap to a full sounding-note release and
-    # cancel playback before applying the checked route. Reuse cached button
-    # bounds so hierarchy dumps do not race a running WebView.
-    def open_loop_menu():
-        assert_running()
-        adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1000")
+    # cancel playback before applying the checked route. Reuse…48 tokens truncated…r(cy),"1000")
         time.sleep(.3)
         assert any("Marcar início na posição atual" in n.attrib.get("text","")
                    for n in dump().iter("node")), "Loop menu did not reopen"
