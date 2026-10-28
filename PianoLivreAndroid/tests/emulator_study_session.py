@@ -179,6 +179,10 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         dismiss_keyboard()
         time.sleep(.35)
 
+    # Refresh the hierarchy after scrolling and clearing any prior search; the
+    # preview can be exposed only after those actions finish.
+    inline_home = inline_home or any("Começar pela Ode à Alegria" in value for value in labels())
+
     # A home-embedded library preview is validated through its real search result.
     # Standalone library mode still requires full count and filter checks.
     if not inline_home:
