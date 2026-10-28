@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 20046)
-Total output lines: 1254
-
 #!/usr/bin/env python3
 """Automated Android emulator GUI smoke test; no physical MIDI required."""
 import os, re, subprocess, time, xml.etree.ElementTree as ET, json
@@ -606,7 +603,11 @@ if __name__=="__main__":
         "Loop edit left native playback running instead of releasing MIDI"
     print("STUDY_B_MANUAL_LOOP_ANDROID_PASS",flush=True)
     # The musical B marker must also snap to a full sounding-note release and
-    # cancel playback before applying the checked route. Reuse cached bu…46 tokens truncated…r(cy),"1000")
+    # cancel playback before applying the checked route. Reuse cached button
+    # bounds so hierarchy dumps do not race a running WebView.
+    def open_loop_menu():
+        assert_running()
+        adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1000")
         time.sleep(.3)
         assert any("Marcar início na posição atual" in n.attrib.get("text","")
                    for n in dump().iter("node")), "Loop menu did not reopen"
