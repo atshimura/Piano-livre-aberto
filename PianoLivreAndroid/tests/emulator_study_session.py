@@ -162,7 +162,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     # viewport; the short exercise is eighth in this catalog.
     for _ in range(40):
         last=labels()
-        if not any("BIBLIOTECA MUSICAL" in value for value in last):
+        if not (any("BIBLIOTECA MUSICAL" in value for value in last) or any("Buscar título" in value for value in last)):
             raise AssertionError("NAVIGATION_FAILED: left the library while waiting; labels="+repr(last[:40]))
         result=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
         if result is not None:break
@@ -228,7 +228,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     dismiss_keyboard()
     for _ in range(40):
         last=labels()
-        if not any("BIBLIOTECA MUSICAL" in value for value in last):
+        if not (any("BIBLIOTECA MUSICAL" in value for value in last) or any("Buscar título" in value for value in last)):
             raise AssertionError("NAVIGATION_FAILED: left the library while clearing search; labels="+repr(last[:40]))
         count=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
         if count is not None:break
@@ -246,7 +246,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     for _ in range(40):
         last=labels()
         if any(expected in value for value in last):return
-        if not any("BIBLIOTECA MUSICAL" in value for value in last):
+        if not (any("BIBLIOTECA MUSICAL" in value for value in last) or any("Buscar título" in value for value in last)):
             raise AssertionError("NAVIGATION_FAILED: left the library while searching; labels="+repr(last[:40]))
         searched=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
         if searched is not None and searched[0]==0:
