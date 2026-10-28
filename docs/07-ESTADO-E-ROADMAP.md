@@ -28,3 +28,7 @@ GPL-3.0-only para o código próprio; direitos das músicas e de terceiros separ
 ## Nova linha funcional: Laboratório Musical
 
 Produto aprovou nova área Descobrir/Aprender com teclado virtual+USB-MIDI, pauta sempre visível, catálogo amplo, práticas, demonstração, ritmo opcional e histórico por perfil, além de melhorias em Espera, biblioteca, notação e toque na cabeça da nota. A implementação ocorre incrementalmente na [issue #34](https://github.com/atshimura/Piano-livre-aberto/issues/34) e no [documento 45](45-LABORATORIO-ESCOPO-E-CONTINUIDADE.md). A primeira entrega inicia a análise offline de acordes e uma interface experimental, **sem equivaler ao Laboratório completo ou a aceite físico**. O texto anterior sobre V1 permanece válido e #11 continua pendente.
+
+## Redesenho da tela inicial — Prompt 1 em revisão
+
+Branch `feat/tela-inicial-piano-livre`, criada sobre a `main` pública atual, preserva o Prompt 1 e a referência visual do PR #70. A implementação mantém a UI nativa e os dados locais, separa o cabeçalho da home do cabeçalho de Estudar, reutiliza os fluxos de biblioteca/perfil/MIDI e acrescenta captura em dois perfis responsivos no emulador. Consulte [70](70-TELA-INICIAL-PROMPT-01.md) para escopo, resultados do SHA final e limitações. Não há alteração de versão, merge ou publicação nesta entrega; aceite físico continua pendente.

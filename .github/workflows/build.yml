@@ -123,6 +123,10 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/LibrarySearch.java tests/LibrarySearchTest.java
           java -cp build/score-tests LibrarySearchTest
+      - name: Test home MIDI indicator labels (JVM)
+        run: |
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/HomeMidiIndicator.java tests/HomeMidiIndicatorTest.java
+          java -cp build/score-tests HomeMidiIndicatorTest
       - name: Test Laboratory scale and arpeggio sequences (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicSequenceAnalyzer.java tests/MusicSequenceAnalyzerTest.java

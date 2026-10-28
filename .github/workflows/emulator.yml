@@ -147,6 +147,8 @@ jobs:
               "piano-osmd-polyphony-guide-open.png",
               "piano-osmd-polyphony-guide-restored.png",
               "piano-release.png",
+              "piano-home-phone.png",
+              "piano-home-tablet.png",
               "piano-discovery-staff-c2.png",
               "piano-discovery-staff-c3.png",
               "piano-discovery-staff-f3.png",
@@ -197,6 +199,8 @@ jobs:
           path: |
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png
+            PianoLivreAndroid/piano-home-phone.png
+            PianoLivreAndroid/piano-home-tablet.png
             PianoLivreAndroid/piano-laboratorio.png
             PianoLivreAndroid/piano-midi-import.png
             PianoLivreAndroid/piano-release.png
