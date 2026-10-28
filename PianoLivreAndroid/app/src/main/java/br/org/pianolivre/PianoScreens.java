@@ -30,6 +30,7 @@ class PianoScreens {
  PianoView virtualKeys,legacyFallback;
  PianoScreens(MainActivity a){this.a=a;}
  int d(float n){return (int)(n*a.getResources().getDisplayMetrics().density+.5f);}
+ boolean shortLandscape(){android.util.DisplayMetrics m=a.getResources().getDisplayMetrics();return m.widthPixels>m.heightPixels&&m.heightPixels/m.density<480;}
  GradientDrawable bg(int color,int radius,int stroke){
   GradientDrawable x=new GradientDrawable();x.setColor(color);x.setCornerRadius(d(radius));
   if(stroke!=0)x.setStroke(d(1),stroke);return x;
@@ -93,29 +94,29 @@ class PianoScreens {
  }
  void buildHomeHeader(){
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<620;
-  homeHeader=row();homeHeader.setPadding(d(compact?8:24),d(4),d(compact?8:24),d(4));homeHeader.setBackgroundColor(navy);
-  libraryInner.addView(homeHeader,lp(-1,compact?54:58));
-  TextView brand=text(compact?"♫":"♫  PIANO LIVRE",compact?20:22,Color.WHITE,true);brand.setContentDescription("Piano Livre");homeHeader.addView(brand,new LinearLayout.LayoutParams(0,-1,1));
+  boolean shortScreen=shortLandscape();homeHeader=row();homeHeader.setPadding(d(compact?8:shortScreen?12:24),d(shortScreen?1:4),d(compact?8:shortScreen?12:24),d(shortScreen?1:4));homeHeader.setBackgroundColor(navy);
+  libraryInner.addView(homeHeader,lp(-1,shortScreen?36:compact?54:58));
+  TextView brand=text(compact?"♫":"♫  PIANO LIVRE",shortScreen?15:compact?20:22,Color.WHITE,true);brand.setContentDescription("Piano Livre");homeHeader.addView(brand,new LinearLayout.LayoutParams(0,-1,1));
   homeProfiles=new Spinner(a);homeProfiles.setBackground(bg(0xffF6F9FD,12,0xffD7E4F3));homeProfiles.setPadding(d(7),0,d(7),0);
-  homeProfiles.setMinimumWidth(d(90));homeProfiles.setContentDescription("Selecionar perfil");homeHeader.addView(homeProfiles,lp(compact?92:138,40));
-  addGap(homeHeader,compact?4:8);
+  homeProfiles.setMinimumWidth(d(shortScreen?68:90));homeProfiles.setContentDescription("Selecionar perfil");homeHeader.addView(homeProfiles,lp(shortScreen?100:compact?92:138,shortScreen?28:40));
+  addGap(homeHeader,compact?4:shortScreen?5:8);
   Button profileAdd=compact("+",false,()->a.newProfile());profileAdd.setContentDescription("Criar perfil");
-  profileAdd.setBackground(bg(0xff253956,12,0xff526b8c));profileAdd.setTextColor(Color.WHITE);homeHeader.addView(profileAdd,lp(compact?34:38,40));
-  addGap(homeHeader,compact?4:8);
-  Button settings=compact("⚙",false,()->options());settings.setTextSize(19);settings.setContentDescription("Opções e configurações");
-  settings.setBackground(bg(0xff253956,12,0xff526b8c));settings.setTextColor(Color.WHITE);homeHeader.addView(settings,lp(compact?38:48,40));
-  addGap(homeHeader,compact?4:8);
-  homeMidiIndicator=compact("USB-MIDI",false,()->a.selectMidi());homeMidiIndicator.setTextSize(12);
+  profileAdd.setBackground(bg(0xff253956,12,0xff526b8c));profileAdd.setTextColor(Color.WHITE);homeHeader.addView(profileAdd,lp(compact?34:shortScreen?30:38,shortScreen?28:40));
+  addGap(homeHeader,compact?4:shortScreen?5:8);
+  Button settings=compact("⚙",false,()->options());settings.setTextSize(shortScreen?14:19);settings.setContentDescription("Opções e configurações");
+  settings.setBackground(bg(0xff253956,12,0xff526b8c));settings.setTextColor(Color.WHITE);homeHeader.addView(settings,lp(compact?38:shortScreen?32:48,shortScreen?28:40));
+  addGap(homeHeader,compact?4:shortScreen?5:8);
+  homeMidiIndicator=compact("USB-MIDI",false,()->a.selectMidi());homeMidiIndicator.setTextSize(shortScreen?9:12);
   homeMidiIndicator.setSingleLine(true);homeMidiIndicator.setEllipsize(TextUtils.TruncateAt.END);
   homeMidiIndicator.setContentDescription("Gerenciar conexão USB-MIDI");homeMidiIndicator.setBackground(bg(0xffF6F9FD,18,0xffD7E4F3));
-  homeMidiIndicator.setTextColor(navy);homeHeader.addView(homeMidiIndicator,lp(compact?88:154,40));
+  homeMidiIndicator.setTextColor(navy);homeHeader.addView(homeMidiIndicator,lp(compact?88:shortScreen?92:154,shortScreen?28:40));
   updateMidiIndicator();
  }
  void buildWelcomeBanner(){
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
-  final boolean compact=widthDp<620;
+  final boolean shortScreen=shortLandscape();final boolean compact=widthDp<620;
   FrameLayout hero=new FrameLayout(a);hero.setBackground(bg(0xffD9EAFB,22,0xffC9DDF6));hero.setClipToOutline(true);
-  int heroHeight=compact?285:215;
+  int heroHeight=shortScreen?138:compact?285:215;
   ImageView art=new ImageView(a);art.setImageResource(R.drawable.home_hero_art);art.setScaleType(ImageView.ScaleType.CENTER_CROP);
   art.setAlpha(compact?.67f:.96f);
   FrameLayout.LayoutParams artLp=new FrameLayout.LayoutParams(compact?-1:d(widthDp<900?410:590),-1,compact?Gravity.RIGHT|Gravity.TOP:Gravity.RIGHT);
@@ -125,53 +126,55 @@ class PianoScreens {
   LinearLayout copy=column();copy.setGravity(Gravity.CENTER_VERTICAL);copy.setPadding(d(30),d(20),d(18),d(20));
   FrameLayout.LayoutParams copyLp=new FrameLayout.LayoutParams(compact?-1:d(widthDp<900?500:660),-1,Gravity.LEFT);
   hero.addView(copy,copyLp);
-  TextView title=text("Bem-vindo ao\nPiano Livre!",compact?27:35,0xff102344,true);title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
-  TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?14:16,0xff455F7D,false);
-  description.setPadding(0,d(5),0,d(13));copy.addView(description,lp(-1,-2));
-  LinearLayout actions=compact?column():row();
+  TextView title=text("Bem-vindo ao\nPiano Livre!",compact?27:shortScreen?24:35,0xff102344,true);title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
+  TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?14:shortScreen?11:16,0xff455F7D,false);
+  description.setPadding(0,d(5),0,d(shortScreen?6:13));copy.addView(description,lp(-1,-2));
+  LinearLayout actions=compact&&!shortScreen?column():row();
   Button start=btn("▶  Começar pela Ode à Alegria",true,()->a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true));
-  start.setContentDescription("Começar pela Ode à Alegria no modo Estudar");actions.addView(start,lp(compact?-1:250,compact?45:46));
+  start.setContentDescription("Começar pela Ode à Alegria no modo Estudar");actions.addView(start,lp(shortScreen?190:compact?-1:250,shortScreen?34:compact?45:46));if(shortScreen)start.setTextSize(10);
   if(!compact)addGap(actions,10);
   Button help=btn("▣  Como usar",false,()->showHelp());help.setContentDescription("Abrir ajuda local do Piano Livre");
-  LinearLayout.LayoutParams helpLp=lp(compact?-1:154,compact?43:46);if(compact)helpLp.topMargin=d(7);actions.addView(help,helpLp);
+  LinearLayout.LayoutParams helpLp=lp(shortScreen?112:compact?-1:154,shortScreen?34:compact?43:46);if(compact&&!shortScreen)helpLp.topMargin=d(7);if(shortScreen)help.setTextSize(10);actions.addView(help,helpLp);
   copy.addView(actions,lp(compact?-1:-2,-2));
   LinearLayout.LayoutParams heroParams=lp(-1,heroHeight);heroParams.topMargin=d(12);libraryInner.addView(hero,heroParams);
  }
  void buildNavigationCards(){
-  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
-  int cols=widthDp>=840?4:widthDp>=520?2:1;
+  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean shortScreen=shortLandscape();
+  int cols=widthDp>=660?4:widthDp>=520?2:1;
   LinearLayout nav=column();LinearLayout navRow=null;
   String[] titles={"Biblioteca Musical","Laboratório Musical","Histórico","Opções"};
   String[] descriptions={"Suas partituras para estudar e tocar","Notas, escalas, acordes e exercícios","Acompanhe seu progresso","Configurações e personalização"};
   String[] icons={"♫","♜","◴","⚙"};int[] colors={0xff2471D5,0xff128263,0xff6540CC,0xff9A6500};int[] tints={0xffE5F1FF,0xffE5F8F0,0xffF0EAFE,0xfffff5df};
   for(int i=0;i<4;i++){
-   if(i%cols==0){navRow=row();LinearLayout.LayoutParams rp=lp(-1,-2);rp.topMargin=d(12);nav.addView(navRow,rp);}
+   if(i%cols==0){navRow=row();LinearLayout.LayoutParams rp=lp(-1,-2);rp.topMargin=d(shortLandscape()?7:12);nav.addView(navRow,rp);}
    final int index=i;LinearLayout card=row();card.setPadding(d(12),d(10),d(10),d(10));
    GradientDrawable cardShape=bg(tints[i],17,new int[]{0xffC8DFFF,0xffCBEFDD,0xffDED4FB,0xffF4E2B9}[i]);
    card.setBackground(new android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x22345A80),cardShape,null));
-   LinearLayout.LayoutParams cardLp=new LinearLayout.LayoutParams(0,d(widthDp>=600?104:92),1);cardLp.setMargins(d(3),d(2),d(7),d(2));navRow.addView(card,cardLp);
-   TextView icon=text(icons[i],29,colors[i],true);icon.setGravity(Gravity.CENTER);icon.setBackground(bg(0x55ffffff,50,0));card.addView(icon,lp(66,66));addGap(card,12);
-   LinearLayout labels=column();labels.addView(text(titles[i],15,ink,true),lp(-1,-2));TextView sub=text(descriptions[i],12,muted,false);sub.setMaxLines(2);sub.setEllipsize(TextUtils.TruncateAt.END);labels.addView(sub,lp(-1,-2));card.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
-   TextView arrow=text("›",27,colors[i],true);arrow.setGravity(Gravity.CENTER);card.addView(arrow,lp(22,-1));card.setElevation(d(1));card.setClickable(true);card.setFocusable(true);
+   boolean shortScreen=shortLandscape();card.setPadding(d(shortScreen?7:12),d(shortScreen?5:10),d(shortScreen?5:10),d(shortScreen?5:10));
+   LinearLayout.LayoutParams cardLp=new LinearLayout.LayoutParams(0,d(shortScreen?58:widthDp>=600?104:92),1);cardLp.setMargins(d(3),d(2),d(7),d(2));navRow.addView(card,cardLp);
+   TextView icon=text(icons[i],shortScreen?18:29,colors[i],true);icon.setGravity(Gravity.CENTER);icon.setBackground(bg(0x55ffffff,50,0));card.addView(icon,lp(shortScreen?38:66,shortScreen?38:66));addGap(card,shortScreen?7:12);
+   LinearLayout labels=column();labels.addView(text(titles[i],shortScreen?10:15,ink,true),lp(-1,-2));TextView sub=text(descriptions[i],shortScreen?8:12,muted,false);sub.setMaxLines(2);sub.setEllipsize(TextUtils.TruncateAt.END);labels.addView(sub,lp(-1,-2));card.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
+   TextView arrow=text("›",shortScreen?18:27,colors[i],true);arrow.setGravity(Gravity.CENTER);card.addView(arrow,lp(shortScreen?16:22,-1));card.setElevation(d(1));card.setClickable(true);card.setFocusable(true);
    card.setContentDescription(titles[i]+". "+descriptions[i]);card.setOnClickListener(v->{if(index==0)focusLibrary();else if(index==1)showLab();else if(index==2)a.showHistory();else options();});
   }
   libraryInner.addView(nav,lp(-1,-2));
  }
  void buildLibraryPanel(){
-  libraryPanel=column();libraryPanel.setPadding(d(16),d(12),d(16),d(13));libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
-  LinearLayout.LayoutParams panelLp=lp(-1,-2);panelLp.topMargin=d(13);libraryInner.addView(libraryPanel,panelLp);
-  LinearLayout section=row();section.addView(text("♫",25,blue,true),lp(35,40));
+  boolean shortScreen=shortLandscape();libraryPanel=column();libraryPanel.setPadding(d(shortScreen?9:16),d(shortScreen?6:12),d(shortScreen?9:16),d(shortScreen?6:13));libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
+  LinearLayout.LayoutParams panelLp=lp(-1,-2);panelLp.topMargin=d(shortScreen?7:13);libraryInner.addView(libraryPanel,panelLp);
+  LinearLayout section=row();section.addView(text("♫",shortScreen?16:25,blue,true),lp(shortScreen?22:35,shortScreen?30:40));
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<620;
-  TextView title=text("Biblioteca Musical",compact?18:23,0xff102344,true);section.addView(title,new LinearLayout.LayoutParams(0,d(42),1));
-  section.addView(btn("Importar partitura",false,()->a.importScore()),lp(compact?132:151,40));
-  libraryPanel.addView(section,lp(-1,44));
+  TextView title=text("Biblioteca Musical",compact?18:shortScreen?15:23,0xff102344,true);section.addView(title,new LinearLayout.LayoutParams(0,d(shortScreen?30:42),1));
+  Button importButton=btn("Importar partitura",false,()->a.importScore());if(shortScreen)importButton.setTextSize(9);
+  section.addView(importButton,lp(compact?132:shortScreen?104:151,shortScreen?29:40));
+  libraryPanel.addView(section,lp(-1,shortScreen?32:44));
   LinearLayout search=compact?column():row();
-  librarySearch=new EditText(a);librarySearch.setSingleLine(true);librarySearch.setTextSize(14);librarySearch.setHint("⌕  Buscar título ou arquivo");librarySearch.setContentDescription("Buscar por título ou nome de arquivo");
+  librarySearch=new EditText(a);librarySearch.setSingleLine(true);librarySearch.setTextSize(shortScreen?9:14);librarySearch.setHint("⌕  Buscar título ou arquivo");librarySearch.setContentDescription("Buscar por título ou nome de arquivo");
   libraryFilter=new Spinner(a);libraryFilter.setContentDescription("Filtrar biblioteca");
-  Button collections=btn("▱  Coleções",false,()->manageCollections());
-  if(compact){search.addView(librarySearch,lp(-1,42));LinearLayout filterRow=row();filterRow.addView(libraryFilter,new LinearLayout.LayoutParams(0,d(42),1));addGap(filterRow,7);filterRow.addView(collections,lp(114,42));search.addView(filterRow,lp(-1,46));libraryPanel.addView(search,lp(-1,92));}
-  else{search.addView(librarySearch,new LinearLayout.LayoutParams(0,d(42),1));addGap(search,8);search.addView(libraryFilter,lp(174,42));addGap(search,8);search.addView(collections,lp(116,42));libraryPanel.addView(search,lp(-1,48));}
-  libraryResult=text("",12,muted,false);libraryPanel.addView(libraryResult,lp(-1,26));
+  Button collections=btn("▱  Coleções",false,()->manageCollections());if(shortScreen)collections.setTextSize(9);
+  if(compact){int compactControl=shortScreen?30:42;search.addView(librarySearch,lp(-1,compactControl));LinearLayout filterRow=row();filterRow.addView(libraryFilter,new LinearLayout.LayoutParams(0,d(compactControl),1));addGap(filterRow,7);filterRow.addView(collections,lp(shortScreen?94:114,compactControl));search.addView(filterRow,lp(-1,shortScreen?34:46));libraryPanel.addView(search,lp(-1,shortScreen?66:92));}
+  else{int controlHeight=shortScreen?30:42;search.addView(librarySearch,new LinearLayout.LayoutParams(0,d(controlHeight),1));addGap(search,shortScreen?4:8);search.addView(libraryFilter,lp(shortScreen?100:174,controlHeight));addGap(search,shortScreen?4:8);search.addView(collections,lp(shortScreen?74:116,controlHeight));libraryPanel.addView(search,lp(-1,shortScreen?34:48));}
+  libraryResult=text("",shortScreen?8:12,muted,false);libraryPanel.addView(libraryResult,lp(-1,shortScreen?16:26));
   librarySearch.addTextChangedListener(new android.text.TextWatcher(){
    public void beforeTextChanged(CharSequence t,int start,int count,int after){}
    public void onTextChanged(CharSequence t,int start,int before,int count){}
@@ -199,8 +202,8 @@ class PianoScreens {
   final LibraryStore.Snapshot metadata;
   try{metadata=new LibraryStore(a.prefs,a.user).snapshot();refreshLibraryFilters(metadata);}
   catch(RuntimeException ex){grid.addView(text("Não foi possível ler a organização da biblioteca. Os dados não foram alterados.",13,ink,false),lp(-1,-2));return;}
-  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
-  int columns=widthDp>=900?3:widthDp>=620?2:1;
+  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean shortScreen=shortLandscape();
+  int columns=widthDp>=680?3:widthDp>=520?2:1;
   java.util.ArrayList<String[]> entries=new java.util.ArrayList<>();
   for(int i=0;i<a.catalog.length();i++){
    JSONObject j=a.catalog.optJSONObject(i);if(j!=null)entries.add(new String[]{j.optString("name"),"scores/"+j.optString("file")});
@@ -218,24 +221,24 @@ class PianoScreens {
   libraryResult.setText(entries.size()+" de "+total+" partituras");
   if(entries.isEmpty())grid.addView(text(total==0?"Sua biblioteca está vazia. Importe uma partitura para começar.":"Nenhuma partitura encontrada. Ajuste a busca ou escolha Todas as categorias.",13,muted,false),lp(-1,54));
   for(int i=0;i<entries.size();i+=columns){
-   LinearLayout row=row();grid.addView(row,lp(-1,164));
+   int cardHeight=shortScreen?96:164;LinearLayout row=row();grid.addView(row,lp(-1,cardHeight+10));
    for(int k=0;k<columns;k++){
-    if(i+k>=entries.size()){View spacer=new View(a);row.addView(spacer,new LinearLayout.LayoutParams(0,d(154),1));continue;}
+    if(i+k>=entries.size()){View spacer=new View(a);row.addView(spacer,new LinearLayout.LayoutParams(0,d(cardHeight-10),1));continue;}
     String[] entry=entries.get(i+k);
-    LinearLayout card=column();card.setPadding(d(10),d(9),d(10),d(9));
+    LinearLayout card=column();card.setPadding(d(shortScreen?5:10),d(shortScreen?3:9),d(shortScreen?5:10),d(shortScreen?3:9));
     card.setBackground(bg(Color.WHITE,17,0xffE0E9F2));card.setElevation(d(1));
-    LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,d(154),1);p.setMargins(d(3),d(3),d(7),d(3));row.addView(card,p);
+    LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,d(cardHeight-10),1);p.setMargins(d(3),d(3),d(7),d(3));row.addView(card,p);
     final String scoreKey=LibrarySearch.key(entry[1]);
     Button favorite=compact(metadata.favorites.contains(scoreKey)?"★":"☆",false,()->libraryAction(()->new LibraryStore(a.prefs,a.user).toggleFavorite(scoreKey)));
     favorite.setContentDescription((metadata.favorites.contains(scoreKey)?"Remover favorito ":"Favoritar ")+entry[0]);
-    LinearLayout title=row();TextView name=text(entry[0],14,ink,true);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);
-    title.addView(name,new LinearLayout.LayoutParams(0,d(34),1));title.addView(favorite,lp(36,32));card.addView(title,lp(-1,36));
+    LinearLayout title=row();TextView name=text(entry[0],shortScreen?10:14,ink,true);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);
+    title.addView(name,new LinearLayout.LayoutParams(0,d(shortScreen?20:34),1));title.addView(favorite,lp(shortScreen?24:36,shortScreen?20:32));card.addView(title,lp(-1,shortScreen?20:36));
     LinearLayout details=row();ImageView thumbnail=new ImageView(a);thumbnail.setImageResource(R.drawable.home_score_placeholder);
-    thumbnail.setScaleType(ImageView.ScaleType.CENTER_CROP);thumbnail.setBackground(bg(0xffE8F1FA,10,0xffDAE6F2));details.addView(thumbnail,lp(70,54));addGap(details,9);
-    TextView source=text(entry[1].startsWith("scores/")?"Partitura da biblioteca":"Partitura importada",11,muted,false);source.setSingleLine(true);source.setEllipsize(TextUtils.TruncateAt.END);details.addView(source,new LinearLayout.LayoutParams(0,-2,1));card.addView(details,lp(-1,58));
-    LinearLayout actions=row();Button study=compact("▶  Estudar",true,()->a.loadScore(entry[1],true));actions.addView(study,new LinearLayout.LayoutParams(0,d(37),1));addGap(actions,7);
+    thumbnail.setScaleType(ImageView.ScaleType.CENTER_CROP);thumbnail.setBackground(bg(0xffE8F1FA,10,0xffDAE6F2));details.addView(thumbnail,lp(shortScreen?42:70,shortScreen?32:54));addGap(details,shortScreen?5:9);
+    TextView source=text(entry[1].startsWith("scores/")?"Partitura da biblioteca":"Partitura importada",shortScreen?8:11,muted,false);source.setSingleLine(true);source.setEllipsize(TextUtils.TruncateAt.END);details.addView(source,new LinearLayout.LayoutParams(0,-2,1));card.addView(details,lp(-1,shortScreen?34:58));
+    LinearLayout actions=row();Button study=compact("▶  Estudar",true,()->a.loadScore(entry[1],true));if(shortScreen)study.setTextSize(8);actions.addView(study,new LinearLayout.LayoutParams(0,d(shortScreen?22:37),1));addGap(actions,shortScreen?4:7);
     Button free=compact("Partitura livre",false,()->a.openFreeScore(entry[1]));free.setTextColor(blue);free.setContentDescription("Abrir "+entry[0]+" em Partitura Livre");
-    actions.addView(free,new LinearLayout.LayoutParams(0,d(37),1));card.addView(actions,lp(-1,39));
+    if(shortScreen)free.setTextSize(8);actions.addView(free,new LinearLayout.LayoutParams(0,d(shortScreen?22:37),1));card.addView(actions,lp(-1,shortScreen?22:39));
     card.setContentDescription("Estudar "+entry[0]);card.setClickable(true);card.setFocusable(true);
     card.setOnClickListener(v->a.loadScore(entry[1],true));
     card.setOnLongClickListener(v->{organizeScore(entry[0],scoreKey);return true;});

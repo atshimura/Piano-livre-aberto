@@ -171,9 +171,19 @@ if __name__=="__main__":
     assert any(DEFAULT_SCORE_TITLE in n for n in names), "Music library must be visible on launch: "+str(names[:30])
     assert "USB-MIDI" in names, "Disconnected home MIDI control must use the USB-MIDI label"
     assert not any("piano conectado" in n.casefold() or "toque aqui para testar" in n.casefold() for n in names), "Redundant connection text leaked into the home header"
-    assert any("Todas as categorias" in n for n in names), "Initial library filter label missing"
     print("PASS: library visible at startup",flush=True)
     home_responsive_screenshots()
+    # The category spinner can be below the fold on short landscape displays.
+    # Exercise it through the same scroll view while retaining the top-of-home
+    # screenshots above as the visual evidence for each viewport.
+    home=dump()
+    category_accessible=any("Todas as categorias" in n.attrib.get("text","") for n in home.iter("node"))
+    if not category_accessible:
+        tap_text(["Todas as categorias"],exact=True,scroll=True)
+        category_accessible=True
+        adb("shell","input","keyevent","4")
+        home_scroll_to_top()
+    assert category_accessible, "Initial library filter label missing"
     tap_text(["USB-MIDI"],exact=True)
     midi_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     if any("Mostrar diagnóstico" in t for t in midi_labels):tap_text(["Mostrar diagnóstico"],scroll=True)
