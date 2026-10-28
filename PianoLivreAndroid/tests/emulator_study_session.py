@@ -284,7 +284,12 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     for _ in range(40):
         last=labels()
         if any(expected in value for value in last):return
-        if not (any("BIBLIOTECA MUSICAL" in value for value in last) or any("Buscar título" in value for value in last)):
+        # The responsive home keeps its hero and navigation cards in the same
+        # scrollable screen as the full catalog. The home banner therefore remains
+        # in the accessibility tree while its embedded library search is active.
+        if not (any("BIBLIOTECA MUSICAL" in value for value in last)
+                or any("Buscar título" in value for value in last)
+                or (inline_home and any("Começar pela Ode à Alegria" in value for value in last))):
             raise AssertionError("NAVIGATION_FAILED: left the library while searching; labels="+repr(last[:40]))
         searched=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
         if searched is not None and searched[0]==0:
