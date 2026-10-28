@@ -326,6 +326,11 @@ if __name__=="__main__":
     assert any("Conecte primeiro" in text for text in options), "Calibration must require actual MIDI input"
     tap_text(["OK"])
     print("PASS: calibration is discoverable, uncalibrated by default, physical MIDI required",flush=True)
+    # Create the history entry the assertion checks instead of depending on
+    # a seeded record from a previous test or emulator snapshot.
+    home_scroll_to_top();tap_text(["Partitura livre"],exact=True,scroll=True)
+    wait_for_text("← Biblioteca");time.sleep(1)
+    tap_text(["← Biblioteca"],exact=True);wait_for_text("Todas as categorias")
     home_scroll_to_top();tap_text(["Histórico"],exact=True,scroll=True)
     history_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Tempo na tela de estudo" in t for t in history_labels), "Native history totals missing"
