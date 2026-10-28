@@ -366,7 +366,9 @@ if __name__=="__main__":
     after_delete=[n.attrib.get("text","") for n in dump().iter("node")]
     assert not any("Perfil_Teste" in t for t in after_delete), "Deleted profile remains selected"
     if any(value=="← Biblioteca" for value in after_delete):
-        tap_text(["← Biblioteca"],exact=True);wait_for_text("Estudar Ode à Alegria")
+        # Deleting the temporary profile restores home, which owns its own
+        # welcome action instead of the in-study score toolbar.
+        tap_text(["← Biblioteca"],exact=True);wait_for_text("Começar pela Ode à Alegria")
     tap_text(["Biblioteca Musical"],exact=True)
     print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
     wait_for_text("Buscar título ou arquivo")
