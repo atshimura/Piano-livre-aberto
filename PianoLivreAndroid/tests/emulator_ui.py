@@ -253,7 +253,8 @@ if __name__=="__main__":
     help_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Escolha uma partitura" in t for t in help_labels), "Local help content missing"
     tap_text(["Entendi"],exact=True)
-    tap_text(["Favoritar Ode à Alegria"],scroll=True);tap_text(["Remover favorito Ode à Alegria"],scroll=True)
+    tap_text(["Biblioteca Musical"],exact=True);wait_for_text("10 de 10 partituras")
+    tap_text(["Favoritar Ode à Alegria"]);tap_text(["Remover favorito Ode à Alegria"])
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
     time.sleep(1.5);assert_running();return_to_library_if_study_was_restored()
