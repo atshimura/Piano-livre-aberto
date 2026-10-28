@@ -106,6 +106,13 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     for _ in range(seconds*2):
         assert_running()
         last=labels()
+        # The new responsive home presents a library preview and search;
+        # activate the real navigation card to load the full catalog list.
+        if (any("Começar pela Ode à Alegria" in value for value in last)
+                and not any("← Biblioteca" in value for value in last)):
+            tap_text(["Biblioteca Musical"],exact=True)
+            time.sleep(.35)
+            last=labels()
         if any("← Biblioteca" in value for value in last):
             tap_text(["← Biblioteca"],exact=True)
             time.sleep(.35)
