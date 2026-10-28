@@ -143,6 +143,10 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     else:
         raise AssertionError("NAVIGATION_FAILED: library header did not appear; labels="+repr(last[:40]))
 
+    # The return transition can reveal the home preview after the earlier
+    # navigation tap; classify the final hierarchy before selecting assertions.
+    inline_home = inline_home or any("Começar pela Ode à Alegria" in value for value in last)
+
     # Reopen at the catalog's first rows so title lookup does not inherit a
     # previous screen's ScrollView offset.
     for _ in range(6):
