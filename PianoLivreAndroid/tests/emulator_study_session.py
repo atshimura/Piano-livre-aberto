@@ -4,7 +4,7 @@ The emulator cannot replace a physical USB-MIDI piano or physical legibility.
 """
 import json,re,time,xml.etree.ElementTree as ET
 from pathlib import Path
-from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard,home_scroll_to_top
+from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard,home_scroll_to_top,focus_library_search_field
 
 PACKAGE="br.org.pianolivre.opensource/br.org.pianolivre.MainActivity"
 
@@ -171,8 +171,8 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
                              repr(labels()[:40]))
     current=search.attrib.get("text","")
     if current and current!="Buscar título ou arquivo":
+        search=focus_library_search_field()
         bounds=_bounds(search)
-        adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
         adb("shell","input","keyevent","123")
         for _ in range(len(current)):
             adb("shell","input","keyevent","67")
@@ -249,14 +249,13 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     # first viewport. It also proves that positive results are not mislabeled
     # as a filter failure when the card is merely below the fold.
     search=library_search_field(root)
-    search_bounds=_bounds(search) if search is not None else None
-    if search_bounds is None:
+    if search is None:
         raise AssertionError("LIBRARY_SEARCH_MISSING: loaded library has no title search field")
     query=adb_search_text("Estudo livre 01" if expected=="Estudo livre 01" else "Gymnop")
+    search=focus_library_search_field()
+    search_bounds=_bounds(search)
     current=search.attrib.get("text","")
     if current=="Buscar título ou arquivo":current=""
-    adb("shell","input","tap",str((search_bounds[0]+search_bounds[2])//2),
-        str((search_bounds[1]+search_bounds[3])//2))
     adb("shell","input","keyevent","123")
     for _ in range(len(current)):
         adb("shell","input","keyevent","67")
