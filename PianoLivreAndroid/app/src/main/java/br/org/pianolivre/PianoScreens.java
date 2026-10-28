@@ -17,7 +17,7 @@ import java.util.Locale;
 class PianoScreens {
  final MainActivity a;
  final int navy=0xff101C31, ink=0xff172A44, muted=0xff57708A, blue=0xff286BCB, pale=0xffEEF4FA, teal=0xff0C8A78;
- ScrollView library;LinearLayout libraryInner,grid,studio,freeRoot,header,homeHeader,studyTitlebar;HorizontalScrollView studyControlsBar;TextView songTitle,modeNote,tempoLabel,freeTitle,waitFeedback,homeMidiIndicator;Spinner homeProfiles;View libraryPanel;
+ ScrollView library;LinearLayout libraryInner,grid,studio,freeRoot,header,homeHeader,studyTitlebar,libraryPanel;HorizontalScrollView studyControlsBar;TextView songTitle,modeNote,tempoLabel,freeTitle,waitFeedback,homeMidiIndicator;Spinner homeProfiles;
  int feedbackSequence=0;
  Button[] modeButtons=new Button[3],handButtons=new Button[3],rendererButtons=new Button[2];
  Button playback,keyboardToggle,loopButton;
