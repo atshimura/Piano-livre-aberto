@@ -150,7 +150,7 @@ class PianoScreens {
    final int index=i;LinearLayout card=row();card.setPadding(d(12),d(10),d(10),d(10));
    GradientDrawable cardShape=bg(tints[i],17,new int[]{0xffC8DFFF,0xffCBEFDD,0xffDED4FB,0xffF4E2B9}[i]);
    card.setBackground(new android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x22345A80),cardShape,null));
-   boolean shortScreen=shortLandscape();card.setPadding(d(shortScreen?7:12),d(shortScreen?5:10),d(shortScreen?5:10),d(shortScreen?5:10));
+   card.setPadding(d(shortScreen?7:12),d(shortScreen?5:10),d(shortScreen?5:10),d(shortScreen?5:10));
    LinearLayout.LayoutParams cardLp=new LinearLayout.LayoutParams(0,d(shortScreen?58:widthDp>=600?104:92),1);cardLp.setMargins(d(3),d(2),d(7),d(2));navRow.addView(card,cardLp);
    TextView icon=text(icons[i],shortScreen?18:29,colors[i],true);icon.setGravity(Gravity.CENTER);icon.setBackground(bg(0x55ffffff,50,0));card.addView(icon,lp(shortScreen?38:66,shortScreen?38:66));addGap(card,shortScreen?7:12);
    LinearLayout labels=column();labels.addView(text(titles[i],shortScreen?10:15,ink,true),lp(-1,-2));TextView sub=text(descriptions[i],shortScreen?8:12,muted,false);sub.setMaxLines(2);sub.setEllipsize(TextUtils.TruncateAt.END);labels.addView(sub,lp(-1,-2));card.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
