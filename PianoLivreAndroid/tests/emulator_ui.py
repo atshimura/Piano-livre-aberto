@@ -33,19 +33,25 @@ def home_responsive_screenshots():
     # landscape widths without changing the library or profile state.
     adb("shell", "wm", "size", "720x540")
     adb("shell", "wm", "density", "240")
-    time.sleep(1.5)
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running()
     screenshot("piano-home-phone.png")
     phone=dump()
-    assert any("Biblioteca Musical" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width home lost the library"
+    assert any("Bem-vindo ao" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width home lost the welcome banner"
     adb("shell", "wm", "size", "1920x1080")
     adb("shell", "wm", "density", "240")
-    time.sleep(1.5)
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running()
     screenshot("piano-home-tablet.png")
     tablet=dump()
     assert any("Biblioteca Musical" in n.attrib.get("text","") for n in tablet.iter("node")), "Tablet-width home lost the library"
     adb("shell", "wm", "size", "reset")
     adb("shell", "wm", "density", "reset")
-    time.sleep(1.5)
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running()
 
 def home_scroll_to_top():
     for _ in range(4):

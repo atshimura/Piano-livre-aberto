@@ -885,7 +885,7 @@ public class MainActivity extends Activity {
    profiles.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,names));profiles.setSelection(selected);
    if(screens!=null&&screens.homeProfiles!=null){
     screens.homeProfiles.setOnItemSelectedListener(null);
-    screens.homeProfiles.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,names));screens.homeProfiles.setSelection(selected);
+    screens.homeProfiles.setAdapter(screens.homeProfileAdapter(names));screens.homeProfiles.setSelection(selected);
    }
    refreshChordWindow();if(screens!=null)screens.refreshLibrary();
    profiles.setOnItemSelectedListener(new Listener(index->selectProfileFromSpinner(index,list)));

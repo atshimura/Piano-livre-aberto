@@ -31,6 +31,11 @@ class PianoScreens {
  PianoScreens(MainActivity a){this.a=a;}
  int d(float n){return (int)(n*a.getResources().getDisplayMetrics().density+.5f);}
  boolean shortLandscape(){android.util.DisplayMetrics m=a.getResources().getDisplayMetrics();return m.widthPixels>m.heightPixels&&m.heightPixels/m.density<480;}
+ ArrayAdapter<String> homeProfileAdapter(String[] names){
+  ArrayAdapter<String> adapter=new ArrayAdapter<>(a,android.R.layout.simple_spinner_item,names){
+   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){TextView item=(TextView)super.getView(position,convertView,parent);if(shortLandscape())item.setTextSize(9);return item;}
+  };adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);return adapter;
+ }
  GradientDrawable bg(int color,int radius,int stroke){
   GradientDrawable x=new GradientDrawable();x.setColor(color);x.setCornerRadius(d(radius));
   if(stroke!=0)x.setStroke(d(1),stroke);return x;
@@ -160,21 +165,23 @@ class PianoScreens {
   libraryInner.addView(nav,lp(-1,-2));
  }
  void buildLibraryPanel(){
-  boolean shortScreen=shortLandscape();libraryPanel=column();libraryPanel.setPadding(d(shortScreen?9:16),d(shortScreen?6:12),d(shortScreen?9:16),d(shortScreen?6:13));libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
+  boolean shortScreen=shortLandscape();libraryPanel=column();libraryPanel.setPadding(d(shortScreen?2:16),d(shortScreen?2:12),d(shortScreen?2:16),d(shortScreen?2:13));libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
   LinearLayout.LayoutParams panelLp=lp(-1,-2);panelLp.topMargin=d(shortScreen?7:13);libraryInner.addView(libraryPanel,panelLp);
-  LinearLayout section=row();section.addView(text("♫",shortScreen?16:25,blue,true),lp(shortScreen?22:35,shortScreen?30:40));
+  LinearLayout section=row();section.addView(text("♫",shortScreen?13:25,blue,true),lp(shortScreen?18:35,shortScreen?16:40));
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<620;
-  TextView title=text("Biblioteca Musical",compact?18:shortScreen?15:23,0xff102344,true);section.addView(title,new LinearLayout.LayoutParams(0,d(shortScreen?30:42),1));
+  TextView title=text("Biblioteca Musical",compact?18:shortScreen?15:23,0xff102344,true);section.addView(title,new LinearLayout.LayoutParams(0,d(shortScreen?16:42),1));
   Button importButton=btn("Importar partitura",false,()->a.importScore());if(shortScreen)importButton.setTextSize(9);
-  section.addView(importButton,lp(compact?132:shortScreen?104:151,shortScreen?29:40));
-  libraryPanel.addView(section,lp(-1,shortScreen?32:44));
+  section.addView(importButton,lp(compact?132:shortScreen?104:151,shortScreen?16:40));
+  if(shortScreen){importButton.setMinHeight(0);importButton.setMinimumHeight(0);importButton.setPadding(d(4),0,d(4),0);}
+  libraryPanel.addView(section,lp(-1,shortScreen?16:44));
   LinearLayout search=compact?column():row();
-  librarySearch=new EditText(a);librarySearch.setSingleLine(true);librarySearch.setTextSize(shortScreen?9:14);librarySearch.setHint("⌕  Buscar título ou arquivo");librarySearch.setContentDescription("Buscar por título ou nome de arquivo");
+  librarySearch=new EditText(a);librarySearch.setSingleLine(true);librarySearch.setTextSize(shortScreen?9:14);librarySearch.setHint("⌕  Buscar título ou arquivo");librarySearch.setContentDescription("Buscar por título ou nome de arquivo");if(shortScreen){librarySearch.setMinHeight(0);librarySearch.setMinimumHeight(0);librarySearch.setPadding(d(4),0,d(4),0);}
   libraryFilter=new Spinner(a);libraryFilter.setContentDescription("Filtrar biblioteca");
-  Button collections=btn("▱  Coleções",false,()->manageCollections());if(shortScreen)collections.setTextSize(9);
-  if(compact){int compactControl=shortScreen?30:42;search.addView(librarySearch,lp(-1,compactControl));LinearLayout filterRow=row();filterRow.addView(libraryFilter,new LinearLayout.LayoutParams(0,d(compactControl),1));addGap(filterRow,7);filterRow.addView(collections,lp(shortScreen?94:114,compactControl));search.addView(filterRow,lp(-1,shortScreen?34:46));libraryPanel.addView(search,lp(-1,shortScreen?66:92));}
-  else{int controlHeight=shortScreen?30:42;search.addView(librarySearch,new LinearLayout.LayoutParams(0,d(controlHeight),1));addGap(search,shortScreen?4:8);search.addView(libraryFilter,lp(shortScreen?100:174,controlHeight));addGap(search,shortScreen?4:8);search.addView(collections,lp(shortScreen?74:116,controlHeight));libraryPanel.addView(search,lp(-1,shortScreen?34:48));}
-  libraryResult=text("",shortScreen?8:12,muted,false);libraryPanel.addView(libraryResult,lp(-1,shortScreen?16:26));
+  if(shortScreen){libraryFilter.setMinimumHeight(0);libraryFilter.setPadding(d(2),0,d(2),0);}
+  Button collections=btn("▱  Coleções",false,()->manageCollections());if(shortScreen){collections.setTextSize(9);collections.setMinHeight(0);collections.setMinimumHeight(0);collections.setPadding(d(3),0,d(3),0);}
+  if(compact){int compactControl=shortScreen?16:42;search.addView(librarySearch,lp(-1,compactControl));LinearLayout filterRow=row();filterRow.addView(libraryFilter,new LinearLayout.LayoutParams(0,d(compactControl),1));addGap(filterRow,7);filterRow.addView(collections,lp(shortScreen?94:114,compactControl));search.addView(filterRow,lp(-1,shortScreen?20:46));libraryPanel.addView(search,lp(-1,shortScreen?36:92));}
+  else{int controlHeight=shortScreen?16:42;search.addView(librarySearch,new LinearLayout.LayoutParams(0,d(controlHeight),1));addGap(search,shortScreen?4:8);search.addView(libraryFilter,lp(shortScreen?174:174,controlHeight));addGap(search,shortScreen?4:8);search.addView(collections,lp(shortScreen?74:116,controlHeight));libraryPanel.addView(search,lp(-1,shortScreen?18:48));}
+  libraryResult=text("",shortScreen?8:12,muted,false);libraryPanel.addView(libraryResult,lp(-1,shortScreen?9:26));
   librarySearch.addTextChangedListener(new android.text.TextWatcher(){
    public void beforeTextChanged(CharSequence t,int start,int count,int after){}
    public void onTextChanged(CharSequence t,int start,int before,int count){}
@@ -253,7 +260,10 @@ class PianoScreens {
   for(LibraryStore.Collection c:metadata.collections.values()){ids.add(c.id);names.add("Coleção: "+c.name);}
   int selected=ids.indexOf(selectedLibraryFilter);if(selected<0){selected=0;selectedLibraryFilter="";}
   libraryFilter.setOnItemSelectedListener(null);
-  libraryFilter.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,names));libraryFilter.setSelection(selected);
+  ArrayAdapter<String> filterAdapter=new ArrayAdapter<>(a,android.R.layout.simple_spinner_item,names){
+   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){TextView item=(TextView)super.getView(position,convertView,parent);if(shortLandscape())item.setTextSize(9);return item;}
+  };filterAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+  libraryFilter.setAdapter(filterAdapter);libraryFilter.setSelection(selected);
   libraryFilter.setOnItemSelectedListener(new MainActivity.Listener(index->{
    if(index>=0&&index<ids.size()&&!selectedLibraryFilter.equals(ids.get(index))){selectedLibraryFilter=ids.get(index);refreshLibrary();}
   }));
