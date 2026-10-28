@@ -175,7 +175,7 @@ def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pas
                 # incorrectly reject valid landscape taps.
                 adb("shell", "input", "tap", str(x),str(y))
                 print("Tapped",match,flush=True)
-                return (str(x),str(y)) if return_point else label
+                return (str(x),str(y)) if return_point else match
     if scroll and _scroll_pass<5:
         scroll_nodes=[node for node in root.iter("node") if node.attrib.get("scrollable")=="true"]
         # Study controls use a horizontal scroller; prioritize it so off-screen
