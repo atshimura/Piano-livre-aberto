@@ -157,7 +157,7 @@ def focus_library_search_field(timeout=12):
         search=next((n for n in fields if "buscar título" in (n.attrib.get("hint","")+n.attrib.get("text","")+n.attrib.get("content-desc","")).casefold()),None)
         if search is None and len(fields)==1:search=fields[0]
         if search is not None:
-            bounds=[int(x) for x in re.findall(r"\\d+",search.attrib.get("bounds",""))]
+            bounds=[int(x) for x in re.findall(r"\d+",search.attrib.get("bounds",""))]
             signature=tuple(bounds) if len(bounds)==4 else None
             stable=stable+1 if signature is not None and signature==previous else 0
             previous=signature;last=[n.attrib.get("text","") for n in root.iter("node")]
