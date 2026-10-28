@@ -79,7 +79,7 @@ def home_responsive_screenshots():
 def home_scroll_to_top():
     for _ in range(8):
         root=dump()
-        scroll=next((n for n in root.iter("node") if n.attrib.get("class")=="android.widget.ScrollView" and n.attrib.get("scrollable")=="true"),None)
+        scroll=next((n for n in root.iter("node") if n.attrib.get("scrollable")=="true" and "Horizontal" not in n.attrib.get("class","")),None)
         if scroll is None:break
         box=[int(x) for x in re.findall(r"\d+",scroll.attrib.get("bounds",""))]
         if len(box)!=4:break
@@ -279,6 +279,9 @@ if __name__=="__main__":
     tap_text(["Importar partitura"],scroll=True)
     time.sleep(.5)
     adb("shell","input","keyevent","4")
+    # Returning from the system picker may preserve the library's prior scroll
+    # offset; expose the real filter row again before tapping it.
+    home_scroll_to_top()
     tap_text(["Coleções"],scroll=True)
     tap_text(["Nova coleção"],exact=True)
     fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
