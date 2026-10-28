@@ -183,7 +183,7 @@ class PianoScreens {
   int controlHeight=shortScreen?16:42;
   if(compact){section.addView(importButton,lp(132,shortScreen?16:40));libraryPanel.addView(section,lp(-1,shortScreen?16:44));
    search.addView(librarySearch,lp(-1,controlHeight));LinearLayout filterRow=row();filterRow.addView(libraryFilter,new LinearLayout.LayoutParams(0,d(controlHeight),1));addGap(filterRow,7);filterRow.addView(collections,lp(shortScreen?94:114,controlHeight));search.addView(filterRow,lp(-1,shortScreen?20:46));libraryPanel.addView(search,lp(-1,shortScreen?36:92));}
-  else{addGap(section,10);section.addView(librarySearch,new LinearLayout.LayoutParams(0,d(controlHeight),1));addGap(section,8);section.addView(libraryFilter,lp(174,controlHeight));addGap(section,8);section.addView(collections,lp(shortScreen?74:116,controlHeight));addGap(section,8);section.addView(importButton,lp(shortScreen?104:151,shortScreen?16:40));libraryPanel.addView(section,lp(-1,shortScreen?18:44));}
+  else{addGap(section,10);section.addView(librarySearch,new LinearLayout.LayoutParams(0,d(controlHeight),1));addGap(section,8);section.addView(libraryFilter,lp(220,controlHeight));addGap(section,8);section.addView(collections,lp(shortScreen?74:116,controlHeight));addGap(section,8);section.addView(importButton,lp(shortScreen?104:151,shortScreen?16:40));libraryPanel.addView(section,lp(-1,shortScreen?18:44));}
   libraryResult=text("",shortScreen?8:12,muted,false);libraryPanel.addView(libraryResult,lp(-1,shortScreen?9:26));
   librarySearch.addTextChangedListener(new android.text.TextWatcher(){
    public void beforeTextChanged(CharSequence t,int start,int count,int after){}
