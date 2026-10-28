@@ -298,7 +298,7 @@ def exercise(title,slug):
     before=log_count("POC_OSMD_READY {")
     # Open through the explicit study action, rather than relying on a
     # noninteractive title label to bubble a touch to its parent card.
-    tap_text(["Estudar"],scroll=True)
+    tap_text(["▶  Estudar"],exact=True,scroll=True)
     try:
         wait_new("POC_OSMD_READY {",before)
     except AssertionError as exc:
