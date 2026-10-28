@@ -186,7 +186,7 @@ def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pas
                 adb("shell", "input", "tap", str(x),str(y))
                 print("Tapped",match,flush=True)
                 return (str(x),str(y)) if return_point else match
-    if scroll and _scroll_pass<5:
+    if scroll and _scroll_pass<10:
         scroll_nodes=[node for node in root.iter("node") if node.attrib.get("scrollable")=="true"]
         # Study controls use a horizontal scroller; prioritize it so off-screen
         # hand choices remain testable after adding the renderer selectors.
@@ -202,11 +202,11 @@ def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pas
                         adb("shell","input","swipe",str(box[2]-12),y,str(box[0]+12),y,"400")
                 else:
                     x=str((box[0]+box[2])//2)
-                    # The target may be above or below the current viewport.
-                    # Alternate scroll directions so controls in a fixed top
-                    # library row remain reachable after returning from imports.
+                    # Search toward the bottom first, then reverse and search
+                    # toward the top. This handles toolbar controls after a file
+                    # picker returns with the library list at its last row.
                     start_y,end_y=(box[3]-15,box[1]+15)
-                    if _scroll_pass%2:
+                    if _scroll_pass>=5:
                         start_y,end_y=end_y,start_y
                     adb("shell","input","swipe",x,str(start_y),x,str(end_y),"400")
                 return tap_text(targets,return_point,exact,True,_scroll_pass+1)
