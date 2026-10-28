@@ -117,6 +117,13 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
             tap_text(["← Biblioteca"],exact=True)
             time.sleep(.35)
             last=labels()
+            # Returning from Study lands on the home preview; its catalog
+            # counter appears after activating the real Library navigation.
+            if (any("Começar pela Ode à Alegria" in value for value in last)
+                    and not any("← Biblioteca" in value for value in last)):
+                tap_text(["Biblioteca Musical"],exact=True)
+                time.sleep(.35)
+                last=labels()
         if (any("BIBLIOTECA MUSICAL" in value for value in last)
                 or any("Buscar título" in value for value in last)
                 or any(title in value for title in titles for value in last)):
