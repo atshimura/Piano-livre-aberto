@@ -40,7 +40,7 @@ def home_responsive_screenshots():
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","pm","clear","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
-    time.sleep(1.5);assert_running()
+    time.sleep(1.5);assert_running();wait_for_text("Bem-vindo ao",timeout=20);time.sleep(.6)
     screenshot("piano-home-phone.png")
     phone=dump()
     assert any("Bem-vindo ao" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width home lost the welcome banner"
@@ -51,7 +51,7 @@ def home_responsive_screenshots():
     adb("shell", "wm", "density", "240")
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
-    time.sleep(1.5);assert_running()
+    time.sleep(1.5);assert_running();wait_for_text("Bem-vindo ao",timeout=20);time.sleep(.6)
     screenshot("piano-home-tablet.png")
     tablet=dump()
     assert any("Biblioteca Musical" in n.attrib.get("text","") for n in tablet.iter("node")), "Tablet-width home lost the library"
@@ -138,6 +138,12 @@ def assert_collection_filter_option(name, present=True):
     adb("shell","input","keyevent","4")
     if found!=present:
         raise AssertionError("Collection filter option presence mismatch for "+repr(target)+"; options="+repr(labels))
+
+def return_to_library_if_study_was_restored():
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    if not any("Todas as categorias" in value for value in labels):
+        tap_text(["← Biblioteca"],exact=True)
+        wait_for_text("Todas as categorias")
 
 def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pass=0):
     root=dump()
@@ -260,12 +266,12 @@ if __name__=="__main__":
     dismiss_keyboard();tap_text(["Salvar"],exact=True);assert_collection_filter_option("Colecao_Renomeada")
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
-    time.sleep(1.5);assert_running();assert_collection_filter_option("Colecao_Renomeada")
+    time.sleep(1.5);assert_running();return_to_library_if_study_was_restored();assert_collection_filter_option("Colecao_Renomeada")
     tap_text(["Coleções"],scroll=True);tap_text(["Excluir coleção"],exact=True);tap_text(["Colecao_Renomeada"],exact=True);tap_text(["Excluir"],exact=True)
     assert_collection_filter_option("Colecao_Renomeada",present=False)
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
-    time.sleep(1.5);assert_running();assert_collection_filter_option("Colecao_Renomeada",present=False)
+    time.sleep(1.5);assert_running();return_to_library_if_study_was_restored();assert_collection_filter_option("Colecao_Renomeada",present=False)
     tap_text(["Favoritar Ode à Alegria"],scroll=True);tap_text(["Remover favorito Ode à Alegria"],scroll=True)
     print("PASS: import entry, collections, and favorite controls",flush=True)
     home_scroll_to_top()
