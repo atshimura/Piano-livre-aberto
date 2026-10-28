@@ -357,7 +357,8 @@ if __name__=="__main__":
     assert not any("Perfil_Teste" in t for t in after_delete), "Deleted profile remains selected"
     if not any("Biblioteca Musical" in t for t in after_delete):tap_text(["Biblioteca"])
     print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
-    for _ in range(3):adb("shell","input","swipe","500","500","500","120","400")
+    home_scroll_to_top()
+    wait_for_text("Buscar título ou arquivo")
     fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
     assert fields, "Library search input missing"
     box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
