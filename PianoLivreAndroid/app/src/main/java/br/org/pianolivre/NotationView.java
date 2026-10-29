@@ -38,6 +38,8 @@ public final class NotationView extends WebView {
  // OSMD is normal; failures automatically try temporal, then native schematic.
  private boolean engravingProof=true;
  private boolean rendererFailed=false;
+ private boolean loadDispatched=false;
+ private long scoreGeneration=0;
  private int studyHand=0;
  private final int originalLayerType;
  public NotationView(Context c,Listener listener){
@@ -94,7 +96,7 @@ public final class NotationView extends WebView {
    @JavascriptInterface public void onStudyTap(){post(()->{if(!disposed&&!freeLayout)callback.onStudyTap();});}
    @JavascriptInterface public void onError(String error){post(()->{
     if(disposed)return;
-    scoreRendered=false;
+    scoreRendered=false;loadDispatched=false;scoreGeneration++;
     if(!freeLayout&&engravingProof){
      engravingProof=false;lastBeat=Double.NaN;
      setLayerType(originalLayerType,null);
@@ -117,6 +119,7 @@ public final class NotationView extends WebView {
   loadScore(score,position,false);
  }
  public void loadScore(Score score,double position,boolean traditional){
+  scoreGeneration++;loadDispatched=false;
   rendererFailed=false;freeLayout=traditional;engravingProof=!traditional;
   if(!traditional&&getContext() instanceof MainActivity){
    MainActivity activity=(MainActivity)getContext();
@@ -134,6 +137,24 @@ public final class NotationView extends WebView {
   if(htmlReady)sendScore();
  }
  private void sendScore(){
+  if(disposed||pendingScore==null||loadDispatched||getWidth()<=0||getHeight()<=0)return;
+  final long generation=scoreGeneration;loadDispatched=true;
+  // A newly shown Study view can receive HTML-ready before Android lays it out.
+  // Rendering into a zero-sized viewport produces an invalid initial note map.
+  evaluateJavascript("(function(){var v=document.getElementById('viewport');return !!(v&&v.clientWidth>0&&v.clientHeight>0)})()",ready->{
+   if(disposed||generation!=scoreGeneration)return;
+   if(!"true".equals(ready)){
+    loadDispatched=false;postOnAnimation(()->sendScore());return;
+   }
+   dispatchScore();
+  });
+ }
+ @Override protected void onSizeChanged(int width,int height,int oldWidth,int oldHeight){
+  super.onSizeChanged(width,height,oldWidth,oldHeight);
+  if(width>0&&height>0&&htmlReady&&pendingScore!=null&&!scoreRendered&&!rendererFailed)
+   postOnAnimation(()->sendScore());
+ }
+ private void dispatchScore(){
   if(disposed||pendingScore==null)return;
   String xml=pendingScore.sourceXml;
   if(xml==null||xml.isEmpty()){callback.onError("A partitura não contém MusicXML");return;}
