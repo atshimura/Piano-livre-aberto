@@ -98,7 +98,13 @@ final class MidiInterfaceSelfTest {
  }
  private void awaitAck(int index){
   try{
-   if(ack.isFile()&&new String(Files.readAllBytes(ack.toPath()),StandardCharsets.UTF_8).trim().equals(STAGES[index])){
+   String response=ack.isFile()?new String(Files.readAllBytes(ack.toPath()),StandardCharsets.UTF_8).trim():"";
+   if(response.equals("frame-"+STAGES[index])){
+    ack.delete();
+    a.screens.notation.postVisualStateCallback(index,new android.webkit.WebView.VisualStateCallback(){
+     @Override public void onComplete(long requestId){Log.i("PianoLivreMIDI","PROMPT03_FRAME_READY "+STAGES[index]);}
+    });
+   }else if(response.equals(STAGES[index])){
     ack.delete();
     // Let the old output-test deadline pass before verifying isolation.
     if(index==8)a.handler.postDelayed(()->stage(index+1),650);else stage(index+1);

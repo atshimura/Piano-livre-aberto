@@ -40,6 +40,7 @@ public final class NotationView extends WebView {
  private boolean rendererFailed=false;
  private boolean loadDispatched=false;
  private long scoreGeneration=0;
+ private long resizeSequence=0;
  private int studyHand=0;
  private final int originalLayerType;
  public NotationView(Context c,Listener listener){
@@ -244,8 +245,17 @@ public final class NotationView extends WebView {
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)evaluateJavascript("PianoNotation.waitCancel()",null);
  }
  public void resizeToFit(){
-  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
-   evaluateJavascript("PianoNotation.resize()",null);
+  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)resizeWhenViewportReady(++resizeSequence,scoreGeneration,0);
+ }
+ private void resizeWhenViewportReady(long sequence,long generation,int attempt){
+  if(disposed||sequence!=resizeSequence||generation!=scoreGeneration||!scoreRendered||getWidth()<=0||getHeight()<=0)return;
+  float density=getResources().getDisplayMetrics().density;
+  String check="(function(){var v=document.getElementById('viewport');return !!(v&&Math.abs(v.clientWidth-"+(getWidth()/density)+")<2&&Math.abs(v.clientHeight-"+(getHeight()/density)+")<2)})()";
+  evaluateJavascript(check,ready->{
+   if(disposed||sequence!=resizeSequence||generation!=scoreGeneration||!scoreRendered)return;
+   if("true".equals(ready))evaluateJavascript("PianoNotation.resize()",null);
+   else if(attempt<8)postOnAnimation(()->resizeWhenViewportReady(sequence,generation,attempt+1));
+  });
  }
  public void setLoopEdit(boolean enabled){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)

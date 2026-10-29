@@ -40,6 +40,8 @@ Notas enviadas pelo aplicativo são acompanhadas por canal/altura. Parada e ence
 
 O ensaio de gerenciamento revelou uma perda de 36 px após fechar o diálogo MIDI no Android API 29: a barra de status do sistema reaparecia. A Activity reaplica seu modo de tela cheia ao recuperar foco, e `NotationView` ajusta a partitura às novas dimensões nativas. A verificação aguarda a aplicação dos insets, mantendo as mesmas alturas mínimas do Prompt 2; não reduz o critério para aceitar o defeito.
 
+A inspeção dos PNGs também encontrou captura durante o resize, com parte da pauta ainda sem pintura. `NotationView` agora só solicita o ajuste quando a viewport CSS corresponde às dimensões nativas, protegendo a requisição por sequência/geração. O ensaio espera a geometria SVG atual e a confirmação `WebView.postVisualStateCallback` antes de capturar, sem pausar o transporte. Guarda essas medidas no JSON dos estados; o sucesso da CI sem inspeção visual não foi usado para encerrar a revisão anterior.
+
 Nenhuma alteração em parser MusicXML, `WaitRecognizer`, calibração de acordes, seleção de mãos por pauta, renderizadores ou agenda `MidiPlayback`. Extras continuam indicadas sem bloquear; duração e pedal orientam, sem prazo novo. Dados, esquema de backup, perfis e arquivos originais não são migrados ou reescritos. Preferência antiga do guia continua preservada sem devolver o guia ao Estudar.
 
 ## Testes e evidências

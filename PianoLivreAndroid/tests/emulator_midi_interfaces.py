@@ -17,6 +17,25 @@ def wait_stage(stage):
         if records and records[-1]['stage']==stage:return records[-1]
         time.sleep(.25)
     raise AssertionError('MIDI stage missing: '+stage)
+def acknowledge(value):
+    adb('shell','run-as',PACKAGE,'sh','-c',"'echo "+value+" > cache/prompt03-next'")
+def rendered_frame(stage,record):
+    layout=current_study_layout();height=layout['bounds'][3]-layout['bounds'][1]
+    for attempt in range(60):
+        rows=[line for line in logs().splitlines() if 'POC_SVG_FIT {' in line]
+        if rows:
+            fit=json.loads(rows[-1].split('POC_SVG_FIT ',1)[1].split(' @',1)[0])
+            if abs(fit['viewportHeight']-height/layout['density'])<2:break
+        time.sleep(.1)
+    else:raise AssertionError('Rendered score did not reach the native viewport: '+stage)
+    assert fit['viewportMaxScrollTop']==0 and fit['verticalOverflow']==0
+    assert abs(fit['scale']-fit['availableHeight']/fit['rawHeight'])<.002
+    acknowledge('frame-'+stage)
+    for attempt in range(60):
+        if 'PROMPT03_FRAME_READY '+stage in logs():break
+        time.sleep(.1)
+    else:raise AssertionError('WebView did not commit its visual state: '+stage)
+    record.update(heightPx=height,heightDp=height/layout['density'],geometry=fit,transportBounds=layout['transportBounds'])
 try:
     for label,size,normal,hidden in [('phone','1280x720',417,567),('tablet','1920x1080',777,927)]:
         adb('shell','am','force-stop',PACKAGE);adb('shell','wm','size',size);adb('shell','wm','density','240')
@@ -42,6 +61,7 @@ try:
             if not record['running']:
                 tree=dump();buttons=[n for n in tree.iter('node') if n.attrib.get('content-desc','').startswith('Gerenciar')]
                 assert buttons and any(n.attrib.get('clickable')=='true' for n in buttons),'MIDI button inaccessible'
+            if stage.startswith('study-'):rendered_frame(stage,record)
             screenshot('piano-prompt03-'+label+'-'+stage+'.png');measurements.append(record)
             if stage=='study-hidden':reveal_study_controls()
             if stage=='study-connected':
@@ -51,7 +71,7 @@ try:
                 tree=dump();texts=[n.attrib.get('text','') for n in tree.iter('node')]
                 assert any(record['label'] in value for value in texts),'Full instrument name missing in diagnostics'
                 screenshot('piano-prompt03-'+label+'-diagnostics.png');adb('shell','input','keyevent','4')
-            adb('shell','run-as',PACKAGE,'sh','-c',"'echo "+stage+" > cache/prompt03-next'")
+            acknowledge(stage)
         for attempt in range(40):
             if 'MIDI_INTERFACE_SELFTEST_PASS' in logs():break
             time.sleep(.25)
