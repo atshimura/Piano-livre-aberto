@@ -119,6 +119,7 @@ def assert_study_controls():
 def responsive_evidence(name):
     """Measure real normal/playing/revealed WebView bounds and uniform staff fit."""
     result=[]
+    normal_transport=None
     tap_text(["Parar"]);tap_text(["Contínuo"],exact=True,scroll=True);tap_text(["Início"])
     root=dump();slider=next(n for n in root.iter("node") if n.attrib.get("class")=="android.widget.SeekBar")
     box=[int(v) for v in re.findall(r"\d+",slider.attrib["bounds"])]
@@ -134,12 +135,15 @@ def responsive_evidence(name):
             assert layout and layout["headerVisible"]==(state=="restored") and layout["modesVisible"]==(state=="restored"),"Chrome hide/reveal failed"
             box=layout["bounds"]
             assert layout["transportBounds"][3]>layout["transportBounds"][1],"Permanent transport lost"
+            assert layout["transportBounds"]==normal_transport,"Transport moved during chrome transition"
+            assert box[3]==layout["transportBounds"][1],"Score overlaps the permanent transport"
         else:
             root=dump();labels=[n.attrib.get("text","") for n in root.iter("node")]
             assert "Espera" in labels,"Chrome reveal failed"
             assert any("Parar" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in root.iter("node")),"Permanent transport lost"
             view=next(n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView")
             box=[int(v) for v in re.findall(r"\d+",view.attrib["bounds"])]
+            normal_transport=current_study_layout()["transportBounds"]
         height=box[3]-box[1]
         density=int(re.findall(r"(?:Override|Physical) density: (\d+)",adb("shell","wm","density"))[-1])/160
         geometry=None

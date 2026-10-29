@@ -432,7 +432,7 @@ class PianoScreens {
   if(notation!=null&&(a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0)
    notation.addOnLayoutChangeListener(new View.OnLayoutChangeListener(){
     public void onLayoutChange(View v,int l,int t,int r,int b,int oldL,int oldT,int oldR,int oldB){
-     v.removeOnLayoutChangeListener(this);recordStudyLayout();
+     v.removeOnLayoutChangeListener(this);v.post(()->recordStudyLayout());
     }
    });
   header.setVisibility(visibility);studyControlsBar.setVisibility(visibility);
