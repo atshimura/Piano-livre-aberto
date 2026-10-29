@@ -5,9 +5,9 @@
 
 **Prompt 1 concluído:** PR #71 — https://github.com/atshimura/Piano-livre-aberto/pull/71
 
-**Referência visual obrigatória:** [tela Estudar aprovada](../references/tela-estudar-aprovada.webp)
+**Referência visual obrigatória:** [tela Estudar aprovada](../references/tela-estudar-aprovada.png) (o arquivo deve existir e corresponder à imagem efetivamente aprovada antes de implementar)
 
-**Arquivo da imagem:** docs/references/tela-estudar-aprovada.webp
+**Arquivo da imagem:** docs/references/tela-estudar-aprovada.png
 
 **Este arquivo:** docs/prompts/PROMPT_02_TELA_ESTUDAR_PIANO_LIVRE.md
 
@@ -18,7 +18,7 @@
 1. Ler AGENTS.md, README.md, docs/00-INDICE.md, docs/01-VISAO-E-REQUISITOS.md, docs/02-ARQUITETURA.md, docs/03-NOTACAO-TEMPO.md, docs/04-MIDI-ESTUDO.md, docs/05-DADOS-BACKUP.md, docs/06-BUILD-TESTES.md, docs/07-ESTADO-E-ROADMAP.md, docs/08-DECISOES.md, docs/10-CONTINUIDADE.md e demais documentos relevantes.
 2. Ler o Prompt 1 e a documentação de sua entrega: docs/prompts/PROMPT_01_TELA_INICIAL_PIANO_LIVRE.md e docs/70-TELA-INICIAL-PROMPT-01.md.
 3. Inspecionar a tela Estudar, seus estados e a integração entre PianoScreens.java, MainActivity.java, renderização, janela da partitura, USB-MIDI, controles de reprodução, perfis e preferências. Identificar dependências compartilhadas com Laboratório e Partitura Livre.
-4. Abrir e **inspecionar visualmente a imagem obrigatória** em docs/references/tela-estudar-aprovada.webp. Não usar apenas seu nome ou a descrição. Ela tem 3 apresentações: tela normal, durante execução e após toque para revelar controles.
+4. Verificar se o arquivo da imagem aprovada realmente existe no repositório; se estiver ausente, incorporar o PNG original fornecido junto com a instrução de execução antes de qualquer alteração de interface. Abrir e **inspecionar visualmente a imagem obrigatória** em docs/references/tela-estudar-aprovada.png. Não usar apenas seu nome ou a descrição. Ela tem 3 apresentações: tela normal, durante execução e após toque para revelar controles.
 5. Verificar HEADs/PRs atuais e o status dos testes, sem assumir que dados anteriores estejam atualizados.
 
 O Prompt 1 foi concluído tecnicamente no PR #71, branch feat/tela-inicial-piano-livre, SHA 32b83a3b6d37a831900de4bafd5ec8cbd406d0d8. Como esse PR ainda não havia sido integrado à main na preparação deste documento, **basear o Prompt 2 na branch que contém o Prompt 1**, inclusive esta documentação e imagem. Caso o Prompt 1 já tenha sido integrado, atualizar a base cuidadosamente, sem duplicar commits. Criar branch de implementação feat/tela-estudar-piano-livre. Abrir PR dependente, preferencialmente dirigido à branch do Prompt 1 até seu merge; após integração, rebase/retarget sem perda de alterações nem force-push.
@@ -139,7 +139,7 @@ Separar explicitamente testes automatizados de aceite físico pendente no Yamaha
 
 - Criar docs/71-TELA-ESTUDAR-PROMPT-02.md com decisões, estruturas, diferenças de layout, fluxos, medições, testes, screenshots, limites, riscos e próximos passos.
 - Atualizar docs/00-INDICE.md, docs/07-ESTADO-E-ROADMAP.md, docs/08-DECISOES.md, histórico e versão conforme regras do projeto, sem publicar versão oficial.
-- Preservar e referenciar **esta imagem obrigatória**, já versionada em docs/references/tela-estudar-aprovada.webp.
+- Preservar e referenciar **esta imagem obrigatória**, a ser preservada no repositório em docs/references/tela-estudar-aprovada.png.
 - Abrir PR de implementação com dependência clara do PR #71 e anexar links dos dois workflows, APK de validação, comparações visuais e plano de continuidade.
 - Não integrar em main, não publicar Release e não começar o Prompt 3 sem primeiro encerrar a implementação e a validação previstas neste Prompt 2.
 - Não declarar concluído o que não for efetivamente demonstrado. Em caso de impedimento, registrar causa exata, trabalhos feitos e próxima ação.
