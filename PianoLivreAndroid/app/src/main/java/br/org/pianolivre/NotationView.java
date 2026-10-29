@@ -137,29 +137,17 @@ public final class NotationView extends WebView {
   if(htmlReady)sendScore();
  }
  private void sendScore(){
-  if(disposed||pendingScore==null||loadDispatched||getWidth()<=0||getHeight()<=0||!renderHostVisible())return;
+  if(disposed||pendingScore==null||loadDispatched||getWidth()<=0||getHeight()<=0)return;
   final long generation=scoreGeneration;loadDispatched=true;
   // A newly shown Study view can receive HTML-ready before Android lays it out.
   // Rendering into a zero-sized viewport produces an invalid initial note map.
   evaluateJavascript("(function(){var v=document.getElementById('viewport');return !!(v&&v.clientWidth>0&&v.clientHeight>0)})()",ready->{
    if(disposed||generation!=scoreGeneration)return;
-   if(!renderHostVisible()){loadDispatched=false;return;}
    if(!"true".equals(ready)){
     loadDispatched=false;postOnAnimation(()->sendScore());return;
    }
    dispatchScore();
   });
- }
- private boolean renderHostVisible(){
-  if(!isAttachedToWindow()||getWindowVisibility()!=View.VISIBLE)return false;
-  // This WebView itself is intentionally INVISIBLE until the first render.
-  for(android.view.ViewParent parent=getParent();parent instanceof View;parent=parent.getParent())
-   if(((View)parent).getVisibility()!=View.VISIBLE)return false;
-  return true;
- }
- @Override public void onResume(){
-  super.onResume();
-  if(htmlReady&&pendingScore!=null&&!scoreRendered&&!rendererFailed)postOnAnimation(()->sendScore());
  }
  @Override protected void onSizeChanged(int width,int height,int oldWidth,int oldHeight){
   super.onSizeChanged(width,height,oldWidth,oldHeight);
@@ -254,7 +242,6 @@ public final class NotationView extends WebView {
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)evaluateJavascript("PianoNotation.waitCancel()",null);
  }
  public void resizeToFit(){
-  if(!disposed&&htmlReady&&!scoreRendered&&!rendererFailed){sendScore();return;}
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
    evaluateJavascript("PianoNotation.resize()",null);
  }
