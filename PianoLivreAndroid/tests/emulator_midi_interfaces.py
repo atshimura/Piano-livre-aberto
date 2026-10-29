@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Production connection owner + synthetic ports, real Android screens and captures."""
-import json,time
+import json,time,subprocess
 from pathlib import Path
 from emulator_ui import adb,screenshot,dump,reveal_study_controls,current_study_layout
 PACKAGE='br.org.pianolivre.opensource'
 stages=['home-disconnected','home-opening','home-connected','study-connected','study-hidden','study-restored','study-disconnected','study-unnamed','study-switched','home-reconnected','home-background-return']
 reports=[]
 def logs():
-    pid=adb('shell','pidof',PACKAGE).strip()
+    try:pid=adb('shell','pidof',PACKAGE).strip()
+    except subprocess.CalledProcessError as error:
+        if error.returncode==1:return '' # Cold start may not have a PID yet; wait_stage remains bounded.
+        raise
     return adb('logcat','-d','--pid='+pid,'-v','brief')
 def wait_stage(stage):
     for attempt in range(160):
@@ -80,7 +83,7 @@ try:
         reports.append(dict(viewport=size,simulated=True,states=measurements))
 except BaseException:
     screenshot('piano-prompt03-failure.png')
-    Path('piano-prompt03-failure.log').write_text(logs(),encoding='utf-8')
+    Path('piano-prompt03-failure.log').write_text(adb('logcat','-d','-v','brief'),encoding='utf-8')
     raise
 finally:
     adb('shell','am','force-stop',PACKAGE);adb('shell','wm','size','reset');adb('shell','wm','density','reset')
