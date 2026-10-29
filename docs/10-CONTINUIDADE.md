@@ -1,5 +1,9 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Prompt 4 — registro vigente
+
+O usuário autorizou integração e publicação beta. Leia [73 — consolidação/publicação](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md) e confira seu registro final no PR consolidado/Release antes de agir. Alvo 0.9.52-open-beta (61), pacote aberto e assinatura permanente existente. Não publicar 0.9.51 nem alterar Secrets/proteção. Validar ancestralidade dos quatro PRs, runs do SHA de main, upgrade público e assets efetivamente baixados; não reutilizar evidências de PR como prova de main. O próprio SHA/checksum fica no registro externo vinculado, evitando commit recursivo posterior ao APK. As restrições de publicação abaixo são históricas. Hardware e V1 permanecem pendentes; próximas alterações exigem branch/PR e checks próprios.
+
 ## Prompt 3 — consolidação MIDI e interfaces (29/10/2026)
 
 Branch `feat/consolidacao-midi-interface-piano-livre`, dependente do PR #73 e de sua HEAD final `2739bb2`. Leia [72](72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md) e a especificação fornecida. O registro final do PR contém HEAD, checks e artefatos dessa revisão; não substitua por runs dos Prompts 1/2. Conexão compartilhada agora exige portas funcionais e gerações válidas; desconexão pausa sem apagar estado, e retorno do background reconcilia inventário. Layouts e `StudyChromeState` preservados. Versão 0.9.52-open-beta (61). Não integrar à main, publicar Release nem iniciar Prompt 4 nesta entrega. Hardware/V1 continuam pendentes. As seções seguintes preservam o histórico anterior.

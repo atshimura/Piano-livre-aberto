@@ -1,5 +1,11 @@
 # 07 — Estado atual e prioridades da linha aberta
 
+## Prompt 4 — consolidação 0.9.52-open-beta (61)
+
+Integração sequencial de #71/#72, seguida de PR consolidado contendo integralmente #73/#74 por ancestralidade, sem publicar 0.9.51. [Registro vigente e protocolo de fechamento](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md), com links para o registro efetivo do SHA, checks, assinatura e APK oficial. A publicação exige build/emulador do merge final, certificado permanente e upgrade público. Não basta CI de PR. Os estados “sem merge/Release” abaixo pertencem ao histórico dos Prompts 1–3. Próxima etapa após beta: aceite físico Realme/Lenovo/Yamaha, correções em PR e critérios restantes de V1.
+
+Histórico de versões do ciclo: 0.9.50 (59), base pública e Inicial; 0.9.51 (60), validação de Estudar em PR, sem publicação intermediária; 0.9.52 (61), consolidação Inicial/Estudar/MIDI para distribuição permanente. Referências originais e dados preservados.
+
 ## Consolidação MIDI — Prompt 3 em revisão
 
 Branch `feat/consolidacao-midi-interface-piano-livre`, base Prompt 2 `2739bb2`: `MidiConnection` centraliza os estados e recursos reais de conexão para Inicial/Estudar, rejeita callbacks de gerações antigas e exige portas funcionais. Desconexão/troca pausa sem rebobinar; saída encerra notas/pedal; foreground reconcilia inventário e descarta lotes/fragmentos antigos. `StudyChromeState` e layouts preservados. Versão 0.9.52-open-beta (61). [Documento 72](72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md) e registro final do PR distinguem resultados por HEAD, evidência sintética e hardware pendente. Sem merge/Release; Prompt 4 é a próxima etapa separada, após validação técnica deste prompt. Os blocos anteriores abaixo permanecem como histórico das entregas.

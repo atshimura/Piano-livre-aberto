@@ -1,5 +1,8 @@
 # Documentação do Piano Livre aberto
 
+- [73 — Consolidação, integração e publicação, Prompt 4](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md): precedência sobre os estados históricos de PR aberto abaixo; versão 0.9.52, gates finais, assinatura, APK e aceite físico pendente.
+- [Notas da 0.9.52-open-beta](releases/0.9.52-open-beta.md).
+
 **Esta documentação trata do repositório público.** O código provém de um desenvolvimento prévio privado, mas não depende do histórico ou de arquivos restritos para compilar.
 
 ## Entregas em preparação

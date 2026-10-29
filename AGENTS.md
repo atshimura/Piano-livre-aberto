@@ -3,6 +3,7 @@
 Este repositório é a **base principal de desenvolvimento** do Piano Livre. Leia este arquivo antes de alterar código. Trabalhe em português do Brasil; preserve a GPL-3.0-only do código próprio e as licenças de terceiros.
 
 ## Estado e identidade
+- Prompt 4 autoriza consolidar os PRs #71–#74 e publicar 0.9.52-open-beta (61), preservando proteção da main e assinatura permanente; evitar Release intermediária 0.9.51. Consultar `docs/73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md` e seu registro final vinculado. Restrições de merge/publicação nas entregas anteriores são históricas; próximas versões continuam em branch/PR e exigem seus próprios checks.
 - Repositório de trabalho: `atshimura/Piano-livre-aberto`; branch estável `main`. Verifique a HEAD, a versão em `PianoLivreAndroid/gradle.properties` e os Actions em cada intervenção.
 - O repositório histórico `atshimura/piano-livre` **continua privado**, e não deve ser usado para novos PRs públicos, testes públicos, materiais de assinatura ou downloads pelos Actions.
 - O pacote debug aberto é `br.org.pianolivre.opensource`, separado de `br.org.pianolivre` histórico. Não existe atualização in-place entre os pacotes. Backup/restauração manual é a via prevista para dados do usuário, **após validação**.

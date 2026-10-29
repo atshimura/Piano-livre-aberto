@@ -1,5 +1,7 @@
 # Piano Livre — Android, código aberto
 
+Consolidação **0.9.52-open-beta (61)**: nova Inicial, Estudar e conexão MIDI compartilhada. [Registro da integração, validação e publicação](docs/73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md) · [Pré-release oficial](https://github.com/atshimura/Piano-livre-aberto/releases/tag/v0.9.52-open-beta) · [Baixar APK](https://github.com/atshimura/Piano-livre-aberto/releases/download/v0.9.52-open-beta/PianoLivre-0.9.52-open-beta.apk). A disponibilidade e os resultados efetivos são registrados na Release após os checks do merge; não usar artefatos de PR para atualizar a beta pública.
+
 Aplicativo experimental de estudo de piano com leitura MusicXML, importação MIDI aproximada, USB-MIDI, modo Espera e demonstração MIDI. Na implementação do Prompt 2, a tela Estudar prioriza a pauta, com controles responsivos e sem teclado guia. Desenvolvido em Java/Android e JavaScript. **O código aberto não é uma versão V1 concluída.** Consulte [a entrega e seus limites](docs/71-TELA-ESTUDAR-PROMPT-02.md).
 
 ## Onde o desenvolvimento acontece

@@ -2,6 +2,10 @@
 
 # 08 — Registro de decisões de produto e arquitetura (ADRs)
 
+## D-019 — Integração e beta consolidadas, Prompt 4 (29/10/2026)
+
+**Aprovado explicitamente pelo usuário:** integrar Inicial (#71), referência (#72) e consolidar Estudar/MIDI (#73/#74) em uma única versão final 0.9.52 (61), evitando publicação intermediária 0.9.51. Preservar proteção, commits, referências, dados e assinatura existente. Distribuir somente APK release de main após checks exatos e conferência da assinatura permanente, pelo publicador existente. Aceite físico pendente não impede beta sem falha crítica conhecida; V1 continua aberta. [Registro operacional e evidências](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md). Nenhuma decisão musical anterior foi alterada.
+
 **Objetivo:** manter a intenção do usuário disponível sem acesso à conversa original. **Decisões de produto** não devem ser alteradas silenciosamente por conveniência técnica. Este registro combina escolhas aprovadas com decisões técnicas do código, identificando claramente o tipo e o status.
 
 ## D-001 — Aplicativo independente, baseado em formatos abertos
