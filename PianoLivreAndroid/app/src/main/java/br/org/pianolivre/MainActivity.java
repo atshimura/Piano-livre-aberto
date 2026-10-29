@@ -989,6 +989,11 @@ public class MainActivity extends Activity {
   if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.showHome();return;}
   super.onBackPressed();
  }
+ @Override public void onWindowFocusChanged(boolean hasFocus){
+  super.onWindowFocusChanged(hasFocus);
+  // Dialog windows may clear the Activity's fullscreen UI flag on API 29.
+  if(hasFocus)getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+ }
  @Override protected void onResume(){
   super.onResume();foreground=true;midiInputEpoch++;
   clearMidiObservation();

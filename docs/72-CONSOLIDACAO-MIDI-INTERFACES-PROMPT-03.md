@@ -38,6 +38,8 @@ Notas enviadas pelo aplicativo são acompanhadas por canal/altura. Parada e ence
 
 `StudyChromeState` foi preservado. Início efetivo recolhe cabeçalho e MODO/MÃOS; toque concluído revela até novo ciclo; pausa/parada/desconexão/background restaura. Transporte inferior permanece. Não há timer de ocultação. O toque de nota/trecho continua sendo tratado pelo renderizador existente; o observador de revelação não consome o gesto. As jornadas do Prompt 2 continuam exigidas.
 
+O ensaio de gerenciamento revelou uma perda de 36 px após fechar o diálogo MIDI no Android API 29: a barra de status do sistema reaparecia. A Activity reaplica seu modo de tela cheia ao recuperar foco, e `NotationView` ajusta a partitura às novas dimensões nativas. A verificação aguarda a aplicação dos insets, mantendo as mesmas alturas mínimas do Prompt 2; não reduz o critério para aceitar o defeito.
+
 Nenhuma alteração em parser MusicXML, `WaitRecognizer`, calibração de acordes, seleção de mãos por pauta, renderizadores ou agenda `MidiPlayback`. Extras continuam indicadas sem bloquear; duração e pedal orientam, sem prazo novo. Dados, esquema de backup, perfis e arquivos originais não são migrados ou reescritos. Preferência antiga do guia continua preservada sem devolver o guia ao Estudar.
 
 ## Testes e evidências

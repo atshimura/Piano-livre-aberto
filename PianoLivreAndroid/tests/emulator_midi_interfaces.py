@@ -27,7 +27,11 @@ try:
             assert record['simulated'] is True
             if stage=='study-restored':assert record['running'] and record['controlsVisible']
             if stage=='study-hidden':
-                layout=current_study_layout();assert not layout['headerVisible'] and not layout['modesVisible']
+                for attempt in range(40):
+                    layout=current_study_layout()
+                    if not layout['headerVisible'] and not layout['modesVisible'] and layout['bounds'][3]-layout['bounds'][1]>=hidden:break
+                    time.sleep(.1)
+                assert not layout['headerVisible'] and not layout['modesVisible']
                 assert layout['bounds'][3]-layout['bounds'][1]>=hidden,'Prompt 2 hidden score area regressed'
             elif stage.startswith('study-'):
                 layout=current_study_layout();assert layout['headerVisible'] and layout['modesVisible']
@@ -54,6 +58,10 @@ try:
         assert 'MIDI_INTERFACE_SELFTEST_PASS' in logs()
         Path('piano-prompt03-'+label+'.log').write_text(logs(),encoding='utf-8')
         reports.append(dict(viewport=size,simulated=True,states=measurements))
+except BaseException:
+    screenshot('piano-prompt03-failure.png')
+    Path('piano-prompt03-failure.log').write_text(logs(),encoding='utf-8')
+    raise
 finally:
     adb('shell','am','force-stop',PACKAGE);adb('shell','wm','size','reset');adb('shell','wm','density','reset')
 Path('piano-prompt03-midi-interfaces.json').write_text(json.dumps(reports,indent=2),encoding='utf-8')

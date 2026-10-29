@@ -384,6 +384,7 @@ class PianoScreens {
    }
   });
   notationArea.addView(notation,new FrameLayout.LayoutParams(-1,-1));
+  notation.addOnLayoutChangeListener((view,l,t,r,b,oldL,oldT,oldR,oldB)->view.post(()->recordStudyLayout()));
   waitFeedback=text("",12,0xff614105,true);
   waitFeedback.setBackground(bg(0xffffefc7,10,0xffefd9a1));
   waitFeedback.setPadding(d(12),d(6),d(12),d(6));
@@ -430,12 +431,6 @@ class PianoScreens {
   if(!isStudyOpen())return;
   int visibility=chrome.visible()?View.VISIBLE:View.GONE;
   if(header.getVisibility()==visibility&&studyControlsBar.getVisibility()==visibility){recordStudyLayout();return;}
-  if(notation!=null&&(a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0)
-   notation.addOnLayoutChangeListener(new View.OnLayoutChangeListener(){
-    public void onLayoutChange(View v,int l,int t,int r,int b,int oldL,int oldT,int oldR,int oldB){
-     v.removeOnLayoutChangeListener(this);v.post(()->recordStudyLayout());
-    }
-   });
   header.setVisibility(visibility);studyControlsBar.setVisibility(visibility);
   if(notation!=null)notation.post(()->notation.resizeToFit());
   android.util.Log.i("PianoLivreUI","STUDY_CHROME visible="+chrome.visible()+" beat="+a.position);

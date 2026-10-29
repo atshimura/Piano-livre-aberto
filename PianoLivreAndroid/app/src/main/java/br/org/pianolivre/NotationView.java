@@ -153,6 +153,8 @@ public final class NotationView extends WebView {
   super.onSizeChanged(width,height,oldWidth,oldHeight);
   if(width>0&&height>0&&htmlReady&&pendingScore!=null&&!scoreRendered&&!rendererFailed)
    postOnAnimation(()->sendScore());
+  else if(width>0&&height>0&&htmlReady&&scoreRendered&&!rendererFailed)
+   postOnAnimation(()->resizeToFit());
  }
  private void dispatchScore(){
   if(disposed||pendingScore==null)return;
