@@ -48,9 +48,11 @@ sys.excepthook=capture_emulator_failure
 def home_responsive_screenshots():
     # The production Activity is landscape-first. Exercise phone and tablet
     # landscape widths without changing the library or profile state.
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    # End the one-shot upgrade/self-test Activity before configuration changes.
+    # Its synthetic import has already been removed by the deletion regression.
     adb("shell", "wm", "size", "720x540")
     adb("shell", "wm", "density", "240")
-    adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","pm","clear","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
     time.sleep(1.5);assert_running();wait_for_text("Bem-vindo ao",timeout=20);time.sleep(.6)
