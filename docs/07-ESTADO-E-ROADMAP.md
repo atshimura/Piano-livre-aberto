@@ -1,8 +1,8 @@
 # 07 — Estado atual e prioridades da linha aberta
 
-## Tela Estudar — Prompt 2 em implementação e validação
+## Tela Estudar — entrega do Prompt 2 em PR dependente
 
-Branch `feat/tela-estudar-piano-livre`, baseada no Prompt 1 e na preparação documental do PR #72. Cabeçalho unificado, remoção do guia do Estudar, renderização automática, faixa MODO/MÃOS e transporte permanente. Três estados de apresentação comparados à imagem aprovada e medição de área em emulador fazem parte do aceite. Versão de validação `0.9.51-open-beta` (60). [Documento 71](71-TELA-ESTUDAR-PROMPT-02.md). Sem merge, Release ou início do Prompt 3; aceite físico e V1 continuam pendentes.
+Branch `feat/tela-estudar-piano-livre`, no [PR #73](https://github.com/atshimura/Piano-livre-aberto/pull/73), baseada no Prompt 1 e na preparação documental do PR #72. Cabeçalho unificado, remoção do guia do Estudar, renderização automática, faixa MODO/MÃOS e transporte permanente. Os três estados seguem a imagem aprovada; medições observaram +29 px de pauta no estado normal e +179 px com barras ocultas, nos viewports comparáveis de celular/tablet. Versão de validação `0.9.51-open-beta` (60). [Documento 71](71-TELA-ESTUDAR-PROMPT-02.md), com decisões, regressões e proveniência; SHA/checks e encerramento técnico no registro do PR #73. Próxima etapa após aceite técnico: Prompt 3 — consolidação dinâmica e USB-MIDI entre telas. Sem merge, Release ou início do Prompt 3 nesta entrega; aceite físico e V1 continuam pendentes.
 
 ## Implementado no código público
 

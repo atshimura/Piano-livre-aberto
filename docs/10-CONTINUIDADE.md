@@ -1,5 +1,9 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Prompt 2 — tela Estudar (29/10/2026)
+
+Trabalho no [PR #73](https://github.com/atshimura/Piano-livre-aberto/pull/73), branch `feat/tela-estudar-piano-livre`, dirigido à branch do Prompt 1/PR #71. O PR documental #72 contém o PNG original aprovado, conferido por hash e visualização. Consulte [71](71-TELA-ESTUDAR-PROMPT-02.md) para alterações, medições e proveniência; verifique sempre o HEAD e os checks atuais no PR. Não integrar à main, publicar Release ou iniciar Prompt 3 nesta entrega. A remoção do guia no Estudar supersede D-007 antiga, preservando MIDI, dados legados e componentes compartilhados. A V1 e os testes físicos continuam pendentes.
+
 ## B1 — continuidade operacional (23/10/2026)
 
 Trabalho ativo no [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51). A câmera usa amostragem contínua com envelope de tinta verificado e antecipa a entrada de símbolos, evitando saltos de célula. No Chromium 738×196, o maior salto entre beats adjacentes da Gymnopédie caiu de 6,94% para ~1,52%. O teste de 376 buscas registrou mediana 0,7 ms e p95 6,5 ms no executor Linux. O extremo beat 181 passou de ~4,85 para 5,10 CSS px, graças a um ajuste reversível de duas ligaduras longas a 60% da curvatura original; controles mais agressivos (40%) causaram colisão com cabeças de notas e foram descartados. MusicXML e MIDI permanecem intocados, e a geometria não é mantida se a inspeção constatar nova colisão.

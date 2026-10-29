@@ -2,6 +2,8 @@
 
 # 03 — Partitura, relógio visual e seleção de trechos
 
+**Atualização do Prompt 2 (29/10/2026):** o Estudar usa OSMD com fallback automático e não possui guia ou troca manual de renderizador. A ocultação de cabeçalho/MODO/MÃOS pertence ao estado de execução, com restauração por toque e transporte sempre presente. O resize preserva o SVG e a origem horizontal da partitura, ancorada no início da cronologia, para que voltar ao beat zero restaure os alvos gráficos anteriores. O beat continua sendo controlado exclusivamente por `MainActivity`. Os contratos antigos de abrir/fechar guia abaixo são históricos; [documento 71](71-TELA-ESTUDAR-PROMPT-02.md).
+
 > **Estado vigente 0.9.11:** o documento original iniciou no código 0.9.0 e preserva descrições históricas. Desde a 0.9.5, `Score.tempoChanges` e `advanceBeats` consideram mudanças internas de andamento; desde a 0.9.6, `PerformanceRoute` dirige repetições e casas suportadas; na 0.9.9 há até quatro vozes e vigas/quiálteras complexas; 0.9.10 acrescentou notas de graça e acidentes; **0.9.11 acrescentou bandeirolas/vigas próprias para grace**, sem mudar beat/MIDI. `saveSession()` já persiste **loop_start/loop_end**, embora a retomada integral continue sujeita a ensaio. Consultar [18](18-MOTOR-MUSICAL-0.9.5.md), [19](19-PERCURSO-MUSICAL-0.9.6.md), [22](22-POLIFONIA-QUIALTERAS-VIGAS-0.9.9.md), [24](24-AUDITORIA-NOTACAO-MIDI-ETAPAS-1-3.md) e [25](25-CONTINUIDADE-0.9.9-0.9.11.md). A fidelidade editorial completa segue **não validada**.
 
 ## 1. Dois modos de notação distintos
