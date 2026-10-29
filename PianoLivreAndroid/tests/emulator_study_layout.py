@@ -32,6 +32,22 @@ def hidden_note_tap():
         assert before[key]==after[key],('Reveal changed musical state',key,before,after)
     tap_text(['Parar'])
     return dict(before=before,after=after,note=taps[-1])
+
+def restored_note_tap(proof,label):
+    # Reuse the original graphical target: returning to the same beat/height
+    # must restore the same coordinate system, rather than accepting a new one.
+    target=proof['firstNoteViewport'];assert target
+    root=dump();view=next(n for n in root.iter('node') if n.attrib.get('class')=='android.webkit.WebView')
+    box=[int(v) for v in re.findall(r'\d+',view.attrib['bounds'])]
+    x=box[0]+round(target['x']*(box[2]-box[0])/proof['webviewWidth'])
+    y=box[1]+round(target['y']*(box[3]-box[1])/proof['viewportHeight'])
+    before=len(records('POC_NOTE_TAP '));adb('shell','input','tap',str(x),str(y));time.sleep(.25)
+    screenshot_name='piano-prompt02-note-restored-'+label+'.png'
+    from emulator_ui import screenshot
+    screenshot(screenshot_name)
+    taps=records('POC_NOTE_TAP ')
+    assert len(taps)>before and taps[-1]['mapped'] and taps[-1]['nativeMidi']==target['midiEstimate'] and taps[-1]['staff']==1,'Restored/rewound score changed the original note target'
+    return taps[-1]
 try:
     for label,size in [('phone','1280x720'),('tablet','1920x1080')]:
         adb('shell','am','force-stop',PACKAGE);adb('shell','wm','size',size);adb('shell','wm','density','240')
@@ -42,11 +58,13 @@ try:
         assert_study_controls()
         braces=records('POC_BRACE_FIT ')
         assert braces and braces[-1]['width']>0 and braces[-1]['left']>=3.5,'Grand-staff brace clipped at left edge'
+        proof=records('POC_OSMD_READY ')[-1]
         responsive_evidence('prompt02-'+label)
+        normal_tap=restored_note_tap(proof,label)
         before=json.loads(Path('piano-prompt02-before-'+label+'.json').read_text())
         after=json.loads(Path('piano-03d-prompt02-'+label+'.json').read_text())
         assert after[0]['heightPx']>before['heightPx'],'No measured gain over Prompt 1 in '+label
-        report.append(dict(viewport=size,before=before,after=after,gainNormalPx=after[0]['heightPx']-before['heightPx'],gainPlayingPx=after[1]['heightPx']-before['heightPx']))
+        report.append(dict(viewport=size,before=before,after=after,gainNormalPx=after[0]['heightPx']-before['heightPx'],gainPlayingPx=after[1]['heightPx']-before['heightPx'],restoredNoteTap=normal_tap))
         report[-1]['hiddenNoteTap']=hidden_note_tap()
         # The actual MIDI manager remains accessible, without pretending a USB device exists.
         tap_text(['USB-MIDI'],exact=True);time.sleep(.3);adb('shell','input','keyevent','4')
