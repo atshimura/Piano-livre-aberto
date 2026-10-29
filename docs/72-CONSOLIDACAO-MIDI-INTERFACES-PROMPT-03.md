@@ -1,6 +1,6 @@
 # Consolidação MIDI e interfaces — Prompt 3
 
-Branch `feat/consolidacao-midi-interface-piano-livre`, dependente da implementação final do Prompt 2: `2739bb2223cf7efa0a066ec7fc8380bdcde9430d`, [PR #73](https://github.com/atshimura/Piano-livre-aberto/pull/73). Preparação: PRs #71/#72/#73, referências [Inicial](references/tela-inicial-aprovada.png) e [Estudar](references/tela-estudar-aprovada.png) inspecionadas. [Especificação integral fornecida](prompts/PROMPT_03_CONSOLIDACAO_MIDI_INTERFACES_PIANO_LIVRE.md). Sem redesenho, merge à main, Release ou início do Prompt 4. Versão de validação: **0.9.52-open-beta (61)**.
+Branch `feat/consolidacao-midi-interface-piano-livre`, [PR #74](https://github.com/atshimura/Piano-livre-aberto/pull/74), dependente da implementação final do Prompt 2: `2739bb2223cf7efa0a066ec7fc8380bdcde9430d`, [PR #73](https://github.com/atshimura/Piano-livre-aberto/pull/73). Preparação: PRs #71/#72/#73, referências [Inicial](references/tela-inicial-aprovada.png) e [Estudar](references/tela-estudar-aprovada.png) inspecionadas. [Especificação integral fornecida](prompts/PROMPT_03_CONSOLIDACAO_MIDI_INTERFACES_PIANO_LIVRE.md). Sem redesenho, merge à main, Release ou início do Prompt 4. Versão de validação: **0.9.52-open-beta (61)**.
 
 ## Estado inicial e problemas encontrados
 
@@ -42,7 +42,7 @@ Nenhuma alteração em parser MusicXML, `WaitRecognizer`, calibração de acorde
 
 ## Testes e evidências
 
-O fechamento técnico é registrado na descrição e no comentário final do PR desta branch, com HEAD final, checkout temporário do Actions, runs, resultados, hashes, artefatos e expiração. Resultados de revisão anterior não validam mudança posterior. Essa forma permite registrar o próprio SHA final sem criar outro commit documental recursivo.
+O fechamento técnico é registrado na descrição e no comentário final do [PR #74](https://github.com/atshimura/Piano-livre-aberto/pull/74), com HEAD final, checkout temporário do Actions, runs, resultados, hashes, artefatos e expiração. Resultados de revisão anterior não validam mudança posterior. Essa forma permite registrar o próprio SHA final sem criar outro commit documental recursivo.
 
 - `MidiConnectionTest`: conexão real do coordenador com portas sintéticas; enumeração/abertura sem conexão presumida; nomes/metadata; entrada/saída isoladas; falhas de abertura/portas/envio/fechamento; remoção durante abertura, ID reutilizado, callbacks tardios/duplicados, destruição e 100 sessões sucessivas; bytes de Note Off/CC64/CC123. Primeira execução local: **226 verificações aprovadas**.
 - `MidiSessionSelfTest`: Activity/Handler/decoder reais, reconhecimento nas três mãos, extras/acordes, CCs por canal, geração anterior, lotes enfileirados e pacote parcial antes de background; novos ataques após retorno. Preferências sintéticas isoladas.

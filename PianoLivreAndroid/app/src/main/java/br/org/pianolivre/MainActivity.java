@@ -488,8 +488,9 @@ public class MainActivity extends Activity {
  void showMidiDiagnostics(){
   TextView body=new TextView(this);body.setTextSize(14);
   body.setPadding(24,20,24,20);midiDiagnosticText=body;refreshMidiDiagnostics();
+  ScrollView scroll=new ScrollView(this);scroll.addView(body,new ScrollView.LayoutParams(-1,-2));
   AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Diagnóstico USB-MIDI")
-   .setView(body).setPositiveButton("Testar saída: Dó4",(d,which)->testMidiOutput())
+   .setView(scroll).setPositiveButton("Testar saída: Dó4",(d,which)->testMidiOutput())
    .setNeutralButton("Escolher dispositivo",(d,which)->selectMidi())
    .setNegativeButton("Fechar",null).create();
   dialog.setOnDismissListener(d->midiDiagnosticText=null);
