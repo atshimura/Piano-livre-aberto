@@ -135,6 +135,8 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiConnection.java app/src/main/java/br/org/pianolivre/HomeMidiIndicator.java tests/MidiConnectionTest.java
           java -cp build/score-tests MidiConnectionTest
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiProtocol.java tests/MidiProtocolEpochTest.java
+          java -cp build/score-tests MidiProtocolEpochTest
       - name: Test Laboratory scale and arpeggio sequences (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicSequenceAnalyzer.java tests/MusicSequenceAnalyzerTest.java

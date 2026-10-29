@@ -74,9 +74,9 @@ final class MidiSessionSelfTest {
        current.send(new byte[]{80},0,1);
        a.handler.post(()->{
         check(a.receivedMessages==before+1&&a.downKeys.isEmpty()&&a.performance.soundingVoices()==0,"queued/partial pre-background MIDI cannot reappear after resume");
-        try{current.send(new byte[]{(byte)0x90,33,80},0,3);}catch(Exception error){throw new IllegalStateException(error);}
+        try{current.send(new byte[]{33,80},0,2);}catch(Exception error){throw new IllegalStateException(error);}
         a.handler.post(()->{
-         check(a.receivedMessages==before+2&&a.downKeys.contains(33),"fresh attack accepted after resume");
+         check(a.receivedMessages==before+2&&a.downKeys.contains(33),"fresh running-status attack accepted after resume without requiring a new status byte");
          a.disconnectMidi();a.position=start;a.stopPlayback();a.screens.showHome();a.setMidiStatus(previousDescription);
          Log.i("PianoLivreMIDI","MIDI_SESSION_SELFTEST_PASS assertions="+checks);
          if(a.getIntent().getBooleanExtra("history_selftest",false))HistorySelfTest.activity(a);

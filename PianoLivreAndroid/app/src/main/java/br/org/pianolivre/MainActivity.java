@@ -70,14 +70,16 @@ public class MainActivity extends Activity {
  MidiReceiver createReceiver(final long generation){
   final MidiProtocol decoder=new MidiProtocol();
   return new MidiReceiver(){
-   private long decoderEpoch=-1;
    @Override public synchronized void onSend(byte[] data,int offset,int count,long timestamp){
-    if(generation!=midiGeneration||!foreground)return;
+    if(generation!=midiGeneration)return;
     final long inputEpoch=midiInputEpoch;
-    if(decoderEpoch!=inputEpoch){decoder.reset();decoderEpoch=inputEpoch;}
+    final boolean arrivedInForeground=foreground;
     final ArrayList<int[]> decoded=new ArrayList<>();
-    decoder.feed(data,offset,count,(st,d1,d2)->decoded.add(new int[]{st,d1,d2}));
-    if(decoded.isEmpty())return;
+    // Drain background bytes to retain stream framing, but never deliver them.
+    decoder.feed(data,offset,count,inputEpoch,(st,d1,d2,startedEpoch)->{
+     if(startedEpoch==inputEpoch)decoded.add(new int[]{st,d1,d2});
+    });
+    if(!arrivedInForeground||!foreground||decoded.isEmpty())return;
     final long packet=midiPacketSequence.incrementAndGet();
     final long arrivalTime=SystemClock.uptimeMillis();
     final long uiSession=screens==null?-1:screens.discoveryGeneration();
