@@ -1,5 +1,5 @@
 "use strict";
-/** OSMD is the default Study renderer; the temporal renderer remains selectable. */
+/** OSMD is default; temporal remains an automatic fallback, without UI selectors. */
 const assert=require("node:assert/strict"),fs=require("node:fs");
 const html=fs.readFileSync("app/src/main/assets/notation.html","utf8");
 const bridge=fs.readFileSync("app/src/main/java/br/org/pianolivre/NotationView.java","utf8");
@@ -75,11 +75,12 @@ ok(html.includes("POC_NOTE_TAP"),"Preview emits auditable notehead touch");
 ok(html.includes("12*vb.width/rect.width")&&html.includes("10*vb.height/rect.height"),
   "Touch radius must remain usable after OSMD SVG scaling");
 ok(html.includes("role=\"status\""),"Preview note feedback exposed accessibly");
-ok(views.includes("OSMD · nova")&&views.includes("Anterior · temporal")&&
- views.includes("OSMD — nova partitura")&&views.includes("Partitura anterior — renderizador temporal")&&
- views.includes("selectStudyRenderer(index==0)"),"Visible named renderer controls must replace the hidden gesture");
-ok(views.includes("void selectStudyRenderer(boolean useOsmd)")&&
- !views.includes("POC_GESTURE_LONG_CLICK"),"Renderer switch must be explicit and must not use a long press");
+ok(!views.includes("OSMD · nova")&&!views.includes("Anterior · temporal")&&
+ !views.includes("selectStudyRenderer")&&!views.includes("rendererButtons"),"Prompt 2 removes manual renderer controls and handlers");
+ok(bridge.includes("AUTO_TEMPORAL_FALLBACK")&&bridge.includes("if(!freeLayout&&engravingProof)")&&
+ !views.includes("POC_GESTURE_LONG_CLICK"),"Actual Study errors must try temporal automatically, keeping Free separate");
+ok(html.includes("AndroidNotation.onStudyTap()")&&html.includes("requestAnimationFrame(function()"),
+ "Chrome reveal observes a completed tap without replacing note/loop handlers");
 ok(time.includes("function computeX(beat,pxPerBeat,origin){return origin+beat*pxPerBeat;}"),
    "Strict beat-proportional baseline untouched");
 ok(time.includes("function cursorPx(width){return width*.4;}"),"Existing cursor placement untouched");

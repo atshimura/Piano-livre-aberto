@@ -47,8 +47,8 @@ def main():
         if "POLYPHONY_FIXTURE_LOAD_OK title=Synthetic polyphony fidelity test measures=4 writtenHeads=30 attacks=29" in adb("logcat","-d","-v","brief"):break
         time.sleep(.5)
     else:raise AssertionError("Debug-only native polyphony score did not load")
-    buttons=[n for n in dump().iter("node") if n.attrib.get("text")=="OSMD · nova"]
-    assert buttons,"Visible OSMD default control is missing on fixture"
+    buttons=[n for n in dump().iter("node") if n.attrib.get("text")=="Espera"]
+    assert buttons,"Study mode controls are missing on fixture"
     proof=None;heads=None
     for _ in range(45):
         assert_running()
@@ -125,7 +125,7 @@ def main():
     responsive_evidence("polyphony")
     screenshot("piano-osmd-polyphony-guide-restored.png")
     # A dedicated named screenshot is copied only from a *real* opening capture.
-    Path("piano-osmd-polyphony-guide-open.png").write_bytes(Path("piano-03d-polyphony-open.png").read_bytes())
+    Path("piano-osmd-polyphony-guide-open.png").write_bytes(Path("piano-03d-polyphony-playing.png").read_bytes())
     Path("piano-polyphony-matrix.json").write_text(json.dumps({
        "sourceWritten":len(expected),"sourceAttacks":29,
        "osmdGraphical":proof["graphicalNotes"],"mapping":mapping,

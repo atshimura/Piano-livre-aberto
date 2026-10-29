@@ -894,7 +894,7 @@
    }
    return;
   }
-  const proofStarted=performance.now();
+ const proofStarted=performance.now();
   const originalXml=xml;
   let repositionedDynamics=0;
   try{
@@ -1291,6 +1291,15 @@
   }
  });
  window.addEventListener('resize',function(){PianoNotation.resize();});
+ // Observe the completed gesture without consuming note taps, drags or loop edits.
+ let chromeTouch=null;
+ document.addEventListener('pointerdown',function(e){chromeTouch={x:e.clientX,y:e.clientY,id:e.pointerId};});
+ document.addEventListener('pointercancel',function(){chromeTouch=null;});
+ document.addEventListener('pointerup',function(e){
+  const start=chromeTouch;chromeTouch=null;
+  if(!freeLayout&&start&&start.id===e.pointerId&&Math.hypot(e.clientX-start.x,e.clientY-start.y)<10)
+   requestAnimationFrame(function(){if(window.AndroidNotation&&AndroidNotation.onStudyTap)AndroidNotation.onStudyTap();});
+ });
  if(window.AndroidNotation)AndroidNotation.onReady();
 })();
 </script></body></html>

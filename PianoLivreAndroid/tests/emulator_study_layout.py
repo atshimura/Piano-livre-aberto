@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+"""Real UI comparisons with the pinned Prompt 1 baseline and all three states."""
+import json,time
+from pathlib import Path
+from emulator_ui import adb,dump,tap_text,home_scroll_to_top,responsive_evidence,assert_study_controls
+PACKAGE='br.org.pianolivre.opensource'
+report=[]
+try:
+    for label,size in [('phone','1280x720'),('tablet','1920x1080')]:
+        adb('shell','am','force-stop',PACKAGE);adb('shell','wm','size',size);adb('shell','wm','density','240')
+        adb('shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity');time.sleep(2)
+        labels=[n.attrib.get('text','') for n in dump().iter('node')]
+        if not any('Bem-vindo ao' in text for text in labels):tap_text(['Biblioteca'],scroll=True)
+        home_scroll_to_top();tap_text(['Começar pela Ode à Alegria'],scroll=True);time.sleep(3)
+        assert_study_controls()
+        responsive_evidence('prompt02-'+label)
+        before=json.loads(Path('piano-prompt02-before-'+label+'.json').read_text())
+        after=json.loads(Path('piano-03d-prompt02-'+label+'.json').read_text())
+        assert after[0]['heightPx']>before['heightPx'],'No measured gain over Prompt 1 in '+label
+        report.append(dict(viewport=size,before=before,after=after,gainNormalPx=after[0]['heightPx']-before['heightPx'],gainPlayingPx=after[1]['heightPx']-before['heightPx']))
+        # The actual MIDI manager remains accessible, without pretending a USB device exists.
+        tap_text(['USB-MIDI'],exact=True);time.sleep(.3);adb('shell','input','keyevent','4')
+        tap_text(['Partitura Livre']);time.sleep(2)
+        labels=[n.attrib.get('text','') for n in dump().iter('node')]
+        assert not any(text in ('Espera','Contínuo','Demonstração') for text in labels)
+        tap_text(['Biblioteca'],scroll=True)
+finally:
+    adb('shell','am','force-stop',PACKAGE);adb('shell','wm','size','reset');adb('shell','wm','density','reset')
+Path('piano-prompt02-comparison.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+print('STUDY_PROMPT02_LAYOUT_PASS '+json.dumps(report),flush=True)

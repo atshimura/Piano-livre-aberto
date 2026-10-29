@@ -32,8 +32,8 @@ def run(name,label):
  root,count,graces=inspect(Path('app/src/debug/assets/scores')/('engraving-'+name+'-06.musicxml'))
  adb('shell','am','force-stop',PACKAGE);adb('logcat','-c')
  adb('shell','am','start','-S','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity','--es','engraving_notation06_selftest',name)
- buttons=[n for n in dump().iter('node') if n.attrib.get('text')=='OSMD · nova']
- assert buttons,'Visible OSMD default control is missing on fixture'
+ buttons=[n for n in dump().iter('node') if n.attrib.get('text')=='Espera']
+ assert buttons,'Study mode controls are missing on fixture'
  proof=None
  for _ in range(50):
   assert_running();proof=latest('POC_OSMD_READY ')

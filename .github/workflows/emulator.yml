@@ -2,7 +2,7 @@ name: Open Piano Livre - emulator Android
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main]
+    branches: [main, feat/tela-inicial-piano-livre]
     paths:
       - 'PianoLivreAndroid/app/**'
       - 'PianoLivreAndroid/tests/**'
@@ -76,6 +76,7 @@ jobs:
             "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -q "package: name='br.org.pianolivre.opensource'"
             adb shell svc wifi disable
             adb shell svc data disable
+            python3 tests/emulator_study_baseline.py
             python3 tests/emulator_upgrade.py
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity
@@ -108,6 +109,7 @@ jobs:
             python3 tests/emulator_polyphony.py
             python3 tests/emulator_notation06.py
             python3 tests/emulator_responsive.py
+            python3 tests/emulator_study_layout.py
             python3 tests/emulator_study_session.py
             python3 tests/emulator_release.py
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py; fi
@@ -116,8 +118,9 @@ jobs:
         if: success() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: PianoLivre-prompt-01-validation-apk
+          name: PianoLivre-prompt-02-validation-apk
           path: |
+            PianoLivreAndroid/piano-prompt02-*
             PianoLivreAndroid/app/build/outputs/apk/release/app-release.apk
             PianoLivreAndroid/build/public-release-signature.txt
             PianoLivreAndroid/build/public-release-apk-metadata.txt

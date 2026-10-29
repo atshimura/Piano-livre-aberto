@@ -1,5 +1,9 @@
 # 07 — Estado atual e prioridades da linha aberta
 
+## Tela Estudar — Prompt 2 em implementação e validação
+
+Branch `feat/tela-estudar-piano-livre`, baseada no Prompt 1 e na preparação documental do PR #72. Cabeçalho unificado, remoção do guia do Estudar, renderização automática, faixa MODO/MÃOS e transporte permanente. Três estados de apresentação comparados à imagem aprovada e medição de área em emulador fazem parte do aceite. Versão de validação `0.9.51-open-beta` (60). [Documento 71](71-TELA-ESTUDAR-PROMPT-02.md). Sem merge, Release ou início do Prompt 3; aceite físico e V1 continuam pendentes.
+
 ## Implementado no código público
 
 - Android em paisagem, local/offline, sem permissão INTERNET. MusicXML/XML/MXL e MIDI SMF 0/1 PPQN com notação aproximada, escolha explícita de mão por trilha e fonte original preservada.

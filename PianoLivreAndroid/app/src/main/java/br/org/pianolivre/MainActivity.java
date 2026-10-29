@@ -739,9 +739,7 @@ public class MainActivity extends Activity {
   if(score==null){chooseScore();return;}
   if(mode==0){
    if(!waitStarted){beginWaitPreparation();return;}
-   if(waitPreparing)return;
-   if(inputPort==null)showMidiDiagnostics();
-   else message("Modo de espera ativo: toque as notas no Yamaha. O estudo avança quando as notas esperadas são reconhecidas.");
+   stopPlayback();
    return;
   }
   if(running){
@@ -865,6 +863,7 @@ public class MainActivity extends Activity {
   String text=studyInfoText.update(score!=null,score==null?0:score.tempoAt(position),
     tempoFactor,position,SystemClock.uptimeMillis(),immediate);
   if(!android.text.TextUtils.equals(info.getText(),text))info.setText(text);
+  if(screens!=null)screens.updateStudyInfo(text);
  }
  LocalProfiles profileStore(){return new LocalProfiles(prefs);}
  void newProfile(){

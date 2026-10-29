@@ -88,41 +88,59 @@ def home_scroll_to_top():
         time.sleep(.15)
     time.sleep(.3)
 
+def reveal_study_controls():
+    root=dump()
+    views=[n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
+    assert views,"Study WebView missing"
+    box=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
+    adb("shell","input","tap",str(box[2]-12),str(box[3]-12));time.sleep(.6)
+
+def study_renderer(temporal):
+    """Debug-only renderer fixture; no manual production selector exists."""
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-W","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity",
+        "--ez","study_temporal_selftest","true" if temporal else "false")
+    time.sleep(2);assert_running()
+
+def assert_study_controls():
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    forbidden=("Teclado guia","Ocultar teclado","OSMD · nova","Anterior · temporal","Partitura Original")
+    assert not any(value in labels for value in forbidden),"Obsolete Study control returned"
+    assert "Espera" in labels and "Contínuo" in labels,"Mode controls missing"
+
 def responsive_evidence(name):
-    """Measure actual WebView bounds with native bars in both guide states."""
+    """Measure real normal/playing/revealed WebView bounds and uniform staff fit."""
     result=[]
-    for state in ("closed", "open", "restored"):
-        if state=="open":tap_text(["Teclado guia"],scroll=True)
-        if state=="restored":tap_text(["Ocultar teclado"],scroll=True)
+    tap_text(["Parar"]);tap_text(["Contínuo"],exact=True,scroll=True);tap_text(["Início"])
+    root=dump();slider=next(n for n in root.iter("node") if n.attrib.get("class")=="android.widget.SeekBar")
+    box=[int(v) for v in re.findall(r"\d+",slider.attrib["bounds"])]
+    adb("shell","input","tap",str(box[0]+2),str((box[1]+box[3])//2))
+    for state in ("normal","playing","restored"):
+        if state=="playing":tap_text(["Iniciar"])
+        if state=="restored":reveal_study_controls()
         time.sleep(.8)
-        labels=[n.attrib.get("text", "") for n in dump().iter("node")]
-        title_visible="Partitura Livre" in labels
-        controls_visible="Espera" in labels
-        assert title_visible==(state!="open"), "Guide did not hide/restore title bar"
-        assert controls_visible==(state!="open"), "Guide did not hide/restore controls bar"
-        # The guide transitions native UI synchronously but its WebView
-        # reflow is debounced. Do not mistake the previous layout's logcat
-        # sample for the restored viewport. Require a fresh matching height.
+        root=dump();labels=[n.attrib.get("text","") for n in root.iter("node")]
+        assert ("Espera" in labels)==(state!="playing"),"Chrome hide/reveal failed"
+        assert any("Parar" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in root.iter("node")),"Permanent transport lost"
+        view=next(n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView")
+        box=[int(v) for v in re.findall(r"\d+",view.attrib["bounds"])];height=box[3]-box[1]
+        density=int(re.findall(r"(?:Override|Physical) density: (\d+)",adb("shell","wm","density"))[-1])/160
         geometry=None
         for attempt in range(25):
             rows=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_SVG_FIT {" in line]
             if rows:
                 candidate=json.loads(rows[-1].split("POC_SVG_FIT ",1)[1].split(" @",1)[0])
-                if not result or ((state=="open") !=
-                    (candidate["viewportHeight"]==result[0]["geometry"]["viewportHeight"])):
-                    geometry=candidate
-                    break
+                if abs(candidate["viewportHeight"]-height/density)<2:geometry=candidate;break
             time.sleep(.4)
-        assert geometry is not None, ("Responsive geometry failed to settle after guide "+state+
-                                      "; last="+str(candidate if rows else None))
-        assert geometry["scale"]>0, "Guide resize produced an invalid uniform scale"
-        assert geometry["height"]<=geometry["availableHeight"]+0.5, "Both staves exceed the available height"
-        assert geometry["viewportMaxScrollTop"]==0, "Vertical scrolling is exposed in OSMD preview"
-        assert abs(geometry["scale"]-geometry["availableHeight"]/geometry["rawHeight"])<0.002, "Displayed note width/height do not use one uniform fit"
+        assert geometry,"Fresh proportional staff fit missing after "+state
+        assert geometry["scale"]>0 and geometry["height"]<=geometry["availableHeight"]+.5
+        assert geometry["viewportMaxScrollTop"]==0,"Staff vertical clipping/scroll"
+        assert abs(geometry["scale"]-geometry["availableHeight"]/geometry["rawHeight"])<.002
         screenshot("piano-03d-"+name+"-"+state+".png")
-        result.append({"keyboard":state,"titleBar":title_visible,"controlsBar":controls_visible,
-                       "geometry":geometry})
-    assert result[0]["geometry"]["viewportHeight"]==result[-1]["geometry"]["viewportHeight"], "Closing guide did not restore score height"
+        result.append({"state":state,"heightPx":height,"heightDp":height/density,"geometry":geometry})
+    assert result[1]["heightPx"]>result[0]["heightPx"],"Execution gained no score area"
+    assert result[0]["heightPx"]==result[-1]["heightPx"],"Reveal did not restore height"
+    tap_text(["Parar"]);tap_text(["Início"]);tap_text(["Espera"],exact=True,scroll=True)
     Path("piano-03d-"+name+".json").write_text(json.dumps(result,indent=2),encoding="utf-8")
 
 def dump():
@@ -215,6 +233,13 @@ def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pas
                 adb("shell", "input", "tap", str(x),str(y))
                 print("Tapped",match,flush=True)
                 return (str(x),str(y)) if return_point else match
+    labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in root.iter("node")]
+    if _scroll_pass==0 and any("Opções de estudo" in n.attrib.get("content-desc","") for n in root.iter("node")) and targets==["Partitura Livre"]:
+        tap_text(["Opções de estudo"],exact=True)
+        return tap_text(targets,return_point,exact,scroll,1)
+    if _scroll_pass==0 and "Espera" not in labels and any("Pausar" in value or "Esperando" in value for value in labels) and any(value in ("Biblioteca","Contínuo","Espera","Demonstração","Partitura Livre") for value in targets):
+        reveal_study_controls()
+        return tap_text(targets,return_point,exact,scroll,1)
     if scroll and _scroll_pass<10:
         scroll_nodes=[node for node in root.iter("node") if node.attrib.get("scrollable")=="true"]
         # Study controls use a horizontal scroller; prioritize it so off-screen
@@ -481,7 +506,7 @@ if __name__=="__main__":
         print("POC_FAILURE_LOGCAT\n"+"\n".join(relevant[-240:]),flush=True)
     assert professional, "OSMD did not render automatically when Study opened"
     initial_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert "OSMD · nova" in initial_labels and "Anterior · temporal" in initial_labels, "Visible renderer choices are missing"
+    assert_study_controls()
     assert professional["svgNodes"]>50 and professional["width"]>0 and professional["measures"]>=3, "OSMD proof rendered no music"
     print("POC_SIMPLE_GEOMETRY "+json.dumps({k:professional.get(k) for k in (
       "displayScale","height","nativeSvgHeight","nativeStaffSpaceCssPx",
@@ -543,16 +568,10 @@ if __name__=="__main__":
         assert cue["hand"]==hand_index and all(staff==hand_index for staff in cue["staffs"]
                                                if hand_index!=0), "Graphical cues ignored source hand"
     print("PASS: optical study cues follow native right/left/both selection",flush=True)
-    # Guide opening changes only height; keep the same OSMD SVG and all note IDs.
-    render_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
-    tap_text(["Teclado guia"],scroll=True)
-    time.sleep(.7)
-    tap_text(["Ocultar teclado"],scroll=True)
-    time.sleep(.7)
+    # Chrome transitions keep the same SVG and graphical note IDs.
     after_resize_log=adb("logcat","-d","-v","brief")
-    assert "POC_RESIZE_HEIGHT_ONLY {" in after_resize_log, "Guide resize did not use fast optical path"
-    assert after_resize_log.count("POC_OSMD_READY {")==render_count, "Guide height resize unexpectedly reloaded MusicXML"
-    print("PASS: keyboard height resize retains the OSMD graphical note map",flush=True)
+    assert "POC_RESIZE_HEIGHT_ONLY {" in after_resize_log,"Chrome resize did not use fast optical path"
+    print("PASS: chrome height resize retains the OSMD graphical note map",flush=True)
     # A real adb tap on the HEAD of the first note, not on an arbitrary beat column.
     first=professional.get("firstNoteViewport")
     assert first and first.get("midiEstimate") is not None, "OSMD notehead mapping missing"
@@ -731,16 +750,16 @@ if __name__=="__main__":
     },ensure_ascii=False,indent=2),encoding="utf-8")
     print("PASS: OSMD professional rendering POC screenshot, SVG metrics and Java/JS isolation",flush=True)
     # Toggle to the temporal renderer and back using the visible controls.
-    tap_text(["Anterior · temporal"],exact=True,scroll=True)
+    study_renderer(True)
     for attempt in range(20):
         if "TIMELINE_READY" in adb("logcat","-d","-v","brief"):break
         time.sleep(.6)
     assert "TIMELINE_READY" in adb("logcat","-d","-v","brief"), "Visible alternative did not restore temporal rendering"
-    assert "POC_TOGGLE false" in adb("logcat","-d","-v","brief"), "Temporal rendering not restored after POC"
-    assert "POC_LAYER original" in adb("logcat","-d","-v","brief"), "WebView layer was not restored"
+    assert_study_controls()
+
     logs=adb("logcat","-d","-v","brief")
     assert "TIMELINE_READY" in logs, "Expected proportional timeline renderer, not ordinary print layout"
-    tap_text(["OSMD · nova"],exact=True,scroll=True)
+    study_renderer(False)
     for attempt in range(24):
         entries=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_OSMD_READY {" in line]
         if len(entries)>1:break
@@ -760,17 +779,7 @@ if __name__=="__main__":
     print("\\n".join(l for l in logs.splitlines() if "TEMPORAL_PROBE" in l)[-28000:],flush=True)
 
     assert any("Contínuo" in s for s in labels), "Mode switch missing"
-    assert any("Teclado guia" in s for s in labels), "Keyboard should be hidden by default"
-    tap_text(["Teclado guia"])
-    time.sleep(.6)
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Ocultar teclado" in s for s in labels), "Keyboard toggle did not change to Hide"
-    screenshot("piano-with-keyboard.png")
-    tap_text(["Ocultar teclado"])
-    time.sleep(.4)
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Teclado guia" in s for s in labels), "Keyboard toggle did not restore hidden state"
-    print("PASS: keyboard hidden by default, shown and hidden by tap",flush=True)
+    assert_study_controls()
     # Direct score selection is activated from the native study toolbar.
     tap_text(["Trecho ↻"])
     time.sleep(.3)
@@ -806,24 +815,18 @@ if __name__=="__main__":
     time.sleep(3)
     assert_running()
     study_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert "OSMD · nova" in study_labels and "Anterior · temporal" in study_labels, \
-      "Renderer selectors missing after reopening Study"
+    assert_study_controls()
     assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>default_render_count, \
       "Reopened Study did not select OSMD by default"
     print("PASS: selected music loads with interactive study controls",flush=True)
     temporal_ready_before=adb("logcat","-d","-v","brief").count("TIMELINE_READY {")
-    tap_text(["Anterior · temporal"],exact=True,scroll=True)
+    study_renderer(True)
     for attempt in range(16):
         if adb("logcat","-d","-v","brief").count("TIMELINE_READY {")>temporal_ready_before:break
         time.sleep(.5)
     assert adb("logcat","-d","-v","brief").count("TIMELINE_READY {")>temporal_ready_before, \
       "Visible temporal alternative did not render after OSMD opened Study by default"
-    tap_text(["Teclado guia"])
-    time.sleep(.5)
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Ocultar teclado" in t for t in labels), "Virtual keyboard toggle did not update"
-    tap_text(["Ocultar teclado"])
-    print("PASS: optional keyboard show/hide toggles",flush=True)
+    assert_study_controls()
     tap_text(["Contínuo"])
     time.sleep(.5)
     playback_point=tap_text(["Iniciar"],return_point=True)
@@ -911,10 +914,10 @@ if __name__=="__main__":
     tap_text(["Gymnopédie nº 1"],scroll=True)
     time.sleep(3)
     assert_running()
-    tap_text(["Anterior · temporal"],exact=True,scroll=True)
+    study_renderer(True)
     time.sleep(1)
     screenshot("piano-temporal-long.png")
-    tap_text(["OSMD · nova"],exact=True,scroll=True)
+    study_renderer(False)
     long_proof=None
     for attempt in range(35):
         time.sleep(.8)

@@ -23,9 +23,13 @@
 **Tipo:** aprovado/solicitado. Botão **Início** retorna ao começo, pausa e suspende repetição anterior. Seleção de trecho **diretamente na pauta por toque e arraste**, ajustando limites; repetição disponível. **Implementado básico** com bridge JS→Android; duração, persistência e formas manuais de repetição requerem extensão.
 
 ## D-007 — Teclado guia opcional e ampliado
+**Atualização aprovada em 29/10/2026, Prompt 2:** o Estudar remove o teclado guia e seus controles; preserva a preferência antiga no armazenamento/backup e mantém reconhecimento MIDI, seleção de mãos e demonstração. As barras superiores recolhem no início da execução e voltam por toque na pauta; a barra inferior permanece. Esta decisão substitui no Estudar o comportamento histórico abaixo, sem remover componentes usados por outras telas. [Documento 71](71-TELA-ESTUDAR-PROMPT-02.md).
+
 **Tipo:** aprovado/solicitado em 14/10/2026. Teclado visual orienta notas esperadas e MIDI recebido; não precisa ser um teclado tocável. Ao abrir o teclado, **esconder automaticamente as três faixas superiores** (cabeçalho global, título da música, modos/mãos) para ampliar a partitura, preservando a barra inferior para fechar. Restaurar ao fechar. **Implementado na HEAD 59112581f... e aprovado em emulador**, ainda necessita confirmação com usuário e aparelhos reais.
 
 ## D-008 — Sem sintetizador Android obrigatório
+**Atualização aprovada em 29/10/2026, Prompt 2:** a ausência de áudio/vídeo obrigatório permanece; o teclado guia deixa de ser alternativa visual no Estudar. A orientação musical continua na pauta real, com entrada/saída USB-MIDI preservadas. Não há novo sintetizador.
+
 **Tipo:** aprovado. Demonstração pode enviar MIDI bidirecional ao P-45; o som principal pode vir inteiramente do piano. Eventual vídeo é condicionado a mídia autorizada e sincronizada. Sem vídeo usar teclado guia. **Não adicionar áudio/vídeo obrigatório para funcionar offline.**
 
 ## D-009 — Fonte musical importada preservada

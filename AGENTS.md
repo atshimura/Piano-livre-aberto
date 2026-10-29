@@ -12,7 +12,7 @@ Este repositório é a **base principal de desenvolvimento** do Piano Livre. Lei
 ## Decisões de produto obrigatórias
 - App de aprendizagem musical local/offline; **sem login, servidor, telemetria ou sincronização automática** sem aprovação explícita.
 - Modo Espera: notas esperadas avançam; notas extras não bloqueiam, mas devem ser indicadas. Não penalizar demora. Acordes: janela temporal ajustável após calibração, sem valores arbitrários fixados antecipadamente. Duração/pedal: orientação após ataque correto, não bloqueio.
-- Mostrar ambas as mãos no teclado guia visual, inclusive simultaneidade, dinâmica e duração. **O guia visual não é um sintetizador de áudio**. Diferenciar a reprodução MIDI no instrumento da visualização de teclas.
+- Onde houver teclado guia visual, mostrar ambas as mãos, inclusive simultaneidade, dinâmica e duração. **Decisão posterior aprovada no Prompt 2 (29/10/2026): remover o guia do modo Estudar**, preservando MIDI/reconhecimento, preferências legadas e componentes compartilhados. **O guia visual não é um sintetizador de áudio**. Diferenciar reprodução MIDI no instrumento de visualização de teclas.
 - Claves Sol/Fá devem ser posicionadas por G4/F3 nas respectivas linhas, mantendo pautas/claves fixas à esquerda durante rolagem.
 - Não inferir mão pela altura da nota, nem modificar MusicXML importado ao aplicar preferências de estudo.
 - Backup v2 exige pré-validação, confirmação e rollback; nunca apagar dados do usuário antes de validar restauração.

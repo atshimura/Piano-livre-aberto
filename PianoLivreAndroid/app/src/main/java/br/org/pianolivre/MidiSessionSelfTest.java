@@ -31,6 +31,24 @@ final class MidiSessionSelfTest {
    check(a.position==start&&!a.waitTraveling,"background MIDI does not advance study");
    a.foreground=true;a.disconnectMidi();a.waitStarted=true;a.rearmWaitIfStudying();notes(a,expected);
    check(a.waitTraveling||a.position!=start,"fresh foreground attacks advance after reconnect");
+   String source=a.score.sourceXml;
+   for(int hand:new int[]{0,2,1}){
+    a.stopPlayback();a.disconnectMidi();a.currentHand=hand;
+    a.position=a.score.firstOnset(hand);double onset=a.position;
+    a.waitStarted=true;a.rearmWaitIfStudying();
+    check(!a.screens.legacyFallback.allowKeyboard,"Study cannot draw legacy keyboard preference");
+    a.onMidiMessage(0x90,0,70);
+    check(!a.waitTraveling&&a.position==onset,"extra note alone cannot advance hand "+hand);
+    Set<Integer> pitches=new LinkedHashSet<>();for(Score.Event e:a.score.at(onset,hand))pitches.add(e.midi);
+    check(!pitches.isEmpty(),"expected hand notes exist "+hand);
+    int index=0;
+    for(int pitch:pitches){
+     a.onMidiMessage(0x90,pitch,80);
+     if(++index<pitches.size())check(!a.waitTraveling&&a.position==onset,"partial chord must wait for remaining attacks");
+    }
+    check(a.waitTraveling||a.position!=onset,"MIDI advances without guide in hand "+hand);
+    check(source.equals(a.score.sourceXml),"hand selection preserves original MusicXML");
+   }
    a.stopPlayback();a.screens.showHome();a.disconnectMidi();
    a.onMidiMessage(0x90,60,80);a.onMidiMessage(0x91,60,90);a.onMidiMessage(0xB0,64,127);
    a.onMidiMessage(0xB0,123,0);
