@@ -129,7 +129,6 @@ public final class NotationView extends WebView {
   }
   if(getLayerType()!= (engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType))
    setLayerType(engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
-  if(getLayerType()!=originalLayerType)setLayerType(originalLayerType,null);
   getSettings().setSupportZoom(traditional);
   getSettings().setBuiltInZoomControls(traditional);
   getSettings().setDisplayZoomControls(false);
