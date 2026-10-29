@@ -59,6 +59,7 @@ try:
         assert_study_controls()
         braces=records('POC_BRACE_FIT ')
         assert braces and braces[-1]['width']>0 and braces[-1]['left']>=3.5,'Grand-staff brace clipped at left edge'
+        assert braces[-1]['occludingMasks']==0,'Staff-band masks cover the grand-staff brace'
         proof=records('POC_OSMD_READY ')[-1]
         responsive_evidence('prompt02-'+label)
         normal_tap=restored_note_tap(proof,label)
