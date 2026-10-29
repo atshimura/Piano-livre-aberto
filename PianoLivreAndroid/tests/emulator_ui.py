@@ -5,9 +5,13 @@ from pathlib import Path
 DEFAULT_SCORE_TITLE = json.loads(Path('app/src/main/assets/catalog.json').read_text(encoding='utf-8'))[0]['name']
 
 def adb(*args, timeout=70):
-    return subprocess.run(["adb", *args], check=True, text=True,
+    result=subprocess.run(["adb", *args], check=False, text=True,
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                          timeout=timeout).stdout
+                          timeout=timeout)
+    if result.returncode:
+        print(result.stdout,flush=True)
+        raise subprocess.CalledProcessError(result.returncode,["adb",*args],output=result.stdout)
+    return result.stdout
 
 def dismiss_keyboard():
     state=adb("shell","dumpsys","input_method")
@@ -27,6 +31,62 @@ def memory_pss_kb(text):
 def screenshot(name):
     adb("shell", "screencap", "-p", "/sdcard/"+name)
     adb("pull", "/sdcard/"+name, name)
+
+def home_responsive_screenshots():
+    # The production Activity is landscape-first. Exercise phone and tablet
+    # landscape widths without changing the library or profile state.
+    adb("shell", "wm", "size", "720x540")
+    adb("shell", "wm", "density", "240")
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","pm","clear","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running();wait_for_text("Bem-vindo ao",timeout=20);time.sleep(.6)
+    screenshot("piano-home-phone.png")
+    phone=dump()
+    assert any("Bem-vindo ao" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width home lost the welcome banner"
+    phone_labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in phone.iter("node")]
+    assert any("PIANO LIVRE" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width header lost the Piano Livre identity"
+    description=next((n for n in phone.iter("node") if n.attrib.get("text","").startswith("Escolha uma música, pratique")),None)
+    assert description is not None, "Phone-width welcome description is missing"
+    description_bounds=[int(x) for x in re.findall(r"\d+",description.attrib.get("bounds",""))]
+    assert len(description_bounds)==4 and description_bounds[2]<=375, "Phone-width banner description overlaps the piano artwork"
+    for essential in ("Começar pela Ode à Alegria","Como usar"):
+        assert any(essential.casefold() in value.casefold() for value in phone_labels), "Phone-width banner control is missing: "+essential
+        node=next(n for n in phone.iter("node") if essential.casefold() in (n.attrib.get("text","") or n.attrib.get("content-desc","")).casefold())
+        bounds=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
+        assert len(bounds)==4 and bounds[0]>=0 and bounds[1]>=0 and bounds[2]<=720 and bounds[3]<=480, "Phone-width banner control is cut off: "+essential
+    adb("shell", "wm", "size", "1920x1080")
+    adb("shell", "wm", "density", "240")
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running();wait_for_text("Bem-vindo ao",timeout=20);time.sleep(.6)
+    screenshot("piano-home-tablet.png")
+    tablet=dump()
+    assert any("Biblioteca Musical" in n.attrib.get("text","") for n in tablet.iter("node")), "Tablet-width home lost the library"
+    tablet_labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in tablet.iter("node")]
+    for essential in ("Buscar título ou arquivo","Todas as categorias","Coleções","Importar partitura","▶  Estudar","Partitura livre"):
+        assert any(essential.casefold() in value.casefold() for value in tablet_labels), "Tablet-width library control is missing: "+essential
+    for essential in ("▶  Estudar","Partitura livre"):
+        node=next(n for n in tablet.iter("node") if essential.casefold() in (n.attrib.get("text","") or n.attrib.get("content-desc","")).casefold())
+        bounds=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
+        assert len(bounds)==4 and bounds[0]>=0 and bounds[2]<=1920 and bounds[3]<=1024, "Tablet-width score action is cut off: "+essential
+    adb("shell", "wm", "size", "reset")
+    adb("shell", "wm", "density", "reset")
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running()
+
+def home_scroll_to_top():
+    for _ in range(8):
+        root=dump()
+        scroll=next((n for n in root.iter("node") if n.attrib.get("scrollable")=="true" and "Horizontal" not in n.attrib.get("class","")),None)
+        if scroll is None:break
+        box=[int(x) for x in re.findall(r"\d+",scroll.attrib.get("bounds",""))]
+        if len(box)!=4:break
+        x=box[0]+max(8,(box[2]-box[0])//100);top=box[1];height=box[3]-box[1]
+        adb("shell","input","swipe",str(x),str(top+height//5),str(x),str(top+height*4//5),"220")
+        time.sleep(.15)
+    time.sleep(.3)
 
 def responsive_evidence(name):
     """Measure actual WebView bounds with native bars in both guide states."""
@@ -77,18 +137,85 @@ def dump():
             time.sleep(4)
     raise AssertionError("Android UI hierarchy inaccessible")
 
+def wait_for_text(target, timeout=8):
+    """Wait for a native UI update to become observable after an input event."""
+    deadline=time.monotonic()+timeout
+    last=[]
+    while time.monotonic()<deadline:
+        last=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in dump().iter("node")]
+        if any(target.casefold() in value.casefold() for value in last):return last
+        time.sleep(.25)
+    raise AssertionError("Timed out waiting for UI text "+repr(target)+"; visible="+repr(last[:50]))
+
+def focus_library_search_field(timeout=12):
+    """Wait for the library search row to stop moving, tap it, and confirm focus."""
+    deadline=time.monotonic()+timeout
+    previous=None;stable=0;last=[]
+    while time.monotonic()<deadline:
+        root=dump()
+        fields=[n for n in root.iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+        search=next((n for n in fields if "buscar título" in (n.attrib.get("hint","")+n.attrib.get("text","")+n.attrib.get("content-desc","")).casefold()),None)
+        if search is None and len(fields)==1:search=fields[0]
+        if search is not None:
+            bounds=[int(x) for x in re.findall(r"\d+",search.attrib.get("bounds",""))]
+            signature=tuple(bounds) if len(bounds)==4 else None
+            stable=stable+1 if signature is not None and signature==previous else 0
+            previous=signature;last=[n.attrib.get("text","") for n in root.iter("node")]
+            if stable>=1 and signature is not None:
+                for _ in range(3):
+                    adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
+                    time.sleep(.25)
+                    focused_root=dump()
+                    focused_fields=[n for n in focused_root.iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+                    focused=next((n for n in focused_fields if n.attrib.get("focused")=="true"),None)
+                    if focused is not None:return focused
+                    state=adb("shell","dumpsys","input_method")
+                    if re.search(r"(?:mInputShown|mIsInputViewShown|isInputViewShown)=true",state):
+                        return next((n for n in focused_fields if "buscar título" in (n.attrib.get("hint","")+n.attrib.get("text","")+n.attrib.get("content-desc","")).casefold()),search)
+                time.sleep(.25)
+        time.sleep(.2)
+    raise AssertionError("LIBRARY_SEARCH_FOCUS_FAILED: field did not settle/focus; labels="+repr(last[:40]))
+
+def assert_collection_filter_option(name, present=True):
+    """Inspect the Spinner's real dropdown; closed spinners expose only selection."""
+    home_scroll_to_top()
+    tap_text(["Biblioteca Musical"],exact=True)
+    wait_for_text("Todas as categorias")
+    tap_text(["Todas as categorias"],exact=True,scroll=True)
+    target="Coleção: "+name
+    if present:
+        wait_for_text(target)
+    else:
+        time.sleep(.35)
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    found=any(value==target for value in labels)
+    adb("shell","input","keyevent","4")
+    if found!=present:
+        raise AssertionError("Collection filter option presence mismatch for "+repr(target)+"; options="+repr(labels))
+
+def return_to_library_if_study_was_restored():
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    if any(value=="← Biblioteca" for value in labels):
+        tap_text(["← Biblioteca"],exact=True)
+        wait_for_text("Bem-vindo ao")
+
 def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pass=0):
     root=dump()
     for node in root.iter("node"):
-        label=node.attrib.get("text","")
-        if any((value.casefold()==label.casefold()) if exact else (value.casefold() in label.casefold()) for value in targets):
+        labels=[node.attrib.get("text",""),node.attrib.get("content-desc","")]
+        match=next((label for label in labels if label and any((value.casefold()==label.casefold()) if exact else (value.casefold() in label.casefold()) for value in targets)),None)
+        if match is not None:
             nums=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
             if len(nums)==4:
-                adb("shell", "input", "tap", str((nums[0]+nums[2])//2),
-                    str((nums[1]+nums[3])//2))
-                print("Tapped",label,flush=True)
-                return (str((nums[0]+nums[2])//2),str((nums[1]+nums[3])//2)) if return_point else label
-    if scroll and _scroll_pass<5:
+                x,y=(nums[0]+nums[2])//2,(nums[1]+nums[3])//2
+                # Accessibility bounds already use the current rotated display
+                # coordinate space. `wm size` reports the unrotated physical
+                # dimensions on some Android emulator versions, which can
+                # incorrectly reject valid landscape taps.
+                adb("shell", "input", "tap", str(x),str(y))
+                print("Tapped",match,flush=True)
+                return (str(x),str(y)) if return_point else match
+    if scroll and _scroll_pass<10:
         scroll_nodes=[node for node in root.iter("node") if node.attrib.get("scrollable")=="true"]
         # Study controls use a horizontal scroller; prioritize it so off-screen
         # hand choices remain testable after adding the renderer selectors.
@@ -104,7 +231,13 @@ def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pas
                         adb("shell","input","swipe",str(box[2]-12),y,str(box[0]+12),y,"400")
                 else:
                     x=str((box[0]+box[2])//2)
-                    adb("shell","input","swipe",x,str(box[3]-15),x,str(box[1]+15),"400")
+                    # Search toward the bottom first, then reverse and search
+                    # toward the top. This handles toolbar controls after a file
+                    # picker returns with the library list at its last row.
+                    start_y,end_y=(box[3]-15,box[1]+15)
+                    if _scroll_pass>=5:
+                        start_y,end_y=end_y,start_y
+                    adb("shell","input","swipe",x,str(start_y),x,str(end_y),"400")
                 return tap_text(targets,return_point,exact,True,_scroll_pass+1)
     labels=[n.attrib.get("text","") for n in root.iter("node") if n.attrib.get("text")]
     print(adb("logcat","-d","-s","PianoLivreUI:I","PianoLivreNotation:I","PianoLivreTimeline:I")[-18000:],flush=True)
@@ -141,9 +274,79 @@ if __name__=="__main__":
     home=dump()
     names=[n.attrib.get("text","") for n in home.iter("node")]
     assert any(DEFAULT_SCORE_TITLE in n for n in names), "Music library must be visible on launch: "+str(names[:30])
+    assert "USB-MIDI" in names, "Disconnected home MIDI control must use the USB-MIDI label"
+    assert not any("piano conectado" in n.casefold() or "toque aqui para testar" in n.casefold() for n in names), "Redundant connection text leaked into the home header"
     print("PASS: library visible at startup",flush=True)
+    home_responsive_screenshots()
+    # The category spinner can be below the fold on short landscape displays.
+    # Exercise it through the same scroll view while retaining the top-of-home
+    # screenshots above as the visual evidence for each viewport.
+    home=dump()
+    category_accessible=any("Todas as categorias" in n.attrib.get("text","") for n in home.iter("node"))
+    if not category_accessible:
+        tap_text(["Todas as categorias"],exact=True,scroll=True)
+        category_accessible=True
+        adb("shell","input","keyevent","4")
+        home_scroll_to_top()
+    assert category_accessible, "Initial library filter label missing"
+    tap_text(["USB-MIDI"],exact=True)
+    midi_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    if any("Mostrar diagnóstico" in t for t in midi_labels):tap_text(["Mostrar diagnóstico"],scroll=True)
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Mensagens recebidas" in t for t in labels), "MIDI management/diagnostics did not open"
+    tap_text(["Fechar"])
+    tap_text(["Como usar"],scroll=True)
+    help_labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("Escolha uma partitura" in t for t in help_labels), "Local help content missing"
+    tap_text(["Entendi"],exact=True)
+    tap_text(["Biblioteca Musical"],exact=True);wait_for_text("10 de 10 partituras")
+    tap_text(["Favoritar Ode à Alegria"]);tap_text(["Remover favorito Ode à Alegria"])
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running();return_to_library_if_study_was_restored()
+    tap_text(["Começar pela Ode à Alegria"],scroll=True)
+    time.sleep(2)
+    assert any("Ode à Alegria" in n.attrib.get("text","") for n in dump().iter("node")), "Welcome banner did not open Ode à Alegria in Study"
+    tap_text(["Biblioteca"])
+    time.sleep(.4)
+    print("PASS: welcome actions, offline help, and phone/tablet responsive captures",flush=True)
+    home_scroll_to_top()
+    tap_text(["Importar partitura"],scroll=True)
+    time.sleep(.5)
+    adb("shell","input","keyevent","4")
+    # Returning from the system picker may preserve the library's prior scroll
+    # offset; expose the real filter row again before tapping it.
+    home_scroll_to_top()
+    tap_text(["Coleções"],scroll=True)
+    tap_text(["Nova coleção"],exact=True)
+    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+    assert fields, "New collection name input missing"
+    box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
+    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    adb("shell","input","text","Colecao_Teste_UI")
+    dismiss_keyboard();tap_text(["Salvar"],exact=True)
+    assert_collection_filter_option("Colecao_Teste_UI")
+    tap_text(["Coleções"],scroll=True);tap_text(["Renomear coleção"],exact=True);tap_text(["Colecao_Teste_UI"],exact=True)
+    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
+    assert fields, "Rename collection input missing"
+    box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
+    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    adb("shell","input","keyevent","123");adb("shell","input","keyevent",*( ["67"]*30 ))
+    adb("shell","input","text","Colecao_Renomeada")
+    dismiss_keyboard();tap_text(["Salvar"],exact=True);assert_collection_filter_option("Colecao_Renomeada")
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running();return_to_library_if_study_was_restored();assert_collection_filter_option("Colecao_Renomeada")
+    tap_text(["Coleções"],scroll=True);tap_text(["Excluir coleção"],exact=True);tap_text(["Colecao_Renomeada"],exact=True);tap_text(["Excluir"],exact=True)
+    assert_collection_filter_option("Colecao_Renomeada",present=False)
+    adb("shell","am","force-stop","br.org.pianolivre.opensource")
+    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
+    time.sleep(1.5);assert_running();return_to_library_if_study_was_restored();assert_collection_filter_option("Colecao_Renomeada",present=False)
+    home_scroll_to_top()
+    print("PASS: import entry, collections, and favorite controls",flush=True)
+    home_scroll_to_top()
     # Public Laboratory 1.0 exposes only the approved Discover experience.
-    tap_text(["Laboratório Musical"],exact=True)
+    tap_text(["Laboratório Musical"],exact=True,scroll=True)
     lab_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any(t=="Descobrir" for t in lab_labels), "Discover screen not shown"
     assert any(t=="Aprender" for t in lab_labels), "Disabled Learn tab missing"
@@ -152,18 +355,11 @@ if __name__=="__main__":
     assert not (forbidden & set(lab_labels)), "Legacy controls leaked into Discover: "+str(forbidden & set(lab_labels))
     tap_text(["Voltar"],exact=True)
     assert_running()
-    assert any("BIBLIOTECA MUSICAL" in n.attrib.get("text","") for n in dump().iter("node")), "Laboratory return lost library"
+    assert any("Biblioteca Musical" in n.attrib.get("text","") for n in dump().iter("node")), "Laboratory return lost library"
     print("PASS: public Laboratory Discover entry, minimal empty state and deterministic return",flush=True)
-    # MIDI diagnostics must be discoverable even without a physical piano.
-    tap_text(["Conecte seu piano","MIDI indisponível"])
-    time.sleep(.6)
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Mensagens recebidas" in t for t in labels), "MIDI diagnostic counter is missing"
-    tap_text(["Fechar"])
-    print("PASS: MIDI input/output diagnostic dialog opens",flush=True)
     screenshot("piano-library.png")
     # Chord calibration must be discoverable, with no magic millisecond default.
-    tap_text(["Opções"])
+    home_scroll_to_top();tap_text(["Opções"],scroll=True)
     time.sleep(.5)
     options=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Calibrar acordes MIDI" in text for text in options), "Calibrar acordes option missing"
@@ -178,7 +374,12 @@ if __name__=="__main__":
     assert any("Conecte primeiro" in text for text in options), "Calibration must require actual MIDI input"
     tap_text(["OK"])
     print("PASS: calibration is discoverable, uncalibrated by default, physical MIDI required",flush=True)
-    tap_text(["Histórico"],exact=True)
+    # Create the history entry the assertion checks instead of depending on
+    # a seeded record from a previous test or emulator snapshot.
+    home_scroll_to_top();tap_text(["Partitura livre"],exact=True,scroll=True)
+    wait_for_text("← Biblioteca");time.sleep(1)
+    tap_text(["← Biblioteca"],exact=True);wait_for_text("Estudar Ode à Alegria")
+    home_scroll_to_top();tap_text(["Histórico"],exact=True,scroll=True)
     history_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Tempo na tela de estudo" in t for t in history_labels), "Native history totals missing"
     tap_text(["Períodos"],exact=True)
@@ -187,7 +388,7 @@ if __name__=="__main__":
     tap_text(["Fechar"],exact=True)
     print("PASS: native history totals and free-reading periods",flush=True)
     # Native profile UI: create, avatar and confirmed deletion, with stable identity.
-    tap_text(["+"],exact=True)
+    home_scroll_to_top();tap_text(["+"],exact=True)
     fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
     assert fields, "New profile name input missing"
     box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
@@ -202,23 +403,31 @@ if __name__=="__main__":
     tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Excluir perfil"]);tap_text(["Excluir"],exact=True)
     after_delete=[n.attrib.get("text","") for n in dump().iter("node")]
     assert not any("Perfil_Teste" in t for t in after_delete), "Deleted profile remains selected"
-    if not any("BIBLIOTECA MUSICAL" in t for t in after_delete):tap_text(["Biblioteca"])
+    if any(value=="← Biblioteca" for value in after_delete):
+        # Deleting the temporary profile restores home, which owns its own
+        # welcome action instead of the in-study score toolbar.
+        tap_text(["← Biblioteca"],exact=True);wait_for_text("Começar pela Ode à Alegria")
+    tap_text(["Biblioteca Musical"],exact=True)
     print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
-    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    assert fields, "Library search input missing"
-    box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    wait_for_text("Buscar título ou arquivo")
+    focus_library_search_field()
     adb("shell","input","text","gymnopedie")
     dismiss_keyboard()
-    search_labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("1 de 10 partituras" in t for t in search_labels), "Accent-insensitive library search did not filter"
-    fields=[n for n in dump().iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-    box=[int(x) for x in re.findall(r"\d+",fields[0].attrib["bounds"])]
-    adb("shell","input","tap",str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+    wait_for_text("1 de 10 partituras")
+    focus_library_search_field()
     adb("shell","input","keyevent","123")
     adb("shell","input","keyevent",*(["67"]*10))
     dismiss_keyboard()
-    assert any("10 de 10 partituras" in n.attrib.get("text","") for n in dump().iter("node")), "Clearing search did not restore library"
+    wait_for_text("10 de 10 partituras")
+    focus_library_search_field()
+    adb("shell","input","text","lago-dos-cisnes")
+    dismiss_keyboard()
+    wait_for_text("1 de 10 partituras")
+    focus_library_search_field()
+    adb("shell","input","keyevent","123")
+    adb("shell","input","keyevent",*(["67"]*20))
+    dismiss_keyboard()
+    wait_for_text("10 de 10 partituras")
     print("PASS: native library search ignores accents and clearing restores results",flush=True)
     render_baseline=adb("logcat","-d","-v","brief").count("NOTATION_RENDERED")
     tap_text([DEFAULT_SCORE_TITLE])
@@ -687,11 +896,15 @@ if __name__=="__main__":
     time.sleep(1)
     assert_running()
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("BIBLIOTECA MUSICAL" in s for s in labels), "Returning to library failed"
+    assert any("Biblioteca Musical" in s for s in labels), "Returning to library failed"
     print("PASS: navigation returns to library",flush=True)
     logs=adb("logcat","-d","-v","brief")
     if "FATAL EXCEPTION" in logs and "Process: br.org.pianolivre.opensource" in logs:
-        raise AssertionError("Fatal exception in Piano Livre")
+        start=logs.rfind("FATAL EXCEPTION")
+        fatal=logs[start:start+12000]
+        Path("piano-fatal-exception.log").write_text(fatal,encoding="utf-8")
+        print("ANDROID_FATAL_EXCEPTION\\n"+fatal,flush=True)
+        raise AssertionError("Fatal exception in Piano Livre; see piano-fatal-exception.log")
     # Additional real Android WebView stress with an already authorized longer
     # MusicXML score; a large pure-JS map test does NOT test SVG rendering.
     old_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")

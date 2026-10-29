@@ -9,6 +9,7 @@ on:
       - 'PianoLivreAndroid/scripts/**'
       - 'PianoLivreAndroid/gradle.properties'
       - '.github/workflows/emulator.yml'
+      - 'docs/70-TELA-INICIAL-PROMPT-01.md'
   push:
     branches: [main]
     paths:
@@ -111,6 +112,17 @@ jobs:
             python3 tests/emulator_release.py
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py; fi
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
+      - name: Upload temporary validation APK for this pull request
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: PianoLivre-prompt-01-validation-apk
+          path: |
+            PianoLivreAndroid/app/build/outputs/apk/release/app-release.apk
+            PianoLivreAndroid/build/public-release-signature.txt
+            PianoLivreAndroid/build/public-release-apk-metadata.txt
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify captured Android visual evidence
         if: success()
         run: |
@@ -147,6 +159,8 @@ jobs:
               "piano-osmd-polyphony-guide-open.png",
               "piano-osmd-polyphony-guide-restored.png",
               "piano-release.png",
+              "piano-home-phone.png",
+              "piano-home-tablet.png",
               "piano-discovery-staff-c2.png",
               "piano-discovery-staff-c3.png",
               "piano-discovery-staff-f3.png",
@@ -192,11 +206,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PianoLivre-public-emulator-evidence
-          retention-days: 3
+          retention-days: 14
           if-no-files-found: warn
           path: |
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png
+            PianoLivreAndroid/piano-home-phone.png
+            PianoLivreAndroid/piano-home-tablet.png
             PianoLivreAndroid/piano-laboratorio.png
             PianoLivreAndroid/piano-midi-import.png
             PianoLivreAndroid/piano-release.png
@@ -252,5 +268,6 @@ jobs:
             PianoLivreAndroid/piano-osmd-context-probe.txt
             PianoLivreAndroid/window.xml
             PianoLivreAndroid/piano-selftests.log
+            PianoLivreAndroid/piano-fatal-exception.log
             PianoLivreAndroid/piano-discovery-selftest.log
             PianoLivreAndroid/piano-discovery-staff-*.png

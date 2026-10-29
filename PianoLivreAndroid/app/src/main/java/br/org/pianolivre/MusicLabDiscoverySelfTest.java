@@ -18,11 +18,15 @@ final class MusicLabDiscoverySelfTest {
  private static void check(boolean ok,String explanation){checks++;if(!ok)throw new IllegalStateException("Discovery UI: "+explanation);}
  private static void collect(View v,List<View> out){out.add(v);if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++)collect(g.getChildAt(i),out);}}
  private static List<View> tree(View root){ArrayList<View> out=new ArrayList<>();collect(root,out);return out;}
- private static void clickButton(Activity a,String label){for(View v:tree(a.getWindow().getDecorView()))if(v instanceof Button&&label.equals(((Button)v).getText().toString())){v.performClick();return;}throw new IllegalStateException("Missing button "+label);}
+ private static void clickHomeEntry(Activity a,String label){for(View v:tree(a.getWindow().getDecorView())){
+  if(v instanceof Button&&label.equals(((Button)v).getText().toString())){v.performClick();return;}
+  CharSequence description=v.getContentDescription();
+  if(v.isClickable()&&description!=null&&description.toString().startsWith(label+".")){v.performClick();return;}
+ }throw new IllegalStateException("Missing clickable home entry "+label);}
 
  static void run(MainActivity a){
   checks=0;PianoScreens screens=a.screens;MusicLabDiscoveryScreen d=screens.discovery;
-  clickButton(a,"Laboratório Musical");check(screens.isLabOpen(),"home entry opens Descobrir");
+  clickHomeEntry(a,"Laboratório Musical");check(screens.isLabOpen(),"home entry opens Descobrir");
   check(d.discover.getVisibility()==View.VISIBLE&&!d.discover.isEnabled(),"Descobrir selected");
   check(d.learn.getVisibility()==View.VISIBLE&&!d.learn.isEnabled(),"Aprender visible and disabled");
   check(d.instruction.getText().toString().equals(MusicLabDiscoveryScreen.EMPTY_TEXT),"exact empty instruction");
@@ -43,7 +47,7 @@ final class MusicLabDiscoverySelfTest {
   check(d.session.result().kind==MusicDiscoverySession.Kind.SEQUENCE&&d.session.result().notes.size()==8,"complete C major classified through live MIDI events with two-second inter-onset intervals");
   check(d.ciphers.getText().toString().equals("Cifras: C4 · D4 · E4 · F4 · G4 · A4 · B4 · C5"),"all scale pitch ciphers are visible in order");
   d.back.performClick();check(!screens.isLabOpen(),"Voltar returns to library");
-  clickButton(a,"Laboratório Musical");
+  clickHomeEntry(a,"Laboratório Musical");
   d.staff.setRenderListener(new DiscoveryStaffView.RenderListener(){
    @Override public void onRendered(){ }
    @Override public void onError(String message){throw new IllegalStateException("Discovery OSMD rendering failed: "+message);}

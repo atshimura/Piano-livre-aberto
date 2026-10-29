@@ -341,9 +341,15 @@ public class MainActivity extends Activity {
   String name=info.getProperties().getString(MidiDeviceInfo.PROPERTY_NAME);
   return name==null||name.trim().isEmpty()?"Dispositivo MIDI "+info.getId():name;
  }
+ String midiInstrumentName(MidiDeviceInfo info){
+  if(info==null)return "";
+  String name=info.getProperties().getString(MidiDeviceInfo.PROPERTY_NAME);
+  return name==null?"":name.trim();
+ }
  void setMidiStatus(String description){
   connectionDescription=description;
   if(status!=null)status.setText(description);
+  if(screens!=null)screens.updateMidiIndicator();
   refreshMidiDiagnostics();
  }
  void selectMidi(){
@@ -877,9 +883,22 @@ public class MainActivity extends Activity {
    if(active!=user)prefs.edit().putInt("active_profile",user).apply();
    profiles.setOnItemSelectedListener(null);
    profiles.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,names));profiles.setSelection(selected);
+   if(screens!=null&&screens.homeProfiles!=null){
+    screens.homeProfiles.setOnItemSelectedListener(null);
+    screens.homeProfiles.setAdapter(screens.homeProfileAdapter(names));screens.homeProfiles.setSelection(selected);
+   }
    refreshChordWindow();if(screens!=null)screens.refreshLibrary();
-   profiles.setOnItemSelectedListener(new Listener(index->{if(index>=0&&index<list.size()&&user!=list.get(index).id)activateProfile(list.get(index).id);}));
+   profiles.setOnItemSelectedListener(new Listener(index->selectProfileFromSpinner(index,list)));
+   if(screens!=null&&screens.homeProfiles!=null)
+    screens.homeProfiles.setOnItemSelectedListener(new Listener(index->selectProfileFromSpinner(index,list)));
   }catch(RuntimeException ex){message("Não foi possível ler os perfis: "+ex.getMessage());}
+ }
+ void selectProfileFromSpinner(int index,List<LocalProfiles.Profile> list){
+  if(index<0||index>=list.size())return;
+  int id=list.get(index).id;
+  if(user!=id)activateProfile(id);
+  if(profiles!=null&&profiles.getSelectedItemPosition()!=index)profiles.setSelection(index);
+  if(screens!=null&&screens.homeProfiles!=null&&screens.homeProfiles.getSelectedItemPosition()!=index)screens.homeProfiles.setSelection(index);
  }
  void activateProfile(int id){if(user==id)return;stopPlayback();finishStudyWindow();applyProfile(id);}
  void applyProfile(int id){

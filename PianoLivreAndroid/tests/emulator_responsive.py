@@ -25,10 +25,17 @@ try:
         ready=None
         for attempt in range(40):
             rows=[line for line in adb('logcat','-d','-v','brief').splitlines() if 'POC_OSMD_READY {' in line]
-            if rows:
-                ready=json.loads(rows[-1].split('POC_OSMD_READY ',1)[1].split(' @',1)[0]);break
+            # Other diagnostic journeys may leave a different ready payload in
+            # the emulator log. Wait for the requested long score's complete
+            # written-note mapping instead of accepting the first score event.
+            for row in reversed(rows):
+                candidate=json.loads(row.split('POC_OSMD_READY ',1)[1].split(' @',1)[0])
+                if candidate.get('graphicalNotes')==469 and candidate.get('midiMapping',{}).get('matched')==469:
+                    ready=candidate
+                    break
+            if ready:break
             time.sleep(.5)
-        assert ready and ready['graphicalNotes']==469 and ready['midiMapping']['matched']==469,'Display profile lost written heads'
+        assert ready and ready['graphicalNotes']==469 and ready['midiMapping']['matched']==469,'Display profile did not render all written heads'
         assert ready['viewportMaxScrollTop']==0,'Display profile exposes vertical score scrolling'
         assert ready['height']<=ready['availableHeight']+0.5,'Both staves do not fit the display profile'
         assert abs(ready['displayScale']-ready['availableHeight']/ready['nativeSvgHeight'])<0.002,'Display profile used non-uniform scale'
