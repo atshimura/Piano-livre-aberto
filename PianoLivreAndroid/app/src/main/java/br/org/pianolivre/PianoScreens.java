@@ -17,6 +17,7 @@ import java.util.Locale;
 class PianoScreens {
  final MainActivity a;
  final int navy=0xff101C31, ink=0xff172A44, muted=0xff57708A, blue=0xff286BCB, pale=0xffEEF4FA, teal=0xff0C8A78;
+ final int studyBlue=0xff075BFA;
  ScrollView library;LinearLayout libraryInner,grid,studio,freeRoot,header,homeHeader,libraryPanel;HorizontalScrollView studyControlsBar;TextView songTitle,modeNote,tempoLabel,freeTitle,waitFeedback,homeMidiIndicator,studyMidiIndicator;Spinner homeProfiles;
  int feedbackSequence=0;
  Button[] modeButtons=new Button[3],handButtons=new Button[3];
@@ -29,6 +30,7 @@ class PianoScreens {
  MusicLabDiscoveryScreen discovery;
  PianoView legacyFallback;
  final StudyChromeState chrome=new StudyChromeState();
+ String lastStudyLayout="";
  PianoScreens(MainActivity a){this.a=a;}
  int d(float n){return (int)(n*a.getResources().getDisplayMetrics().density+.5f);}
  boolean shortLandscape(){android.util.DisplayMetrics m=a.getResources().getDisplayMetrics();return m.widthPixels>m.heightPixels&&m.heightPixels/m.density<480;}
@@ -327,6 +329,7 @@ class PianoScreens {
  void buildStudio(){
   studio=column();studio.setBackgroundColor(pale);studio.setVisibility(View.GONE);
   LinearLayout controls=row();controls.setPadding(d(12),0,d(12),0);controls.setBackgroundColor(0xffF1F5FC);
+  controls.setGravity(Gravity.CENTER);
   controls.addView(text("MODO",10,muted,true),lp(40,-1));
   String[] modes={"Espera","Contínuo","Demonstração"};
   for(int i=0;i<3;i++){final int idx=i;modeButtons[i]=compact(modes[i],false,()->{
@@ -340,6 +343,7 @@ class PianoScreens {
    a.selectHand(idx);updateSelections();
   });LinearLayout.LayoutParams p=lp(82,44);p.rightMargin=d(4);controls.addView(handButtons[idx],p);}
   studyControlsBar=new HorizontalScrollView(a);studyControlsBar.setHorizontalScrollBarEnabled(true);
+  studyControlsBar.setFillViewport(true);
   studio.removeView(controls);studio.addView(studyControlsBar,lp(-1,46));studyControlsBar.addView(controls,new android.widget.HorizontalScrollView.LayoutParams(-2,d(46)));
   FrameLayout notationArea=new FrameLayout(a);
   legacyFallback=new PianoView(a);legacyFallback.allowKeyboard=false;
@@ -392,6 +396,7 @@ class PianoScreens {
   studio.addView(bottom,lp(-1,54));
   Button rewind=compact(compactStudy?"|◀":"|◀ Início",false,()->a.seekPrevious());rewind.setContentDescription("Início");bottom.addView(rewind,lp(compactStudy?44:76,44));addGap(bottom,6);
   playback=compact("▶  Iniciar",true,()->{a.toggle();updateSelections();});
+  playback.setBackground(bg(studyBlue,12,0));
   playback.setOnLongClickListener(v->{if(a.mode==0){a.configureWaitPreparation();return true;}return false;});
   bottom.addView(playback,lp(compactStudy?82:100,44));addGap(bottom,6);
   Button stop=compact(compactStudy?"■":"■ Parar",false,()->{a.stopPlayback();updateSelections();});stop.setContentDescription("Parar");bottom.addView(stop,lp(compactStudy?44:68,44));addGap(bottom,10);
@@ -423,7 +428,13 @@ class PianoScreens {
  void applyStudyChrome(){
   if(!isStudyOpen())return;
   int visibility=chrome.visible()?View.VISIBLE:View.GONE;
-  if(header.getVisibility()==visibility&&studyControlsBar.getVisibility()==visibility)return;
+  if(header.getVisibility()==visibility&&studyControlsBar.getVisibility()==visibility){recordStudyLayout();return;}
+  if(notation!=null&&(a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0)
+   notation.addOnLayoutChangeListener(new View.OnLayoutChangeListener(){
+    public void onLayoutChange(View v,int l,int t,int r,int b,int oldL,int oldT,int oldR,int oldB){
+     v.removeOnLayoutChangeListener(this);recordStudyLayout();
+    }
+   });
   header.setVisibility(visibility);studyControlsBar.setVisibility(visibility);
   if(notation!=null)notation.post(()->notation.resizeToFit());
   android.util.Log.i("PianoLivreUI","STUDY_CHROME visible="+chrome.visible()+" beat="+a.position);
@@ -436,12 +447,36 @@ class PianoScreens {
    android.util.Log.i("PianoLivreUI","STUDY_CHROME_STATE "+state);
   }catch(org.json.JSONException impossible){throw new IllegalStateException(impossible);}
  }
+ void recordStudyLayout(){
+  if(notation==null||(a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)==0)return;
+  try{
+   int[] xy=new int[2];notation.getLocationOnScreen(xy);
+   JSONObject layout=new JSONObject();layout.put("bounds",new org.json.JSONArray(new int[]{xy[0],xy[1],xy[0]+notation.getWidth(),xy[1]+notation.getHeight()}));
+   layout.put("density",a.getResources().getDisplayMetrics().density);
+   layout.put("headerVisible",header.getVisibility()==View.VISIBLE);
+   layout.put("modesVisible",studyControlsBar.getVisibility()==View.VISIBLE);
+   layout.put("transportActive",a.running||a.waitStarted);
+   View transport=(View)playback.getParent();transport.getLocationOnScreen(xy);
+   layout.put("transportBounds",new org.json.JSONArray(new int[]{xy[0],xy[1],xy[0]+transport.getWidth(),xy[1]+transport.getHeight()}));
+   org.json.JSONArray buttons=new org.json.JSONArray();
+   android.view.ViewGroup bar=(android.view.ViewGroup)transport;
+   for(int i=0;i<bar.getChildCount();i++)if(bar.getChildAt(i) instanceof Button){
+    Button button=(Button)bar.getChildAt(i);button.getLocationOnScreen(xy);
+    JSONObject item=new JSONObject();item.put("text",button.getText().toString());item.put("description",String.valueOf(button.getContentDescription()));
+    item.put("bounds",new org.json.JSONArray(new int[]{xy[0],xy[1],xy[0]+button.getWidth(),xy[1]+button.getHeight()}));buttons.put(item);
+   }
+   layout.put("buttons",buttons);
+   String json=layout.toString();if(!json.equals(lastStudyLayout)){lastStudyLayout=json;android.util.Log.i("PianoLivreUI","STUDY_CHROME_LAYOUT "+json);}
+  }catch(org.json.JSONException impossible){throw new IllegalStateException(impossible);}
+ }
  void buildStudyHeader(){
   boolean compact=a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density<900;
   header.setPadding(d(8),0,d(8),0);
+  header.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xff0D2C55,0xff082445}));
   Button back=compact(compact?"←":"← Biblioteca",false,()->showHome());back.setContentDescription("← Biblioteca");
   back.setTextColor(Color.WHITE);back.setBackgroundColor(Color.TRANSPARENT);header.addView(back,lp(compact?44:115,44));addGap(header,8);
-  songTitle=text("Selecione uma partitura",compact?13:20,Color.WHITE,true);songTitle.setSingleLine(!compact);songTitle.setMaxLines(compact?2:1);songTitle.setEllipsize(TextUtils.TruncateAt.END);
+  back.setTextSize(compact?22:13);
+  songTitle=text("Selecione uma partitura",compact?15:20,Color.WHITE,true);songTitle.setSingleLine(!compact);songTitle.setMaxLines(compact?2:1);songTitle.setEllipsize(TextUtils.TruncateAt.END);
   header.addView(songTitle,new LinearLayout.LayoutParams(0,-1,1));addGap(header,8);
   a.info=text("",11,0xffDCE8FA,false);a.info.setSingleLine(true);a.info.setEllipsize(TextUtils.TruncateAt.END);
   a.info.setContentDescription("Andamento real, velocidade e posição; não é zoom");
@@ -491,8 +526,8 @@ class PianoScreens {
  }
  void updateSelections(){
   for(int i=0;i<3;i++){
-   if(modeButtons[i]!=null){boolean on=a.mode==i;modeButtons[i].setBackground(bg(on?blue:Color.WHITE,12,on?0:0xffCCD9E8));modeButtons[i].setTextColor(on?Color.WHITE:ink);}
-   if(handButtons[i]!=null){boolean on=a.currentHand==i;handButtons[i].setBackground(bg(on?blue:Color.WHITE,12,on?0:0xffCCD9E8));handButtons[i].setTextColor(on?Color.WHITE:ink);}
+   if(modeButtons[i]!=null){boolean on=a.mode==i;modeButtons[i].setBackground(bg(on?studyBlue:Color.WHITE,12,on?0:0xffCCD9E8));modeButtons[i].setTextColor(on?Color.WHITE:ink);}
+   if(handButtons[i]!=null){boolean on=a.currentHand==i;handButtons[i].setBackground(bg(on?studyBlue:Color.WHITE,12,on?0:0xffCCD9E8));handButtons[i].setTextColor(on?Color.WHITE:ink);}
   }
   if(playback!=null)playback.setText(a.mode==0?(a.waitPreparing?"Preparando…":a.waitStarted?"♪ Esperando":"▶ Iniciar"):a.running?"❚❚  Pausar":"▶  Iniciar");
   chrome.update(a.running||a.waitStarted);applyStudyChrome();

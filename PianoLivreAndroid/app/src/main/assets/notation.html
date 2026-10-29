@@ -596,7 +596,11 @@
    });
   }
   while(state.overlay.firstChild)state.overlay.removeChild(state.overlay.firstChild);
-  if(state.braceNode)state.overlay.appendChild(state.braceNode.cloneNode(true));
+  let bracePaint=null;
+  if(state.braceNode){
+   bracePaint=document.createElementNS('http://www.w3.org/2000/svg','g');
+   bracePaint.appendChild(state.braceNode.cloneNode(true));state.overlay.appendChild(bracePaint);
+  }
   let railEnd=0;
   state.base.forEach(function(staff,staffIndex){
    if(!staff)return;
@@ -641,6 +645,15 @@
   state.overlay.setAttribute('viewBox',[camera.x,camera.y,camera.width,camera.height].join(' '));
   state.overlay.setAttribute('width',String(state.nativeWidth*opticalDisplayScale));
   state.overlay.setAttribute('height',String(cameraHeight));
+  if(bracePaint){
+   // The original OSMD brace can extend left of the camera viewBox. Fit its
+   // actual ink inside the fixed rail without moving clefs, notes or MIDI.
+   const ink=bracePaint.getBoundingClientRect(),minimum=viewportRect.left+4;
+   if(ink.left<minimum)bracePaint.setAttribute('transform','translate('+((minimum-ink.left)/opticalDisplayScale)+' 0)');
+   const fitted=bracePaint.getBoundingClientRect();
+   console.log('POC_BRACE_FIT '+JSON.stringify({left:fitted.left-viewportRect.left,right:fitted.right-viewportRect.left,
+    width:fitted.width,railWidth:state.railWidthCss}));
+  }
   console.log('POC_CONTEXT_RAIL_MEASURE '+JSON.stringify({measure:target+1,beat:beat}));
   console.log('POC_CONTEXT_RAIL_STATE '+JSON.stringify({measure:target+1,
    staffSources:state.active.map(function(symbols){return {clef:symbols.clef&&symbols.clef.sourceMeasure,

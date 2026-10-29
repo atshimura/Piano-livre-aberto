@@ -2,7 +2,7 @@
 """Real UI comparisons with the pinned Prompt 1 baseline and all three states."""
 import json,time,re
 from pathlib import Path
-from emulator_ui import adb,dump,tap_text,home_scroll_to_top,responsive_evidence,assert_study_controls
+from emulator_ui import adb,dump,tap_text,home_scroll_to_top,responsive_evidence,assert_study_controls,current_study_layout
 PACKAGE='br.org.pianolivre.opensource'
 report=[]
 def records(marker):
@@ -18,8 +18,8 @@ def hidden_note_tap():
     assert target,'Real hidden-state graphical note target missing after Wait preparation'
     before=records('STUDY_CHROME_STATE ')[-1]
     assert not before['visible'] and before['waitStarted']
-    root=dump();view=next(n for n in root.iter('node') if n.attrib.get('class')=='android.webkit.WebView')
-    box=[int(v) for v in re.findall(r'\d+',view.attrib['bounds'])]
+    layout=current_study_layout();assert layout and not layout['headerVisible']
+    box=layout['bounds']
     x=box[0]+round(target['x']*(box[2]-box[0])/target['webviewWidth'])
     y=box[1]+round(target['y']*(box[3]-box[1])/target['viewportHeight'])
     adb('shell','input','tap',str(x),str(y));time.sleep(.5)
@@ -40,6 +40,8 @@ try:
         if not any('Bem-vindo ao' in text for text in labels):tap_text(['Biblioteca'],scroll=True)
         home_scroll_to_top();tap_text(['Começar pela Ode à Alegria'],scroll=True);time.sleep(3)
         assert_study_controls()
+        braces=records('POC_BRACE_FIT ')
+        assert braces and braces[-1]['width']>0 and braces[-1]['left']>=3.5,'Grand-staff brace clipped at left edge'
         responsive_evidence('prompt02-'+label)
         before=json.loads(Path('piano-prompt02-before-'+label+'.json').read_text())
         after=json.loads(Path('piano-03d-prompt02-'+label+'.json').read_text())

@@ -88,11 +88,19 @@ def home_scroll_to_top():
         time.sleep(.15)
     time.sleep(.3)
 
+def current_study_layout():
+    pid=adb("shell","pidof","br.org.pianolivre.opensource").strip()
+    rows=[line for line in adb("logcat","-d","--pid="+pid,"-v","brief").splitlines() if "STUDY_CHROME_LAYOUT " in line]
+    return json.loads(rows[-1].split("STUDY_CHROME_LAYOUT ",1)[1]) if rows else None
+
 def reveal_study_controls():
-    root=dump()
-    views=[n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
-    assert views,"Study WebView missing"
-    box=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
+    layout=current_study_layout()
+    if layout and not layout["headerVisible"]:box=layout["bounds"]
+    else:
+        root=dump()
+        views=[n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
+        assert views,"Study WebView missing"
+        box=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
     adb("shell","input","tap",str(box[2]-12),str(box[3]-12));time.sleep(.6)
 
 def study_renderer(temporal):
@@ -119,11 +127,20 @@ def responsive_evidence(name):
         if state=="playing":tap_text(["Iniciar"])
         if state=="restored":reveal_study_controls()
         time.sleep(.8)
-        root=dump();labels=[n.attrib.get("text","") for n in root.iter("node")]
-        assert ("Espera" in labels)==(state!="playing"),"Chrome hide/reveal failed"
-        assert any("Parar" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in root.iter("node")),"Permanent transport lost"
-        view=next(n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView")
-        box=[int(v) for v in re.findall(r"\d+",view.attrib["bounds"])];height=box[3]-box[1]
+        if state!="normal":
+            # UiAutomator waits for accessibility idle and cannot dump a live animation.
+            # Read the actual native post-layout bounds; never pause/freeze the score.
+            layout=current_study_layout()
+            assert layout and layout["headerVisible"]==(state=="restored") and layout["modesVisible"]==(state=="restored"),"Chrome hide/reveal failed"
+            box=layout["bounds"]
+            assert layout["transportBounds"][3]>layout["transportBounds"][1],"Permanent transport lost"
+        else:
+            root=dump();labels=[n.attrib.get("text","") for n in root.iter("node")]
+            assert "Espera" in labels,"Chrome reveal failed"
+            assert any("Parar" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in root.iter("node")),"Permanent transport lost"
+            view=next(n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView")
+            box=[int(v) for v in re.findall(r"\d+",view.attrib["bounds"])]
+        height=box[3]-box[1]
         density=int(re.findall(r"(?:Override|Physical) density: (\d+)",adb("shell","wm","density"))[-1])/160
         geometry=None
         for attempt in range(25):
@@ -218,6 +235,15 @@ def return_to_library_if_study_was_restored():
         wait_for_text("Bem-vindo ao")
 
 def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pass=0):
+    if any(value in ("Parar","Iniciar","Pausar") for value in targets):
+        layout=current_study_layout()
+        if layout and layout["transportActive"]:
+            for button in layout["buttons"]:
+                labels=[button["text"],button["description"]]
+                if any(any((value.casefold()==label.casefold()) if exact else (value.casefold() in label.casefold()) for value in targets) for label in labels):
+                    box=button["bounds"];point=(str((box[0]+box[2])//2),str((box[1]+box[3])//2))
+                    adb("shell","input","tap",*point);time.sleep(.2)
+                    return point if return_point else button["text"]
     root=dump()
     for node in root.iter("node"):
         labels=[node.attrib.get("text",""),node.attrib.get("content-desc","")]
