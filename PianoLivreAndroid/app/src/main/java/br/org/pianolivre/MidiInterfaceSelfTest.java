@@ -43,7 +43,9 @@ final class MidiInterfaceSelfTest {
    case 1:a.midiConnection.connect(new MidiConnection.Target(100,LONG_NAME,true),(target,generation,completion)->pending=completion);break;
    case 2:current=new FakePorts(true,true);first=current;pending.complete(current);break;
    case 3:
-    a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true);a.mode=1;a.currentHand=2;a.tempoFactor=.25;a.loopStart=0;a.loopEnd=8;a.position=0;
+    a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true);
+    a.screens.modeButtons[1].performClick();a.selectHand(2);a.tempoBar.setProgress(0);a.loopStart=0;a.loopEnd=8;a.position=0;
+    a.screens.followScore(0,false);
     source=a.score.sourceXml;a.screens.updateSelections();a.updateInfo();break;
    case 4:a.toggle();check(a.running&&!a.screens.chrome.visible(),"start hides bars");break;
    case 5:check(a.running&&a.screens.chrome.visible(),"real score tap restores without pausing");break;
