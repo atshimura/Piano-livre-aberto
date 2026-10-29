@@ -44,6 +44,8 @@ A inspeção dos PNGs encontrou regiões da pauta sem pintura no celular. A guar
 
 As capturas da revisão `5e3eb33` confirmaram a pintura completa com a camada de software. A suíte longa dessa revisão identificou uma corrida do roteiro antigo: mudar a resolução antes de encerrar a Activity com flags de self-test podia reexecutar a checagem de upgrade após o teste de exclusão ter removido sua fixture. A preparação das capturas de Home agora encerra essa instância antes de mudar a resolução, preservando a checagem inicial de upgrade, a exclusão de importados e os ensaios de resize/lifecycle nas jornadas próprias. O resultado final continua dependendo dos dois workflows do HEAD final.
 
+Além dos diagnósticos DOM, a regressão visual lê pixels reais de `adb exec-out screencap` e exige dez faixas de tinta contínuas (duas pautas de cinco linhas) na fixture Ode. A ausência de regiões pintadas passa a falhar automaticamente, mesmo quando dimensões e callbacks JavaScript estão corretos. A contagem é registrada no JSON; não edita screenshots nem substitui inspeção visual.
+
 Nenhuma alteração em parser MusicXML, `WaitRecognizer`, calibração de acordes, seleção de mãos por pauta, renderizadores ou agenda `MidiPlayback`. Extras continuam indicadas sem bloquear; duração e pedal orientam, sem prazo novo. Dados, esquema de backup, perfis e arquivos originais não são migrados ou reescritos. Preferência antiga do guia continua preservada sem devolver o guia ao Estudar.
 
 ## Testes e evidências

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Production connection owner + synthetic ports, real Android screens and captures."""
-import json,time,subprocess
+import json,time,subprocess,struct
 from pathlib import Path
 from emulator_ui import adb,screenshot,dump,reveal_study_controls,current_study_layout
 PACKAGE='br.org.pianolivre.opensource'
@@ -39,6 +39,23 @@ def rendered_frame(stage,record):
         time.sleep(.1)
     else:raise AssertionError('WebView did not commit its visual state: '+stage)
     record.update(heightPx=height,heightDp=height/layout['density'],geometry=fit,transportBounds=layout['transportBounds'])
+def assert_staff_ink(record):
+    # Inspect real framebuffer pixels, independently of DOM/geometry diagnostics.
+    # The Ode fixture has two five-line staves spanning the visible viewport.
+    data=subprocess.check_output(['adb','exec-out','screencap'])
+    width,height,pixel_format=struct.unpack('<III',data[:12])
+    assert pixel_format in (1,2),'Unexpected emulator framebuffer format'
+    header=len(data)-width*height*4
+    assert header in (12,16),'Unexpected framebuffer stride/header'
+    box=current_study_layout()['bounds'];x0=max(0,box[0]+(box[2]-box[0])//50);x1=min(width,box[2]-(box[2]-box[0])//50)
+    samples=list(range(x0,x1,3));bands=0;was_line=False
+    for y in range(max(0,box[1]),min(height,box[3])):
+        dark=sum(max(data[header+4*(y*width+x):header+4*(y*width+x)+3])<140 for x in samples)
+        is_line=dark>=len(samples)*.85
+        if is_line and not was_line:bands+=1
+        was_line=is_line
+    assert bands>=10,('Incomplete painted grand staff',record['stage'],bands)
+    record['paintedStaffBands']=bands
 try:
     for label,size,normal,hidden in [('phone','1280x720',417,567),('tablet','1920x1080',777,927)]:
         adb('shell','am','force-stop',PACKAGE);adb('shell','wm','size',size);adb('shell','wm','density','240')
@@ -64,7 +81,8 @@ try:
             if not record['running']:
                 tree=dump();buttons=[n for n in tree.iter('node') if n.attrib.get('content-desc','').startswith('Gerenciar')]
                 assert buttons and any(n.attrib.get('clickable')=='true' for n in buttons),'MIDI button inaccessible'
-            if stage.startswith('study-'):rendered_frame(stage,record)
+            if stage.startswith('study-'):
+                rendered_frame(stage,record);assert_staff_ink(record)
             screenshot('piano-prompt03-'+label+'-'+stage+'.png');measurements.append(record)
             if stage=='study-hidden':reveal_study_controls()
             if stage=='study-connected':
