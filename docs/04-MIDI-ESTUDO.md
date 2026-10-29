@@ -2,6 +2,8 @@
 
 # 04 — MIDI, relógio musical e modos de estudo
 
+**Prompt 3 (29/10/2026):** conexão efetiva requer ao menos uma porta aberta; o estado comum das duas interfaces fica em `MidiConnection`, com adaptador `AndroidMidiPorts`. Troca/desconexão/falha pausa conservando posição/configurações, encerra notas/pedal controláveis e exige novo Iniciar após reconectar. Retorno verifica inventário e descarta lotes/fragmentos anteriores ao background. Diagnóstico é genérico USB-MIDI e conserva nome completo/capacidades. Ver [documento 72](72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md) para estado atual, testes sintéticos e limitações físicas; as descrições antigas de campos de porta/retomada automática abaixo são históricas.
+
 > **Status corrente na beta privada 0.9.11:** trechos a seguir sobre `downKeys.containsAll`, `Score.tempo` único, acordes sem calibração e pedal sem tratamento se referem ao **estado histórico da 0.9.0–0.9.1**, não ao estado corrente. O Espera usa `WaitRecognizer` (extras indicadas sem bloquear), `ChordCalibration` por perfil (janela temporal apenas após calibrar), duração/pedal orientativos, e `Score.tempoChanges`/percursos de compassos. `MidiPerformance` rastreia CC64 por canal; o indicador visual da 0.9.11 agrega os 16 canais. A Demonstração usa `MidiPlayback` com seek seguro. Ver [13](13-CORRECOES-MIDI-0.9.1.md), [17](17-REGRAS-ESPERA-CALIBRACAO.md), [18](18-MOTOR-MUSICAL-0.9.5.md), [19](19-PERCURSO-MUSICAL-0.9.6.md), [24](24-AUDITORIA-NOTACAO-MIDI-ETAPAS-1-3.md). **Ainda sem ensaio físico Yamaha/Realme/Lenovo**.
 
 ## 1. Instrumento e conexão

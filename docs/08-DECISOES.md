@@ -55,7 +55,13 @@
 
 ## Como atualizar
 
-**A numeração D-016 não tem registro neste arquivo; não inventar aprovação retroativa.** Para próximas decisões, usar D-018 e seguintes, preservando D-017 já formalizada. Adicione **D-018, D-019...** com: data, decisão (produto/técnica), motivo, opções analisadas quando houver, consequências, arquivos impactados, evidência de aprovação do produto e situação implementada/parcial/futura. **Não invente decisões do usuário a partir de uma suposição de uma IA.** Em divergência entre requisito e código, o requisito continua registrado e o código é classificado como parcial até que haja aprovação de mudança de escopo.
+## D-018 — Estado MIDI comum e interrupção segura (29/10/2026)
+
+**Produto aprovado pelo Prompt 3 fornecido pelo usuário; organização técnica desta implementação:** Inicial e Estudar exibem somente o nome real de uma conexão efetiva com pelo menos uma porta funcional; nos demais estados, USB-MIDI. Diagnóstico mantém nome completo, estado e capacidades. `MidiConnection` possui geração e recursos; `AndroidMidiPorts` adapta a API existente. Callbacks atrasados não reativam sessões encerradas. Desconexão, troca ou falha pausa sem perder posição/configurações; reconectar exige novo Iniciar. O aplicativo tenta encerrar suas notas e liberar pedal nas saídas ainda controláveis. Foreground verifica inventário e reinicia observação sem ataques anteriores. `StudyChromeState`, reconhecimento e dados são preservados. Implementação/provas/limites em [72](72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md); confirmação automatizada depende dos checks do HEAD final, e hardware permanece pendente. Não representa aprovação de V1, merge ou publicação.
+
+### Continuidade do registro
+
+**A numeração D-016 não tem registro neste arquivo; não inventar aprovação retroativa.** Para próximas decisões, usar D-019 e seguintes, preservando D-017 já formalizada. Adicione **D-019, D-020...** com: data, decisão (produto/técnica), motivo, opções analisadas quando houver, consequências, arquivos impactados, evidência de aprovação do produto e situação implementada/parcial/futura. **Não invente decisões do usuário a partir de uma suposição de uma IA.** Em divergência entre requisito e código, o requisito continua registrado e o código é classificado como parcial até que haja aprovação de mudança de escopo.
 
 Veja [01](01-VISAO-E-REQUISITOS.md), [07](07-ESTADO-E-ROADMAP.md) e [10](10-CONTINUIDADE.md).
 

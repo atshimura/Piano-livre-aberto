@@ -2,6 +2,8 @@
 
 # 02 — Arquitetura técnica e mapa do código
 
+**Prompt 3 (29/10/2026):** `MidiConnection` possui estado, geração e recursos de conexão; `AndroidMidiPorts` adapta as portas Android. Inicial/Estudar usam o mesmo snapshot, e recepção continua em `MainActivity` com geração/época de foreground. `StudyChromeState` e o relógio musical são preservados. [Arquitetura, testes e limites atuais](72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md) supersedem os campos de portas descritos no histórico abaixo.
+
 **Atualização do Prompt 2 (29/10/2026), na branch `feat/tela-estudar-piano-livre`:** `PianoScreens` mantém um único cabeçalho de estudo, faixa MODO/MÃOS e transporte permanente. `StudyChromeState` é estado de apresentação, sem um segundo relógio musical. A view do guia foi removida do Estudar, conservando preferências legadas e componentes compartilhados. `NotationView` tenta OSMD e, em caso de falha, temporal e depois esquemático nativo com aviso; não há seletor manual. A referência histórica abaixo sobre teclado imersivo e renderização temporal padrão deve ser lida à luz do [documento 71](71-TELA-ESTUDAR-PROMPT-02.md) e da decisão D-007 posterior. Sem servidor, mudança no parser ou reescrita de MusicXML.
 
 **Base auditada:** HEAD anterior à documentação **59112581fbd7deb9bb5b01dde426b3132bf4944f** (14/10/2026). Consulte o histórico para mudanças posteriores. Este é um protótipo **Android Java + WebView JavaScript**; não há servidor/backend.

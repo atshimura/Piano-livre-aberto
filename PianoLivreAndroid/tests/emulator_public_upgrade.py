@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     signer=sdk/"build-tools/35.0.0/apksigner"
     aapt=signer.with_name("aapt")
     assert version(aapt,old_apk)==(PACKAGE,"55","0.9.46-open-beta")
-    assert version(aapt,NEW_APK)==(PACKAGE,"60","0.9.51-open-beta")
+    assert version(aapt,NEW_APK)==(PACKAGE,"61","0.9.52-open-beta")
     assert certificate(signer,old_apk)==EXPECTED_CERT
     assert certificate(signer,NEW_APK)==EXPECTED_CERT
 
@@ -83,7 +83,7 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     assert after==before,"Public release update changed the imported MusicXML file"
     print(json.dumps({"result":"PUBLIC_APK_UPDATE_PRESERVED_DATA_PASS",
       "previousVersion":"0.9.46-open-beta","previousVersionCode":55,
-      "newVersion":"0.9.51-open-beta","newVersionCode":60,"package":PACKAGE,
+      "newVersion":"0.9.52-open-beta","newVersionCode":61,"package":PACKAGE,
       "certificateSha256":EXPECTED_CERT,"profile":"synthetic ID 7 preserved",
       "keyboard":"preserved","tempo":"80% preserved","importedScoreSha256":after,
       "scope":"API 29 emulator; actual previous public release APK; synthetic user data"},ensure_ascii=False))

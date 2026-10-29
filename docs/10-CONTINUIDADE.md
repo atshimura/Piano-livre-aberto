@@ -1,5 +1,9 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Prompt 3 — consolidação MIDI e interfaces (29/10/2026)
+
+Branch `feat/consolidacao-midi-interface-piano-livre`, dependente do PR #73 e de sua HEAD final `2739bb2`. Leia [72](72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md) e a especificação fornecida. O registro final do PR contém HEAD, checks e artefatos dessa revisão; não substitua por runs dos Prompts 1/2. Conexão compartilhada agora exige portas funcionais e gerações válidas; desconexão pausa sem apagar estado, e retorno do background reconcilia inventário. Layouts e `StudyChromeState` preservados. Versão 0.9.52-open-beta (61). Não integrar à main, publicar Release nem iniciar Prompt 4 nesta entrega. Hardware/V1 continuam pendentes. As seções seguintes preservam o histórico anterior.
+
 ## Prompt 2 — tela Estudar (29/10/2026)
 
 Trabalho no [PR #73](https://github.com/atshimura/Piano-livre-aberto/pull/73), branch `feat/tela-estudar-piano-livre`, dirigido à branch do Prompt 1/PR #71. O PR documental #72 contém o PNG original aprovado, conferido por hash e visualização. Consulte [71](71-TELA-ESTUDAR-PROMPT-02.md) para alterações, medições e proveniência; verifique sempre o HEAD e os checks atuais no PR. Não integrar à main, publicar Release ou iniciar Prompt 3 nesta entrega. A remoção do guia no Estudar supersede D-007 antiga, preservando MIDI, dados legados e componentes compartilhados. A V1 e os testes físicos continuam pendentes.

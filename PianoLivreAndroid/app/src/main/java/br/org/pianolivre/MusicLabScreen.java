@@ -372,7 +372,7 @@ final class MusicLabScreen extends LinearLayout {
   if(demoSession.isPlaying()){stopDemonstration();return;}
   MusicLabCatalog.Entry item=currentEntry();
   if(!learn||item==null)return;
-  if(activity.outputPort==null){
+  if(!activity.midiConnection.snapshot().canSend){
    activity.message("Demonstração requer saída USB-MIDI no piano conectado; o Android não sintetiza áudio.");
    return;
   }
@@ -386,14 +386,14 @@ final class MusicLabScreen extends LinearLayout {
  private void scheduleDemo(List<MusicLabPlaybackPlan.Event> events,int generation){
   for(MusicLabPlaybackPlan.Event event:events)activity.handler.postDelayed(()->{
    if(!demoSession.isCurrent(generation))return;
-   if(getVisibility()!=VISIBLE||!activity.foreground||activity.outputPort==null){stopDemonstration();return;}
+   if(getVisibility()!=VISIBLE||!activity.foreground||!activity.midiConnection.snapshot().canSend){stopDemonstration();return;}
    if(!demoSession.apply(generation,event))return;
    activity.send(event.note,event.on);
    refresh();
   },event.atMillis);
   activity.handler.postDelayed(()->{
    if(!demoSession.isCurrent(generation))return;
-   if(getVisibility()!=VISIBLE||!activity.foreground||activity.outputPort==null){stopDemonstration();return;}
+   if(getVisibility()!=VISIBLE||!activity.foreground||!activity.midiConnection.snapshot().canSend){stopDemonstration();return;}
    if(demoSession.shouldRepeat(generation,demoRepeat.isChecked()))scheduleDemo(events,generation);
    else stopDemonstration();
   },MusicLabPlaybackPlan.endMillis(events)+250);

@@ -15,6 +15,7 @@ Este repositório é a **base principal de desenvolvimento** do Piano Livre. Lei
 - Onde houver teclado guia visual, mostrar ambas as mãos, inclusive simultaneidade, dinâmica e duração. **Decisão posterior aprovada no Prompt 2 (29/10/2026): remover o guia do modo Estudar**, preservando MIDI/reconhecimento, preferências legadas e componentes compartilhados. **O guia visual não é um sintetizador de áudio**. Diferenciar reprodução MIDI no instrumento de visualização de teclas.
 - Claves Sol/Fá devem ser posicionadas por G4/F3 nas respectivas linhas, mantendo pautas/claves fixas à esquerda durante rolagem.
 - Não inferir mão pela altura da nota, nem modificar MusicXML importado ao aplicar preferências de estudo.
+- Prompt 3: Inicial/Estudar compartilham `MidiConnection`; disponibilidade e abertura não equivalem a conexão. Nome só com porta funcional e metadado real. Preservar geração/época de recepção, pausa segura sem rebobinar e encerramento de notas/pedal antes de liberar recursos controláveis. Ver `docs/72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md`.
 - Backup v2 exige pré-validação, confirmação e rollback; nunca apagar dados do usuário antes de validar restauração.
 
 ## Regras de colaboração e segurança

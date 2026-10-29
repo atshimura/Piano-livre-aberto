@@ -2,7 +2,7 @@ name: Open Piano Livre - emulator Android
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main, feat/tela-inicial-piano-livre]
+    branches: [main, feat/tela-inicial-piano-livre, feat/tela-estudar-piano-livre]
     paths:
       - 'PianoLivreAndroid/app/**'
       - 'PianoLivreAndroid/tests/**'
@@ -73,12 +73,15 @@ jobs:
           script: |
             test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
             gradle --no-daemon :app:assembleDebug :app:assembleRelease
+            "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/release/app-release.apk > build/public-release-apk-metadata.txt
+            "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk > build/public-release-signature.txt
             "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk | grep -q "package: name='br.org.pianolivre.opensource'"
             adb shell svc wifi disable
             adb shell svc data disable
             python3 tests/emulator_study_baseline.py
             adb install app/build/outputs/apk/debug/app-debug.apk
             python3 tests/emulator_study_layout.py
+            python3 tests/emulator_midi_interfaces.py
             adb uninstall br.org.pianolivre.opensource
             python3 tests/emulator_upgrade.py
             adb install -r app/build/outputs/apk/debug/app-debug.apk
@@ -120,7 +123,7 @@ jobs:
         if: success() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: PianoLivre-prompt-02-validation-apk
+          name: PianoLivre-prompt-03-validation-apk
           path: |
             PianoLivreAndroid/app/build/outputs/apk/release/app-release.apk
             PianoLivreAndroid/build/public-release-signature.txt
@@ -189,6 +192,9 @@ jobs:
               "piano-discovery-staff-tablet-sequence.png",
           ]
           report = []
+          for viewport in ('phone', 'tablet'):
+              for stage in ('home-disconnected','home-opening','home-connected','study-connected','study-hidden','study-restored','study-disconnected','study-unnamed','study-switched','home-reconnected','home-background-return','diagnostics'):
+                  names.append('piano-prompt03-' + viewport + '-' + stage + '.png')
           for name in names:
               path = pathlib.Path(name)
               data = path.read_bytes()
@@ -221,6 +227,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
           path: |
+            PianoLivreAndroid/piano-prompt03-*
             PianoLivreAndroid/piano-prompt02-*
             PianoLivreAndroid/piano-ui-failure.*
             PianoLivreAndroid/piano-study*failure.png

@@ -196,10 +196,11 @@ class PianoScreens {
  }
  void updateMidiIndicator(){
   if(homeMidiIndicator==null&&studyMidiIndicator==null)return;
-  boolean connected=a.device!=null&&a.activeInfo!=null;
-  String actualName=connected?a.midiInstrumentName(a.activeInfo):"";
+  MidiConnection.Snapshot state=a.midiConnection.snapshot();
+  boolean connected=state.connected();
+  String actualName=connected?state.target.name:"";
   String label=HomeMidiIndicator.label(connected,actualName);
-  for(TextView indicator:new TextView[]{homeMidiIndicator,studyMidiIndicator})if(indicator!=null){indicator.setText(label);indicator.setContentDescription(connected&&!actualName.isEmpty()?"Gerenciar MIDI. Conectado a "+label:"Gerenciar conexão USB-MIDI");}
+  for(TextView indicator:new TextView[]{homeMidiIndicator,studyMidiIndicator})if(indicator!=null){indicator.setText(label);indicator.setContentDescription(connected?actualName.isEmpty()?"Gerenciar MIDI. Dispositivo conectado sem nome":"Gerenciar MIDI. Conectado a "+label:"Gerenciar conexão USB-MIDI");}
  }
  void refreshLibrary(){
   if(grid==null)return;grid.removeAllViews();
@@ -581,7 +582,7 @@ class PianoScreens {
   freeRoot.setVisibility(View.GONE);
   studio.setVisibility(View.GONE);if(lab!=null)lab.setVisibility(View.GONE);
   if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
-  library.setVisibility(View.VISIBLE);refreshLibrary();
+  library.setVisibility(View.VISIBLE);refreshLibrary();updateMidiIndicator();
  }
  void showStudy(){
   if(a.score==null)return;
@@ -594,7 +595,7 @@ class PianoScreens {
   studio.setVisibility(View.VISIBLE);
   songTitle.setText(a.currentName==null||a.currentName.isEmpty()?a.score.title:a.currentName);
   if(notation!=null)notation.postDelayed(()->notation.resizeToFit(),180);
-  modeNote=null;updateSelections();a.beginStudyWindow();
+  modeNote=null;updateSelections();updateMidiIndicator();a.beginStudyWindow();
  }
  void displayScore(Score score,double beat){
   editingLoop=false;updateSelections();

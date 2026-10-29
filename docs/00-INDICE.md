@@ -3,6 +3,7 @@
 **Esta documentação trata do repositório público.** O código provém de um desenvolvimento prévio privado, mas não depende do histórico ou de arquivos restritos para compilar.
 
 ## Entregas em preparação
+- [72 — Consolidação MIDI e interfaces, Prompt 3](72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md): estado compartilhado, reconexão, encerramento de notas, lifecycle e provas sintéticas nas duas telas; branch dependente do Prompt 2, sem merge/Release.
 - [71 — Tela Estudar, Prompt 2](71-TELA-ESTUDAR-PROMPT-02.md): cabeçalho unificado, renderização automática, ocultação/restauração, medições e evidências no PR #73, dependente do PR #71; sem merge ou Release e com aceite físico pendente.
 - [70 — Tela inicial, Prompt 1](70-TELA-INICIAL-PROMPT-01.md): implementação técnica concluída, evidências e APK verificados; PR #71 aberto para integração posterior, sem Release desta entrega e com aceite físico pendente. Próxima etapa: Prompt 2 — Tela Estudar.
 - [66 — Laboratório Descobrir 1.0](66-LABORATORIO-DESCOBRIR-1.0.md): interface mínima pública, reconhecimento USB-MIDI, pauta nativa, testes e pendências de aceite.
