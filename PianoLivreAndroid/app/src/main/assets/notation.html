@@ -132,7 +132,7 @@
    document.getElementById('optical-wait-fill').style.width=
      (100*progress).toFixed(1)+'%';
    if(remaining>0)opticalWaitRaf=requestAnimationFrame(paint);
-   else {console.log('POC_WAIT_COMPLETE');cancelOpticalWait();}
+   else {console.log('POC_WAIT_COMPLETE');cancelOpticalWait();requestAnimationFrame(logStudyTouchTarget);}
   }
   paint();
  }
@@ -782,6 +782,20 @@
   opticalTipTimeout=setTimeout(hideOpticalTip,2000);
  }
  // Reattach after every OSMD render/resize: OSMD can replace its SVG root.
+ function logStudyTouchTarget(){
+  const svg=document.querySelector('#score svg');
+  if(!studyProof||!svg||!optical)return;
+  const rect=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+  for(const note of optical.notes){
+   if(!note.nativeEvent)continue;
+   const x=rect.left+(note.x-vb.x)*rect.width/vb.width;
+   const y=rect.top+(note.y-vb.y)*rect.height/vb.height;
+   if(x>opticalReferenceX+15&&x<viewport.clientWidth-15&&y>12&&y<viewport.clientHeight-12){
+    console.log('STUDY_TOUCH_TARGET '+JSON.stringify({x:x,y:y,midi:note.nativeEvent.midi,
+     webviewWidth:document.documentElement.clientWidth,viewportHeight:viewport.clientHeight}));return;
+   }
+  }
+ }
  function attachOpticalNoteTouch(svg){
   if(!svg||svg.dataset.opticalTouch==='yes')return;
   svg.dataset.opticalTouch='yes';

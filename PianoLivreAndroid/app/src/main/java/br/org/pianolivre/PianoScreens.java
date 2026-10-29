@@ -427,6 +427,14 @@ class PianoScreens {
   header.setVisibility(visibility);studyControlsBar.setVisibility(visibility);
   if(notation!=null)notation.post(()->notation.resizeToFit());
   android.util.Log.i("PianoLivreUI","STUDY_CHROME visible="+chrome.visible()+" beat="+a.position);
+  if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0)try{
+   JSONObject state=new JSONObject();state.put("visible",chrome.visible());state.put("beat",a.position);
+   state.put("mode",a.mode);state.put("hand",a.currentHand);state.put("tempo",a.tempoFactor);
+   state.put("loopStart",a.loopStart);state.put("loopEnd",a.loopEnd);state.put("midiGeneration",a.midiGeneration);
+   state.put("running",a.running);state.put("waitStarted",a.waitStarted);
+   state.put("sourceHash",a.score==null?0:a.score.sourceXml.hashCode());
+   android.util.Log.i("PianoLivreUI","STUDY_CHROME_STATE "+state);
+  }catch(org.json.JSONException impossible){throw new IllegalStateException(impossible);}
  }
  void buildStudyHeader(){
   boolean compact=a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density<900;

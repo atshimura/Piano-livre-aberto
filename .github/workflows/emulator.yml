@@ -77,6 +77,9 @@ jobs:
             adb shell svc wifi disable
             adb shell svc data disable
             python3 tests/emulator_study_baseline.py
+            adb install app/build/outputs/apk/debug/app-debug.apk
+            python3 tests/emulator_study_layout.py
+            adb uninstall br.org.pianolivre.opensource
             python3 tests/emulator_upgrade.py
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n br.org.pianolivre.opensource/br.org.pianolivre.MainActivity
@@ -109,7 +112,6 @@ jobs:
             python3 tests/emulator_polyphony.py
             python3 tests/emulator_notation06.py
             python3 tests/emulator_responsive.py
-            python3 tests/emulator_study_layout.py
             python3 tests/emulator_study_session.py
             python3 tests/emulator_release.py
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py; fi
