@@ -387,7 +387,9 @@
   const railUnits=opticalContextState?opticalContextState.contextRailUnits:130;
   opticalReferenceX=Math.min(Math.max(1,viewport.clientWidth-24),
    Math.max(baseReference,railUnits*opticalDisplayScale+12));
-  opticalOffset=Math.max(0,opticalReferenceX+53-optical.timeline.xAt(beat)*opticalDisplayScale);
+  // Keep one score origin across resize/seek. Anchoring this margin to the
+  // current beat makes rewind unable to restore beat zero after a resize.
+  opticalOffset=Math.max(0,opticalReferenceX+53-optical.timeline.xAt(0)*opticalDisplayScale);
   document.getElementById('score').style.marginLeft=opticalOffset+'px';
   document.getElementById('optical-reference').style.left=opticalReferenceX+'px';
  }
@@ -1258,7 +1260,7 @@
     if(!loaded)return;
     if(!freeLayout&&!studyProof){if(window.TemporalNotation)TemporalNotation.resize();return;}
     if(!osmd)return;
-    // Teclado guia changes HEIGHT only: preserve horizontal OSMD SVG and touch targets.
+    // Chrome transitions change HEIGHT only: retain horizontal SVG and touch targets.
     if(studyProof&&osmdRenderedWidth===viewport.clientWidth){
      if(osmdRenderedHeight!==viewport.clientHeight){
       osmdRenderedHeight=viewport.clientHeight;

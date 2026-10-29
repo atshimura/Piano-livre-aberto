@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Automated Android emulator GUI smoke test; no physical MIDI required."""
-import os, re, subprocess, time, xml.etree.ElementTree as ET, json
+import os, re, subprocess, time, xml.etree.ElementTree as ET, json, sys
 from pathlib import Path
 DEFAULT_SCORE_TITLE = json.loads(Path('app/src/main/assets/catalog.json').read_text(encoding='utf-8'))[0]['name']
 
@@ -31,6 +31,19 @@ def memory_pss_kb(text):
 def screenshot(name):
     adb("shell", "screencap", "-p", "/sdcard/"+name)
     adb("pull", "/sdcard/"+name, name)
+
+def capture_emulator_failure(kind,error,traceback):
+    try:
+        logs=adb("logcat","-d","-v","brief")
+        Path("piano-ui-failure.log").write_text(logs,encoding="utf-8")
+        screenshot("piano-ui-failure.png")
+        relevant=[line for line in logs.splitlines() if any(marker in line for marker in
+            ("POC_NOTE_TAP ","POC_LOOP_","STUDY_CHROME_","FATAL EXCEPTION","RENDER_ERROR"))]
+        print("ANDROID_FAILURE_DIAGNOSTICS\n"+"\n".join(relevant[-35:]),flush=True)
+    except Exception as diagnostic_error:print("Failure diagnostics unavailable:",diagnostic_error,flush=True)
+    sys.__excepthook__(kind,error,traceback)
+
+sys.excepthook=capture_emulator_failure
 
 def home_responsive_screenshots():
     # The production Activity is landscape-first. Exercise phone and tablet
@@ -670,9 +683,9 @@ if __name__=="__main__":
     # the selected boundaries; no hanging output or route inconsistency.
     tap_text(["Iniciar"],scroll=True)
     time.sleep(.4)
-    loop_nodes=[n for n in dump().iter("node") if "Trecho ↻" in n.attrib.get("text","")]
+    loop_nodes=[n for n in current_study_layout()["buttons"] if "Trecho ↻" in n["text"]]
     assert loop_nodes, "Study loop menu button unavailable during continuous playback"
-    box=[int(n) for n in re.findall(r"\d+",loop_nodes[0].attrib.get("bounds",""))]
+    box=loop_nodes[0]["bounds"]
     assert len(box)==4, "Loop menu has no touchable bounds"
     cx=(box[0]+box[2])//2;cy=(box[1]+box[3])//2
     adb("shell","input","swipe",str(cx),str(cy),str(cx),str(cy),"1050")

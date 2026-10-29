@@ -222,6 +222,7 @@ jobs:
           if-no-files-found: warn
           path: |
             PianoLivreAndroid/piano-prompt02-*
+            PianoLivreAndroid/piano-ui-failure.*
             PianoLivreAndroid/piano-study*failure.png
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png

@@ -388,7 +388,7 @@
    text+='Cifras ocultadas por colisão geométrica: '+analysis.hiddenChordLabels.map(function(item){return item.text;}).join(', ')+'. Consulte Partitura Livre. ';
   }
   if(analysis.repositionedDynamics)text+='Dinâmicas reposicionadas na apresentação do Estudo. ';
-  if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. A apresentação anterior continua disponível.';
+  if(analysis.alerts.length)text+='Revisar leitura: '+analysis.alerts.map(function(t){return alerts[t]||t;}).join(', ')+'. Use Partitura Livre para conferir a escrita original.';
   return text;
  }
  const api={restorePresentationAdjustments:restorePresentationAdjustments,applyChordCollisionPolicy:applyChordCollisionPolicy,applyDynamicCollisionPolicy:applyDynamicCollisionPolicy,restoreStaffGap:restoreStaffGap,compare:compare,summary:summary,inspectSvg:inspectSvg,isChordLabel:isChordLabel,shouldCompactVertical:shouldCompactVertical,compactStaffGap:compactStaffGap,shiftEngravingRows:shiftEngravingRows,wordKind:wordKind,version:VERSION,analyze:analyze,presentation:presentation,presentationWithOptions:presentationWithOptions,assess:assess};
