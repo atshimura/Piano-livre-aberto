@@ -452,7 +452,10 @@ class PianoScreens {
   if(songTitle==null||a.score==null)return;
   String title=a.currentName==null||a.currentName.isEmpty()?a.score.title:a.currentName;
   boolean compact=a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density<900;
-  songTitle.setText(title+(compact?"\n"+info:""));songTitle.setContentDescription(title+" · "+info);
+  String display=title+(compact?"\n"+info:"");
+  if(!TextUtils.equals(songTitle.getText(),display))songTitle.setText(display);
+  String description=title+" · "+info;
+  if(!TextUtils.equals(songTitle.getContentDescription(),description))songTitle.setContentDescription(description);
  }
  void loopMenu(){
   new AlertDialog.Builder(a).setTitle("Repetição de trecho")

@@ -49,6 +49,7 @@ final class MidiSessionSelfTest {
     check(a.waitTraveling||a.position!=onset,"MIDI advances without guide in hand "+hand);
     check(source.equals(a.score.sourceXml),"hand selection preserves original MusicXML");
    }
+   a.currentHand=0;
    a.stopPlayback();a.screens.showHome();a.disconnectMidi();
    a.onMidiMessage(0x90,60,80);a.onMidiMessage(0x91,60,90);a.onMidiMessage(0xB0,64,127);
    a.onMidiMessage(0xB0,123,0);

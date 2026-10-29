@@ -212,8 +212,8 @@ def assert_collection_filter_option(name, present=True):
         raise AssertionError("Collection filter option presence mismatch for "+repr(target)+"; options="+repr(labels))
 
 def return_to_library_if_study_was_restored():
-    labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    if any(value=="← Biblioteca" for value in labels):
+    labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in dump().iter("node")]
+    if any("← Biblioteca" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in dump().iter("node")):
         tap_text(["← Biblioteca"],exact=True)
         wait_for_text("Bem-vindo ao")
 
@@ -250,7 +250,7 @@ def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pas
             if len(box)==4:
                 if "Horizontal" in node.attrib.get("class",""):
                     y=str((box[1]+box[3])//2)
-                    if any("osmd" in target.casefold() for target in targets):
+                    if _scroll_pass>=5:
                         adb("shell","input","swipe",str(box[0]+12),y,str(box[2]-12),y,"400")
                     else:
                         adb("shell","input","swipe",str(box[2]-12),y,str(box[0]+12),y,"400")

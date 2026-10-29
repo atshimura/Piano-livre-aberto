@@ -16,7 +16,7 @@ try:
         adb('logcat','-c')
         adb('shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity')
         time.sleep(3);assert_running()
-        if any(n.attrib.get('text')=='Partitura Livre' for n in dump().iter('node')):
+        if any('← Biblioteca' in (n.attrib.get('text','')+n.attrib.get('content-desc','')) for n in dump().iter('node')):
             tap_text(['Biblioteca'],scroll=True)
         tap_text(['Gymnopédie nº 1'],scroll=True)
         time.sleep(2)

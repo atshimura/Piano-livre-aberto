@@ -9,7 +9,7 @@ from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyb
 PACKAGE="br.org.pianolivre.opensource/br.org.pianolivre.MainActivity"
 
 def labels():
-    return [n.attrib.get("text","") for n in dump().iter("node") if n.attrib.get("text")]
+    return [value for n in dump().iter("node") for value in (n.attrib.get("text",""),n.attrib.get("content-desc","")) if value]
 
 def expect(label,reason):
     assert any(label in v for v in labels()),reason
