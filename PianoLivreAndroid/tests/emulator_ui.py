@@ -428,7 +428,7 @@ if __name__=="__main__":
     tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Excluir perfil"]);tap_text(["Excluir"],exact=True)
     after_delete=[n.attrib.get("text","") for n in dump().iter("node")]
     assert not any("Perfil_Teste" in t for t in after_delete), "Deleted profile remains selected"
-    if any(value=="← Biblioteca" for value in after_delete):
+    if any("← Biblioteca" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in dump().iter("node")):
         # Deleting the temporary profile restores home, which owns its own
         # welcome action instead of the in-study score toolbar.
         tap_text(["← Biblioteca"],exact=True);wait_for_text("Começar pela Ode à Alegria")
@@ -1237,7 +1237,7 @@ if __name__=="__main__":
     for attempt in range(8):
         root=dump()
         complex_button=next((n for n in root.iter("node")
-          if n.attrib.get("text")=="Partitura Livre"),None)
+          if n.attrib.get("text")=="Espera"),None)
         if complex_button is not None:break
         time.sleep(.25)
     assert complex_button is not None,"Synthetic fixture must open directly in OSMD Study"

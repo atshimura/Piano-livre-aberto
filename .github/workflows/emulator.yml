@@ -120,7 +120,6 @@ jobs:
         with:
           name: PianoLivre-prompt-02-validation-apk
           path: |
-            PianoLivreAndroid/piano-prompt02-*
             PianoLivreAndroid/app/build/outputs/apk/release/app-release.apk
             PianoLivreAndroid/build/public-release-signature.txt
             PianoLivreAndroid/build/public-release-apk-metadata.txt
@@ -164,6 +163,14 @@ jobs:
               "piano-release.png",
               "piano-home-phone.png",
               "piano-home-tablet.png",
+              "piano-prompt02-before-phone.png",
+              "piano-prompt02-before-tablet.png",
+              "piano-03d-prompt02-phone-normal.png",
+              "piano-03d-prompt02-phone-playing.png",
+              "piano-03d-prompt02-phone-restored.png",
+              "piano-03d-prompt02-tablet-normal.png",
+              "piano-03d-prompt02-tablet-playing.png",
+              "piano-03d-prompt02-tablet-restored.png",
               "piano-discovery-staff-c2.png",
               "piano-discovery-staff-c3.png",
               "piano-discovery-staff-f3.png",
@@ -212,6 +219,8 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
           path: |
+            PianoLivreAndroid/piano-prompt02-*
+            PianoLivreAndroid/piano-study*failure.png
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png
             PianoLivreAndroid/piano-home-phone.png

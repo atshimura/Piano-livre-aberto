@@ -343,6 +343,10 @@ class PianoScreens {
   studio.removeView(controls);studio.addView(studyControlsBar,lp(-1,46));studyControlsBar.addView(controls,new android.widget.HorizontalScrollView.LayoutParams(-2,d(46)));
   FrameLayout notationArea=new FrameLayout(a);
   legacyFallback=new PianoView(a);legacyFallback.allowKeyboard=false;
+  legacyFallback.setOnTouchListener((view,event)->{
+   if(event.getActionMasked()==android.view.MotionEvent.ACTION_UP)revealStudyControls();
+   return true;
+  });
   a.scoreView=legacyFallback;
   notationArea.addView(legacyFallback,new FrameLayout.LayoutParams(-1,-1));
   notation=new NotationView(a,new NotationView.Listener(){
@@ -351,7 +355,8 @@ class PianoScreens {
     if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
        &&a.getIntent().getBooleanExtra("study_failure_selftest",false)){
      a.getIntent().removeExtra("study_failure_selftest");
-     notation.evaluateJavascript("window.opensheetmusicdisplay=null;PianoNotation.load('<score-partwise/>',0,'engraving-poc',[])",null);
+     String failTemporal=a.getIntent().getBooleanExtra("study_native_failure_selftest",false)?"window.TemporalNotation=null;":"";
+     notation.evaluateJavascript(failTemporal+"window.opensheetmusicdisplay=null;PianoNotation.load('<score-partwise/>',0,'engraving-poc',[])",null);
     }
     updateSelections();
     followScore(a.position,true);
