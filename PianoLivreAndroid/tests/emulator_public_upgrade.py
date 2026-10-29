@@ -76,7 +76,7 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     if not any("Upgrade B" in label for label in labels):
         tap_text(["Opções de estudo"]);tap_text(["Perfil"],exact=True)
         assert any("Upgrade B" in n.attrib.get("text","") for n in dump().iter("node")),"Public release update lost profile ID 7"
-        adb("shell","input","keyevent","4");adb("shell","input","keyevent","4")
+        adb("shell","input","keyevent","4")
     assert any("80%" in label for label in labels),"Public release update lost saved tempo"
     assert any("Espera"==label for label in labels),"Updated Study lost mode controls"
     after=run("adb","shell","sha256sum",private+"/files/imported/upgrade.mxl").split()[0]

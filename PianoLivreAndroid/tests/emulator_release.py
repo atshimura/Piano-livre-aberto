@@ -30,7 +30,7 @@ if not any('Upgrade B' in text for text in labels):
     tap_text(['Opções de estudo']);tap_text(['Perfil'],exact=True)
     labels=[n.attrib.get('text','') for n in dump().iter('node')]
     assert any('Upgrade B' in text for text in labels),'Release profile ID 7 missing'
-    adb('shell','input','keyevent','4');adb('shell','input','keyevent','4')
+    adb('shell','input','keyevent','4')
     labels=[n.attrib.get('text','') for n in dump().iter('node')]
 # The profile picker above proves ID 7 even in compact headers.
 assert any('80%' in text for text in labels),'Release launch did not retain speed preference'

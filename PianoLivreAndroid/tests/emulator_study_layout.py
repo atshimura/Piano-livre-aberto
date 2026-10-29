@@ -6,7 +6,8 @@ from emulator_ui import adb,dump,tap_text,home_scroll_to_top,responsive_evidence
 PACKAGE='br.org.pianolivre.opensource'
 report=[]
 def records(marker):
-    return [json.loads(line.split(marker,1)[1].split(' @',1)[0]) for line in adb('logcat','-d','-v','brief').splitlines() if marker in line]
+    pid=adb('shell','pidof',PACKAGE).strip()
+    return [json.loads(line.split(marker,1)[1].split(' @',1)[0]) for line in adb('logcat','-d','--pid='+pid,'-v','brief').splitlines() if marker in line]
 def hidden_note_tap():
     # Wait is deliberately motionless after preparation, without requiring USB.
     adb('logcat','-c');tap_text(['Iniciar'])
