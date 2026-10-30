@@ -10,6 +10,9 @@ on:
       - 'PianoLivreAndroid/gradle.properties'
       - '.github/workflows/emulator.yml'
       - 'docs/70-TELA-INICIAL-PROMPT-01.md'
+      # Required emulator status must run for this documentation-only PR.
+      - 'docs/76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md'
+      - 'docs/prompts/CRIACAO_C1_IMPLEMENTACAO.md'
   push:
     branches: [main]
     paths:
