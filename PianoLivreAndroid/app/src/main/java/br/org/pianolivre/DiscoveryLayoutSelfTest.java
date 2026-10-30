@@ -30,7 +30,10 @@ final class DiscoveryLayoutSelfTest {
  private boolean capturing=false;
  private void capture(){if(capturing)return;capturing=true;d.staff.inspectGeometry(raw->{try{
   Object decoded=new JSONTokener(raw).nextValue();if(!(decoded instanceof String)){capturing=false;return;}
-  JSONObject g=new JSONObject((String)decoded);check(g.getJSONArray("staves").length()==2,"two painted staves");
+  JSONObject g=new JSONObject((String)decoded);
+  int expected=new int[]{0,1,1,3,8,1,1,1}[stage];
+  if(g.getInt("notes")!=expected||g.getInt("tier")!=(stage>=5?2:0)){capturing=false;return;}
+  check(g.getJSONArray("staves").length()==2,"two painted staves");
   if(stage==0)normal=g;
   if(stage<=4){check(g.getInt("tier")==0,"ordinary notes keep standard tier");check(Math.abs(g.getDouble("scale")-normal.getDouble("scale"))<.001,"stable ordinary scale");
    for(int i=0;i<2;i++)check(Math.abs(g.getJSONArray("staves").getJSONArray(i).getJSONObject(0).getDouble("y")-normal.getJSONArray("staves").getJSONArray(i).getJSONObject(0).getDouble("y"))<1,"stable staff origin");}
