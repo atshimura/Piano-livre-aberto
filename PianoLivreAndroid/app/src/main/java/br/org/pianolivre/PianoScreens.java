@@ -92,10 +92,10 @@ class PianoScreens {
   buildLibraryPanel();
   TextView footer=text("Biblioteca local · estudo individual · funciona sem internet.",11,muted,false);
   footer.setPadding(d(8),d(12),0,d(4));libraryInner.addView(footer,lp(-1,-2));
-  if(BuildConfig.DEBUG)library.getViewTreeObserver().addOnGlobalLayoutListener(()->logHomeLayout());
+  if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0)library.getViewTreeObserver().addOnGlobalLayoutListener(()->logHomeLayout());
  }
  void logHomeLayout(){
-  if(!BuildConfig.DEBUG||library==null||library.getVisibility()!=View.VISIBLE||library.getWidth()==0)return;
+  if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)==0||library==null||library.getVisibility()!=View.VISIBLE||library.getWidth()==0)return;
   try{
    JSONObject report=new JSONObject();report.put("density",a.getResources().getDisplayMetrics().density);
    org.json.JSONArray items=new org.json.JSONArray();collectHomeLayout(libraryInner,items);report.put("items",items);
