@@ -22,7 +22,7 @@ import org.json.JSONArray;
  */
 @SuppressLint("SetJavaScriptEnabled")
 public final class NotationView extends WebView {
- public interface Listener { void onRendered(); void onError(String message); default void onPresentation(String message){} default void onLoopSelected(double start,double end){} }
+ public interface Listener { void onRendered(); void onError(String message); default void onStudyTap(){} default void onPresentation(String message){} default void onLoopSelected(double start,double end){} }
  private final Listener callback;
  private boolean htmlReady=false;
  private boolean scoreRendered=false;
@@ -35,9 +35,12 @@ public final class NotationView extends WebView {
  private boolean disposed=false;
  private long pendingWaitDeadline=0L;
  private boolean freeLayout=false;
- // OSMD is the normal Study renderer; the temporal renderer remains selectable.
+ // OSMD is normal; failures automatically try temporal, then native schematic.
  private boolean engravingProof=true;
  private boolean rendererFailed=false;
+ private boolean loadDispatched=false;
+ private long scoreGeneration=0;
+ private long resizeSequence=0;
  private int studyHand=0;
  private final int originalLayerType;
  public NotationView(Context c,Listener listener){
@@ -91,9 +94,18 @@ public final class NotationView extends WebView {
     sendPendingWaitPreparation();
    });}
    @JavascriptInterface public void onPresentation(String message){post(()->{if(!disposed)callback.onPresentation(message);});}
+   @JavascriptInterface public void onStudyTap(){post(()->{if(!disposed&&!freeLayout)callback.onStudyTap();});}
    @JavascriptInterface public void onError(String error){post(()->{
     if(disposed)return;
-    scoreRendered=false;engravingProof=false;rendererFailed=true;
+    scoreRendered=false;loadDispatched=false;scoreGeneration++;
+    if(!freeLayout&&engravingProof){
+     engravingProof=false;lastBeat=Double.NaN;
+     setLayerType(originalLayerType,null);
+     Log.w("PianoLivreNotation","AUTO_TEMPORAL_FALLBACK "+error);
+     callback.onPresentation("Visualização temporal ativa: a notação principal não pôde ser exibida.");
+     sendScore();return;
+    }
+    engravingProof=false;rendererFailed=true;
     Log.e("PianoLivreNotation","RENDER_ERROR "+error);
     callback.onError(error);
    });}
@@ -108,10 +120,15 @@ public final class NotationView extends WebView {
   loadScore(score,position,false);
  }
  public void loadScore(Score score,double position,boolean traditional){
+  scoreGeneration++;loadDispatched=false;
   rendererFailed=false;freeLayout=traditional;engravingProof=!traditional;
+  if(!traditional&&getContext() instanceof MainActivity){
+   MainActivity activity=(MainActivity)getContext();
+   if((activity.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+       &&activity.getIntent().getBooleanExtra("study_temporal_selftest",false))engravingProof=false;
+  }
   if(getLayerType()!= (engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType))
    setLayerType(engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
-  if(getLayerType()!=originalLayerType)setLayerType(originalLayerType,null);
   getSettings().setSupportZoom(traditional);
   getSettings().setBuiltInZoomControls(traditional);
   getSettings().setDisplayZoomControls(false);
@@ -120,6 +137,26 @@ public final class NotationView extends WebView {
   if(htmlReady)sendScore();
  }
  private void sendScore(){
+  if(disposed||pendingScore==null||loadDispatched||getWidth()<=0||getHeight()<=0)return;
+  final long generation=scoreGeneration;loadDispatched=true;
+  // A newly shown Study view can receive HTML-ready before Android lays it out.
+  // Rendering into a zero-sized viewport produces an invalid initial note map.
+  evaluateJavascript("(function(){var v=document.getElementById('viewport');return !!(v&&v.clientWidth>0&&v.clientHeight>0)})()",ready->{
+   if(disposed||generation!=scoreGeneration)return;
+   if(!"true".equals(ready)){
+    loadDispatched=false;postOnAnimation(()->sendScore());return;
+   }
+   dispatchScore();
+  });
+ }
+ @Override protected void onSizeChanged(int width,int height,int oldWidth,int oldHeight){
+  super.onSizeChanged(width,height,oldWidth,oldHeight);
+  if(width>0&&height>0&&htmlReady&&pendingScore!=null&&!scoreRendered&&!rendererFailed)
+   postOnAnimation(()->sendScore());
+  else if(width>0&&height>0&&htmlReady&&scoreRendered&&!rendererFailed)
+   postOnAnimation(()->resizeToFit());
+ }
+ private void dispatchScore(){
   if(disposed||pendingScore==null)return;
   String xml=pendingScore.sourceXml;
   if(xml==null||xml.isEmpty()){callback.onError("A partitura não contém MusicXML");return;}
@@ -160,7 +197,7 @@ public final class NotationView extends WebView {
   }
   evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+layout+","+nativeEvents+")",null);
  }
- /** Select the Study renderer without changing score data or native playback state. */
+ /** Actual renderer state for diagnostics, never a user-selectable control. */
  public boolean isEngravingProof(){return engravingProof;}
  /** Returns the actual rendered clef glyph groups for visual regression tests. */
  void inspectRenderedClefs(ValueCallback<String> callback){
@@ -168,20 +205,6 @@ public final class NotationView extends WebView {
   evaluateJavascript("(function(){var a=Array.from(document.querySelectorAll('#score svg .vf-clef'));return JSON.stringify(a.map(function(n){return n.outerHTML}))})()",callback);
  }
  public boolean hasRendererFailure(){return rendererFailed;}
- public void setEngravingProof(boolean enabled){
-  if(disposed||freeLayout||pendingScore==null||engravingProof==enabled&&!rendererFailed)return;
-  rendererFailed=false;engravingProof=enabled;scoreRendered=false;lastBeat=Double.NaN;
-  // Diagnostic only: distinguish GPU SVG tile clipping from musical data loss.
-  // Revert to the original WebView layer immediately on leaving the preview.
-  setLayerType(enabled?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
-  Log.i("PianoLivreNotation","POC_PROOF_DISPATCH enabled="+enabled+" htmlReady="+htmlReady+
-    " score="+pendingScore.title+" events="+(pendingScore.writtenEvents.isEmpty()
-      ?pendingScore.events.size():pendingScore.writtenEvents.size()));
-  Log.i("PianoLivreNotation","POC_LAYER "+(enabled?"software":"original"));
-  Log.i("PianoLivreNotation","POC_TOGGLE "+enabled);
-  setVisibility(View.INVISIBLE);
-  if(htmlReady)sendScore();else Log.e("PianoLivreNotation","POC_PROOF_BLOCKED htmlReady=false");
- }
  private void sendStudyHand(){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered&&engravingProof)
    evaluateJavascript("PianoNotation.studyHand("+studyHand+")",null);
@@ -221,8 +244,17 @@ public final class NotationView extends WebView {
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)evaluateJavascript("PianoNotation.waitCancel()",null);
  }
  public void resizeToFit(){
-  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)
-   evaluateJavascript("PianoNotation.resize()",null);
+  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)resizeWhenViewportReady(++resizeSequence,scoreGeneration,0);
+ }
+ private void resizeWhenViewportReady(long sequence,long generation,int attempt){
+  if(disposed||sequence!=resizeSequence||generation!=scoreGeneration||!scoreRendered||getWidth()<=0||getHeight()<=0)return;
+  float density=getResources().getDisplayMetrics().density;
+  String check="(function(){var v=document.getElementById('viewport');return !!(v&&Math.abs(v.clientWidth-"+(getWidth()/density)+")<2&&Math.abs(v.clientHeight-"+(getHeight()/density)+")<2)})()";
+  evaluateJavascript(check,ready->{
+   if(disposed||sequence!=resizeSequence||generation!=scoreGeneration||!scoreRendered)return;
+   if("true".equals(ready))evaluateJavascript("PianoNotation.resize()",null);
+   else if(attempt<8)postOnAnimation(()->resizeWhenViewportReady(sequence,generation,attempt+1));
+  });
  }
  public void setLoopEdit(boolean enabled){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)

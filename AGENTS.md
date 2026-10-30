@@ -3,6 +3,7 @@
 Este repositório é a **base principal de desenvolvimento** do Piano Livre. Leia este arquivo antes de alterar código. Trabalhe em português do Brasil; preserve a GPL-3.0-only do código próprio e as licenças de terceiros.
 
 ## Estado e identidade
+- Prompt 4 autoriza consolidar os PRs #71–#74 e publicar 0.9.52-open-beta (61), preservando proteção da main e assinatura permanente; evitar Release intermediária 0.9.51. Consultar `docs/73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md` e seu registro final vinculado. Restrições de merge/publicação nas entregas anteriores são históricas; próximas versões continuam em branch/PR e exigem seus próprios checks.
 - Repositório de trabalho: `atshimura/Piano-livre-aberto`; branch estável `main`. Verifique a HEAD, a versão em `PianoLivreAndroid/gradle.properties` e os Actions em cada intervenção.
 - O repositório histórico `atshimura/piano-livre` **continua privado**, e não deve ser usado para novos PRs públicos, testes públicos, materiais de assinatura ou downloads pelos Actions.
 - O pacote debug aberto é `br.org.pianolivre.opensource`, separado de `br.org.pianolivre` histórico. Não existe atualização in-place entre os pacotes. Backup/restauração manual é a via prevista para dados do usuário, **após validação**.
@@ -12,9 +13,10 @@ Este repositório é a **base principal de desenvolvimento** do Piano Livre. Lei
 ## Decisões de produto obrigatórias
 - App de aprendizagem musical local/offline; **sem login, servidor, telemetria ou sincronização automática** sem aprovação explícita.
 - Modo Espera: notas esperadas avançam; notas extras não bloqueiam, mas devem ser indicadas. Não penalizar demora. Acordes: janela temporal ajustável após calibração, sem valores arbitrários fixados antecipadamente. Duração/pedal: orientação após ataque correto, não bloqueio.
-- Mostrar ambas as mãos no teclado guia visual, inclusive simultaneidade, dinâmica e duração. **O guia visual não é um sintetizador de áudio**. Diferenciar a reprodução MIDI no instrumento da visualização de teclas.
+- Onde houver teclado guia visual, mostrar ambas as mãos, inclusive simultaneidade, dinâmica e duração. **Decisão posterior aprovada no Prompt 2 (29/10/2026): remover o guia do modo Estudar**, preservando MIDI/reconhecimento, preferências legadas e componentes compartilhados. **O guia visual não é um sintetizador de áudio**. Diferenciar reprodução MIDI no instrumento de visualização de teclas.
 - Claves Sol/Fá devem ser posicionadas por G4/F3 nas respectivas linhas, mantendo pautas/claves fixas à esquerda durante rolagem.
 - Não inferir mão pela altura da nota, nem modificar MusicXML importado ao aplicar preferências de estudo.
+- Prompt 3: Inicial/Estudar compartilham `MidiConnection`; disponibilidade e abertura não equivalem a conexão. Nome só com porta funcional e metadado real. Preservar geração/época de recepção, pausa segura sem rebobinar e encerramento de notas/pedal antes de liberar recursos controláveis. Ver `docs/72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md`.
 - Backup v2 exige pré-validação, confirmação e rollback; nunca apagar dados do usuário antes de validar restauração.
 
 ## Regras de colaboração e segurança

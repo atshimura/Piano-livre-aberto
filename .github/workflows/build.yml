@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, feat/tela-inicial-piano-livre, feat/tela-estudar-piano-livre]
   workflow_dispatch:
 
 permissions:
@@ -127,6 +127,16 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/HomeMidiIndicator.java tests/HomeMidiIndicatorTest.java
           java -cp build/score-tests HomeMidiIndicatorTest
+      - name: Test Study chrome presentation transitions (JVM)
+        run: |
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/StudyChromeState.java tests/StudyChromeStateTest.java
+          java -cp build/score-tests StudyChromeStateTest
+      - name: Test shared MIDI connection lifecycle and async races (JVM)
+        run: |
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiConnection.java app/src/main/java/br/org/pianolivre/HomeMidiIndicator.java tests/MidiConnectionTest.java
+          java -cp build/score-tests MidiConnectionTest
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiProtocol.java tests/MidiProtocolEpochTest.java
+          java -cp build/score-tests MidiProtocolEpochTest
       - name: Test Laboratory scale and arpeggio sequences (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicSequenceAnalyzer.java tests/MusicSequenceAnalyzerTest.java

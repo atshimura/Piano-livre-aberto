@@ -19,7 +19,9 @@ if existing.returncode==0:
     if changed==0:
         print('This version is already published; existing release preserved');raise SystemExit(0)
     raise RuntimeError('Version already published from another commit; increment version')
-for attempt in range(90):
+# The full Android suite includes two baseline builds and visual/MIDI journeys.
+# Allow up to 40 minutes, within the publication job's 45-minute limit.
+for attempt in range(120):
     runs=json.loads(gh('api',f'repos/{repo}/commits/{sha}/check-runs?per_page=100'))['check_runs']
     selected=[next((r for r in runs if r['name']==name),None) for name in ['build','emulator']]
     if all(r and r['status']=='completed' and r['conclusion']=='success' for r in selected):break
@@ -31,7 +33,8 @@ if '7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290' not in sig
 if f"versionCode='{code}' versionName='{version}'" not in metadata.read_text():raise RuntimeError('APK metadata mismatch')
 if 'application-debuggable' in metadata.read_text():raise RuntimeError('Distribution APK must not be debuggable')
 output=dist/f'PianoLivre-{version}.apk';output.write_bytes(apk.read_bytes())
-checksum=dist/'SHA256SUMS';checksum.write_text(hashlib.sha256(output.read_bytes()).hexdigest()+'  '+output.name+'\n')
+digest=hashlib.sha256(output.read_bytes()).hexdigest()
+checksum=dist/'SHA256SUMS';checksum.write_text(digest+'  '+output.name+'\n')
 notes=dist/'notes.md';notes.write_text(f'''Beta pública {version} (versionCode {code}). Commit: {sha}.
 
 APK offline do pacote br.org.pianolivre.opensource, com depuração desativada e assinatura permanente. Build e emulador deste commit aprovados; isso não representa teste físico.
@@ -41,6 +44,18 @@ MIDI importado gera notação aproximada, com escolha explícita de mão por tri
 Realme 7 5G, Lenovo Tab M9 e Yamaha P-45: aceite físico pendente na issue #11. Versão 1.0 ainda não concluída.
 
 Documentação: https://github.com/{repo}/blob/{sha}/docs/10-CONTINUIDADE.md
-''')
+''',encoding='utf-8')
+version_notes=pathlib.Path('docs/releases')/(version+'.md')
+if version_notes.is_file():
+    notes.write_text(notes.read_text(encoding='utf-8')+'\n'+version_notes.read_text(encoding='utf-8')+f'''
+
+Registro efetivo da publicação:
+- Commit integrado: `{sha}`.
+- APK SHA-256: `{digest}`.
+- Certificado SHA-256: `7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290`.
+- Checks do commit: https://github.com/{repo}/commit/{sha}/checks
+- APK: https://github.com/{repo}/releases/download/{tag}/{output.name}
+- Consolidação: https://github.com/{repo}/blob/{sha}/docs/73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md
+''',encoding='utf-8')
 gh('release','create',tag,'--repo',repo,'--target',sha,'--prerelease','--title','Piano Livre '+version,'--notes-file',str(notes),str(output),str(signature),str(metadata),str(checksum))
 print('PUBLIC_BETA_PRERELEASE_PUBLISHED '+tag)

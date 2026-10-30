@@ -4,12 +4,12 @@ The emulator cannot replace a physical USB-MIDI piano or physical legibility.
 """
 import json,re,time,xml.etree.ElementTree as ET
 from pathlib import Path
-from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard,home_scroll_to_top,focus_library_search_field
+from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard,home_scroll_to_top,focus_library_search_field,reveal_study_controls,assert_study_controls
 
 PACKAGE="br.org.pianolivre.opensource/br.org.pianolivre.MainActivity"
 
 def labels():
-    return [n.attrib.get("text","") for n in dump().iter("node") if n.attrib.get("text")]
+    return [value for n in dump().iter("node") for value in (n.attrib.get("text",""),n.attrib.get("content-desc","")) if value]
 
 def expect(label,reason):
     assert any(label in v for v in labels()),reason
@@ -321,22 +321,15 @@ def exercise(title,slug):
         raise AssertionError("STUDY_NAVIGATION_FAILED: "+cause+"; labels="+repr(current[:50])+
                              "; "+str(exc)) from exc
     expect(title,"Study lost its selected score name")
-    for text in ["Espera","Contínuo","Demonstração","Teclado guia"]:
+    for text in ["Espera","Contínuo","Demonstração"]:
         expect(text,"Study missing essential control: "+text)
     screenshot("piano-entrega-b-"+slug+"-study.png")
     # Hand selection must not filter the entire two-staff visual guide.
     for hand in ["Direita","Esquerda","Ambas"]:
         tap_text([hand],exact=True,scroll=True)
         assert_running()
-    tap_text(["Teclado guia"],scroll=True)
-    time.sleep(.7)
-    opened=labels()
-    assert not any("Contínuo"==v for v in opened),"guide should hide top Study controls"
-    expect("Ocultar teclado","guide did not open")
-    screenshot("piano-entrega-b-"+slug+"-guide.png")
-    tap_text(["Ocultar teclado"],scroll=True)
-    time.sleep(.5)
-    expect("Contínuo","Study controls did not return when closing guide")
+    assert_study_controls()
+    screenshot("piano-entrega-b-"+slug+"-guide.png") # Historical artifact slot now shows guide-free Study.
     tap_text(["Contínuo"],exact=True,scroll=True)
     tap_text(["Início"],scroll=True)
     rewound=False
@@ -395,12 +388,8 @@ def exercise(title,slug):
     expect("Iniciar","stop left the Study session marked running")
     tap_text(["Início"],scroll=True)
     assert_running()
-    # Switch OSMD/temporal/OSMD without changing the MusicXML source.
-    tap_text(["Anterior · temporal"],exact=True,scroll=True)
-    time.sleep(.7)
-    tap_text(["OSMD · nova"],exact=True,scroll=True)
-    time.sleep(.7)
-    expect(title,"renderer switch lost the current piece")
+    assert_study_controls()
+    expect(title,"automatic renderer lost the current piece")
     # Unsupported demonstration without an output port must refuse playback,
     # rather than silently claiming sound from the visual keyboard.
     demo_before=log_count("play=true mode=2")
@@ -423,6 +412,8 @@ def exercise(title,slug):
     tap_text(["Iniciar"],scroll=True)
     wait_new("POC_WAIT_COMPLETE",before,15)
     expect("Esperando","Wait did not arm after gradual preparation")
+    reveal_study_controls()
+    expect(title,"revealing controls lost the Wait score")
     tap_text(["Parar"],scroll=True)
     # A warm background/foreground cycle may not create a second playback clock.
     adb("shell","input","keyevent","3")
@@ -435,7 +426,7 @@ def exercise(title,slug):
     library(title)
     return {"score":title,"modes":["Espera","Contínuo","Demonstração (without output)"],
             "hands":["Direita","Esquerda","Ambas"],
-            "guide":"opened and restored","renderer":"OSMD-temporal-OSMD",
+            "guide":"removed; legacy preferences preserved","renderer":"automatic OSMD with tested fallback",
             "pause":"stopped and restarted","background":"returned"}
 
 def main():

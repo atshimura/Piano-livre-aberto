@@ -1,6 +1,6 @@
 package br.org.pianolivre;
 
-/** Display rule for the home header; names are supplied only by Android MIDI metadata. */
+/** Shared header label; names come from the effective connection's Android metadata. */
 public final class HomeMidiIndicator {
  private HomeMidiIndicator(){}
 

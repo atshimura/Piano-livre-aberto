@@ -16,12 +16,12 @@ try:
         adb('logcat','-c')
         adb('shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity')
         time.sleep(3);assert_running()
-        if any(n.attrib.get('text')=='Partitura Livre' for n in dump().iter('node')):
+        if any('← Biblioteca' in (n.attrib.get('text','')+n.attrib.get('content-desc','')) for n in dump().iter('node')):
             tap_text(['Biblioteca'],scroll=True)
         tap_text(['Gymnopédie nº 1'],scroll=True)
         time.sleep(2)
-        buttons=[n for n in dump().iter('node') if n.attrib.get('text')=='OSMD · nova']
-        assert buttons,'Visible OSMD default control is missing on display profile'
+        buttons=[n for n in dump().iter('node') if n.attrib.get('text')=='Espera']
+        assert buttons,'Study mode controls are missing on display profile'
         ready=None
         for attempt in range(40):
             rows=[line for line in adb('logcat','-d','-v','brief').splitlines() if 'POC_OSMD_READY {' in line]

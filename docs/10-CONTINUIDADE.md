@@ -1,5 +1,17 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Prompt 4 — registro vigente
+
+O usuário autorizou integração e publicação beta. Leia [73 — consolidação/publicação](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md) e confira seu registro final no PR consolidado/Release antes de agir. Alvo 0.9.52-open-beta (61), pacote aberto e assinatura permanente existente. Não publicar 0.9.51 nem alterar Secrets/proteção. Validar ancestralidade dos quatro PRs, runs do SHA de main, upgrade público e assets efetivamente baixados; não reutilizar evidências de PR como prova de main. O próprio SHA/checksum fica no registro externo vinculado, evitando commit recursivo posterior ao APK. As restrições de publicação abaixo são históricas. Hardware e V1 permanecem pendentes; próximas alterações exigem branch/PR e checks próprios.
+
+## Prompt 3 — consolidação MIDI e interfaces (29/10/2026)
+
+Branch `feat/consolidacao-midi-interface-piano-livre`, dependente do PR #73 e de sua HEAD final `2739bb2`. Leia [72](72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md) e a especificação fornecida. O registro final do PR contém HEAD, checks e artefatos dessa revisão; não substitua por runs dos Prompts 1/2. Conexão compartilhada agora exige portas funcionais e gerações válidas; desconexão pausa sem apagar estado, e retorno do background reconcilia inventário. Layouts e `StudyChromeState` preservados. Versão 0.9.52-open-beta (61). Não integrar à main, publicar Release nem iniciar Prompt 4 nesta entrega. Hardware/V1 continuam pendentes. As seções seguintes preservam o histórico anterior.
+
+## Prompt 2 — tela Estudar (29/10/2026)
+
+Trabalho no [PR #73](https://github.com/atshimura/Piano-livre-aberto/pull/73), branch `feat/tela-estudar-piano-livre`, dirigido à branch do Prompt 1/PR #71. O PR documental #72 contém o PNG original aprovado, conferido por hash e visualização. Consulte [71](71-TELA-ESTUDAR-PROMPT-02.md) para alterações, medições e proveniência; verifique sempre o HEAD e os checks atuais no PR. Não integrar à main, publicar Release ou iniciar Prompt 3 nesta entrega. A remoção do guia no Estudar supersede D-007 antiga, preservando MIDI, dados legados e componentes compartilhados. A V1 e os testes físicos continuam pendentes.
+
 ## B1 — continuidade operacional (23/10/2026)
 
 Trabalho ativo no [PR #51](https://github.com/atshimura/Piano-livre-aberto/pull/51). A câmera usa amostragem contínua com envelope de tinta verificado e antecipa a entrada de símbolos, evitando saltos de célula. No Chromium 738×196, o maior salto entre beats adjacentes da Gymnopédie caiu de 6,94% para ~1,52%. O teste de 376 buscas registrou mediana 0,7 ms e p95 6,5 ms no executor Linux. O extremo beat 181 passou de ~4,85 para 5,10 CSS px, graças a um ajuste reversível de duas ligaduras longas a 60% da curvatura original; controles mais agressivos (40%) causaram colisão com cabeças de notas e foram descartados. MusicXML e MIDI permanecem intocados, e a geometria não é mantida se a inspeção constatar nova colisão.

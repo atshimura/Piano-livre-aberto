@@ -33,7 +33,7 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     signer=sdk/"build-tools/35.0.0/apksigner"
     aapt=signer.with_name("aapt")
     assert version(aapt,old_apk)==(PACKAGE,"55","0.9.46-open-beta")
-    assert version(aapt,NEW_APK)==(PACKAGE,"59","0.9.50-open-beta")
+    assert version(aapt,NEW_APK)==(PACKAGE,"61","0.9.52-open-beta")
     assert certificate(signer,old_apk)==EXPECTED_CERT
     assert certificate(signer,NEW_APK)==EXPECTED_CERT
 
@@ -68,19 +68,22 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     for _ in range(30):
         assert_running()
         labels=[n.attrib.get("text","") for n in dump().iter("node")]
-        if any("Ocultar teclado" in label for label in labels): break
+        if any("80%" in label for label in labels): break
         time.sleep(.5)
-    else: raise AssertionError("Updated public app did not restore keyboard/profile state")
-    tap_text(["Ocultar teclado"])
+    else: raise AssertionError("Updated public app did not restore saved tempo")
+    assert not any("Ocultar teclado" in label or "Teclado guia" in label for label in labels),"Legacy preference reintroduced removed guide"
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Upgrade B" in label for label in labels),"Public release update lost profile ID 7"
+    if not any("Upgrade B" in label for label in labels):
+        tap_text(["Opções de estudo"]);tap_text(["Perfil"],exact=True)
+        assert any("Upgrade B" in n.attrib.get("text","") for n in dump().iter("node")),"Public release update lost profile ID 7"
+        adb("shell","input","keyevent","4")
     assert any("80%" in label for label in labels),"Public release update lost saved tempo"
-    assert any("OSMD · nova"==label for label in labels),"Updated study did not select OSMD by default"
+    assert any("Espera"==label for label in labels),"Updated Study lost mode controls"
     after=run("adb","shell","sha256sum",private+"/files/imported/upgrade.mxl").split()[0]
     assert after==before,"Public release update changed the imported MusicXML file"
     print(json.dumps({"result":"PUBLIC_APK_UPDATE_PRESERVED_DATA_PASS",
       "previousVersion":"0.9.46-open-beta","previousVersionCode":55,
-      "newVersion":"0.9.50-open-beta","newVersionCode":59,"package":PACKAGE,
+      "newVersion":"0.9.52-open-beta","newVersionCode":61,"package":PACKAGE,
       "certificateSha256":EXPECTED_CERT,"profile":"synthetic ID 7 preserved",
       "keyboard":"preserved","tempo":"80% preserved","importedScoreSha256":after,
       "scope":"API 29 emulator; actual previous public release APK; synthetic user data"},ensure_ascii=False))

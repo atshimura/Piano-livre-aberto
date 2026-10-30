@@ -2,6 +2,10 @@
 
 # 08 — Registro de decisões de produto e arquitetura (ADRs)
 
+## D-019 — Integração e beta consolidadas, Prompt 4 (29/10/2026)
+
+**Aprovado explicitamente pelo usuário:** integrar Inicial (#71), referência (#72) e consolidar Estudar/MIDI (#73/#74) em uma única versão final 0.9.52 (61), evitando publicação intermediária 0.9.51. Preservar proteção, commits, referências, dados e assinatura existente. Distribuir somente APK release de main após checks exatos e conferência da assinatura permanente, pelo publicador existente. Aceite físico pendente não impede beta sem falha crítica conhecida; V1 continua aberta. [Registro operacional e evidências](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md). Nenhuma decisão musical anterior foi alterada.
+
 **Objetivo:** manter a intenção do usuário disponível sem acesso à conversa original. **Decisões de produto** não devem ser alteradas silenciosamente por conveniência técnica. Este registro combina escolhas aprovadas com decisões técnicas do código, identificando claramente o tipo e o status.
 
 ## D-001 — Aplicativo independente, baseado em formatos abertos
@@ -23,9 +27,13 @@
 **Tipo:** aprovado/solicitado. Botão **Início** retorna ao começo, pausa e suspende repetição anterior. Seleção de trecho **diretamente na pauta por toque e arraste**, ajustando limites; repetição disponível. **Implementado básico** com bridge JS→Android; duração, persistência e formas manuais de repetição requerem extensão.
 
 ## D-007 — Teclado guia opcional e ampliado
+**Atualização aprovada em 29/10/2026, Prompt 2:** o Estudar remove o teclado guia e seus controles; preserva a preferência antiga no armazenamento/backup e mantém reconhecimento MIDI, seleção de mãos e demonstração. As barras superiores recolhem no início da execução e voltam por toque na pauta; a barra inferior permanece. Esta decisão substitui no Estudar o comportamento histórico abaixo, sem remover componentes usados por outras telas. [Documento 71](71-TELA-ESTUDAR-PROMPT-02.md).
+
 **Tipo:** aprovado/solicitado em 14/10/2026. Teclado visual orienta notas esperadas e MIDI recebido; não precisa ser um teclado tocável. Ao abrir o teclado, **esconder automaticamente as três faixas superiores** (cabeçalho global, título da música, modos/mãos) para ampliar a partitura, preservando a barra inferior para fechar. Restaurar ao fechar. **Implementado na HEAD 59112581f... e aprovado em emulador**, ainda necessita confirmação com usuário e aparelhos reais.
 
 ## D-008 — Sem sintetizador Android obrigatório
+**Atualização aprovada em 29/10/2026, Prompt 2:** a ausência de áudio/vídeo obrigatório permanece; o teclado guia deixa de ser alternativa visual no Estudar. A orientação musical continua na pauta real, com entrada/saída USB-MIDI preservadas. Não há novo sintetizador.
+
 **Tipo:** aprovado. Demonstração pode enviar MIDI bidirecional ao P-45; o som principal pode vir inteiramente do piano. Eventual vídeo é condicionado a mídia autorizada e sincronizada. Sem vídeo usar teclado guia. **Não adicionar áudio/vídeo obrigatório para funcionar offline.**
 
 ## D-009 — Fonte musical importada preservada
@@ -51,7 +59,13 @@
 
 ## Como atualizar
 
-**A numeração D-016 não tem registro neste arquivo; não inventar aprovação retroativa.** Para próximas decisões, usar D-018 e seguintes, preservando D-017 já formalizada. Adicione **D-018, D-019...** com: data, decisão (produto/técnica), motivo, opções analisadas quando houver, consequências, arquivos impactados, evidência de aprovação do produto e situação implementada/parcial/futura. **Não invente decisões do usuário a partir de uma suposição de uma IA.** Em divergência entre requisito e código, o requisito continua registrado e o código é classificado como parcial até que haja aprovação de mudança de escopo.
+## D-018 — Estado MIDI comum e interrupção segura (29/10/2026)
+
+**Produto aprovado pelo Prompt 3 fornecido pelo usuário; organização técnica desta implementação:** Inicial e Estudar exibem somente o nome real de uma conexão efetiva com pelo menos uma porta funcional; nos demais estados, USB-MIDI. Diagnóstico mantém nome completo, estado e capacidades. `MidiConnection` possui geração e recursos; `AndroidMidiPorts` adapta a API existente. Callbacks atrasados não reativam sessões encerradas. Desconexão, troca ou falha pausa sem perder posição/configurações; reconectar exige novo Iniciar. O aplicativo tenta encerrar suas notas e liberar pedal nas saídas ainda controláveis. Foreground verifica inventário e reinicia observação sem ataques anteriores. `StudyChromeState`, reconhecimento e dados são preservados. Implementação/provas/limites em [72](72-CONSOLIDACAO-MIDI-INTERFACES-PROMPT-03.md); confirmação automatizada depende dos checks do HEAD final, e hardware permanece pendente. Não representa aprovação de V1, merge ou publicação.
+
+### Continuidade do registro
+
+**A numeração D-016 não tem registro neste arquivo; não inventar aprovação retroativa.** Para próximas decisões, usar D-019 e seguintes, preservando D-017 já formalizada. Adicione **D-019, D-020...** com: data, decisão (produto/técnica), motivo, opções analisadas quando houver, consequências, arquivos impactados, evidência de aprovação do produto e situação implementada/parcial/futura. **Não invente decisões do usuário a partir de uma suposição de uma IA.** Em divergência entre requisito e código, o requisito continua registrado e o código é classificado como parcial até que haja aprovação de mudança de escopo.
 
 Veja [01](01-VISAO-E-REQUISITOS.md), [07](07-ESTADO-E-ROADMAP.md) e [10](10-CONTINUIDADE.md).
 

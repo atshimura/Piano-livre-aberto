@@ -15,6 +15,7 @@ public class PianoView extends View {
  public double playhead=0;
  public int hand=0;
  public boolean showKeyboard=false;
+ public boolean allowKeyboard=true;
  public boolean keyboardOnly=false;
  private Score guideScore;
  private KeyboardGuide guide;
@@ -49,14 +50,14 @@ public class PianoView extends View {
    if(score!=null)drawKeyboard(canvas,w,0,h);
    return;
   }
-  float keyboardHeight=showKeyboard?Math.min(d(108),h*.25f):0;
+  float keyboardHeight=showKeyboard&&allowKeyboard?Math.min(d(108),h*.25f):0;
   float musicHeight=h-keyboardHeight;
   if(score==null){
    text(canvas,"Selecione uma música na biblioteca",d(26),musicHeight*.50f,18,INK,true);
    return;
   }
   drawStaff(canvas,w,musicHeight);
-  if(showKeyboard)drawKeyboard(canvas,w,musicHeight,h);
+  if(showKeyboard&&allowKeyboard)drawKeyboard(canvas,w,musicHeight,h);
  }
  private void drawStaff(Canvas c,float w,float h){
   float topBanner=Math.min(d(43),h*.13f);
