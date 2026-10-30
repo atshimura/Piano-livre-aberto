@@ -36,6 +36,8 @@ Na primeira suíte completa, a Gymnopédie estava desenhada e o processo atual c
 
 A revisão seguinte passou a renderização longa e chegou às jornadas finais, que procuravam a busca após rebobinar a Home inteira. Como os controles maiores ficam abaixo da primeira dobra em telas baixas, o roteiro agora preserva o posicionamento feito pelo atalho Biblioteca Musical e o usa novamente se necessário. O seletor é localizado por sua descrição de acessibilidade, com regressão para controles empilhados; as verificações de pesquisa e das sessões curta/longa continuam exigidas. Não houve mudança no funcionamento da busca, nos dados ou no Estudar para acomodar o teste.
 
+A jornada reconhece também o placeholder da busca com seu ícone e readquire o campo real após fechar o teclado, em vez de reaproveitar coordenadas anteriores à mudança de altura dos controles.
+
 O job antecipado também executa as mesmas jornadas curta/longa após Home/MIDI, permitindo revisar essa navegação antes do término da suíte completa. Seu limite é 25 minutos para acomodar essa cobertura; o job completo de 60 minutos continua executando todas as verificações existentes, inclusive as jornadas e a variante release.
 
 **Resultado final e proveniência:** a descrição e o comentário de fechamento do PR registrarão HEAD final, checkout efetivo do Actions, runs, resultados, APK, hashes, capturas e expiração. Não declarar concluído antes de build/emulador aprovados e inspeção dos PNGs desta revisão. Esse registro evita um commit adicional apenas para citar o próprio SHA. Resultados anteriores da 0.9.52 não validam estes ajustes.

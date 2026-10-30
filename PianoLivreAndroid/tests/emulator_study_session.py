@@ -183,7 +183,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         raise AssertionError("LIBRARY_SEARCH_MISSING: library has no accessible title EditText; labels="+
                              repr(labels()[:40]))
     current=search.attrib.get("text","")
-    if current and current!="Buscar título ou arquivo":
+    if current and current not in ("Buscar título ou arquivo","⌕  Buscar título ou arquivo"):
         search=focus_library_search_field()
         bounds=_bounds(search)
         adb("shell","input","keyevent","123")
@@ -268,7 +268,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     search=focus_library_search_field()
     search_bounds=_bounds(search)
     current=search.attrib.get("text","")
-    if current=="Buscar título ou arquivo":current=""
+    if current in ("Buscar título ou arquivo","⌕  Buscar título ou arquivo"):current=""
     adb("shell","input","keyevent","123")
     for _ in range(len(current)):
         adb("shell","input","keyevent","67")
@@ -289,8 +289,9 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
             raise AssertionError("SCORE_HIDDEN_BY_FILTER: selecting Todas did not reveal the packaged catalog; count="+
                                  repr(count)+" packaged="+str(len(titles)))
 
-    adb("shell","input","tap",str((search_bounds[0]+search_bounds[2])//2),
-        str((search_bounds[1]+search_bounds[3])//2))
+    # Closing the keyboard can move the taller controls. Reacquire the actual
+    # focused field instead of tapping coordinates from the previous layout.
+    focus_library_search_field()
     adb("shell","input","text",query)
     dismiss_keyboard()
     for _ in range(40):
