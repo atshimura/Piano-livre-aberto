@@ -1,5 +1,13 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Ponte de continuidade — Laboratório Musical / Criação C1 (planejamento de 30/10/2026)
+
+**Quando o usuário escrever “vamos continuar a implementação do criação - C1”, executar a retomada a partir da [especificação completa](76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md), do [prompt de implementação](prompts/CRIACAO_C1_IMPLEMENTACAO.md) e da [issue #79](https://github.com/atshimura/Piano-livre-aberto/issues/79).** Não pedir que o usuário repita as decisões já registradas.
+
+**Decisões do produto:** terceira aba Criação ao lado de Descobrir e Aprender (Aprender permanece desabilitado até sua implementação); **opção A** — gravar uma única tomada MIDI inicialmente, reproduzir no instrumento, salvar, procurar/ordenar, navegar entre projetos e perfis, renomear, enviar à Lixeira, recuperar e exportar .mid. A geração de partitura é C2; exportação PDF, C3; overdub/camadas ficam para etapa posterior. 100 BPM, 4/4 e quantização 1/16 são apenas **parâmetros iniciais propostos para C2**; não alterar o MIDI bruto da C1.
+
+**Estado:** somente **documentado e pronto para implementação futura**, sem alteração do aplicativo nesta entrega. No registro do planejamento, PR #76 (Home) e PR #78 (Descobrir/CI) ainda estavam abertos e issue #77 trata do desenvolvimento rápido; conferir estado real ao retomar. A C1 deve preservar offline/GPL, perfil ID estável, conexões MIDI/epoch e backup com pré-validação e rollback, inclusive criações futuras. A suíte completa segue obrigatória antes de merge; ensaios físicos seguem com usuário. Consulte AGENTS.md antes de qualquer código.
+
 ## Prompt 4 — registro vigente
 
 O usuário autorizou integração e publicação beta. Leia [73 — consolidação/publicação](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md) e confira seu registro final no PR consolidado/Release antes de agir. Alvo 0.9.52-open-beta (61), pacote aberto e assinatura permanente existente. Não publicar 0.9.51 nem alterar Secrets/proteção. Validar ancestralidade dos quatro PRs, runs do SHA de main, upgrade público e assets efetivamente baixados; não reutilizar evidências de PR como prova de main. O próprio SHA/checksum fica no registro externo vinculado, evitando commit recursivo posterior ao APK. As restrições de publicação abaixo são históricas. Hardware e V1 permanecem pendentes; próximas alterações exigem branch/PR e checks próprios.
