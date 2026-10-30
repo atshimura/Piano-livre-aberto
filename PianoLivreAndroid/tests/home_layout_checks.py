@@ -18,15 +18,16 @@ def layout():
 def capture_home_viewports():
     reports=[]
     try:
-        for name,size,old_height,old_art,columns in [('phone','720x540',220,205,1),('landscape','1280x720',220,205,2),('tablet','1920x1080',215,590,2)]:
+        for name,size,dpi,old_height,old_art,columns in [('phone','720x540',240,220,205,1),('landscape','1280x720',240,220,205,2),('tablet','1920x1080',240,215,590,2),('compact-tablet','2160x1080',440,220,205,2)]:
             adb('shell','am','force-stop',PACKAGE)
-            adb('shell','wm','size',size);adb('shell','wm','density','240')
+            adb('shell','wm','size',size);adb('shell','wm','density',str(dpi))
             # Each viewport uses only a fresh CI installation with synthetic data.
             adb('shell','pm','clear',PACKAGE)
             adb('shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity','--ez','home_layout_selftest','true')
             wait_for_text('Bem-vindo ao',timeout=20);time.sleep(.8);assert_running()
             report=layout();items=report['items'];density=report['density']
             hero=next(i for i in items if i['kind']=='home-banner')
+            copy=next(i for i in items if i['kind']=='home-banner-copy')
             art=next(i for i in items if i['kind']=='home-art')
             shortcuts=[i for i in items if i['kind']=='home-shortcut']
             cards=[i for i in items if i['kind']=='home-score']
@@ -42,6 +43,7 @@ def capture_home_viewports():
                     assert label['textHeight']<=label['height']+1,('Clipped Home text',name,label)
             for label in hero['labels']:
                 assert label['y']>=hero['y'] and label['y']+label['height']<=hero['y']+hero['height']+1,('Banner action outside banner',name,label)
+                assert label['x']>=copy['x'] and label['x']+label['width']<=copy['x']+copy['width']+1,('Banner action clipped by copy container',name,label)
             for i in shortcuts:
                 assert i['height']/density>=96
                 title=next(t for t in i['labels'] if t['text'] in ('Biblioteca Musical','Laboratório Musical','Histórico'))

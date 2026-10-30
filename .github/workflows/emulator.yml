@@ -238,7 +238,7 @@ jobs:
               "piano-discovery-staff-tablet-sequence.png",
           ]
           report = []
-          for viewport in ('phone', 'landscape', 'tablet'):
+          for viewport in ('phone', 'landscape', 'tablet', 'compact-tablet'):
               for suffix in ('', '-library', '-grid'):
                   names.append('piano-home-refined-' + viewport + suffix + '.png')
           for viewport in ('phone', 'tablet'):

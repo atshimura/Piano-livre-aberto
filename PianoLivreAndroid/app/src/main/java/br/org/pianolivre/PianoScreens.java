@@ -158,7 +158,8 @@ class PianoScreens {
   View fade=new View(a);android.graphics.drawable.GradientDrawable fadeDrawable=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xffDFEDFC,0xffDFEDFC,0x00DFEDFC});fade.setBackground(fadeDrawable);
   hero.addView(fade,new FrameLayout.LayoutParams(d(Math.round(heroWidth*(compact?.78f:.60f))),-1,Gravity.LEFT));
   LinearLayout copy=column();copy.setGravity(Gravity.CENTER_VERTICAL);copy.setPadding(d(compact?12:20),d(8),d(12),d(8));
-  FrameLayout.LayoutParams copyLp=new FrameLayout.LayoutParams(compact?-1:d(Math.round(heroWidth*.58f)),-1,Gravity.LEFT);
+  copy.setTag("home-banner-copy");
+  FrameLayout.LayoutParams copyLp=new FrameLayout.LayoutParams(compact?-1:d(Math.max(428,Math.round(heroWidth*.58f))),-1,Gravity.LEFT);
   hero.addView(copy,copyLp);
   TextView title=text("Bem-vindo ao Piano Livre!",compact?20:shortScreen?24:28,0xff102344,true);title.setMaxWidth(d(compact?Math.round(heroWidth*.82f):heroWidth));title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
   TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?12:shortScreen?14:16,0xff455F7D,false);
