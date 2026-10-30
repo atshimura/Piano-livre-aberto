@@ -10,12 +10,12 @@ import java.util.*;
 /** Debug intent only. Synthetic events use the production MIDI session surface. */
 final class DiscoveryLayoutSelfTest {
  private final MainActivity a;private final MusicLabDiscoveryScreen d;private final Handler h=new Handler();
- private int stage=0;private long batch=1000,time=10000;private JSONObject normal;
+ private int stage=0;private long batch=1000,time;private JSONObject normal;
  private static final String[] NAMES={"empty","note","retained","chord","sequence","held-after-sequence","low","high","common-after-extreme"};
  private DiscoveryLayoutSelfTest(MainActivity a){this.a=a;d=a.screens.discovery;}
  static void run(MainActivity a){new DiscoveryLayoutSelfTest(a).begin();}
  private void check(boolean b,String m){if(!b)throw new IllegalStateException("Discovery layout: "+m);}
- private void begin(){a.screens.showLab();d.session.reconnect(a.midiGeneration,null);d.staff.setRenderListener(new DiscoveryStaffView.RenderListener(){public void onRendered(){d.staff.commitFrame(()->capture());}public void onError(String m){throw new IllegalStateException(m);}});d.staff.resetFraming();}
+ private void begin(){time=android.os.SystemClock.uptimeMillis();a.screens.showLab();d.session.reconnect(a.midiGeneration,null);d.staff.setRenderListener(new DiscoveryStaffView.RenderListener(){public void onRendered(){d.staff.commitFrame(()->capture());}public void onError(String m){throw new IllegalStateException(m);}});d.staff.resetFraming();}
  private void play(int...notes){long conn=a.midiGeneration,ui=d.sessionGeneration();for(int n:notes)d.midiAttack(n,time,batch,conn,ui);for(int n:notes)d.midiRelease(n,conn,ui);d.midiBatchEnd(batch,time+1,ui);batch++;time+=2000;}
  private void advance(){
   stage++;if(stage==NAMES.length){d.staff.setRenderListener(null);d.back.performClick();check(!a.screens.isLabOpen(),"back navigation");android.util.Log.i("PianoLivreDiscovery","DISCOVERY_LAYOUT_PASS stages="+stage);return;}
@@ -25,7 +25,7 @@ final class DiscoveryLayoutSelfTest {
    case 3:play(60,64,67);check(d.session.result().kind==MusicDiscoverySession.Kind.CHORD,"chord");break;
    case 4:for(int n:new int[]{60,62,64,65,67,69,71,72})play(n);check(d.session.result().kind==MusicDiscoverySession.Kind.SEQUENCE,"parallel scale analyzer");break;
    case 5:d.midiAttack(64,time,batch,a.midiGeneration,d.sessionGeneration());check(d.title.getText().toString().equals("MI - E4"),"new held note replaces prior scale immediately");check(d.session.result().kind==MusicDiscoverySession.Kind.SEQUENCE,"active preview preserves parallel recognized result");break;
-   case 6:d.midiRelease(64,a.midiGeneration,d.sessionGeneration());batch++;time+=2000;play(0);break;case 7:play(127);break;case 8:play(64);break;
+   case 6:d.midiRelease(64,a.midiGeneration,d.sessionGeneration());d.session.reconnect(a.midiGeneration,null);batch++;time+=2000;play(0);break;case 7:play(127);break;case 8:play(64);break;
   }
  }
  private boolean capturing=false;
