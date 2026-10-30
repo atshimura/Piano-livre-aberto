@@ -108,6 +108,7 @@ jobs:
         working-directory: PianoLivreAndroid
     steps:
       - name: Fail closed when the shared APK preparation failed
+        working-directory: ${{ runner.temp }}
         run: test "${{ needs.debug-apk.result }}" = success
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
