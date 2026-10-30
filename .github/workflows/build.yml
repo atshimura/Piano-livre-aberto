@@ -44,6 +44,9 @@ jobs:
           build/study-browser/node_modules/.bin/playwright install --with-deps chromium
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/StudyProfileBrowserTest.js
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/TemporalNoteTipBrowserTest.js
+          javac -encoding UTF-8 -d build/score-tests app/src/main/java/br/org/pianolivre/DiscoveryScoreBuilder.java tests/DiscoveryNotationFixtures.java
+          java -cp build/score-tests br.org.pianolivre.DiscoveryNotationFixtures > build/discovery-fixtures.txt
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryNotationBrowserTest.js
       - name: Save adaptive Study measurements
         if: always()
         uses: actions/upload-artifact@v4

@@ -19,37 +19,42 @@ final class DiscoveryStaffView extends FrameLayout {
  private List<Integer> notes=Collections.emptyList();private boolean sequence;
  private List<NotePosition> positions=Collections.emptyList();
  private float noteStep;
- private NotationView renderer;
+ private android.webkit.WebView renderer;
  private RenderListener listener;
  private String renderedXml="";
-
- DiscoveryStaffView(Context c){super(c);setBackgroundColor(0xffffffff);setContentDescription("Pauta musical");}
+ private boolean ready=false;private int tier=0;
+ DiscoveryStaffView(Context c){super(c);setBackgroundColor(0xffffffff);setContentDescription("Pauta musical");
+  renderer=new android.webkit.WebView(c);renderer.setBackgroundColor(0xffffffff);renderer.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE,null);
+  renderer.getSettings().setJavaScriptEnabled(true);renderer.getSettings().setAllowContentAccess(false);
+  renderer.getSettings().setDomStorageEnabled(false);
+  renderer.setWebViewClient(new android.webkit.WebViewClient(){
+   @Override public boolean shouldOverrideUrlLoading(android.webkit.WebView v,String url){return !url.startsWith("file:///android_asset/");}
+   @Override public boolean shouldOverrideUrlLoading(android.webkit.WebView v,android.webkit.WebResourceRequest r){return !r.getUrl().toString().startsWith("file:///android_asset/");}
+  });
+  renderer.addJavascriptInterface(new Object(){
+   @android.webkit.JavascriptInterface public void ready(){post(()->{ready=true;send();});}
+   @android.webkit.JavascriptInterface public void rendered(String report){post(()->{if(listener!=null)listener.onRendered();});}
+   @android.webkit.JavascriptInterface public void error(String message){post(()->{android.util.Log.e("PianoLivreDiscovery",message);if(listener!=null)listener.onError(message);});}
+  },"DiscoveryNotation");
+  addView(renderer,new FrameLayout.LayoutParams(-1,-1));
+  renderedXml=DiscoveryScoreBuilder.build(notes,false);renderer.loadUrl("file:///android_asset/discovery.html");
+ }
  void setRenderListener(RenderListener value){listener=value;}
+ void resetFraming(){tier=0;setNotes(Collections.emptyList(),false);}
  void setNotes(List<Integer> values,boolean isSequence){
   List<Integer> next=values==null?Collections.emptyList():new ArrayList<>(values);
-  if(notes.equals(next)&&sequence==isSequence)return;
-  notes=next;sequence=isSequence;requestLayout();
-  if(notes.isEmpty()){positions=Collections.emptyList();return;}
-  layoutNotes(getWidth(),getHeight());
-  renderedXml=DiscoveryScoreBuilder.build(notes,sequence);
-  if(renderer==null){
-   renderer=new NotationView(getContext(),new NotationView.Listener(){
-    @Override public void onRendered(){if(listener!=null)listener.onRendered();}
-    @Override public void onError(String message){if(listener!=null)listener.onError(message);}
-   });
-   addView(renderer,new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT));
-  }
-  Score score=new Score();score.title="Descobrir";score.sourceXml=renderedXml;
-  renderer.loadScore(score,0);
+  notes=next;sequence=isSequence;
+  for(int n:notes)tier=Math.max(tier,n<21||n>108?2:n<36||n>84?1:0);
+  renderedXml=DiscoveryScoreBuilder.build(notes,sequence);requestLayout();send();
  }
+ private void send(){if(ready&&renderer!=null)renderer.evaluateJavascript("Discovery.render("+org.json.JSONObject.quote(renderedXml)+","+tier+","+sequence+","+notes.size()+")",null);}
  String renderedMusicXml(){return renderedXml;}
- void inspectRenderedClefs(ValueCallback<String> callback){
-  if(renderer==null){if(callback!=null)callback.onReceiveValue("null");return;}
-  renderer.inspectRenderedClefs(callback);
- }
+ void inspectRenderedClefs(ValueCallback<String> callback){renderer.evaluateJavascript("Discovery.clefs()",callback);}
+ void inspectGeometry(ValueCallback<String> callback){renderer.evaluateJavascript("Discovery.inspect()",callback);}
+ void commitFrame(Runnable action){renderer.postVisualStateCallback(0,new android.webkit.WebView.VisualStateCallback(){public void onComplete(long id){action.run();}});}
  void onPause(){if(renderer!=null)renderer.onPause();}
  void onResume(){if(renderer!=null)renderer.onResume();}
- void dispose(){if(renderer!=null){renderer.dispose();renderer=null;}}
+ void dispose(){if(renderer!=null){renderer.removeJavascriptInterface("DiscoveryNotation");renderer.destroy();renderer=null;}}
 
  List<NotePosition> layoutSnapshot(){layoutNotes(getWidth(),getHeight());return Collections.unmodifiableList(positions);}
  private static String spelling(int midi){String[] names={"Dó","Dó♯","Ré","Mi♭","Mi","Fá","Fá♯","Sol","Lá♭","Lá","Si♭","Si"};return names[midi%12]+(midi/12-1);}
@@ -57,7 +62,7 @@ final class DiscoveryStaffView extends FrameLayout {
  private static int diatonic(int midi){return (midi/12-1)*7+letterIndex(midi);}
  private void layoutNotes(int w,int h){
   if(notes.isEmpty()||w<=0||h<=0){positions=Collections.emptyList();return;}
-  int min=Collections.min(notes),max=Collections.max(notes);boolean grand=min<60&&max>=60;
+  int min=Collections.min(notes),max=Collections.max(notes);boolean grand=true;
   float density=getResources().getDisplayMetrics().density;noteStep=5*density;
   float top=grand?Math.max(18*density,h*.14f):Math.max(18*density,h*.25f);float gap=grand?Math.max(76*density,h*.43f):0;
   float bottomTreble=top+8*noteStep,bottomBass=top+gap+8*noteStep;float left=56*density,right=14*density;

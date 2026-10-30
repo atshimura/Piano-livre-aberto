@@ -23,13 +23,15 @@ on:
 permissions:
   contents: read
 
+# A fast pass is evidence for iteration only. Required full checks remain build/emulator.
+concurrency:
+  group: android-ui-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  midi-visual:
+  debug-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: PianoLivreAndroid
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -39,7 +41,37 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Enable KVM on standard GitHub Linux runner
+      - name: Build exact-checkout disposable debug APK once
+        working-directory: PianoLivreAndroid
+        run: |
+          gradle --no-daemon :app:assembleDebug
+          git rev-parse HEAD > app/build/outputs/apk/debug/source-sha.txt
+          sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/apk.sha256
+          cp "$HOME/.android/debug.keystore" app/build/outputs/apk/debug/disposable-debug.keystore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shared-debug-${{ github.sha }}
+          retention-days: 3
+          path: PianoLivreAndroid/app/build/outputs/apk/debug/
+          if-no-files-found: error
+  ui-fast:
+    needs: debug-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: PianoLivreAndroid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-debug-${{ github.sha }}
+          path: PianoLivreAndroid/app/build/outputs/apk/debug/
+      - name: Verify exact SHA and APK bytes
+        run: |
+          test "$(cat app/build/outputs/apk/debug/source-sha.txt)" = "$(git rev-parse HEAD)"
+          sha256sum -c app/build/outputs/apk/debug/apk.sha256
+      - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
@@ -52,20 +84,24 @@ jobs:
           disable-animations: true
           working-directory: PianoLivreAndroid
           script: |
-            gradle --no-daemon :app:assembleDebug
             adb shell svc wifi disable
             adb shell svc data disable
             adb install app/build/outputs/apk/debug/app-debug.apk
-            python3 tests/emulator_midi_interfaces.py
-      - uses: actions/upload-artifact@v4
+            python3 tests/emulator_discovery_layout.py
+            python3 tests/emulator_ui_fast.py
+      - name: Preserve focused evidence, including failed runs
         if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: PianoLivre-prompt03-midi-visual-review
+          name: PianoLivre-ui-fast-${{ github.sha }}
           retention-days: 14
           path: |
-            PianoLivreAndroid/piano-prompt03-*
+            PianoLivreAndroid/piano-discovery-layout-*
+            PianoLivreAndroid/piano-discovery-layout.json
+            PianoLivreAndroid/piano-fast-*.png
             PianoLivreAndroid/piano-ui-failure.*
   emulator:
+    needs: debug-apk
     runs-on: ubuntu-latest
     timeout-minutes: 60
     defaults:
@@ -73,6 +109,18 @@ jobs:
         working-directory: PianoLivreAndroid
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        with:
+          name: shared-debug-${{ github.sha }}
+          path: PianoLivreAndroid/app/build/outputs/apk/debug/
+      - name: Verify and reuse disposable PR debug configuration
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        run: |
+          test "$(cat app/build/outputs/apk/debug/source-sha.txt)" = "$(git rev-parse HEAD)"
+          sha256sum -c app/build/outputs/apk/debug/apk.sha256
+          mkdir -p "$HOME/.android"
+          cp app/build/outputs/apk/debug/disposable-debug.keystore "$HOME/.android/debug.keystore"
       - name: Verify safe public assets, license, and isolated Android app
         run: python3 scripts/verify_public_snapshot.py
       - uses: actions/setup-java@v4
@@ -113,7 +161,7 @@ jobs:
           working-directory: PianoLivreAndroid
           script: |
             test ! -e ../DO_NOT_PUBLISH_OWNER_SCORES.txt
-            gradle --no-daemon :app:assembleDebug :app:assembleRelease
+            if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then gradle --no-daemon :app:assembleDebug :app:assembleRelease; else gradle --no-daemon :app:assembleRelease; fi
             mkdir -p build
             "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/release/app-release.apk > build/public-release-apk-metadata.txt
             "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk > build/public-release-signature.txt
@@ -122,6 +170,7 @@ jobs:
             adb shell svc data disable
             python3 tests/emulator_study_baseline.py
             adb install app/build/outputs/apk/debug/app-debug.apk
+            python3 tests/emulator_discovery_layout.py
             python3 tests/emulator_study_layout.py
             python3 tests/emulator_midi_interfaces.py
             adb uninstall br.org.pianolivre.opensource
@@ -233,6 +282,9 @@ jobs:
               "piano-discovery-staff-phone-sequence.png",
               "piano-discovery-staff-tablet-sequence.png",
           ]
+          for profile in ('phone','tablet'):
+              for stage in ('empty','note','retained','chord','sequence','low','high','common-after-extreme'):
+                  names.append('piano-discovery-layout-'+profile+'-'+stage+'.png')
           report = []
           for viewport in ('phone', 'tablet'):
               for stage in ('home-disconnected','home-opening','home-connected','study-connected','study-hidden','study-restored','study-disconnected','study-unnamed','study-switched','home-reconnected','home-background-return','diagnostics'):
@@ -335,3 +387,5 @@ jobs:
             PianoLivreAndroid/piano-fatal-exception.log
             PianoLivreAndroid/piano-discovery-selftest.log
             PianoLivreAndroid/piano-discovery-staff-*.png
+            PianoLivreAndroid/piano-discovery-layout-*
+            PianoLivreAndroid/piano-discovery-layout.json

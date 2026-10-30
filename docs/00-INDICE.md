@@ -96,3 +96,5 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [55 — Prática guiada sequencial no Laboratório](55-LAB-PRATICA-SEQUENCIAL.md)
 
 - [59 — Análise automática e Estudo adaptável](59-ESTUDO-ADAPTAVEL.md).
+
+- [75 ? Descobrir: layout estavel e validacao rapida](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md)

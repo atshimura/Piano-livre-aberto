@@ -56,18 +56,18 @@ final class MusicLabDiscoverySelfTest {
  }
 
  private static List<StaffCase> staffCases(){return Arrays.asList(
-  new StaffCase("discovery-staff-c2.png",Arrays.asList(36),false,"F",1),
-  new StaffCase("discovery-staff-c3.png",Arrays.asList(48),false,"F",1),
-  new StaffCase("discovery-staff-f3.png",Arrays.asList(53),false,"F",1),
-  new StaffCase("discovery-staff-c4.png",Arrays.asList(60),false,"G",1),
-  new StaffCase("discovery-staff-eb4.png",Arrays.asList(63),false,"G",1),
-  new StaffCase("discovery-staff-g4.png",Arrays.asList(67),false,"G",1),
-  new StaffCase("discovery-staff-c6.png",Arrays.asList(84),false,"G",1),
-  new StaffCase("discovery-staff-low-chord.png",Arrays.asList(36,48,53),false,"F",1),
-  new StaffCase("discovery-staff-high-chord.png",Arrays.asList(60,64,67,72),false,"G",1),
+  new StaffCase("discovery-staff-c2.png",Arrays.asList(36),false,"GF",2),
+  new StaffCase("discovery-staff-c3.png",Arrays.asList(48),false,"GF",2),
+  new StaffCase("discovery-staff-f3.png",Arrays.asList(53),false,"GF",2),
+  new StaffCase("discovery-staff-c4.png",Arrays.asList(60),false,"GF",2),
+  new StaffCase("discovery-staff-eb4.png",Arrays.asList(63),false,"GF",2),
+  new StaffCase("discovery-staff-g4.png",Arrays.asList(67),false,"GF",2),
+  new StaffCase("discovery-staff-c6.png",Arrays.asList(84),false,"GF",2),
+  new StaffCase("discovery-staff-low-chord.png",Arrays.asList(36,48,53),false,"GF",2),
+  new StaffCase("discovery-staff-high-chord.png",Arrays.asList(60,64,67,72),false,"GF",2),
   new StaffCase("discovery-staff-grand-chord.png",Arrays.asList(48,60,67,72),false,"GF",2),
   new StaffCase("discovery-staff-grand-sequence.png",Arrays.asList(55,59,60,62),true,"GF",2),
-  new StaffCase("discovery-staff-c-major.png",Arrays.asList(60,62,64,65,67,69,71,72),true,"G",1),
+  new StaffCase("discovery-staff-c-major.png",Arrays.asList(60,62,64,65,67,69,71,72),true,"GF",2),
   new StaffCase("discovery-staff-phone-sequence.png",longSequence(),true,"GF",2,910,420),
   new StaffCase("discovery-staff-tablet-sequence.png",longSequence(),true,"GF",2,910,600));
  }
@@ -97,7 +97,7 @@ final class MusicLabDiscoverySelfTest {
   check(staff.renderedMusicXml().contains("<sign>G</sign>")==sample.clefs.contains("G"),"MusicXML requests treble clef where expected: "+sample.file);
   check(staff.renderedMusicXml().contains("<sign>F</sign>")==sample.clefs.contains("F"),"MusicXML requests bass clef where expected: "+sample.file);
   if(sample.notes.contains(63))check(staff.renderedMusicXml().contains("<step>E</step><alter>-1</alter><octave>4</octave>")&&staff.renderedMusicXml().contains("<accidental>flat</accidental>"),"Eb4 pitch and flat accidental survive Study engraving input");
-  int chordTags=count(staff.renderedMusicXml(),"<chord/>");check(chordTags==(sample.sequence?0:sample.notes.size()-1),"chord simultaneity/order encoded in MusicXML: "+sample.file);
+  int chordTags=count(staff.renderedMusicXml(),"<chord/>");check(chordTags==(sample.sequence?0:sample.notes.size()-(int)sample.notes.stream().map(n->n<60?2:1).distinct().count()),"chord simultaneity/order encoded in MusicXML: "+sample.file);
   float density=a.getResources().getDisplayMetrics().density;float top=sample.clefs.equals("GF")?Math.max(18*density,staff.getHeight()*.14f):Math.max(18*density,staff.getHeight()*.25f);
   float bassBottom=top+(sample.clefs.equals("GF")?Math.max(76*density,staff.getHeight()*.43f):0)+40*density,trebleBottom=top+40*density;
   for(int i=0;i<positions.size();i++){
@@ -120,7 +120,7 @@ final class MusicLabDiscoverySelfTest {
      String payload=(String)new JSONTokener(raw).nextValue();JSONArray array=new JSONArray(payload);
      check(array.length()==sample.clefCount,"actual OSMD clef glyph count matches staff count: "+sample.file);
      StringBuilder joined=new StringBuilder();for(int i=0;i<array.length();i++){String mark=array.getString(i);check(mark.contains("vf-clef")&&(mark.contains("path")||mark.contains("text")),"actual SVG clef symbol was rendered, not just a clef metadata field: "+sample.file);joined.append(mark);}
-     if(sample.clefs.equals("G"))glyphs.put("G",joined.toString());if(sample.clefs.equals("F"))glyphs.put("F",joined.toString());
+     glyphs.put("G",array.getString(0));glyphs.put("F",array.getString(1));
      Bitmap image=Bitmap.createBitmap(staff.getWidth(),staff.getHeight(),Bitmap.Config.ARGB_8888);staff.draw(new Canvas(image));
      try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),sample.file))){image.compress(Bitmap.CompressFormat.PNG,100,out);}finally{image.recycle();}
      renderCases(a,d,cases,index+1,glyphs);
