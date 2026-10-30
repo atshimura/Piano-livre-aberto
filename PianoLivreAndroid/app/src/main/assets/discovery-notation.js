@@ -4,8 +4,8 @@
  var generation=0,current=null,report=null;
  var viewport=document.getElementById('viewport'),host=document.getElementById('score');
  function fail(e){document.getElementById('error').textContent='Não foi possível desenhar a pauta.';if(window.DiscoveryNotation)DiscoveryNotation.error(String(e));}
- function render(xml,tier,ordered,count){
-  current=[xml,tier,ordered,count];var ticket=++generation;
+ function render(xml,tier,ordered,count,revision){
+  revision=revision||0;current=[xml,tier,ordered,count,revision];var ticket=++generation;
   // Build offscreen: keep the previous complete frame while the next engraves.
   var stage=document.createElement('div');stage.style.cssText='position:absolute;left:0;top:0;visibility:hidden';host.appendChild(stage);
   var camera=[{top:95,bass:225,height:360},{top:170,bass:310,height:510},{top:255,bass:405,height:700}][tier];
@@ -17,7 +17,7 @@
    var osmd=new opensheetmusicdisplay.OpenSheetMusicDisplay(stage,{backend:'svg',autoResize:false,drawTitle:false,drawComposer:false,drawPartNames:false,drawingParameters:'compacttight',renderSingleHorizontalStaffline:true,disableCursor:true});
    Promise.resolve(osmd.load(new DOMParser().parseFromString(xml,'application/xml'))).then(function(){
     if(ticket!==generation){stage.remove();return;}
-    if(viewport.clientHeight!==inputHeight||viewport.clientWidth!==inputWidth){stage.remove();render(xml,tier,ordered,count);return;}
+    if(viewport.clientHeight!==inputHeight||viewport.clientWidth!==inputWidth){stage.remove();render(xml,tier,ordered,count,revision);return;}
     osmd.render();var svg=stage.querySelector('svg');if(!svg)throw Error('OSMD SVG missing');
     var staves=Array.from(svg.querySelectorAll('g.staffline'));if(staves.length!==2)throw Error('Expected two engraved staves');
     var steps=[];
@@ -62,7 +62,7 @@
     rail.style.top=Math.max(0,(viewport.clientHeight-camera.height*scale)/2)+'px';
     rail.innerHTML='';rail.appendChild(crop);
     var boxes=staves.map(function(s){var m=s.querySelector('.vf-measure');return Array.from(m.children).filter(function(n){return n.tagName.toLowerCase()==='path';}).slice(0,5).map(function(p){var b=p.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height};});});
-    report={tier:tier,scale:scale,staffSpace:steps[0]*scale,staves:boxes,notes:count,ordered:ordered,width:rawWidth*scale,height:camera.height*scale,viewportWidth:inputWidth,viewportHeight:inputHeight};
+    report={revision:revision,tier:tier,scale:scale,staffSpace:steps[0]*scale,staves:boxes,notes:count,ordered:ordered,width:rawWidth*scale,height:camera.height*scale,viewportWidth:inputWidth,viewportHeight:inputHeight};
     document.getElementById('error').textContent='';
     if(window.DiscoveryNotation)DiscoveryNotation.rendered(JSON.stringify(report));
    }).catch(fail);

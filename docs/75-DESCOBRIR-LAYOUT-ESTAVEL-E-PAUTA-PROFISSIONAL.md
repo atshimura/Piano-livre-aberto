@@ -49,3 +49,7 @@ A investigacao do primeiro frame no tablet identificou a corrida precisa: OSMD.l
 A revisao dos PNG aprovados pelo primeiro teste rapido encontrou uma linha suplementar na posicao horizontal anterior ao centro. O VexFlow grava vf-ledgers como grupo irmao de vf-stavenote; ambos agora recebem o mesmo deslocamento. A regressao de navegador compara os centros reais da linha suplementar e da cabeca em Do4 e nos dois extremos, para impedir que a geometria geral aprove novamente esse defeito.
 
 Os limites do piano de 88 teclas (MIDI21/La0 e MIDI108/Do8) tambem entram nas fixtures do enquadramento ampliado e na fidelidade MusicXML; os extremos MIDI0/127 permanecem ensaiados separadamente. O gerador passa a 50 checks JVM.
+
+Na inspecao das rasterizacoes legadas, algumas imagens ainda mostravam o quadro anterior apesar de onRendered ja ter ocorrido. Cada pedido agora tem revisao verificada na ponte Java/JS; callbacks obsoletos sao descartados. O teste legado tambem aguarda postVisualStateCallback antes de desenhar o bitmap, como o teste focado ja fazia. O navegador confere a revisao recebida. As primeiras imagens legadas nao servem como prova final desses acordes/sequencias; os novos artefatos devem ser conferidos no fechamento.
+
+As rasterizacoes de componente agora fixam os LayoutParams do viewport solicitado, conferem o viewport CSS contra o tamanho nativo e restauram os parametros normais ao terminar. Isso impede que o layout pai substitua silenciosamente os tamanhos de teste e evita atribuir um viewport nominal a um bitmap de outra dimensao.

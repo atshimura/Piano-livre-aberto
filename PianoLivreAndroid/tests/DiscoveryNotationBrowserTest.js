@@ -10,9 +10,9 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
  const fixtures=fs.readFileSync('build/discovery-fixtures.txt','utf8').trim().split(/\r?\n/);let normal;
  for(let i=0;i<fixtures.length;i++){
   const tier=i>=11?1:i>=7?2:0;
-  await page.evaluate(([xml,tier,i])=>{window.report=null;window.failure=null;Discovery.render(xml,tier,i===10,i===0?0:i===4?3:i===10?4:1);},[Buffer.from(fixtures[i],'base64').toString('utf8'),tier,i]);
+  await page.evaluate(([xml,tier,i])=>{window.report=null;window.failure=null;Discovery.render(xml,tier,i===10,i===0?0:i===4?3:i===10?4:1,i);},[Buffer.from(fixtures[i],'base64').toString('utf8'),tier,i]);
   await page.waitForFunction(()=>window.report||window.failure);assert(!await page.evaluate(()=>window.failure),await page.evaluate(()=>window.failure));
-  const r=await page.evaluate(()=>window.report);assert.equal(r.staves.length,2);assert(r.staves.every(s=>s.length===5));
+  const r=await page.evaluate(()=>window.report);assert.equal(r.revision,i);assert.equal(r.staves.length,2);assert(r.staves.every(s=>s.length===5));
   if(i===0)normal=r;
   assert(r.staves[0][0].width>=680*.8,'staff must span its main panel');
   if(i<=6){assert.equal(r.scale,normal.scale);for(let j=0;j<2;j++)assert(Math.abs(r.staves[j][0].y-normal.staves[j][0].y)<.1);}

@@ -15,6 +15,7 @@ import java.util.*;
 /** Debug-only emulator UI contract test; score glyphs come from the Study renderer. */
 final class MusicLabDiscoverySelfTest {
  private static int checks;
+ private static ViewGroup.LayoutParams normalStaffParams;
  private static void check(boolean ok,String explanation){checks++;if(!ok)throw new IllegalStateException("Discovery UI: "+explanation);}
  private static void collect(View v,List<View> out){out.add(v);if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++)collect(g.getChildAt(i),out);}}
  private static List<View> tree(View root){ArrayList<View> out=new ArrayList<>();collect(root,out);return out;}
@@ -25,7 +26,7 @@ final class MusicLabDiscoverySelfTest {
  }throw new IllegalStateException("Missing clickable home entry "+label);}
 
  static void run(MainActivity a){
-  checks=0;PianoScreens screens=a.screens;MusicLabDiscoveryScreen d=screens.discovery;
+  checks=0;PianoScreens screens=a.screens;MusicLabDiscoveryScreen d=screens.discovery;normalStaffParams=d.staff.getLayoutParams();
   clickHomeEntry(a,"Laboratório Musical");check(screens.isLabOpen(),"home entry opens Descobrir");
   check(d.discover.getVisibility()==View.VISIBLE&&!d.discover.isEnabled(),"Descobrir selected");
   check(d.learn.getVisibility()==View.VISIBLE&&!d.learn.isEnabled(),"Aprender visible and disabled");
@@ -79,6 +80,7 @@ final class MusicLabDiscoverySelfTest {
  }
  private static void renderCases(MainActivity a,MusicLabDiscoveryScreen d,List<StaffCase> cases,int index,Map<String,String> glyphs){
   if(index>=cases.size()){
+   d.staff.setLayoutParams(normalStaffParams);
    check(glyphs.containsKey("G")&&glyphs.containsKey("F")&&!glyphs.get("G").equals(glyphs.get("F")),"rendered treble and bass glyphs are distinct actual SVG symbols");
    d.session.reconnect(a.midiGeneration,null);d.midiAttack(60,900,90,a.midiGeneration,d.sessionGeneration());d.midiRelease(60,a.midiGeneration,d.sessionGeneration());d.midiBatchEnd(90,901,d.sessionGeneration());
    d.midiAttack(62,902,91,a.midiGeneration,d.sessionGeneration());
@@ -115,7 +117,7 @@ final class MusicLabDiscoverySelfTest {
   }
   staff.setRenderListener(new DiscoveryStaffView.RenderListener(){
    @Override public void onError(String message){throw new IllegalStateException("Discovery OSMD rendering failed "+sample.file+": "+message);}
-   @Override public void onRendered(){staff.setRenderListener(null);staff.inspectRenderedClefs(raw->{
+   @Override public void onRendered(){currentFrame(staff,sample,()->staff.inspectRenderedClefs(raw->{
     try{
      String payload=(String)new JSONTokener(raw).nextValue();JSONArray array=new JSONArray(payload);
      check(array.length()==sample.clefCount,"actual OSMD clef glyph count matches staff count: "+sample.file);
@@ -125,9 +127,16 @@ final class MusicLabDiscoverySelfTest {
      try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),sample.file))){image.compress(Bitmap.CompressFormat.PNG,100,out);}finally{image.recycle();}
      renderCases(a,d,cases,index+1,glyphs);
     }catch(Exception ex){throw new IllegalStateException("Unable to verify rendered clef "+sample.file,ex);}
-   });}
+   }));}
   });
  }
+ private static void currentFrame(DiscoveryStaffView staff,StaffCase sample,Runnable action){staff.inspectGeometry(raw->{try{
+  JSONObject geometry=new JSONObject((String)new JSONTokener(raw).nextValue());
+  if(Math.abs(geometry.getDouble("viewportWidth")-sample.widthDp)>2||Math.abs(geometry.getDouble("viewportHeight")-sample.heightDp)>2)return;
+  float density=staff.getResources().getDisplayMetrics().density;
+  check(staff.getWidth()==Math.round(sample.widthDp*density)&&staff.getHeight()==Math.round(sample.heightDp*density),"actual raster viewport "+sample.file);
+  staff.setRenderListener(null);staff.commitFrame(action);
+ }catch(Exception e){throw new IllegalStateException("Unable to await current raster frame",e);}});}
  private static int count(String source,String part){int found=0,at=0;while((at=source.indexOf(part,at))>=0){found++;at+=part.length();}return found;}
- private static void layoutStaff(Activity a,DiscoveryStaffView v,int widthDp,int heightDp){float density=a.getResources().getDisplayMetrics().density;int width=(int)(widthDp*density),height=(int)(heightDp*density);v.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY));v.layout(0,0,width,height);}
+ private static void layoutStaff(Activity a,DiscoveryStaffView v,int widthDp,int heightDp){float density=a.getResources().getDisplayMetrics().density;int width=Math.round(widthDp*density),height=Math.round(heightDp*density);v.setLayoutParams(new LinearLayout.LayoutParams(width,height));v.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY));v.layout(0,0,width,height);}
 }

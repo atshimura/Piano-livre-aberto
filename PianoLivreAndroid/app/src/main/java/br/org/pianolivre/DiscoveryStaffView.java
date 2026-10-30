@@ -22,7 +22,7 @@ final class DiscoveryStaffView extends FrameLayout {
  private android.webkit.WebView renderer;
  private RenderListener listener;
  private String renderedXml="";
- private boolean ready=false;private int tier=0;
+ private boolean ready=false;private int tier=0;private long revision=0;
  DiscoveryStaffView(Context c){super(c);setBackgroundColor(0xffffffff);setContentDescription("Pauta musical");
   renderer=new android.webkit.WebView(c);renderer.setBackgroundColor(0xffffffff);renderer.setLayerType(android.view.View.LAYER_TYPE_SOFTWARE,null);
   renderer.getSettings().setJavaScriptEnabled(true);renderer.getSettings().setAllowContentAccess(false);
@@ -33,7 +33,7 @@ final class DiscoveryStaffView extends FrameLayout {
   });
   renderer.addJavascriptInterface(new Object(){
    @android.webkit.JavascriptInterface public void ready(){post(()->{ready=true;send();});}
-   @android.webkit.JavascriptInterface public void rendered(String report){post(()->{if(listener!=null)listener.onRendered();});}
+   @android.webkit.JavascriptInterface public void rendered(String report){post(()->{try{if(renderer!=null&&new org.json.JSONObject(report).optLong("revision",-1)==revision&&listener!=null)listener.onRendered();}catch(org.json.JSONException e){android.util.Log.e("PianoLivreDiscovery","Invalid render report",e);}});}
    @android.webkit.JavascriptInterface public void error(String message){post(()->{android.util.Log.e("PianoLivreDiscovery",message);if(listener!=null)listener.onError(message);});}
   },"DiscoveryNotation");
   addView(renderer,new FrameLayout.LayoutParams(-1,-1));
@@ -43,11 +43,11 @@ final class DiscoveryStaffView extends FrameLayout {
  void resetFraming(){tier=0;setNotes(Collections.emptyList(),false);}
  void setNotes(List<Integer> values,boolean isSequence){
   List<Integer> next=values==null?Collections.emptyList():new ArrayList<>(values);
-  notes=next;sequence=isSequence;
+  notes=next;sequence=isSequence;revision++;
   for(int n:notes)tier=Math.max(tier,n<21||n>108?2:n<36||n>84?1:0);
   renderedXml=DiscoveryScoreBuilder.build(notes,sequence);requestLayout();send();
  }
- private void send(){if(ready&&renderer!=null)renderer.evaluateJavascript("Discovery.render("+org.json.JSONObject.quote(renderedXml)+","+tier+","+sequence+","+notes.size()+")",null);}
+ private void send(){if(ready&&renderer!=null)renderer.evaluateJavascript("Discovery.render("+org.json.JSONObject.quote(renderedXml)+","+tier+","+sequence+","+notes.size()+","+revision+")",null);}
  String renderedMusicXml(){return renderedXml;}
  void inspectRenderedClefs(ValueCallback<String> callback){renderer.evaluateJavascript("Discovery.clefs()",callback);}
  void inspectGeometry(ValueCallback<String> callback){renderer.evaluateJavascript("Discovery.inspect()",callback);}
