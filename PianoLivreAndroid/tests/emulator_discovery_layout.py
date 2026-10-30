@@ -32,10 +32,10 @@ try:
             if 'DISCOVERY_LAYOUT_PASS' in log:break
             time.sleep(.25)
         else:raise AssertionError('Descobrir focused test timed out: '+log[-7000:])
-        assert len(seen)==8,seen
+        assert len(seen)==9,seen
         Path('piano-discovery-layout-'+profile+'.log').write_text(log,encoding='utf-8')
     Path('piano-discovery-layout.json').write_text(json.dumps(reports,indent=2),encoding='utf-8')
-    print('DISCOVERY_FOCUSED_UI_PASS profiles=2 states=16 synthetic_midi=true',flush=True)
+    print('DISCOVERY_FOCUSED_UI_PASS profiles=2 states=18 synthetic_midi=true',flush=True)
 except BaseException:
     Path('piano-discovery-layout-failure.log').write_text(adb('logcat','-d','-v','brief'),encoding='utf-8')
     screenshot('piano-discovery-layout-failure.png')

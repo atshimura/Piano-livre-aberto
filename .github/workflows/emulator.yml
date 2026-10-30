@@ -289,7 +289,7 @@ jobs:
               "piano-discovery-staff-tablet-sequence.png",
           ]
           for profile in ('phone','tablet'):
-              for stage in ('empty','note','retained','chord','sequence','low','high','common-after-extreme'):
+              for stage in ('empty','note','retained','chord','sequence','held-after-sequence','low','high','common-after-extreme'):
                   names.append('piano-discovery-layout-'+profile+'-'+stage+'.png')
           report = []
           for viewport in ('phone', 'tablet'):

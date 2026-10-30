@@ -47,16 +47,27 @@ final class MusicLabDiscoveryScreen extends LinearLayout {
  void leave(){observing=false;callbackGeneration++;session.cancelPending();staff.onPause();}
  void pause(){observing=false;callbackGeneration++;session.cancelPending();staff.onPause();}
  void resume(){if(getVisibility()==VISIBLE){staff.onResume();observing=true;callbackGeneration++;session.reconnect(activity.midiGeneration,activity.waitRecognizer.chordWindowMs());}}
- void midiAttack(int pitch,long time,long batch,long generation,long uiGeneration){if(!observing||getVisibility()!=VISIBLE||uiGeneration!=callbackGeneration)return;session.attack(pitch,time,batch,generation);showState();scheduleBoundary();}
+ void midiAttack(int pitch,long time,long batch,long generation,long uiGeneration){
+  if(!observing||getVisibility()!=VISIBLE||uiGeneration!=callbackGeneration)return;
+  MusicDiscoverySession.Result before=session.result();
+  if(!session.attack(pitch,time,batch,generation))return;
+  MusicDiscoverySession.Result after=session.result();observedResult=after;
+  // A complete pattern created by this attack belongs to the active entry.
+  // Committing an older pending phrase must not hide the newly held pitch.
+  activeResult=after!=before&&after!=null&&after.kind==MusicDiscoverySession.Kind.SEQUENCE?after:null;
+  showState();scheduleBoundary();
+ }
  void midiRelease(int pitch,long generation,long uiGeneration){if(observing&&uiGeneration==callbackGeneration){session.release(pitch,generation);showState();}}
  void midiBatchEnd(long batch,long now,long uiGeneration){if(!observing||uiGeneration!=callbackGeneration)return;session.finishBatch(batch,now);showState();}
  private void scheduleBoundary(){long delay=session.nextDelayMs(android.os.SystemClock.uptimeMillis());if(delay<=0)return;long token=callbackGeneration;handler.postDelayed(()->{if(token==callbackGeneration&&observing){session.advance(android.os.SystemClock.uptimeMillis());showState();scheduleBoundary();}},delay);}
  void connectionChanged(long generation){session.reconnect(generation,activity.waitRecognizer.chordWindowMs());showState();}
  private String shownKey="";
+ private MusicDiscoverySession.Result observedResult,activeResult;
  private void showState(){
   MusicDiscoverySession.Result r=session.result();
+  if(r!=observedResult){observedResult=r;activeResult=r;}
   ArrayList<Integer> active=new ArrayList<>(session.downNotes());Collections.sort(active);
-  boolean preview=!active.isEmpty()&&(r==null||!r.notes.containsAll(active));
+  boolean preview=!active.isEmpty()&&(r==null||activeResult!=r);
   if(r==null&&!preview){instruction.setText(EMPTY_TEXT);instruction.setVisibility(VISIBLE);resultView.setVisibility(GONE);return;}
   instruction.setVisibility(GONE);resultView.setVisibility(VISIBLE);
   List<Integer> notes=preview?active:r.notes;boolean ordered=!preview&&r.ordered;
