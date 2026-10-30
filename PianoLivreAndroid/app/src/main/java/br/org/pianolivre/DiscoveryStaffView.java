@@ -52,6 +52,10 @@ final class DiscoveryStaffView extends FrameLayout {
  void inspectRenderedClefs(ValueCallback<String> callback){renderer.evaluateJavascript("Discovery.clefs()",callback);}
  void inspectGeometry(ValueCallback<String> callback){renderer.evaluateJavascript("Discovery.inspect()",callback);}
  void commitFrame(Runnable action){renderer.postVisualStateCallback(0,new android.webkit.WebView.VisualStateCallback(){public void onComplete(long id){action.run();}});}
+ android.graphics.Bitmap rasterize(){
+  android.graphics.Bitmap image=android.graphics.Bitmap.createBitmap(renderer.getWidth(),renderer.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
+  renderer.draw(new android.graphics.Canvas(image));return image;
+ }
  void onPause(){if(renderer!=null)renderer.onPause();}
  void onResume(){if(renderer!=null)renderer.onResume();}
  void dispose(){if(renderer!=null){renderer.removeJavascriptInterface("DiscoveryNotation");renderer.destroy();renderer=null;}}

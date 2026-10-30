@@ -123,7 +123,7 @@ final class MusicLabDiscoverySelfTest {
      check(array.length()==sample.clefCount,"actual OSMD clef glyph count matches staff count: "+sample.file);
      StringBuilder joined=new StringBuilder();for(int i=0;i<array.length();i++){String mark=array.getString(i);check(mark.contains("vf-clef")&&(mark.contains("path")||mark.contains("text")),"actual SVG clef symbol was rendered, not just a clef metadata field: "+sample.file);joined.append(mark);}
      glyphs.put("G",array.getString(0));glyphs.put("F",array.getString(1));
-     Bitmap image=Bitmap.createBitmap(staff.getWidth(),staff.getHeight(),Bitmap.Config.ARGB_8888);staff.draw(new Canvas(image));
+     Bitmap image=staff.rasterize();
      try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),sample.file))){image.compress(Bitmap.CompressFormat.PNG,100,out);}finally{image.recycle();}
      renderCases(a,d,cases,index+1,glyphs);
     }catch(Exception ex){throw new IllegalStateException("Unable to verify rendered clef "+sample.file,ex);}
