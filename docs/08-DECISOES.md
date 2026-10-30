@@ -2,6 +2,10 @@
 
 # 08 — Registro de decisões de produto e arquitetura (ADRs)
 
+## D-020 — Refinamento da Home após a beta 0.9.52 (30/10/2026)
+
+**Solicitado pelo usuário:** diminuir o banner em 30%, ampliar sua arte, remover somente o cartão Opções mantendo a engrenagem, ampliar os três atalhos restantes, reorganizar busca/filtro/importação/coleções e usar duas colunas maiores para as partituras em tablet. Preservar funcionalidades e as decisões de Estudar/MIDI. Uma coluna em larguras pequenas é adaptação técnica para leitura, documentada e testada. [Entrega e imagem anotada](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md). Escopo autorizado: implementação, testes e novo PR, sem merge ou Release.
+
 ## D-019 — Integração e beta consolidadas, Prompt 4 (29/10/2026)
 
 **Aprovado explicitamente pelo usuário:** integrar Inicial (#71), referência (#72) e consolidar Estudar/MIDI (#73/#74) em uma única versão final 0.9.52 (61), evitando publicação intermediária 0.9.51. Preservar proteção, commits, referências, dados e assinatura existente. Distribuir somente APK release de main após checks exatos e conferência da assinatura permanente, pelo publicador existente. Aceite físico pendente não impede beta sem falha crítica conhecida; V1 continua aberta. [Registro operacional e evidências](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md). Nenhuma decisão musical anterior foi alterada.

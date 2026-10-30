@@ -1,5 +1,9 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Ajustes da Home após a beta (30/10/2026)
+
+Leia [74](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md) e a imagem anotada preservada. Esta tarefa termina em PR para revisão, sem autorização de merge/publicação. Branch `feat/ajustes-tela-inicial-pos-beta-0952`, base pública f91c278, candidato 0.9.53 (62). Não reabrir estrutura do Estudar ou MIDI. O registro final do PR deve conter os checks, capturas e APK temporário da revisão efetiva. As autorizações do Prompt 4 abaixo se referem exclusivamente à entrega já publicada 0.9.52.
+
 ## Prompt 4 — registro vigente
 
 O usuário autorizou integração e publicação beta. Leia [73 — consolidação/publicação](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md) e confira seu registro final no PR consolidado/Release antes de agir. Alvo 0.9.52-open-beta (61), pacote aberto e assinatura permanente existente. Não publicar 0.9.51 nem alterar Secrets/proteção. Validar ancestralidade dos quatro PRs, runs do SHA de main, upgrade público e assets efetivamente baixados; não reutilizar evidências de PR como prova de main. O próprio SHA/checksum fica no registro externo vinculado, evitando commit recursivo posterior ao APK. As restrições de publicação abaixo são históricas. Hardware e V1 permanecem pendentes; próximas alterações exigem branch/PR e checks próprios.

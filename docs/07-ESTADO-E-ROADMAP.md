@@ -1,5 +1,9 @@
 # 07 — Estado atual e prioridades da linha aberta
 
+## Refinamento da Home após a 0.9.52 (30/10/2026)
+
+[Entrega 74](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md), branch `feat/ajustes-tela-inicial-pos-beta-0952`: banner 30% menor, arte maior, três atalhos sem cartão Opções, controles espaçados e grade musical com duas colunas (uma em celular estreito). Versão do candidato 0.9.53 (62), sem merge ou Release nesta tarefa. Conferir checks e capturas do HEAD final no novo PR antes de concluir. A beta publicada continua sendo 0.9.52, e testes físicos/V1 permanecem pendentes.
+
 ## Prompt 4 — consolidação 0.9.52-open-beta (61)
 
 Integração sequencial de #71/#72, seguida de PR consolidado contendo integralmente #73/#74 por ancestralidade, sem publicar 0.9.51. [Registro vigente e protocolo de fechamento](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md), com links para o registro efetivo do SHA, checks, assinatura e APK oficial. A publicação exige build/emulador do merge final, certificado permanente e upgrade público. Não basta CI de PR. Os estados “sem merge/Release” abaixo pertencem ao histórico dos Prompts 1–3. Próxima etapa após beta: aceite físico Realme/Lenovo/Yamaha, correções em PR e critérios restantes de V1.

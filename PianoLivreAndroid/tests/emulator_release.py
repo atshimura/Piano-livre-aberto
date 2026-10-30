@@ -40,7 +40,7 @@ pid=adb('shell','pidof',PACKAGE).strip();assert pid.isdigit()
 logs=adb('logcat','-d','--pid='+pid,'-v','brief')
 assert 'PROMPT03_STAGE_READY' not in logs and 'SELFTEST_PASS' not in logs and 'self-test failed' not in logs,'Internal test intents must be ignored in release'
 assert 'AUTO_TEMPORAL_FALLBACK' not in logs and 'ACTIVE_RENDERER schematic' not in logs,'Release accepted forced renderer failures'
-assert 'STUDY_CHROME_STATE ' not in logs and 'STUDY_CHROME_LAYOUT ' not in logs,'Debug-only layout probes appeared in release'
+assert 'STUDY_CHROME_STATE ' not in logs and 'STUDY_CHROME_LAYOUT ' not in logs and 'HOME_LAYOUT ' not in logs,'Debug-only layout probes appeared in release'
 screenshot('piano-release.png')
 pathlib.Path('piano-release.json').write_text(json.dumps(dict(package=PACKAGE,variant='release',debuggable=False,debugIntentsIgnored=True,profile='synthetic ID 7',keyboardPreserved=True,speedPreserved=True,scope='API29 emulator, disposable certificate; no physical hardware'),indent=2))
 print('PUBLIC_RELEASE_UPGRADE_UI_PASS: non-debuggable, test flags ignored, profile/keyboard/speed preserved',flush=True)
