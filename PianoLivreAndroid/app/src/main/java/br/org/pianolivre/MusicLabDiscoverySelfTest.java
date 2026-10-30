@@ -15,6 +15,7 @@ import java.util.*;
 /** Debug-only emulator UI contract test; score glyphs come from the Study renderer. */
 final class MusicLabDiscoverySelfTest {
  private static int checks;
+ private static ViewGroup.LayoutParams normalStaffParams;
  private static void check(boolean ok,String explanation){checks++;if(!ok)throw new IllegalStateException("Discovery UI: "+explanation);}
  private static void collect(View v,List<View> out){out.add(v);if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++)collect(g.getChildAt(i),out);}}
  private static List<View> tree(View root){ArrayList<View> out=new ArrayList<>();collect(root,out);return out;}
@@ -25,7 +26,7 @@ final class MusicLabDiscoverySelfTest {
  }throw new IllegalStateException("Missing clickable home entry "+label);}
 
  static void run(MainActivity a){
-  checks=0;PianoScreens screens=a.screens;MusicLabDiscoveryScreen d=screens.discovery;
+  checks=0;PianoScreens screens=a.screens;MusicLabDiscoveryScreen d=screens.discovery;normalStaffParams=d.staff.getLayoutParams();
   clickHomeEntry(a,"Laboratório Musical");check(screens.isLabOpen(),"home entry opens Descobrir");
   check(d.discover.getVisibility()==View.VISIBLE&&!d.discover.isEnabled(),"Descobrir selected");
   check(d.learn.getVisibility()==View.VISIBLE&&!d.learn.isEnabled(),"Aprender visible and disabled");
@@ -56,18 +57,18 @@ final class MusicLabDiscoverySelfTest {
  }
 
  private static List<StaffCase> staffCases(){return Arrays.asList(
-  new StaffCase("discovery-staff-c2.png",Arrays.asList(36),false,"F",1),
-  new StaffCase("discovery-staff-c3.png",Arrays.asList(48),false,"F",1),
-  new StaffCase("discovery-staff-f3.png",Arrays.asList(53),false,"F",1),
-  new StaffCase("discovery-staff-c4.png",Arrays.asList(60),false,"G",1),
-  new StaffCase("discovery-staff-eb4.png",Arrays.asList(63),false,"G",1),
-  new StaffCase("discovery-staff-g4.png",Arrays.asList(67),false,"G",1),
-  new StaffCase("discovery-staff-c6.png",Arrays.asList(84),false,"G",1),
-  new StaffCase("discovery-staff-low-chord.png",Arrays.asList(36,48,53),false,"F",1),
-  new StaffCase("discovery-staff-high-chord.png",Arrays.asList(60,64,67,72),false,"G",1),
+  new StaffCase("discovery-staff-c2.png",Arrays.asList(36),false,"GF",2),
+  new StaffCase("discovery-staff-c3.png",Arrays.asList(48),false,"GF",2),
+  new StaffCase("discovery-staff-f3.png",Arrays.asList(53),false,"GF",2),
+  new StaffCase("discovery-staff-c4.png",Arrays.asList(60),false,"GF",2),
+  new StaffCase("discovery-staff-eb4.png",Arrays.asList(63),false,"GF",2),
+  new StaffCase("discovery-staff-g4.png",Arrays.asList(67),false,"GF",2),
+  new StaffCase("discovery-staff-c6.png",Arrays.asList(84),false,"GF",2),
+  new StaffCase("discovery-staff-low-chord.png",Arrays.asList(36,48,53),false,"GF",2),
+  new StaffCase("discovery-staff-high-chord.png",Arrays.asList(60,64,67,72),false,"GF",2),
   new StaffCase("discovery-staff-grand-chord.png",Arrays.asList(48,60,67,72),false,"GF",2),
   new StaffCase("discovery-staff-grand-sequence.png",Arrays.asList(55,59,60,62),true,"GF",2),
-  new StaffCase("discovery-staff-c-major.png",Arrays.asList(60,62,64,65,67,69,71,72),true,"G",1),
+  new StaffCase("discovery-staff-c-major.png",Arrays.asList(60,62,64,65,67,69,71,72),true,"GF",2),
   new StaffCase("discovery-staff-phone-sequence.png",longSequence(),true,"GF",2,910,420),
   new StaffCase("discovery-staff-tablet-sequence.png",longSequence(),true,"GF",2,910,600));
  }
@@ -79,6 +80,7 @@ final class MusicLabDiscoverySelfTest {
  }
  private static void renderCases(MainActivity a,MusicLabDiscoveryScreen d,List<StaffCase> cases,int index,Map<String,String> glyphs){
   if(index>=cases.size()){
+   d.staff.setLayoutParams(normalStaffParams);
    check(glyphs.containsKey("G")&&glyphs.containsKey("F")&&!glyphs.get("G").equals(glyphs.get("F")),"rendered treble and bass glyphs are distinct actual SVG symbols");
    d.session.reconnect(a.midiGeneration,null);d.midiAttack(60,900,90,a.midiGeneration,d.sessionGeneration());d.midiRelease(60,a.midiGeneration,d.sessionGeneration());d.midiBatchEnd(90,901,d.sessionGeneration());
    d.midiAttack(62,902,91,a.midiGeneration,d.sessionGeneration());
@@ -97,7 +99,7 @@ final class MusicLabDiscoverySelfTest {
   check(staff.renderedMusicXml().contains("<sign>G</sign>")==sample.clefs.contains("G"),"MusicXML requests treble clef where expected: "+sample.file);
   check(staff.renderedMusicXml().contains("<sign>F</sign>")==sample.clefs.contains("F"),"MusicXML requests bass clef where expected: "+sample.file);
   if(sample.notes.contains(63))check(staff.renderedMusicXml().contains("<step>E</step><alter>-1</alter><octave>4</octave>")&&staff.renderedMusicXml().contains("<accidental>flat</accidental>"),"Eb4 pitch and flat accidental survive Study engraving input");
-  int chordTags=count(staff.renderedMusicXml(),"<chord/>");check(chordTags==(sample.sequence?0:sample.notes.size()-1),"chord simultaneity/order encoded in MusicXML: "+sample.file);
+  int chordTags=count(staff.renderedMusicXml(),"<chord/>");check(chordTags==(sample.sequence?0:sample.notes.size()-(int)sample.notes.stream().map(n->n<60?2:1).distinct().count()),"chord simultaneity/order encoded in MusicXML: "+sample.file);
   float density=a.getResources().getDisplayMetrics().density;float top=sample.clefs.equals("GF")?Math.max(18*density,staff.getHeight()*.14f):Math.max(18*density,staff.getHeight()*.25f);
   float bassBottom=top+(sample.clefs.equals("GF")?Math.max(76*density,staff.getHeight()*.43f):0)+40*density,trebleBottom=top+40*density;
   for(int i=0;i<positions.size();i++){
@@ -115,19 +117,26 @@ final class MusicLabDiscoverySelfTest {
   }
   staff.setRenderListener(new DiscoveryStaffView.RenderListener(){
    @Override public void onError(String message){throw new IllegalStateException("Discovery OSMD rendering failed "+sample.file+": "+message);}
-   @Override public void onRendered(){staff.setRenderListener(null);staff.inspectRenderedClefs(raw->{
+   @Override public void onRendered(){currentFrame(staff,sample,()->staff.inspectRenderedClefs(raw->{
     try{
      String payload=(String)new JSONTokener(raw).nextValue();JSONArray array=new JSONArray(payload);
      check(array.length()==sample.clefCount,"actual OSMD clef glyph count matches staff count: "+sample.file);
      StringBuilder joined=new StringBuilder();for(int i=0;i<array.length();i++){String mark=array.getString(i);check(mark.contains("vf-clef")&&(mark.contains("path")||mark.contains("text")),"actual SVG clef symbol was rendered, not just a clef metadata field: "+sample.file);joined.append(mark);}
-     if(sample.clefs.equals("G"))glyphs.put("G",joined.toString());if(sample.clefs.equals("F"))glyphs.put("F",joined.toString());
-     Bitmap image=Bitmap.createBitmap(staff.getWidth(),staff.getHeight(),Bitmap.Config.ARGB_8888);staff.draw(new Canvas(image));
+     glyphs.put("G",array.getString(0));glyphs.put("F",array.getString(1));
+     Bitmap image=staff.rasterize();
      try(FileOutputStream out=new FileOutputStream(new File(a.getCacheDir(),sample.file))){image.compress(Bitmap.CompressFormat.PNG,100,out);}finally{image.recycle();}
      renderCases(a,d,cases,index+1,glyphs);
     }catch(Exception ex){throw new IllegalStateException("Unable to verify rendered clef "+sample.file,ex);}
-   });}
+   }));}
   });
  }
+ private static void currentFrame(DiscoveryStaffView staff,StaffCase sample,Runnable action){staff.inspectGeometry(raw->{try{
+  JSONObject geometry=new JSONObject((String)new JSONTokener(raw).nextValue());
+  if(Math.abs(geometry.getDouble("viewportWidth")-sample.widthDp)>2||Math.abs(geometry.getDouble("viewportHeight")-sample.heightDp)>2)return;
+  float density=staff.getResources().getDisplayMetrics().density;
+  check(staff.getWidth()==Math.round(sample.widthDp*density)&&staff.getHeight()==Math.round(sample.heightDp*density),"actual raster viewport "+sample.file);
+  staff.setRenderListener(null);staff.commitFrame(action);
+ }catch(Exception e){throw new IllegalStateException("Unable to await current raster frame",e);}});}
  private static int count(String source,String part){int found=0,at=0;while((at=source.indexOf(part,at))>=0){found++;at+=part.length();}return found;}
- private static void layoutStaff(Activity a,DiscoveryStaffView v,int widthDp,int heightDp){float density=a.getResources().getDisplayMetrics().density;int width=(int)(widthDp*density),height=(int)(heightDp*density);v.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY));v.layout(0,0,width,height);}
+ private static void layoutStaff(Activity a,DiscoveryStaffView v,int widthDp,int heightDp){float density=a.getResources().getDisplayMetrics().density;int width=Math.round(widthDp*density),height=Math.round(heightDp*density);v.setLayoutParams(new LinearLayout.LayoutParams(width,height));v.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(height,View.MeasureSpec.EXACTLY));v.layout(0,0,width,height);}
 }

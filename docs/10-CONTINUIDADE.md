@@ -366,3 +366,7 @@ Limites: escalas e arpejos reconhecidos somente nos padrões completos suportado
 ### Revisão Descobrir após a beta 0.9.49 — 26/10/2026
 
 Nova branch de correção baseada na `main` `e9cc70afaba68bc4240945ffb08c33300a875e6c`. Escopo: mostrar cada nota isolada ao liberá-la sem interromper a análise contínua de padrões; usar o renderer OSMD de Estudar na pauta do Descobrir; confirmar a escala completa de Dó maior em entrada MIDI com intervalos de 2 s; mostrar as cifras de cada nota, acorde e sequência. A versão de build passa a `0.9.50-open-beta` / code 59. A Release 0.9.49 permanece intacta; esta revisão não publica nem integra automaticamente. JVM (teoria, sequência, sessão e MusicXML), auditoria do pacote, testes de engraving e testes Python da publicação passaram localmente. Build Android, emulador, capturas finais e PR continuam pendentes de execução no GitHub Actions. Aceite físico permanece com usuário na issue #11.
+
+## Entrega Descobrir / issue #77 ? 30/10/2026
+
+Branch independente de #76, baseada em main f91c278; candidato 0.9.54/63. Consulte [75](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md) para layout, enquadramento, testes rapidos e completos, proveniencia de APK e registro final do PR. Sem merge/Release; hardware e V1 pendentes.

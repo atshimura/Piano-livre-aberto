@@ -29,3 +29,5 @@ Os testes automatizados **não substituem** uso real com Yamaha P-45, Realme 7 5
 - [Manual da beta pública](docs/11-MANUAL-DE-USO-BETA.md)
 - [Estado e roadmap](docs/07-ESTADO-E-ROADMAP.md)
 - [Como contribuir](CONTRIBUTING.md) · [Segurança](SECURITY.md) · [Licença do código](LICENSE)
+
+Para iteracoes visuais Android, consulte o job `ui-fast` no workflow de emulador. Ele fornece evidencias antecipadas; o gate de integracao/publicacao continua exigindo `build` e `emulator` completos. [Fluxo e limites](docs/75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md).

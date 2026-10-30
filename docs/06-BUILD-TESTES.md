@@ -27,3 +27,7 @@ Emulador desliga Wi-Fi/dados, compila a base pública fixa 0.9.25, instala-a com
 ## Distribuição release
 
 Desde 0.9.35, Actions compilam debug e release, conferem pacote aberto/certificado/versão e publicam somente release sem depuração. O emulador instala release sobre debug preservando dados sintéticos, exige flags de self-test ignoradas e run-as bloqueado; ver documento 44 e PUBLIC_RELEASE_UPGRADE_UI_PASS no commit efetivo. Isso não substitui atualização/MIDI em hardware real.
+
+## Iteracao visual e gate completo ? issue #77
+
+No workflow emulator, ui-fast fornece retorno antecipado e capturas da tela alterada; debug-apk compartilha APK descartavel verificado por SHA/hash no mesmo run. O check emulator conserva a suite completa; build e emulator continuam necessarios antes de integrar/publicar. Nao aprovar apenas com ui-fast. [Detalhes, tempos medidos e limites](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md).
