@@ -19,5 +19,9 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
   const ink=await page.evaluate(()=>Array.from(document.querySelectorAll('#score .vf-stavenote')).map(n=>{const b=n.getBoundingClientRect();return {top:b.top,bottom:b.bottom};}));
   assert(ink.every(b=>b.top>=0&&b.bottom<=350),'note ink clipped '+i+JSON.stringify(ink));
  }
- await browser.close();console.log('DISCOVERY_NOTATION_BROWSER_PASS stable=7 extremes=2 staves=2 offline=true');
+ await page.evaluate(xml=>{window.report=null;Discovery.render(xml,0,false,1);},Buffer.from(fixtures[1],'base64').toString('utf8'));
+ await page.setViewportSize({width:900,height:430});
+ await page.waitForFunction(()=>window.report&&window.report.viewportWidth===900&&window.report.viewportHeight===430);
+ assert(Math.abs((await page.evaluate(()=>window.report.scale))-(430-16)/360)<.001,'resize must use one consistent viewport');
+ await browser.close();console.log('DISCOVERY_NOTATION_BROWSER_PASS stable=7 extremes=2 staves=2 offline=true resize=true');
 })().catch(e=>{console.error(e);process.exit(1);});
