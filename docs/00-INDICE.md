@@ -1,5 +1,8 @@
 # Documentação do Piano Livre aberto
 
+Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+
+
 - [74 — Ajustes da Tela Inicial após a beta 0.9.52](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md): banner 30% menor, três atalhos ampliados, biblioteca reorganizada e grade de duas colunas; entrega em PR, sem merge/Release.
 
 ## Planejamento futuro — Criação C1 (não implementada)

@@ -1,5 +1,8 @@
 # 10 — Como continuar o Piano Livre aberto
 
+Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+
+
 ## Ajustes da Home após a beta (30/10/2026)
 
 Leia [74](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md) e a imagem anotada preservada. Esta tarefa termina em PR para revisão, sem autorização de merge/publicação. Branch `feat/ajustes-tela-inicial-pos-beta-0952`, base pública f91c278, candidato 0.9.53 (62). Não reabrir estrutura do Estudar ou MIDI. O registro final do PR deve conter os checks, capturas e APK temporário da revisão efetiva. As autorizações do Prompt 4 abaixo se referem exclusivamente à entrega já publicada 0.9.52.

@@ -1,5 +1,8 @@
 # 07 — Estado atual e prioridades da linha aberta
 
+Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+
+
 ## Refinamento da Home após a 0.9.52 (30/10/2026)
 
 [Entrega 74](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md), branch `feat/ajustes-tela-inicial-pos-beta-0952`: banner 30% menor, arte maior, três atalhos sem cartão Opções, controles espaçados e grade musical com duas colunas (uma em celular estreito). Versão do candidato 0.9.53 (62), sem merge ou Release nesta tarefa. Conferir checks e capturas do HEAD final no novo PR antes de concluir. A beta publicada continua sendo 0.9.52, e testes físicos/V1 permanecem pendentes.
