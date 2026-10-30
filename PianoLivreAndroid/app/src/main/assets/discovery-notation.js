@@ -39,7 +39,7 @@
      if(!ordered&&count){
       var heads=Array.from(staff.querySelectorAll('.vf-stavenote'));
       var pitched=heads.filter(function(n){return !!n.querySelector('.vf-notehead');});
-      if(pitched.length){var box=pitched[0].querySelector('.vf-notehead').getBBox(),dx=width*.46-(box.x+box.width/2);heads.forEach(function(n){n.setAttribute('transform','translate('+dx+',0)');});}
+      if(pitched.length){var box=pitched[0].querySelector('.vf-notehead').getBBox(),dx=width*.46-(box.x+box.width/2);heads.concat(Array.from(staff.querySelectorAll('.vf-ledgers'))).forEach(function(n){n.setAttribute('transform','translate('+dx+',0)');});}
      }
     });
     // System-spanning brace/barlines depend on the original staff separation.

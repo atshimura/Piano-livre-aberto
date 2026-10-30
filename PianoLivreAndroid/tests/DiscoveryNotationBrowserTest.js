@@ -18,6 +18,10 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
   if(i<=6){assert.equal(r.scale,normal.scale);for(let j=0;j<2;j++)assert(Math.abs(r.staves[j][0].y-normal.staves[j][0].y)<.1);}
   const ink=await page.evaluate(()=>Array.from(document.querySelectorAll('#score .vf-stavenote')).map(n=>{const b=n.getBoundingClientRect();return {top:b.top,bottom:b.bottom};}));
   assert(ink.every(b=>b.top>=0&&b.bottom<=350),'note ink clipped '+i+JSON.stringify(ink));
+  if(i===1||i===7||i===8){
+   const alignment=await page.evaluate(()=>{const s=Array.from(document.querySelectorAll('#score g.staffline')).find(s=>s.querySelector('.vf-notehead'));const l=s.querySelector('.vf-ledgers').getBoundingClientRect(),n=s.querySelector('.vf-notehead').getBoundingClientRect();return Math.abs(l.x+l.width/2-n.x-n.width/2);});
+   assert(alignment<1,'ledger lines separated from their notehead '+i+' delta='+alignment);
+  }
  }
  await page.evaluate(xml=>{window.report=null;Discovery.render(xml,0,false,1);},Buffer.from(fixtures[1],'base64').toString('utf8'));
  await page.setViewportSize({width:900,height:430});
