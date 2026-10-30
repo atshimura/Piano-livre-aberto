@@ -1,5 +1,10 @@
 # Documentação do Piano Livre aberto
 
+## Planejamento futuro — Criação C1 (não implementada)
+
+- [76 — Criação C1: escopo-base, navegação, gravação, projetos e continuidade](76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md): especificação integral do Laboratório Musical → Criação, uma tomada MIDI, reprodução via instrumento, lista de projetos, busca, ordenação, Lixeira, perfis, recuperação, exportação .mid e backup.
+- [Prompt de retomada e implementação da Criação C1](prompts/CRIACAO_C1_IMPLEMENTACAO.md): guia executável para a frase “vamos continuar a implementação do criação - C1”; [issue #79](https://github.com/atshimura/Piano-livre-aberto/issues/79). **A C1 ainda não foi implementada.**
+
 - [73 — Consolidação, integração e publicação, Prompt 4](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md): precedência sobre os estados históricos de PR aberto abaixo; versão 0.9.52, gates finais, assinatura, APK e aceite físico pendente.
 - [Notas da 0.9.52-open-beta](releases/0.9.52-open-beta.md).
 
