@@ -23,7 +23,7 @@ def capture_home_viewports():
             adb('shell','wm','size',size);adb('shell','wm','density','240')
             # Each viewport uses only a fresh CI installation with synthetic data.
             adb('shell','pm','clear',PACKAGE)
-            adb('shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity')
+            adb('shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity','--ez','home_layout_selftest','true')
             wait_for_text('Bem-vindo ao',timeout=20);time.sleep(.8);assert_running()
             report=layout();items=report['items'];density=report['density']
             hero=next(i for i in items if i['kind']=='home-banner')

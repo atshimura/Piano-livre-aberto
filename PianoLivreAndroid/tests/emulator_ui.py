@@ -57,9 +57,14 @@ def home_scroll_to_top():
         if scroll is None:break
         box=[int(x) for x in re.findall(r"\d+",scroll.attrib.get("bounds",""))]
         if len(box)!=4:break
+        header_visible=any(n.attrib.get("content-desc")=="Piano Livre" and
+                           len(re.findall(r"\d+",n.attrib.get("bounds","")))==4 and
+                           int(re.findall(r"\d+",n.attrib["bounds"])[3])>int(re.findall(r"\d+",n.attrib["bounds"])[1])
+                           for n in root.iter("node"))
         x=box[0]+max(8,(box[2]-box[0])//100);top=box[1];height=box[3]-box[1]
         adb("shell","input","swipe",str(x),str(top+height//5),str(x),str(top+height*4//5),"220")
         time.sleep(.15)
+        if header_visible:break # One final downward swipe clamps a partial header to the top.
     time.sleep(.3)
 
 def current_study_layout():
@@ -914,7 +919,6 @@ if __name__=="__main__":
         raise AssertionError("Fatal exception in Piano Livre; see piano-fatal-exception.log")
     # Additional real Android WebView stress with an already authorized longer
     # MusicXML score; a large pure-JS map test does NOT test SVG rendering.
-    old_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     tap_text(["Gymnopédie nº 1"],scroll=True)
     time.sleep(3)
     assert_running()
@@ -922,16 +926,17 @@ if __name__=="__main__":
     time.sleep(1)
     screenshot("piano-temporal-long.png")
     study_renderer(False)
+    long_pid=adb("shell","pidof","br.org.pianolivre.opensource").strip()
     long_proof=None
     for attempt in range(35):
         time.sleep(.8)
         frames=[line.split("POC_OSMD_READY ",1)[1].split(" @",1)[0]
-                for line in adb("logcat","-d","-v","brief").splitlines()
+                for line in adb("logcat","-d","--pid="+long_pid,"-v","brief").splitlines()
                 if "POC_OSMD_READY {" in line]
-        if len(frames)>old_count:
-            try:long_proof=json.loads(frames[-1])
-            except ValueError:pass
-            if long_proof:break
+        if frames:
+            candidate=json.loads(frames[-1])
+            if candidate.get("graphicalNotes")==469 and candidate.get("midiMapping",{}).get("matched")==469:
+                long_proof=candidate;break
     assert long_proof, "Long MusicXML did not finish horizontal OSMD rendering"
     long_context=[line for line in adb("logcat","-d","-v","brief").splitlines()
                   if "POC_CONTEXT_" in line and line not in initial_context_records]

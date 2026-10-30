@@ -32,6 +32,8 @@ Capturas reais por configuração: `piano-home-refined-{phone,landscape,tablet}.
 
 A suíte existente mantém os testes de banner/Ode/ajuda, busca/filtros, favoritos, coleções com reinício, importação, navegação Biblioteca/Laboratório/Histórico, engrenagem/perfis, Estudar e Partitura Livre. Mantidas as regressões musicais/MIDI, dados/backup/upgrade, notação, responsividade e release sem depuração. A rolagem de retorno ao topo foi ampliada para acomodar a lista maior em uma coluna.
 
+Na primeira suíte completa, a Gymnopédie estava desenhada e o processo atual confirmou 469 notas/mapeamentos, mas o teste falhou por comparar a quantidade global de eventos com uma contagem anterior do buffer circular do logcat. As medições da Home aumentavam esse histórico durante toda a jornada. A instrumentação agora exige o intent debug explícito `home_layout_selftest`, usado somente nas capturas; o ensaio de release exige que seja ignorado. O teste da partitura longa confere o evento do PID recém-iniciado e exige as 469 notas/mapeamentos atuais, sem aumentar timeout nem retirar critérios musicais. O retorno ao topo termina após alcançar o cabeçalho e realizar o último gesto, evitando vinte varreduras quando já está no início. Renderizador e motor musical permanecem intactos.
+
 **Resultado final e proveniência:** a descrição e o comentário de fechamento do PR registrarão HEAD final, checkout efetivo do Actions, runs, resultados, APK, hashes, capturas e expiração. Não declarar concluído antes de build/emulador aprovados e inspeção dos PNGs desta revisão. Esse registro evita um commit adicional apenas para citar o próprio SHA. Resultados anteriores da 0.9.52 não validam estes ajustes.
 
 ## Limitações e próximos passos
