@@ -19,6 +19,7 @@ public final class DiscoveryScoreBuilderTest {
  }
  public static void main(String[]args)throws Exception{
   String empty=DiscoveryScoreBuilder.build(Collections.emptyList(),false);check(empty.contains("<staves>2</staves>")&&empty.contains("<sign>G</sign>")&&empty.contains("<sign>F</sign>"),"empty state engraves both clefs");
+  for(int midi:new int[]{0,21,108,127})pitches(score(new int[]{midi},false),midi);
   Score c2=score(new int[]{36},false);pitches(c2,36);check(c2.sourceXml.contains("<sign>F</sign>"),"bass-only score uses bass clef");
   Score c4=score(new int[]{60},false);pitches(c4,60);check(c4.sourceXml.contains("<sign>G</sign>"),"middle C uses treble clef and ledger line from OSMD");
   Score eb=score(new int[]{63},false);pitches(eb,63);check(eb.writtenEvents.get(0).writtenStep.equals("E")&&eb.writtenEvents.get(0).writtenAlter==-1,"Eb4 preserves flat spelling/accidental");
