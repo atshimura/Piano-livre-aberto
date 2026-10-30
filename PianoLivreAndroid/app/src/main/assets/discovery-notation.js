@@ -38,6 +38,16 @@
     svg.style.width=rawWidth*scale+'px';svg.style.height=camera.height*scale+'px';
     stage.style.cssText='width:'+rawWidth*scale+'px;height:'+camera.height*scale+'px;padding-top:'+Math.max(0,(viewport.clientHeight-camera.height*scale)/2)+'px';
     Array.from(host.children).forEach(function(n){if(n!==stage)n.remove();});viewport.scrollLeft=0;
+    // A fixed crop of the same engraved staff keeps both clefs at the left
+    // while a long sequence scrolls. No duplicate or substitute glyph drawing.
+    var clefs=Array.from(svg.querySelectorAll('.vf-clef'));
+    var railWidth=Math.max.apply(null,clefs.map(function(n){var b=n.getBBox();return b.x+b.width+8;}));
+    var rail=document.getElementById('rail'),crop=svg.cloneNode(true);
+    Array.from(crop.querySelectorAll('.vf-stavenote')).forEach(function(n){n.remove();});
+    crop.setAttribute('viewBox','0 0 '+railWidth+' '+camera.height);
+    crop.setAttribute('width',railWidth*scale);crop.style.width=railWidth*scale+'px';
+    rail.style.top=Math.max(0,(viewport.clientHeight-camera.height*scale)/2)+'px';
+    rail.innerHTML='';rail.appendChild(crop);
     var boxes=staves.map(function(s){var m=s.querySelector('.vf-measure');return Array.from(m.children).filter(function(n){return n.tagName.toLowerCase()==='path';}).slice(0,5).map(function(p){var b=p.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height};});});
     report={tier:tier,scale:scale,staffSpace:steps[0]*scale,staves:boxes,notes:count,ordered:ordered,width:rawWidth*scale,height:camera.height*scale};
     document.getElementById('error').textContent='';

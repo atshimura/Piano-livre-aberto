@@ -15,8 +15,8 @@ final class DiscoveryLayoutSelfTest {
  private DiscoveryLayoutSelfTest(MainActivity a){this.a=a;d=a.screens.discovery;}
  static void run(MainActivity a){new DiscoveryLayoutSelfTest(a).begin();}
  private void check(boolean b,String m){if(!b)throw new IllegalStateException("Discovery layout: "+m);}
- private void begin(){a.screens.showLab();d.staff.setRenderListener(new DiscoveryStaffView.RenderListener(){public void onRendered(){d.staff.commitFrame(()->capture());}public void onError(String m){throw new IllegalStateException(m);}});d.staff.resetFraming();}
- private void play(int...notes){long conn=a.midiGeneration,ui=d.sessionGeneration();d.session.reconnect(conn,null);for(int n:notes)d.midiAttack(n,time,batch,conn,ui);for(int n:notes)d.midiRelease(n,conn,ui);d.midiBatchEnd(batch,time+1,ui);batch++;time+=2000;}
+ private void begin(){a.screens.showLab();d.session.reconnect(a.midiGeneration,null);d.staff.setRenderListener(new DiscoveryStaffView.RenderListener(){public void onRendered(){d.staff.commitFrame(()->capture());}public void onError(String m){throw new IllegalStateException(m);}});d.staff.resetFraming();}
+ private void play(int...notes){long conn=a.midiGeneration,ui=d.sessionGeneration();for(int n:notes)d.midiAttack(n,time,batch,conn,ui);for(int n:notes)d.midiRelease(n,conn,ui);d.midiBatchEnd(batch,time+1,ui);batch++;time+=2000;}
  private void advance(){
   stage++;if(stage==NAMES.length){d.staff.setRenderListener(null);d.back.performClick();check(!a.screens.isLabOpen(),"back navigation");android.util.Log.i("PianoLivreDiscovery","DISCOVERY_LAYOUT_PASS stages="+stage);return;}
   switch(stage){
@@ -38,7 +38,7 @@ final class DiscoveryLayoutSelfTest {
   if(stage<=4){check(g.getInt("tier")==0,"ordinary notes keep standard tier");check(Math.abs(g.getDouble("scale")-normal.getDouble("scale"))<.001,"stable ordinary scale");
    for(int i=0;i<2;i++)check(Math.abs(g.getJSONArray("staves").getJSONArray(i).getJSONObject(0).getDouble("y")-normal.getJSONArray("staves").getJSONArray(i).getJSONObject(0).getDouble("y"))<1,"stable staff origin");}
   if(stage>=5)check(g.getInt("tier")==2,"extreme tier is sticky");
-  int[] left=new int[2],right=new int[2];d.staff.getLocationOnScreen(left);d.title.getLocationOnScreen(right);
+  int[] left=new int[2],right=new int[2];d.staff.getLocationOnScreen(left);(stage==0?d.instruction:d.title).getLocationOnScreen(right);
   check(right[0]>left[0]+d.staff.getWidth(),"text panel is to the right");
   g.put("stage",NAMES[stage]);g.put("notationWidth",d.staff.getWidth());g.put("totalWidth",d.getWidth());
   check(d.staff.getWidth()/(double)(d.getWidth()-20*a.getResources().getDisplayMetrics().density)>.73,"notation predominates");
