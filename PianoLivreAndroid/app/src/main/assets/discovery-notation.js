@@ -28,6 +28,17 @@
      // Never stretch notes, change pitches or infer a physical hand.
      var destination=index?camera.bass:camera.top;
      staff.setAttribute('transform','translate(0,'+(destination-top)+')');
+     // OSMD compact measures end at their last event. Extend only the final
+     // five engraved rules to the available canvas, leaving every glyph intact.
+     var measures=Array.from(staff.children).filter(function(n){return n.classList&&n.classList.contains('vf-measure');});
+     var last=measures[measures.length-1];
+     Array.from(last.children).filter(function(n){return n.tagName.toLowerCase()==='path';}).slice(0,5).forEach(function(p){var b=p.getBBox();p.setAttribute('d','M '+b.x+' '+b.y+' L '+Math.max(b.x+b.width,width-20)+' '+b.y);});
+     measures.forEach(function(m){Array.from(m.children).filter(function(n){return n.tagName.toLowerCase()==='rect'&&n.getBBox().height>=step*3.9;}).forEach(function(n){n.remove();});});
+     if(!ordered&&count){
+      var heads=Array.from(staff.querySelectorAll('.vf-stavenote'));
+      var pitched=heads.filter(function(n){return !!n.querySelector('.vf-notehead');});
+      if(pitched.length){var box=pitched[0].querySelector('.vf-notehead').getBBox(),dx=width*.46-(box.x+box.width/2);heads.forEach(function(n){n.setAttribute('transform','translate('+dx+',0)');});}
+     }
     });
     // System-spanning brace/barlines depend on the original staff separation.
     // Descobrir has no metre: show two independent complete staves and clefs.
@@ -49,7 +60,7 @@
     rail.style.top=Math.max(0,(viewport.clientHeight-camera.height*scale)/2)+'px';
     rail.innerHTML='';rail.appendChild(crop);
     var boxes=staves.map(function(s){var m=s.querySelector('.vf-measure');return Array.from(m.children).filter(function(n){return n.tagName.toLowerCase()==='path';}).slice(0,5).map(function(p){var b=p.getBoundingClientRect();return {x:b.x,y:b.y,width:b.width,height:b.height};});});
-    report={tier:tier,scale:scale,staffSpace:steps[0]*scale,staves:boxes,notes:count,ordered:ordered,width:rawWidth*scale,height:camera.height*scale};
+    report={tier:tier,scale:scale,staffSpace:steps[0]*scale,staves:boxes,notes:count,ordered:ordered,width:rawWidth*scale,height:camera.height*scale,viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight};
     document.getElementById('error').textContent='';
     if(window.DiscoveryNotation)DiscoveryNotation.rendered(JSON.stringify(report));
    }).catch(fail);

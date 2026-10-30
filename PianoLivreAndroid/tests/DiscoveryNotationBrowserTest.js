@@ -14,6 +14,7 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
   await page.waitForFunction(()=>window.report||window.failure);assert(!await page.evaluate(()=>window.failure),await page.evaluate(()=>window.failure));
   const r=await page.evaluate(()=>window.report);assert.equal(r.staves.length,2);assert(r.staves.every(s=>s.length===5));
   if(i===0)normal=r;
+  assert(r.staves[0][0].width>=680*.8,'staff must span its main panel');
   if(i<=6){assert.equal(r.scale,normal.scale);for(let j=0;j<2;j++)assert(Math.abs(r.staves[j][0].y-normal.staves[j][0].y)<.1);}
   const ink=await page.evaluate(()=>Array.from(document.querySelectorAll('#score .vf-stavenote')).map(n=>{const b=n.getBoundingClientRect();return {top:b.top,bottom:b.bottom};}));
   assert(ink.every(b=>b.top>=0&&b.bottom<=350),'note ink clipped '+i+JSON.stringify(ink));

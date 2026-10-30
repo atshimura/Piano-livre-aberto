@@ -31,6 +31,8 @@ final class DiscoveryLayoutSelfTest {
  private void capture(){if(capturing)return;capturing=true;d.staff.inspectGeometry(raw->{try{
   Object decoded=new JSONTokener(raw).nextValue();if(!(decoded instanceof String)){capturing=false;return;}
   JSONObject g=new JSONObject((String)decoded);
+  float density=a.getResources().getDisplayMetrics().density;
+  if(Math.abs(g.getDouble("viewportHeight")-d.staff.getHeight()/density)>2||Math.abs(g.getDouble("viewportWidth")-d.staff.getWidth()/density)>2){capturing=false;h.postDelayed(()->capture(),100);return;}
   int expected=new int[]{0,1,1,3,8,1,1,1}[stage];
   if(g.getInt("notes")!=expected||g.getInt("tier")!=(stage>=5?2:0)){capturing=false;return;}
   check(g.getJSONArray("staves").length()==2,"two painted staves");
