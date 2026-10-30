@@ -204,7 +204,8 @@ class PianoScreens {
   LinearLayout search=compact?column():row();
   librarySearch=new EditText(a);librarySearch.setSingleLine(true);librarySearch.setTextSize(16);librarySearch.setHint("⌕  Buscar título ou arquivo");librarySearch.setContentDescription("Buscar por título ou nome de arquivo");librarySearch.setPadding(d(10),0,d(10),0);librarySearch.setBackground(bg(0xffF6F9FD,12,0xffD9E5F1));
   libraryFilter=new Spinner(a);libraryFilter.setContentDescription("Filtrar biblioteca");
-  libraryFilter.setMinimumHeight(d(48));libraryFilter.setPadding(d(6),0,d(6),0);libraryFilter.setBackground(bg(0xffF6F9FD,12,0xffD9E5F1));
+  libraryFilter.setMinimumHeight(d(48));libraryFilter.setTag("home-filter");
+  libraryFilter.setBackground(new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{bg(0xffF6F9FD,12,0xffD9E5F1),libraryFilter.getBackground()}));
   Button collections=btn("▱  Coleções",false,()->manageCollections());collections.setTextSize(14);
   if(compact){libraryPanel.addView(section,lp(-1,48));LinearLayout actions=row();actions.addView(importButton,new LinearLayout.LayoutParams(0,d(48),1));addGap(actions,10);actions.addView(collections,new LinearLayout.LayoutParams(0,d(48),1));libraryPanel.addView(actions,lp(-1,56));
    search.addView(librarySearch,lp(-1,48));LinearLayout.LayoutParams filterLp=lp(-1,48);filterLp.topMargin=d(10);search.addView(libraryFilter,filterLp);}
@@ -306,7 +307,7 @@ class PianoScreens {
   int selected=ids.indexOf(selectedLibraryFilter);if(selected<0){selected=0;selectedLibraryFilter="";}
   libraryFilter.setOnItemSelectedListener(null);
   ArrayAdapter<String> filterAdapter=new ArrayAdapter<>(a,android.R.layout.simple_spinner_item,names){
-   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){TextView item=(TextView)super.getView(position,convertView,parent);if(shortLandscape())item.setTextSize(9);return item;}
+   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){TextView item=(TextView)super.getView(position,convertView,parent);item.setTextSize(16);return item;}
   };filterAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
   libraryFilter.setAdapter(filterAdapter);libraryFilter.setSelection(selected);
   libraryFilter.setOnItemSelectedListener(new MainActivity.Listener(index->{

@@ -30,6 +30,8 @@ def capture_home_viewports():
             art=next(i for i in items if i['kind']=='home-art')
             shortcuts=[i for i in items if i['kind']=='home-shortcut']
             cards=[i for i in items if i['kind']=='home-score']
+            filter_item=next(i for i in items if i['kind']=='home-filter')
+            assert filter_item['labels'] and all(t['sizeSp']>=16 for t in filter_item['labels']),('Library filter is too small',name,filter_item)
             assert abs(hero['height']/density-old_height*.7)<=1,('Banner must shrink 30%',name,hero)
             assert art['width']/density>old_art,('Artwork did not grow',name,art)
             assert len(shortcuts)==3 and len(cards)==10,('Shortcut or score lost',name,len(shortcuts),len(cards))
