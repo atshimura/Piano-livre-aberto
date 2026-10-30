@@ -1,5 +1,20 @@
 # 10 — Como continuar o Piano Livre aberto
 
+Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+
+
+## Ajustes da Home após a beta (30/10/2026)
+
+Leia [74](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md) e a imagem anotada preservada. Esta tarefa termina em PR para revisão, sem autorização de merge/publicação. Branch `feat/ajustes-tela-inicial-pos-beta-0952`, base pública f91c278, candidato 0.9.53 (62). Não reabrir estrutura do Estudar ou MIDI. O registro final do PR deve conter os checks, capturas e APK temporário da revisão efetiva. As autorizações do Prompt 4 abaixo se referem exclusivamente à entrega já publicada 0.9.52.
+
+## Ponte de continuidade — Laboratório Musical / Criação C1 (planejamento de 30/10/2026)
+
+**Quando o usuário escrever “vamos continuar a implementação do criação - C1”, executar a retomada a partir da [especificação completa](76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md), do [prompt de implementação](prompts/CRIACAO_C1_IMPLEMENTACAO.md) e da [issue #79](https://github.com/atshimura/Piano-livre-aberto/issues/79).** Não pedir que o usuário repita as decisões já registradas.
+
+**Decisões do produto:** terceira aba Criação ao lado de Descobrir e Aprender (Aprender permanece desabilitado até sua implementação); **opção A** — gravar uma única tomada MIDI inicialmente, reproduzir no instrumento, salvar, procurar/ordenar, navegar entre projetos e perfis, renomear, enviar à Lixeira, recuperar e exportar .mid. A geração de partitura é C2; exportação PDF, C3; overdub/camadas ficam para etapa posterior. 100 BPM, 4/4 e quantização 1/16 são apenas **parâmetros iniciais propostos para C2**; não alterar o MIDI bruto da C1.
+
+**Estado:** somente **documentado e pronto para implementação futura**, sem alteração do aplicativo nesta entrega. No registro do planejamento, PR #76 (Home) e PR #78 (Descobrir/CI) ainda estavam abertos e issue #77 trata do desenvolvimento rápido; conferir estado real ao retomar. A C1 deve preservar offline/GPL, perfil ID estável, conexões MIDI/epoch e backup com pré-validação e rollback, inclusive criações futuras. A suíte completa segue obrigatória antes de merge; ensaios físicos seguem com usuário. Consulte AGENTS.md antes de qualquer código.
+
 ## Prompt 4 — registro vigente
 
 O usuário autorizou integração e publicação beta. Leia [73 — consolidação/publicação](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md) e confira seu registro final no PR consolidado/Release antes de agir. Alvo 0.9.52-open-beta (61), pacote aberto e assinatura permanente existente. Não publicar 0.9.51 nem alterar Secrets/proteção. Validar ancestralidade dos quatro PRs, runs do SHA de main, upgrade público e assets efetivamente baixados; não reutilizar evidências de PR como prova de main. O próprio SHA/checksum fica no registro externo vinculado, evitando commit recursivo posterior ao APK. As restrições de publicação abaixo são históricas. Hardware e V1 permanecem pendentes; próximas alterações exigem branch/PR e checks próprios.
@@ -362,3 +377,7 @@ Limites: escalas e arpejos reconhecidos somente nos padrões completos suportado
 ### Revisão Descobrir após a beta 0.9.49 — 26/10/2026
 
 Nova branch de correção baseada na `main` `e9cc70afaba68bc4240945ffb08c33300a875e6c`. Escopo: mostrar cada nota isolada ao liberá-la sem interromper a análise contínua de padrões; usar o renderer OSMD de Estudar na pauta do Descobrir; confirmar a escala completa de Dó maior em entrada MIDI com intervalos de 2 s; mostrar as cifras de cada nota, acorde e sequência. A versão de build passa a `0.9.50-open-beta` / code 59. A Release 0.9.49 permanece intacta; esta revisão não publica nem integra automaticamente. JVM (teoria, sequência, sessão e MusicXML), auditoria do pacote, testes de engraving e testes Python da publicação passaram localmente. Build Android, emulador, capturas finais e PR continuam pendentes de execução no GitHub Actions. Aceite físico permanece com usuário na issue #11.
+
+## Entrega Descobrir / issue #77 ? 30/10/2026
+
+Branch independente de #76, baseada em main f91c278; candidato 0.9.54/63. Consulte [75](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md) para layout, enquadramento, testes rapidos e completos, proveniencia de APK e registro final do PR. Sem merge/Release; hardware e V1 pendentes.

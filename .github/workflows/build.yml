@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,6 +48,9 @@ jobs:
           build/study-browser/node_modules/.bin/playwright install --with-deps chromium
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/StudyProfileBrowserTest.js
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/TemporalNoteTipBrowserTest.js
+          javac -encoding UTF-8 -d build/score-tests app/src/main/java/br/org/pianolivre/DiscoveryScoreBuilder.java tests/DiscoveryNotationFixtures.java
+          java -cp build/score-tests br.org.pianolivre.DiscoveryNotationFixtures > build/discovery-fixtures.txt
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryNotationBrowserTest.js
       - name: Save adaptive Study measurements
         if: always()
         uses: actions/upload-artifact@v4
@@ -110,7 +117,10 @@ jobs:
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java tests/MusicTheoryTest.java
           java -cp build/score-tests MusicTheoryTest
       - name: Test trusted beta publication gates (Python)
-        run: python3 tests/PublishBetaTest.py
+        run: |
+          python3 tests/PublishBetaTest.py
+          python3 tests/SharedDebugApkTest.py
+          python3 tests/EmulatorGateTest.py
       - name: Test Espera preparation timing (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/WaitPreparation.java tests/WaitPreparationTest.java
@@ -286,7 +296,7 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 100
     permissions:
       contents: write
       actions: read

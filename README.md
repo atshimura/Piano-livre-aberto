@@ -1,10 +1,12 @@
 # Piano Livre — Android, código aberto
 
-Consolidação **0.9.52-open-beta (61)**: nova Inicial, Estudar e conexão MIDI compartilhada. [Registro da integração, validação e publicação](docs/73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md) · [Pré-release oficial](https://github.com/atshimura/Piano-livre-aberto/releases/tag/v0.9.52-open-beta) · [Baixar APK](https://github.com/atshimura/Piano-livre-aberto/releases/download/v0.9.52-open-beta/PianoLivre-0.9.52-open-beta.apk). A disponibilidade e os resultados efetivos são registrados na Release após os checks do merge; não usar artefatos de PR para atualizar a beta pública.
+Consolidacao **0.9.54-open-beta (63)**: Home refinada, Descobrir com pautas profissionais estaveis, feedback rapido de UI e planejamento futuro da Criacao C1. [Registro e validacao](docs/77-CONSOLIDACAO-PUBLICACAO-0954.md) e [notas da versao](docs/releases/0.9.54-open-beta.md). Publicacao oficial somente apos checks do SHA integrado; conferir a Release efetiva antes de baixar. C1 ainda nao implementada.
 
 Aplicativo experimental de estudo de piano com leitura MusicXML, importação MIDI aproximada, USB-MIDI, modo Espera e demonstração MIDI. Na implementação do Prompt 2, a tela Estudar prioriza a pauta, com controles responsivos e sem teclado guia. Desenvolvido em Java/Android e JavaScript. **O código aberto não é uma versão V1 concluída.** Consulte [a entrega e seus limites](docs/71-TELA-ESTUDAR-PROMPT-02.md).
 
 ## Onde o desenvolvimento acontece
+**Planejamento futuro — Laboratório Musical / Criação C1:** [especificação completa e navegação entre projetos](docs/76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md) · [roteiro para implementação em outra conversa](docs/prompts/CRIACAO_C1_IMPLEMENTACAO.md) · [issue #79](https://github.com/atshimura/Piano-livre-aberto/issues/79). Quando solicitado “vamos continuar a implementação do criação - C1”, usar esses documentos. **Ainda não é funcionalidade implementada**; a C1 prevê gravação simples MIDI, gestão de projetos e reprodução, deixando partitura/PDF para etapas posteriores.
+
 Este **é o repositório principal do desenvolvimento**. Correções, propostas, versões, testes e APKs futuros devem ser feitos aqui, em branches com pull requests. A base histórica privada permanece separada e **não** é necessária para compilar o aplicativo aberto. Veja [AGENTS.md](AGENTS.md) e o [índice técnico](docs/00-INDICE.md).
 
 ## Compilação e testes
@@ -29,3 +31,5 @@ Os testes automatizados **não substituem** uso real com Yamaha P-45, Realme 7 5
 - [Manual da beta pública](docs/11-MANUAL-DE-USO-BETA.md)
 - [Estado e roadmap](docs/07-ESTADO-E-ROADMAP.md)
 - [Como contribuir](CONTRIBUTING.md) · [Segurança](SECURITY.md) · [Licença do código](LICENSE)
+
+Para iteracoes visuais Android, consulte o job `ui-fast` no workflow de emulador. Ele fornece evidencias antecipadas; o gate de integracao/publicacao continua exigindo `build` e `emulator` completos. [Fluxo e limites](docs/75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md).

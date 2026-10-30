@@ -16,6 +16,7 @@ def synthetic_upgrade_preferences():
         dict(id=7,name="Upgrade B",avatar=3)
     ],ensure_ascii=False)
     library=json.dumps(dict(version=1,favorites=["imported/upgrade.mxl"],collections=[]))
+    history=json.dumps(dict(version=1,records=[dict(score="imported/upgrade.mxl",title="Upgrade synthetic session",at=1700000000000,elapsedMs=60000,mode=1,hand=2,fromBeat=0,toBeat=.75,startSpeed=.8,endSpeed=.8)],pieces={"imported/upgrade.mxl":dict(title="Upgrade synthetic session",timeMs=60000,periods=1,lastAt=1700000000000,lastBeat=.75,goalMinutes=15)}))
     lines=[
         "<map>",
         '<boolean name="upgrade_test_fixture" value="true"/>',
@@ -25,6 +26,7 @@ def synthetic_upgrade_preferences():
         "profiles_v2":profiles,
         "user_7_file":"imported/upgrade.mxl",
         "user_7_library":library,
+        "user_7_history":history,
     }.items():
         lines.append('<string name="'+key+'">'+html.escape(value)+'</string>')
     for key,value in {

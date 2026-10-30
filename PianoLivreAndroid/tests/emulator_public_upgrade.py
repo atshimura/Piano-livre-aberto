@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Install the actual previous public release, seed synthetic user data, then update in place."""
-import hashlib, html, json, pathlib, re, subprocess, tempfile, time, urllib.request
+import argparse, hashlib, html, json, pathlib, re, subprocess, tempfile, time, urllib.request, xml.etree.ElementTree as ET
 from emulator_ui import adb, dump, tap_text, assert_running
 from upgrade_fixture import synthetic_upgrade_preferences
 
 PACKAGE = "br.org.pianolivre.opensource"
 ACTIVITY = PACKAGE + "/br.org.pianolivre.MainActivity"
-PREVIOUS_URL = "https://github.com/atshimura/Piano-livre-aberto/releases/download/v0.9.46-open-beta/PianoLivre-0.9.46-open-beta.apk"
+parser=argparse.ArgumentParser();parser.add_argument('--previous',choices=['0.9.46','0.9.52'],default='0.9.46');options=parser.parse_args()
+previous_version=options.previous+'-open-beta';previous_code=61 if options.previous=='0.9.52' else 55
+PREVIOUS_URL = f"https://github.com/atshimura/Piano-livre-aberto/releases/download/v{previous_version}/PianoLivre-{previous_version}.apk"
 EXPECTED_CERT = "7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290"
 NEW_APK = pathlib.Path("app/build/outputs/apk/release/app-release.apk")
 
@@ -27,13 +29,13 @@ def version(aapt, apk):
 
 with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     temp=pathlib.Path(temp)
-    old_apk=temp/"PianoLivre-0.9.46-open-beta.apk"
+    old_apk=temp/('PianoLivre-'+previous_version+'.apk')
     urllib.request.urlretrieve(PREVIOUS_URL,old_apk)
     sdk=pathlib.Path(__import__("os").environ["ANDROID_HOME"])
     signer=sdk/"build-tools/35.0.0/apksigner"
     aapt=signer.with_name("aapt")
-    assert version(aapt,old_apk)==(PACKAGE,"55","0.9.46-open-beta")
-    assert version(aapt,NEW_APK)==(PACKAGE,"61","0.9.52-open-beta")
+    assert version(aapt,old_apk)==(PACKAGE,str(previous_code),previous_version)
+    assert version(aapt,NEW_APK)==(PACKAGE,"63","0.9.54-open-beta")
     assert certificate(signer,old_apk)==EXPECTED_CERT
     assert certificate(signer,NEW_APK)==EXPECTED_CERT
 
@@ -81,9 +83,18 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     assert any("Espera"==label for label in labels),"Updated Study lost mode controls"
     after=run("adb","shell","sha256sum",private+"/files/imported/upgrade.mxl").split()[0]
     assert after==before,"Public release update changed the imported MusicXML file"
-    print(json.dumps({"result":"PUBLIC_APK_UPDATE_PRESERVED_DATA_PASS",
-      "previousVersion":"0.9.46-open-beta","previousVersionCode":55,
-      "newVersion":"0.9.52-open-beta","newVersionCode":61,"package":PACKAGE,
+    restored=ET.fromstring(run('adb','shell','cat',private+'/shared_prefs/piano_data.xml'))
+    values={node.attrib['name']:node.attrib.get('value',node.text) for node in restored}
+    seeded={node.attrib['name']:node.attrib.get('value',node.text) for node in ET.fromstring(synthetic_upgrade_preferences())}
+    for key in ('profiles_v2','user_7_library','user_7_history'):
+        assert json.loads(values[key])==json.loads(seeded[key]),'Public upgrade changed '+key
+    for key in ('active_profile','user_7_file','user_7_mode','user_7_hand','user_7_keyboard','user_7_tempo','user_7_position'):
+        assert values[key]==seeded[key],'Public upgrade changed '+key
+    result={"result":"PUBLIC_APK_UPDATE_PRESERVED_DATA_PASS",
+      "previousVersion":previous_version,"previousVersionCode":previous_code,
+      "newVersion":"0.9.54-open-beta","newVersionCode":63,"package":PACKAGE,
       "certificateSha256":EXPECTED_CERT,"profile":"synthetic ID 7 preserved",
       "keyboard":"preserved","tempo":"80% preserved","importedScoreSha256":after,
-      "scope":"API 29 emulator; actual previous public release APK; synthetic user data"},ensure_ascii=False))
+      "sessions":"synthetic history preserved", "scope":"API 29 emulator; actual previous public release APK; synthetic user data"}
+    pathlib.Path('piano-public-upgrade-'+options.previous+'.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    print(json.dumps(result,ensure_ascii=False))

@@ -2,6 +2,10 @@
 
 # 08 — Registro de decisões de produto e arquitetura (ADRs)
 
+## D-020 — Refinamento da Home após a beta 0.9.52 (30/10/2026)
+
+**Solicitado pelo usuário:** diminuir o banner em 30%, ampliar sua arte, remover somente o cartão Opções mantendo a engrenagem, ampliar os três atalhos restantes, reorganizar busca/filtro/importação/coleções e usar duas colunas maiores para as partituras em tablet. Preservar funcionalidades e as decisões de Estudar/MIDI. Uma coluna em larguras pequenas é adaptação técnica para leitura, documentada e testada. [Entrega e imagem anotada](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md). Escopo autorizado: implementação, testes e novo PR, sem merge ou Release.
+
 ## D-019 — Integração e beta consolidadas, Prompt 4 (29/10/2026)
 
 **Aprovado explicitamente pelo usuário:** integrar Inicial (#71), referência (#72) e consolidar Estudar/MIDI (#73/#74) em uma única versão final 0.9.52 (61), evitando publicação intermediária 0.9.51. Preservar proteção, commits, referências, dados e assinatura existente. Distribuir somente APK release de main após checks exatos e conferência da assinatura permanente, pelo publicador existente. Aceite físico pendente não impede beta sem falha crítica conhecida; V1 continua aberta. [Registro operacional e evidências](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md). Nenhuma decisão musical anterior foi alterada.
@@ -72,3 +76,7 @@ Veja [01](01-VISAO-E-REQUISITOS.md), [07](07-ESTADO-E-ROADMAP.md) e [10](10-CONT
 ## D-017 — Notas extras, simultaneidade, duração e pedal no Espera (14/10/2026)
 
 **Aprovado explicitamente pelo usuário:** notas extras não bloqueiam avanço com todas as notas esperadas, mas devem ser indicadas; acordes exigem janela temporal ajustável, **sem escolher ms antes da calibração**; duração e pedal durante Aprendizagem apenas orientam e não são critérios de avanço. O aplicativo oferece coleta de intervalos reais de acordes e edição da janela; quando não calibrado, registra estado sem limite temporal e avisa. Futuras regras de Avaliação são outro assunto. Código e testes em [17](17-REGRAS-ESPERA-CALIBRACAO.md).
+
+## D-021 ? Descobrir estavel e dois niveis de validacao (30/10/2026)
+
+Produto aprovado no pedido: duas pautas permanentes a esquerda, painel textual lateral, ultimo resultado retido e ajuste excepcional por faixas com histerese. Tecnica: mesmo OSMD do Estudar em pagina independente; camera so amplia ate reabrir Descobrir. Issue #77: fluxo rapido rastreavel sem substituir build/emulator completos. PR #76 permanece independente. [Especificacao, implementacao e evidencias](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md).

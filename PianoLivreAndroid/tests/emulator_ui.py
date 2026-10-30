@@ -46,61 +46,25 @@ def capture_emulator_failure(kind,error,traceback):
 sys.excepthook=capture_emulator_failure
 
 def home_responsive_screenshots():
-    # The production Activity is landscape-first. Exercise phone and tablet
-    # landscape widths without changing the library or profile state.
-    adb("shell","am","force-stop","br.org.pianolivre.opensource")
-    # End the one-shot upgrade/self-test Activity before configuration changes.
-    # Its synthetic import has already been removed by the deletion regression.
-    adb("shell", "wm", "size", "720x540")
-    adb("shell", "wm", "density", "240")
-    adb("shell","pm","clear","br.org.pianolivre.opensource")
-    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
-    time.sleep(1.5);assert_running();wait_for_text("Bem-vindo ao",timeout=20);time.sleep(.6)
-    screenshot("piano-home-phone.png")
-    phone=dump()
-    assert any("Bem-vindo ao" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width home lost the welcome banner"
-    phone_labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in phone.iter("node")]
-    assert any("PIANO LIVRE" in n.attrib.get("text","") for n in phone.iter("node")), "Phone-width header lost the Piano Livre identity"
-    description=next((n for n in phone.iter("node") if n.attrib.get("text","").startswith("Escolha uma música, pratique")),None)
-    assert description is not None, "Phone-width welcome description is missing"
-    description_bounds=[int(x) for x in re.findall(r"\d+",description.attrib.get("bounds",""))]
-    assert len(description_bounds)==4 and description_bounds[2]<=375, "Phone-width banner description overlaps the piano artwork"
-    for essential in ("Começar pela Ode à Alegria","Como usar"):
-        assert any(essential.casefold() in value.casefold() for value in phone_labels), "Phone-width banner control is missing: "+essential
-        node=next(n for n in phone.iter("node") if essential.casefold() in (n.attrib.get("text","") or n.attrib.get("content-desc","")).casefold())
-        bounds=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
-        assert len(bounds)==4 and bounds[0]>=0 and bounds[1]>=0 and bounds[2]<=720 and bounds[3]<=480, "Phone-width banner control is cut off: "+essential
-    adb("shell", "wm", "size", "1920x1080")
-    adb("shell", "wm", "density", "240")
-    adb("shell","am","force-stop","br.org.pianolivre.opensource")
-    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
-    time.sleep(1.5);assert_running();wait_for_text("Bem-vindo ao",timeout=20);time.sleep(.6)
-    screenshot("piano-home-tablet.png")
-    tablet=dump()
-    assert any("Biblioteca Musical" in n.attrib.get("text","") for n in tablet.iter("node")), "Tablet-width home lost the library"
-    tablet_labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in tablet.iter("node")]
-    for essential in ("Buscar título ou arquivo","Todas as categorias","Coleções","Importar partitura","▶  Estudar","Partitura livre"):
-        assert any(essential.casefold() in value.casefold() for value in tablet_labels), "Tablet-width library control is missing: "+essential
-    for essential in ("▶  Estudar","Partitura livre"):
-        node=next(n for n in tablet.iter("node") if essential.casefold() in (n.attrib.get("text","") or n.attrib.get("content-desc","")).casefold())
-        bounds=[int(x) for x in re.findall(r"\d+",node.attrib.get("bounds",""))]
-        assert len(bounds)==4 and bounds[0]>=0 and bounds[2]<=1920 and bounds[3]<=1024, "Tablet-width score action is cut off: "+essential
-    adb("shell", "wm", "size", "reset")
-    adb("shell", "wm", "density", "reset")
-    adb("shell","am","force-stop","br.org.pianolivre.opensource")
-    adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
-    time.sleep(1.5);assert_running()
+    from home_layout_checks import capture_home_viewports
+    capture_home_viewports()
+
 
 def home_scroll_to_top():
-    for _ in range(8):
+    for _ in range(20):
         root=dump()
         scroll=next((n for n in root.iter("node") if n.attrib.get("scrollable")=="true" and "Horizontal" not in n.attrib.get("class","")),None)
         if scroll is None:break
         box=[int(x) for x in re.findall(r"\d+",scroll.attrib.get("bounds",""))]
         if len(box)!=4:break
+        header_visible=any(n.attrib.get("content-desc")=="Piano Livre" and
+                           len(re.findall(r"\d+",n.attrib.get("bounds","")))==4 and
+                           int(re.findall(r"\d+",n.attrib["bounds"])[3])>int(re.findall(r"\d+",n.attrib["bounds"])[1])
+                           for n in root.iter("node"))
         x=box[0]+max(8,(box[2]-box[0])//100);top=box[1];height=box[3]-box[1]
         adb("shell","input","swipe",str(x),str(top+height//5),str(x),str(top+height*4//5),"220")
         time.sleep(.15)
+        if header_visible:break # One final downward swipe clamps a partial header to the top.
     time.sleep(.3)
 
 def current_study_layout():
@@ -429,7 +393,7 @@ if __name__=="__main__":
     print("PASS: public Laboratory Discover entry, minimal empty state and deterministic return",flush=True)
     screenshot("piano-library.png")
     # Chord calibration must be discoverable, with no magic millisecond default.
-    home_scroll_to_top();tap_text(["Opções"],scroll=True)
+    home_scroll_to_top();tap_text(["Opções e configurações"],exact=True)
     time.sleep(.5)
     options=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Calibrar acordes MIDI" in text for text in options), "Calibrar acordes option missing"
@@ -468,9 +432,9 @@ if __name__=="__main__":
     tap_text(["Criar"],exact=True)
     created=[n.attrib.get("text","") for n in dump().iter("node")]
     assert "Novo perfil" not in created and any("Perfil_Teste" in t for t in created) and any("PIANO LIVRE" in t for t in created), "New profile was not created and selected"
-    tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Escolher avatar"]);tap_text(["★"],exact=True)
+    tap_text(["Opções e configurações"],exact=True);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Escolher avatar"]);tap_text(["★"],exact=True)
     assert any("★ Perfil_Teste" in n.attrib.get("text","") for n in dump().iter("node")), "Avatar was not retained"
-    tap_text(["Opções"]);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Excluir perfil"]);tap_text(["Excluir"],exact=True)
+    tap_text(["Opções e configurações"],exact=True);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Excluir perfil"]);tap_text(["Excluir"],exact=True)
     after_delete=[n.attrib.get("text","") for n in dump().iter("node")]
     assert not any("Perfil_Teste" in t for t in after_delete), "Deleted profile remains selected"
     if any("← Biblioteca" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in dump().iter("node")):
@@ -955,7 +919,6 @@ if __name__=="__main__":
         raise AssertionError("Fatal exception in Piano Livre; see piano-fatal-exception.log")
     # Additional real Android WebView stress with an already authorized longer
     # MusicXML score; a large pure-JS map test does NOT test SVG rendering.
-    old_count=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     tap_text(["Gymnopédie nº 1"],scroll=True)
     time.sleep(3)
     assert_running()
@@ -963,16 +926,17 @@ if __name__=="__main__":
     time.sleep(1)
     screenshot("piano-temporal-long.png")
     study_renderer(False)
+    long_pid=adb("shell","pidof","br.org.pianolivre.opensource").strip()
     long_proof=None
     for attempt in range(35):
         time.sleep(.8)
         frames=[line.split("POC_OSMD_READY ",1)[1].split(" @",1)[0]
-                for line in adb("logcat","-d","-v","brief").splitlines()
+                for line in adb("logcat","-d","--pid="+long_pid,"-v","brief").splitlines()
                 if "POC_OSMD_READY {" in line]
-        if len(frames)>old_count:
-            try:long_proof=json.loads(frames[-1])
-            except ValueError:pass
-            if long_proof:break
+        if frames:
+            candidate=json.loads(frames[-1])
+            if candidate.get("graphicalNotes")==469 and candidate.get("midiMapping",{}).get("matched")==469:
+                long_proof=candidate;break
     assert long_proof, "Long MusicXML did not finish horizontal OSMD rendering"
     long_context=[line for line in adb("logcat","-d","-v","brief").splitlines()
                   if "POC_CONTEXT_" in line and line not in initial_context_records]

@@ -31,6 +31,8 @@ class PianoScreens {
  PianoView legacyFallback;
  final StudyChromeState chrome=new StudyChromeState();
  String lastStudyLayout="";
+ String lastHomeLayout="";
+ int homeLayoutSequence=0;
  PianoScreens(MainActivity a){this.a=a;}
  int d(float n){return (int)(n*a.getResources().getDisplayMetrics().density+.5f);}
  boolean shortLandscape(){android.util.DisplayMetrics m=a.getResources().getDisplayMetrics();return m.widthPixels>m.heightPixels&&m.heightPixels/m.density<480;}
@@ -90,6 +92,36 @@ class PianoScreens {
   buildLibraryPanel();
   TextView footer=text("Biblioteca local · estudo individual · funciona sem internet.",11,muted,false);
   footer.setPadding(d(8),d(12),0,d(4));libraryInner.addView(footer,lp(-1,-2));
+  if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0&&a.getIntent().getBooleanExtra("home_layout_selftest",false))library.getViewTreeObserver().addOnGlobalLayoutListener(()->logHomeLayout());
+ }
+ void logHomeLayout(){
+  if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)==0||!a.getIntent().getBooleanExtra("home_layout_selftest",false)||library==null||library.getVisibility()!=View.VISIBLE||library.getWidth()==0)return;
+  try{
+   JSONObject report=new JSONObject();report.put("density",a.getResources().getDisplayMetrics().density);
+   org.json.JSONArray items=new org.json.JSONArray();collectHomeLayout(libraryInner,items);report.put("items",items);
+   String value=report.toString();if(!value.equals(lastHomeLayout)){
+    lastHomeLayout=value;int sequence=++homeLayoutSequence;
+    for(int i=0;i<items.length();i++)android.util.Log.i("PianoLivreHome","HOME_ITEM "+sequence+" "+items.getJSONObject(i).toString());
+    report.remove("items");report.put("sequence",sequence);report.put("itemCount",items.length());android.util.Log.i("PianoLivreHome","HOME_LAYOUT "+report.toString());
+   }
+  }catch(org.json.JSONException ignored){}
+ }
+ void collectHomeLayout(View view,org.json.JSONArray items)throws org.json.JSONException{
+  Object tag=view.getTag();
+  if(tag instanceof String&&((String)tag).startsWith("home-")){
+   JSONObject item=new JSONObject();item.put("kind",tag);int[] xy=new int[2];view.getLocationOnScreen(xy);
+   item.put("x",xy[0]);item.put("y",xy[1]);item.put("width",view.getWidth());item.put("height",view.getHeight());
+   if(view instanceof android.view.ViewGroup){org.json.JSONArray labels=new org.json.JSONArray();collectHomeText((android.view.ViewGroup)view,labels);item.put("labels",labels);}
+   items.put(item);
+  }
+  if(view instanceof android.view.ViewGroup){android.view.ViewGroup group=(android.view.ViewGroup)view;for(int i=0;i<group.getChildCount();i++)collectHomeLayout(group.getChildAt(i),items);}
+ }
+ void collectHomeText(android.view.ViewGroup group,org.json.JSONArray labels)throws org.json.JSONException{
+  for(int i=0;i<group.getChildCount();i++){
+   View child=group.getChildAt(i);
+   if(child instanceof TextView){TextView t=(TextView)child;JSONObject label=new JSONObject();label.put("text",t.getText());label.put("sizeSp",t.getTextSize()/a.getResources().getDisplayMetrics().scaledDensity);int[] xy=new int[2];t.getLocationOnScreen(xy);label.put("x",xy[0]);label.put("y",xy[1]);label.put("width",t.getWidth());label.put("height",t.getHeight());label.put("textHeight",t.getLayout()==null?0:t.getLayout().getHeight()+t.getCompoundPaddingTop()+t.getCompoundPaddingBottom());labels.put(label);}
+   else if(child instanceof android.view.ViewGroup)collectHomeText((android.view.ViewGroup)child,labels);
+  }
  }
  void buildHomeHeader(){
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<620;
@@ -115,70 +147,73 @@ class PianoScreens {
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
   final boolean shortScreen=shortLandscape();final boolean compact=widthDp<620;
   FrameLayout hero=new FrameLayout(a);hero.setBackground(bg(0xffD9EAFB,22,0xffC9DDF6));hero.setClipToOutline(true);
-  int heroHeight=shortScreen?220:compact?285:215;
+  int heroHeight=Math.round((shortScreen?220:compact?285:215)*.7f);
+  int heroWidth=widthDp-40;
   ImageView art=new ImageView(a);art.setImageResource(R.drawable.home_hero_art);art.setScaleType(ImageView.ScaleType.CENTER_CROP);
   art.setAlpha(1f);
-  int artWidth=shortScreen?205:compact?Math.max(220,(int)(widthDp*.62f)):widthDp<900?410:590;
+  int artWidth=Math.round(heroWidth*.64f);
+  hero.setTag("home-banner");art.setTag("home-art");
   FrameLayout.LayoutParams artLp=new FrameLayout.LayoutParams(d(artWidth),-1,Gravity.RIGHT|Gravity.CENTER_VERTICAL);
   hero.addView(art,artLp);
   View fade=new View(a);android.graphics.drawable.GradientDrawable fadeDrawable=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xffDFEDFC,0xffDFEDFC,0x00DFEDFC});fade.setBackground(fadeDrawable);
-  hero.addView(fade,new FrameLayout.LayoutParams(compact?d(Math.max(230,(int)(widthDp*.68f))):d(widthDp<900?430:610),-1,Gravity.LEFT));
-  LinearLayout copy=column();copy.setGravity(Gravity.CENTER_VERTICAL);copy.setPadding(d(shortScreen?16:30),d(shortScreen?10:20),d(shortScreen?12:18),d(shortScreen?10:20));
-  FrameLayout.LayoutParams copyLp=new FrameLayout.LayoutParams(shortScreen?d(225):compact?-1:d(widthDp<900?500:660),-1,Gravity.LEFT);
+  hero.addView(fade,new FrameLayout.LayoutParams(d(Math.round(heroWidth*(compact?.78f:.60f))),-1,Gravity.LEFT));
+  LinearLayout copy=column();copy.setGravity(Gravity.CENTER_VERTICAL);copy.setPadding(d(compact?12:20),d(8),d(12),d(8));
+  copy.setTag("home-banner-copy");
+  FrameLayout.LayoutParams copyLp=new FrameLayout.LayoutParams(compact?-1:d(Math.max(428,Math.round(heroWidth*.58f))),-1,Gravity.LEFT);
   hero.addView(copy,copyLp);
-  TextView title=text("Bem-vindo ao\nPiano Livre!",compact?27:shortScreen?21:35,0xff102344,true);title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
-  TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?14:shortScreen?10:16,0xff455F7D,false);
-  if(shortScreen)description.setMaxWidth(d(200));
-  description.setPadding(0,d(5),0,d(shortScreen?6:13));copy.addView(description,lp(shortScreen?200:-1,-2));
-  LinearLayout actions=compact&&!shortScreen||shortScreen?column():row();
+  TextView title=text("Bem-vindo ao Piano Livre!",compact?20:shortScreen?24:28,0xff102344,true);title.setMaxWidth(d(compact?Math.round(heroWidth*.82f):heroWidth));title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
+  TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?12:shortScreen?14:16,0xff455F7D,false);
+  description.setPadding(0,d(3),0,d(7));copy.addView(description,lp(compact?Math.round(heroWidth*.66f):-1,-2));
+  LinearLayout actions=row();
   Button start=btn("▶  Começar pela Ode à Alegria",true,()->a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true));
-  start.setContentDescription("Começar pela Ode à Alegria no modo Estudar");actions.addView(start,lp(shortScreen?190:compact?-1:250,shortScreen?34:compact?45:46));if(shortScreen)start.setTextSize(10);
-  if(!compact)addGap(actions,10);
+  start.setContentDescription("Começar pela Ode à Alegria no modo Estudar");actions.addView(start,lp(compact?204:250,44));if(compact)start.setTextSize(11);
+  addGap(actions,8);
   Button help=btn("▣  Como usar",false,()->showHelp());help.setContentDescription("Abrir ajuda local do Piano Livre");
-  LinearLayout.LayoutParams helpLp=lp(shortScreen?112:compact?-1:154,shortScreen?34:compact?43:46);if(compact&&!shortScreen||shortScreen)helpLp.topMargin=d(6);if(shortScreen)help.setTextSize(10);actions.addView(help,helpLp);
+  LinearLayout.LayoutParams helpLp=lp(compact?104:138,44);if(compact)help.setTextSize(11);actions.addView(help,helpLp);
   copy.addView(actions,lp(compact?-1:-2,-2));
   LinearLayout.LayoutParams heroParams=lp(-1,heroHeight);heroParams.topMargin=d(12);libraryInner.addView(hero,heroParams);
  }
  void buildNavigationCards(){
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean shortScreen=shortLandscape();
-  int cols=widthDp>=660?4:widthDp>=520?2:1;
+  int cols=widthDp>=720?3:1;
   LinearLayout nav=column();LinearLayout navRow=null;
-  String[] titles={"Biblioteca Musical","Laboratório Musical","Histórico","Opções"};
-  String[] descriptions={"Suas partituras para estudar e tocar","Notas, escalas, acordes e exercícios","Acompanhe seu progresso","Configurações e personalização"};
-  String[] icons={"♫","⚗","◴","⚙"};int[] colors={0xff2471D5,0xff128263,0xff6540CC,0xff9A6500};int[] tints={0xffE5F1FF,0xffE5F8F0,0xffF0EAFE,0xfffff5df};
-  for(int i=0;i<4;i++){
+  String[] titles={"Biblioteca Musical","Laboratório Musical","Histórico"};
+  String[] descriptions={"Suas partituras para estudar e tocar","Notas, escalas, acordes e exercícios","Acompanhe seu progresso"};
+  String[] icons={"♫","⚗","◴"};int[] colors={0xff2471D5,0xff128263,0xff6540CC};int[] tints={0xffE5F1FF,0xffE5F8F0,0xffF0EAFE};
+  for(int i=0;i<titles.length;i++){
    if(i%cols==0){navRow=row();LinearLayout.LayoutParams rp=lp(-1,-2);rp.topMargin=d(shortLandscape()?7:12);nav.addView(navRow,rp);}
    final int index=i;LinearLayout card=row();card.setPadding(d(12),d(10),d(10),d(10));
    GradientDrawable cardShape=bg(tints[i],17,new int[]{0xffC8DFFF,0xffCBEFDD,0xffDED4FB,0xffF4E2B9}[i]);
    card.setBackground(new android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x22345A80),cardShape,null));
-   card.setPadding(d(shortScreen?7:12),d(shortScreen?5:10),d(shortScreen?5:10),d(shortScreen?5:10));
-   LinearLayout.LayoutParams cardLp=new LinearLayout.LayoutParams(0,d(shortScreen?58:widthDp>=600?88:92),1);cardLp.setMargins(d(3),d(2),d(7),d(2));navRow.addView(card,cardLp);
-   TextView icon=text(icons[i],shortScreen?18:29,colors[i],true);icon.setGravity(Gravity.CENTER);icon.setBackground(bg(0x55ffffff,50,0));card.addView(icon,lp(shortScreen?38:66,shortScreen?38:66));addGap(card,shortScreen?7:12);
-   LinearLayout labels=column();labels.addView(text(titles[i],shortScreen?10:15,ink,true),lp(-1,-2));TextView sub=text(descriptions[i],shortScreen?8:12,muted,false);sub.setMaxLines(2);sub.setEllipsize(TextUtils.TruncateAt.END);labels.addView(sub,lp(-1,-2));card.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
+   card.setPadding(d(14),d(12),d(12),d(12));card.setTag("home-shortcut");
+   LinearLayout.LayoutParams cardLp=new LinearLayout.LayoutParams(0,d(shortScreen?96:108),1);cardLp.setMargins(d(3),d(2),d(7),d(2));navRow.addView(card,cardLp);
+   TextView icon=text(icons[i],shortScreen?28:34,colors[i],true);icon.setGravity(Gravity.CENTER);icon.setBackground(bg(0x55ffffff,50,0));card.addView(icon,lp(shortScreen?48:70,shortScreen?48:70));addGap(card,12);
+   LinearLayout labels=column();labels.addView(text(titles[i],shortScreen?16:18,ink,true),lp(-1,-2));TextView sub=text(descriptions[i],shortScreen?12:14,muted,false);sub.setMaxLines(3);labels.addView(sub,lp(-1,-2));card.addView(labels,new LinearLayout.LayoutParams(0,-2,1));
    TextView arrow=text("›",shortScreen?18:27,colors[i],true);arrow.setGravity(Gravity.CENTER);card.addView(arrow,lp(shortScreen?16:22,-1));card.setElevation(d(1));card.setClickable(true);card.setFocusable(true);
-   card.setContentDescription(titles[i]+". "+descriptions[i]);card.setOnClickListener(v->{if(index==0)focusLibrary();else if(index==1)showLab();else if(index==2)a.showHistory();else options();});
+   card.setContentDescription(titles[i]+". "+descriptions[i]);card.setOnClickListener(v->{if(index==0)focusLibrary();else if(index==1)showLab();else a.showHistory();});
   }
   libraryInner.addView(nav,lp(-1,-2));
  }
  void buildLibraryPanel(){
-  boolean shortScreen=shortLandscape();libraryPanel=column();libraryPanel.setPadding(d(shortScreen?2:16),d(shortScreen?2:12),d(shortScreen?2:16),d(shortScreen?2:13));libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
+  boolean shortScreen=shortLandscape();libraryPanel=column();libraryPanel.setPadding(d(16),d(14),d(16),d(14));libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
   LinearLayout.LayoutParams panelLp=lp(-1,-2);panelLp.topMargin=d(shortScreen?7:13);libraryInner.addView(libraryPanel,panelLp);
-  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<900;
-  LinearLayout section=row();section.addView(text("♫",shortScreen?13:25,blue,true),lp(shortScreen?18:35,shortScreen?16:40));
-  TextView title=text("Biblioteca Musical",compact?18:shortScreen?15:23,0xff102344,true);title.setSingleLine(true);
-  LinearLayout.LayoutParams titleLp=compact?new LinearLayout.LayoutParams(0,d(shortScreen?16:42),1):lp(-2,shortScreen?16:42);section.addView(title,titleLp);
-  Button importButton=btn("Importar partitura",false,()->a.importScore());if(shortScreen)importButton.setTextSize(9);
-  if(shortScreen){importButton.setMinHeight(0);importButton.setMinimumHeight(0);importButton.setPadding(d(4),0,d(4),0);}
+  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<720;
+  LinearLayout section=row();section.addView(text("♫",25,blue,true),lp(35,44));
+  TextView title=text("Biblioteca Musical",compact?22:26,0xff102344,true);title.setSingleLine(true);
+  section.addView(title,new LinearLayout.LayoutParams(0,d(48),1));
+  Button importButton=btn("Importar partitura",false,()->a.importScore());importButton.setTextSize(14);
   LinearLayout search=compact?column():row();
-  librarySearch=new EditText(a);librarySearch.setSingleLine(true);librarySearch.setTextSize(shortScreen?9:14);librarySearch.setHint("⌕  Buscar título ou arquivo");librarySearch.setContentDescription("Buscar por título ou nome de arquivo");if(shortScreen){librarySearch.setMinHeight(0);librarySearch.setMinimumHeight(0);librarySearch.setPadding(d(4),0,d(4),0);}
+  librarySearch=new EditText(a);librarySearch.setSingleLine(true);librarySearch.setTextSize(16);librarySearch.setHint("⌕  Buscar título ou arquivo");librarySearch.setContentDescription("Buscar por título ou nome de arquivo");librarySearch.setPadding(d(10),0,d(10),0);librarySearch.setBackground(bg(0xffF6F9FD,12,0xffD9E5F1));
   libraryFilter=new Spinner(a);libraryFilter.setContentDescription("Filtrar biblioteca");
-  if(shortScreen){libraryFilter.setMinimumHeight(0);libraryFilter.setPadding(d(2),0,d(2),0);}
-  Button collections=btn("▱  Coleções",false,()->manageCollections());if(shortScreen){collections.setTextSize(9);collections.setMinHeight(0);collections.setMinimumHeight(0);collections.setPadding(d(3),0,d(3),0);}
-  int controlHeight=shortScreen?16:42;
-  if(compact){section.addView(importButton,lp(132,shortScreen?16:40));libraryPanel.addView(section,lp(-1,shortScreen?16:44));
-   search.addView(librarySearch,lp(-1,controlHeight));LinearLayout filterRow=row();filterRow.addView(libraryFilter,new LinearLayout.LayoutParams(0,d(controlHeight),1));addGap(filterRow,7);filterRow.addView(collections,lp(shortScreen?94:114,controlHeight));search.addView(filterRow,lp(-1,shortScreen?20:46));libraryPanel.addView(search,lp(-1,shortScreen?36:92));}
-  else{addGap(section,10);section.addView(librarySearch,new LinearLayout.LayoutParams(0,d(controlHeight),1));addGap(section,8);section.addView(libraryFilter,lp(220,controlHeight));addGap(section,8);section.addView(collections,lp(shortScreen?74:116,controlHeight));addGap(section,8);section.addView(importButton,lp(shortScreen?104:151,shortScreen?16:40));libraryPanel.addView(section,lp(-1,shortScreen?18:44));}
-  libraryResult=text("",shortScreen?8:12,muted,false);libraryPanel.addView(libraryResult,lp(-1,shortScreen?9:26));
+  libraryFilter.setMinimumHeight(d(48));libraryFilter.setTag("home-filter");
+  libraryFilter.setBackground(new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{bg(0xffF6F9FD,12,0xffD9E5F1),libraryFilter.getBackground()}));
+  Button collections=btn("▱  Coleções",false,()->manageCollections());collections.setTextSize(14);
+  if(compact){libraryPanel.addView(section,lp(-1,48));LinearLayout actions=row();actions.addView(importButton,new LinearLayout.LayoutParams(0,d(48),1));addGap(actions,10);actions.addView(collections,new LinearLayout.LayoutParams(0,d(48),1));libraryPanel.addView(actions,lp(-1,56));
+   search.addView(librarySearch,lp(-1,48));LinearLayout.LayoutParams filterLp=lp(-1,48);filterLp.topMargin=d(10);search.addView(libraryFilter,filterLp);}
+  else{section.addView(collections,lp(132,48));addGap(section,12);section.addView(importButton,lp(166,48));libraryPanel.addView(section,lp(-1,56));
+   search.addView(librarySearch,new LinearLayout.LayoutParams(0,d(48),1));addGap(search,16);search.addView(libraryFilter,lp(widthDp<1000?245:320,48));}
+  LinearLayout.LayoutParams searchLp=lp(-1,-2);searchLp.topMargin=d(8);libraryPanel.addView(search,searchLp);
+  libraryResult=text("",13,muted,false);libraryPanel.addView(libraryResult,lp(-1,32));
   librarySearch.addTextChangedListener(new android.text.TextWatcher(){
    public void beforeTextChanged(CharSequence t,int start,int count,int after){}
    public void onTextChanged(CharSequence t,int start,int before,int count){}
@@ -208,7 +243,7 @@ class PianoScreens {
   try{metadata=new LibraryStore(a.prefs,a.user).snapshot();refreshLibraryFilters(metadata);}
   catch(RuntimeException ex){grid.addView(text("Não foi possível ler a organização da biblioteca. Os dados não foram alterados.",13,ink,false),lp(-1,-2));return;}
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean shortScreen=shortLandscape();
-  int columns=widthDp>=680?3:widthDp>=520?2:1;
+  int columns=LibraryGridLayout.columnsForWidthDp((int)(widthDp/a.getResources().getConfiguration().fontScale));
   java.util.ArrayList<String[]> entries=new java.util.ArrayList<>();
   for(int i=0;i<a.catalog.length();i++){
    JSONObject j=a.catalog.optJSONObject(i);if(j!=null)entries.add(new String[]{j.optString("name"),"scores/"+j.optString("file")});
@@ -226,24 +261,24 @@ class PianoScreens {
   libraryResult.setText(entries.size()+" de "+total+" partituras");
   if(entries.isEmpty())grid.addView(text(total==0?"Sua biblioteca está vazia. Importe uma partitura para começar.":"Nenhuma partitura encontrada. Ajuste a busca ou escolha Todas as categorias.",13,muted,false),lp(-1,54));
   for(int i=0;i<entries.size();i+=columns){
-   int cardHeight=shortScreen?96:164;LinearLayout row=row();grid.addView(row,lp(-1,cardHeight+10));
+   int cardHeight=shortScreen?184:208;LinearLayout row=row();grid.addView(row,lp(-1,cardHeight+12));
    for(int k=0;k<columns;k++){
     if(i+k>=entries.size()){View spacer=new View(a);row.addView(spacer,new LinearLayout.LayoutParams(0,d(cardHeight-10),1));continue;}
     String[] entry=entries.get(i+k);
-    LinearLayout card=column();card.setPadding(d(shortScreen?5:10),d(shortScreen?3:9),d(shortScreen?5:10),d(shortScreen?3:9));
+    LinearLayout card=column();card.setTag("home-score");card.setPadding(d(12),d(10),d(12),d(10));
     card.setBackground(bg(Color.WHITE,17,0xffE0E9F2));card.setElevation(d(1));
     LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,d(cardHeight-10),1);p.setMargins(d(3),d(3),d(7),d(3));row.addView(card,p);
     final String scoreKey=LibrarySearch.key(entry[1]);
     Button favorite=compact(metadata.favorites.contains(scoreKey)?"★":"☆",false,()->libraryAction(()->new LibraryStore(a.prefs,a.user).toggleFavorite(scoreKey)));
     favorite.setContentDescription((metadata.favorites.contains(scoreKey)?"Remover favorito ":"Favoritar ")+entry[0]);
-    LinearLayout title=row();TextView name=text(entry[0],shortScreen?10:14,ink,true);name.setSingleLine(true);name.setEllipsize(TextUtils.TruncateAt.END);
-    title.addView(name,new LinearLayout.LayoutParams(0,d(shortScreen?20:34),1));title.addView(favorite,lp(shortScreen?24:36,shortScreen?20:32));card.addView(title,lp(-1,shortScreen?20:36));
+    LinearLayout title=row();TextView name=text(entry[0],shortScreen?17:19,ink,true);name.setMaxLines(2);name.setEllipsize(TextUtils.TruncateAt.END);
+    title.addView(name,new LinearLayout.LayoutParams(0,d(48),1));title.addView(favorite,lp(44,44));card.addView(title,lp(-1,48));
     LinearLayout details=row();ImageView thumbnail=new ImageView(a);thumbnail.setImageResource(scoreThumbnail(entry[1]));
-    thumbnail.setScaleType(ImageView.ScaleType.CENTER_CROP);thumbnail.setBackground(bg(0xffE8F1FA,10,0xffDAE6F2));details.addView(thumbnail,lp(shortScreen?42:70,shortScreen?32:54));addGap(details,shortScreen?5:9);
-    TextView source=text(entry[1].startsWith("scores/")?"Partitura da biblioteca":"Partitura importada",shortScreen?8:11,muted,false);source.setSingleLine(true);source.setEllipsize(TextUtils.TruncateAt.END);details.addView(source,new LinearLayout.LayoutParams(0,-2,1));card.addView(details,lp(-1,shortScreen?34:58));
-    LinearLayout actions=row();Button study=compact("▶  Estudar",true,()->a.loadScore(entry[1],true));if(shortScreen)study.setTextSize(8);actions.addView(study,new LinearLayout.LayoutParams(0,d(shortScreen?22:37),1));addGap(actions,shortScreen?4:7);
+    thumbnail.setScaleType(ImageView.ScaleType.CENTER_CROP);thumbnail.setBackground(bg(0xffE8F1FA,10,0xffDAE6F2));details.addView(thumbnail,lp(shortScreen?68:82,shortScreen?48:62));addGap(details,12);
+    TextView source=text(entry[1].startsWith("scores/")?"Partitura da biblioteca":"Partitura importada",shortScreen?13:14,muted,false);source.setMaxLines(2);details.addView(source,new LinearLayout.LayoutParams(0,-2,1));card.addView(details,lp(-1,shortScreen?60:80));
+    LinearLayout actions=row();Button study=compact("▶  Estudar",true,()->a.loadScore(entry[1],true));study.setTextSize(14);actions.addView(study,new LinearLayout.LayoutParams(0,d(44),1));addGap(actions,8);
     Button free=compact("Partitura livre",false,()->a.openFreeScore(entry[1]));free.setTextColor(blue);free.setContentDescription("Abrir "+entry[0]+" em Partitura Livre");
-    if(shortScreen)free.setTextSize(8);actions.addView(free,new LinearLayout.LayoutParams(0,d(shortScreen?22:37),1));card.addView(actions,lp(-1,shortScreen?22:39));
+    free.setTextSize(14);actions.addView(free,new LinearLayout.LayoutParams(0,d(44),1));card.addView(actions,lp(-1,44));
     card.setContentDescription("Estudar "+entry[0]);card.setClickable(true);card.setFocusable(true);
     card.setOnClickListener(v->a.loadScore(entry[1],true));
     card.setOnLongClickListener(v->{organizeScore(entry[0],scoreKey);return true;});
@@ -273,7 +308,7 @@ class PianoScreens {
   int selected=ids.indexOf(selectedLibraryFilter);if(selected<0){selected=0;selectedLibraryFilter="";}
   libraryFilter.setOnItemSelectedListener(null);
   ArrayAdapter<String> filterAdapter=new ArrayAdapter<>(a,android.R.layout.simple_spinner_item,names){
-   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){TextView item=(TextView)super.getView(position,convertView,parent);if(shortLandscape())item.setTextSize(9);return item;}
+   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){TextView item=(TextView)super.getView(position,convertView,parent);item.setTextSize(16);return item;}
   };filterAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
   libraryFilter.setAdapter(filterAdapter);libraryFilter.setSelection(selected);
   libraryFilter.setOnItemSelectedListener(new MainActivity.Listener(index->{

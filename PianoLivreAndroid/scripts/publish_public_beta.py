@@ -20,8 +20,9 @@ if existing.returncode==0:
         print('This version is already published; existing release preserved');raise SystemExit(0)
     raise RuntimeError('Version already published from another commit; increment version')
 # The full Android suite includes two baseline builds and visual/MIDI journeys.
-# Allow up to 40 minutes, within the publication job's 45-minute limit.
-for attempt in range(120):
+# Allow 90 minutes for the full suite and runner queues, inside a 100-minute job.
+# Every poll still requires successful checks of this exact commit.
+for attempt in range(270):
     runs=json.loads(gh('api',f'repos/{repo}/commits/{sha}/check-runs?per_page=100'))['check_runs']
     selected=[next((r for r in runs if r['name']==name),None) for name in ['build','emulator']]
     if all(r and r['status']=='completed' and r['conclusion']=='success' for r in selected):break
@@ -31,7 +32,9 @@ else:raise RuntimeError('Required checks not completed; prerelease blocked')
 dist=pathlib.Path('dist');apk=dist/'app/build/outputs/apk/release/app-release.apk';signature=dist/'build/public-signature.txt';metadata=dist/'build/public-apk-metadata.txt'
 if '7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290' not in signature.read_text():raise RuntimeError('Permanent certificate missing')
 if f"versionCode='{code}' versionName='{version}'" not in metadata.read_text():raise RuntimeError('APK metadata mismatch')
+if "package: name='br.org.pianolivre.opensource'" not in metadata.read_text():raise RuntimeError('APK package mismatch')
 if 'application-debuggable' in metadata.read_text():raise RuntimeError('Distribution APK must not be debuggable')
+if 'android.permission.INTERNET' in metadata.read_text():raise RuntimeError('Offline distribution must not request INTERNET')
 output=dist/f'PianoLivre-{version}.apk';output.write_bytes(apk.read_bytes())
 digest=hashlib.sha256(output.read_bytes()).hexdigest()
 checksum=dist/'SHA256SUMS';checksum.write_text(digest+'  '+output.name+'\n')
@@ -55,7 +58,7 @@ Registro efetivo da publicação:
 - Certificado SHA-256: `7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290`.
 - Checks do commit: https://github.com/{repo}/commit/{sha}/checks
 - APK: https://github.com/{repo}/releases/download/{tag}/{output.name}
-- Consolidação: https://github.com/{repo}/blob/{sha}/docs/73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md
+- Notas específicas: https://github.com/{repo}/blob/{sha}/docs/releases/{version}.md
 ''',encoding='utf-8')
 gh('release','create',tag,'--repo',repo,'--target',sha,'--prerelease','--title','Piano Livre '+version,'--notes-file',str(notes),str(output),str(signature),str(metadata),str(checksum))
 print('PUBLIC_BETA_PRERELEASE_PUBLISHED '+tag)
