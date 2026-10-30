@@ -117,7 +117,9 @@ jobs:
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java tests/MusicTheoryTest.java
           java -cp build/score-tests MusicTheoryTest
       - name: Test trusted beta publication gates (Python)
-        run: python3 tests/PublishBetaTest.py
+        run: |
+          python3 tests/PublishBetaTest.py
+          python3 tests/SharedDebugApkTest.py
       - name: Test Espera preparation timing (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/WaitPreparation.java tests/WaitPreparationTest.java
