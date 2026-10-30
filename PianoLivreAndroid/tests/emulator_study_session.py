@@ -43,6 +43,10 @@ def library_filter_spinner(root):
     the profile menu instead of changing the catalog filter. A nonempty search
     field has no hint, so row matching uses the EditText position.
     """
+    explicit=next((node for node in root.iter("node")
+      if node.attrib.get("class")=="android.widget.Spinner" and
+         node.attrib.get("content-desc")=="Filtrar biblioteca"),None)
+    if explicit is not None:return explicit
     search=library_search_field(root)
     search_bounds=_bounds(search) if search is not None else None
     if search_bounds is None:
@@ -89,6 +93,9 @@ def verify_library_filter_locator():
         "FILTER_CONTROL_MISSING: populated title search must still locate its row filter"
     assert found is not None and found.attrib.get("text")=="Todas", \
         "FILTER_CONTROL_MISSING: locator did not distinguish profile Spinner from catalog filter"
+    stacked=ET.fromstring('''<hierarchy><node class="android.widget.Spinner" text="Upgrade B" bounds="[20,10][120,44]"/><node class="android.widget.EditText" hint="Buscar título ou arquivo" bounds="[20,100][300,148]"/><node class="android.widget.Spinner" content-desc="Filtrar biblioteca" text="Todas as categorias" bounds="[20,170][300,218]"/></hierarchy>''')
+    assert library_filter_spinner(stacked).attrib.get("text")=="Todas as categorias", \
+        "FILTER_CONTROL_MISSING: stacked Home controls must use the semantic filter label"
     blank=library_filter_spinner(ET.fromstring(fixture.replace('text="Todas"','text=""')))
     assert blank is not None and blank.attrib.get("text")=="", \
         "FILTER_CONTROL_MISSING: locator must still identify the filter when Android exposes no selected text"
@@ -147,10 +154,11 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     # navigation tap; classify the final hierarchy before selecting assertions.
     inline_home = inline_home or any("Começar pela Ode à Alegria" in value for value in last)
 
-    # Reopen at the catalog's first rows so title lookup does not inherit a
-    # previous screen's ScrollView offset.
+    # Reopen standalone catalogs at their first rows. In the embedded Home,
+    # the Library shortcut already positioned the search row; rewinding would
+    # hide it above the fold after the readability/layout refinement.
     for _ in range(6):
-        if any("BIBLIOTECA MUSICAL" in value for value in labels()):break
+        if inline_home or any("BIBLIOTECA MUSICAL" in value for value in labels()):break
         root=dump()
         scroll=next((n for n in root.iter("node") if n.attrib.get("scrollable")=="true"
                      and "Horizontal" not in n.attrib.get("class","")),None)
@@ -167,10 +175,15 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     root=dump()
     search=library_search_field(root)
     if search is None:
+        home_scroll_to_top()
+        tap_text(["Biblioteca Musical. Suas partituras para estudar e tocar"],exact=True)
+        time.sleep(.5)
+        root=dump();search=library_search_field(root);inline_home=True
+    if search is None:
         raise AssertionError("LIBRARY_SEARCH_MISSING: library has no accessible title EditText; labels="+
                              repr(labels()[:40]))
     current=search.attrib.get("text","")
-    if current and current!="Buscar título ou arquivo":
+    if current and current not in ("Buscar título ou arquivo","⌕  Buscar título ou arquivo"):
         search=focus_library_search_field()
         bounds=_bounds(search)
         adb("shell","input","keyevent","123")
@@ -255,7 +268,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     search=focus_library_search_field()
     search_bounds=_bounds(search)
     current=search.attrib.get("text","")
-    if current=="Buscar título ou arquivo":current=""
+    if current in ("Buscar título ou arquivo","⌕  Buscar título ou arquivo"):current=""
     adb("shell","input","keyevent","123")
     for _ in range(len(current)):
         adb("shell","input","keyevent","67")
@@ -276,8 +289,9 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
             raise AssertionError("SCORE_HIDDEN_BY_FILTER: selecting Todas did not reveal the packaged catalog; count="+
                                  repr(count)+" packaged="+str(len(titles)))
 
-    adb("shell","input","tap",str((search_bounds[0]+search_bounds[2])//2),
-        str((search_bounds[1]+search_bounds[3])//2))
+    # Closing the keyboard can move the taller controls. Reacquire the actual
+    # focused field instead of tapping coordinates from the previous layout.
+    focus_library_search_field()
     adb("shell","input","text",query)
     dismiss_keyboard()
     for _ in range(40):

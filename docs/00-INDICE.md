@@ -1,5 +1,7 @@
 # Documentação do Piano Livre aberto
 
+- [74 — Ajustes da Tela Inicial após a beta 0.9.52](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md): banner 30% menor, três atalhos ampliados, biblioteca reorganizada e grade de duas colunas; entrega em PR, sem merge/Release.
+
 - [73 — Consolidação, integração e publicação, Prompt 4](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md): precedência sobre os estados históricos de PR aberto abaixo; versão 0.9.52, gates finais, assinatura, APK e aceite físico pendente.
 - [Notas da 0.9.52-open-beta](releases/0.9.52-open-beta.md).
 

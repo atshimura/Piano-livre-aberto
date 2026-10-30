@@ -26,7 +26,7 @@ permissions:
 jobs:
   midi-visual:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: PianoLivreAndroid
@@ -56,7 +56,9 @@ jobs:
             adb shell svc wifi disable
             adb shell svc data disable
             adb install app/build/outputs/apk/debug/app-debug.apk
+            python3 tests/emulator_home_refinements.py
             python3 tests/emulator_midi_interfaces.py
+            python3 tests/emulator_study_session.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -64,6 +66,10 @@ jobs:
           retention-days: 14
           path: |
             PianoLivreAndroid/piano-prompt03-*
+            PianoLivreAndroid/piano-home-refined-*
+            PianoLivreAndroid/piano-home-phone.png
+            PianoLivreAndroid/piano-home-tablet.png
+            PianoLivreAndroid/piano-entrega-b-*
             PianoLivreAndroid/piano-ui-failure.*
   emulator:
     runs-on: ubuntu-latest
@@ -234,6 +240,9 @@ jobs:
               "piano-discovery-staff-tablet-sequence.png",
           ]
           report = []
+          for viewport in ('phone', 'landscape', 'tablet', 'compact-tablet'):
+              for suffix in ('', '-library', '-grid'):
+                  names.append('piano-home-refined-' + viewport + suffix + '.png')
           for viewport in ('phone', 'tablet'):
               for stage in ('home-disconnected','home-opening','home-connected','study-connected','study-hidden','study-restored','study-disconnected','study-unnamed','study-switched','home-reconnected','home-background-return','diagnostics'):
                   names.append('piano-prompt03-' + viewport + '-' + stage + '.png')
@@ -270,6 +279,7 @@ jobs:
           if-no-files-found: warn
           path: |
             PianoLivreAndroid/piano-prompt03-*
+            PianoLivreAndroid/piano-home-refined-*
             PianoLivreAndroid/piano-prompt02-*
             PianoLivreAndroid/piano-ui-failure.*
             PianoLivreAndroid/piano-study*failure.png
