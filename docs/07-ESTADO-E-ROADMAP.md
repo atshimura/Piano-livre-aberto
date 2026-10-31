@@ -1,6 +1,6 @@
 # 07 — Estado atual e prioridades da linha aberta
 
-Implementação da Criação C1 em andamento na branch `feat/criacao-c1`, baseada na main `cf4b24b` (0.9.54/63). Candidato local 0.9.55/64; sem PR, integração ou publicação ainda. C1.1–C1.5 em implementação e validação; aceite físico Yamaha P-45/Realme 7 5G/Lenovo Tab M9 continua pendente.
+Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
 
 
 ## Laboratório Musical — Criação C1

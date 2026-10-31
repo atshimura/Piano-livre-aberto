@@ -9,3 +9,8 @@ JSON recebe limite lexical de profundidade antes do parser recursivo: 64 níveis
 Emulador recebe teste do seletor MIDI com fixture sintética: escolhe mão esquerda, verifica staff 2 no XML e presença do SMF original. Remove somente o par sintético conhecido na instalação nova do emulador. Histórico nativo também é exercitado. Nada disso constitui teste físico.
 
 Estado confirmado: PR #24 integrado em 9a2fd7703dbc09b64596324a2611b9a6513e65d9; build 38984954246/emulador 38984954232 aprovados. Etapa 4 encerrada no escopo técnico na issue #9. PRs #25/#26 aguardam CI dos últimos commits e integração sequencial. Próximo trabalho: confirmar esta CI, resolver falhas, ampliar entradas MusicXML não suportadas explicitamente e consolidar matriz de aceite/Etapa 6. Hardware continua pendente em #11; V1 não concluída.
+
+
+## Criação C1 — compatibilidade
+
+Projeto interno v2 lê v1; journal v3 lê v1/v2; backup v3 lê v1/v2. Proprietário imutável e exclusão de perfil bloqueada enquanto houver projetos/journals. Testes de upgrade incluem beta pública .54/code63 e mantêm .52/.46; release ignora intents de autoteste. [Formatos, limites e evidências](78-CREACAO-C1-IMPLEMENTACAO.md).

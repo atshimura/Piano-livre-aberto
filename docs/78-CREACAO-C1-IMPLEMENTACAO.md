@@ -1,49 +1,45 @@
 # 78 — Criação C1: implementação e validação
 
-## Revisão complementar em andamento — 31/10/2026
+**Base:** `cf4b24b`, beta pública 0.9.54/code63. **Entrega:** [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), branch `feat/criacao-c1`, candidata 0.9.55-open-beta/code64. Escopo: [76](76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md); autorização de execução e integração: [prompt completo](prompts/CRIACAO_C1_EXECUCAO_COMPLETA.md).
 
-A retomada encontrou o PR #82 já implementado e aprovado em 1133ecd. A inspeção contra o documento 76 encontrou lacunas não cobertas pelo smoke vazio. O PR voltou a draft durante correções; resultados anteriores não aprovam o código revisado.
+A revisão de 31/10/2026 ampliou o teste inicial de navegação vazia e corrigiu falhas de recuperação, concorrência e saída MIDI. Resultados anteriores à revisão não aprovam o código atual. O registro final no PR contém SHAs, execuções e artefatos aprovados. Integração exige `build` e `emulator` completos. Publicação de Release permanece sem autorização: `pianolivre.beta.publishApproved=false` impede publicação automática na main, preservando compilação, assinatura e testes.
 
-Corrigidos até aqui: proteção contra reinício destrutivo de tomada; retomada explícita no journal para não recuperar o intervalo pausado; deltas incrementais sem copiar todo o log a cada evento; metadados separados de timestamp Android e origem da entrada; fechamentos derivados em recuperáveis; colisões de journal preservam projeto válido; exportação de notas menores que um tick produz duração mínima de um tick sem alterar a fonte; agendador com um único wakeup, callbacks por geração e saída Android serializada no Handler; prévia de revisão e cronômetro; flags de estado dos controles.
+## Entrega por subetapa
 
-Teste novo: CreationSafetyRegressionTest (15 verificações iniciais) reproduz pausa/interrupção, metadados, finalização, colisão, pedal/CC121/123 e callbacks obsoletos. Testes JVM anteriores passam. Ainda ampliar UI/persistência/backup e repetir build/emulador da revisão final.
-
-A integração da C1 foi autorizada no prompt de execução completo, preservado nesta retomada. A publicação de Release ainda exige autorização específica: propriedade `pianolivre.beta.publishApproved=false`, com teste de que nenhum endpoint de publicação é chamado. Não habilitar essa propriedade como decisão técnica rotineira.
-
-Segunda rodada de correções: operações de salvamento, leitura de listas, detalhes e mutações executadas em fila de disco; geração e escrita SAF fora da UI, com cópia de exportação validada por SHA-256 e restauração de estado do seletor. Há exportação do trecho em revisão, inclusive quando o armazenamento da biblioteca estiver cheio. O journal tem criação exclusiva e CRC do cabeçalho (formato 3, leitura de 1/2), além dos registros; os projetos conservam timestamps Android, identificador da origem e nome observado do instrumento (formato interno 2, leitura do 1). Validação rejeita eventos fora dos segmentos e durações inconsistentes antes de publicar o arquivo.
-
-O limite técnico passa a 100.000 eventos totais por tomada (incluindo reserva para fechamentos derivados), 200 projetos e 6 MiB para a biblioteca. Esse orçamento também é verificado na mesclagem do backup antes de mutar dados. Ensaio local com JVM de 128 MiB: 97.000 eventos, projeto 3.783.143 bytes, SMF 388.050 bytes; recepção incremental 45 ms, salvamento 128 ms e exportação 64 ms. São medidas de JVM no computador de desenvolvimento, não de hardware Android. A pausa não copia todo o histórico a cada evento. Exportação omite Note Off sem ataque correspondente apenas na derivação SMF; a fonte exata permanece no projeto. Notas menores que um tick recebem fechamento mínimo no SMF (960 PPQN/120 BPM); não há quantização da fonte.
-
-Novo teste Android `CreationSelfTest`/`emulator_creation_functional.py`: controles reais, MIDI explicitamente SIMULADO, canais/acordes/pedal, revisão/reprodução, salvar, renomear, busca/ordenação e Back, Lixeira/restauração/exclusão definitiva, recuperáveis, portas de entrada e saída ausentes, perfil, processo reiniciado e exportação SAF real com leitura de retorno. Telefone e tablet em paisagem, fonte ampliada no tablet, 36 capturas previstas no fluxo rápido e no completo. A execução dessa revisão ainda está pendente; não substituir pelos resultados antigos abaixo.
-
-**Data:** 31/10/2026. **Base:** `main` em `cf4b24b` (0.9.54-open-beta / code63). **Branch:** `feat/criacao-c1`. **Candidato:** 0.9.55-open-beta / code64. Não é Release nem autorização de publicação. O escopo normativo permanece no [documento 76](76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md).
-
-## Estado por subetapa
-
-| Etapa | Implementação nesta branch | Validação/gates |
+| Etapa | Comportamento implementado | Evidência exigida |
 |---|---|---|
-| C1.1 — Interface e navegação | Opção Criação no Laboratório; Aprender permanece visível e desabilitado; início, gravação, biblioteca, detalhes, Lixeira e recuperáveis; retorno da lista preserva busca/filtro/ordenação; indicador de entrada e saída separado; sem cartão na Home. | `ui-fast` e a suíte integral `emulator-suite` passaram no SHA final `a86ea4d6d57e8cfb3dc834d03ee989ef742a022d`; o smoke automatizado percorreu telefone/tablet em paisagem. Acessibilidade por leitor de tela não foi validada especificamente. |
-| C1.2 — Gravação | Tomada única, relógio monotônico, eventos por canal/época, velocity-zero Note On, CC64, rearticulação, simultaneidade, pausa/continuação, fechamento seguro e bloqueio de mensagens antigas; journal incremental fora da tela e sem gravação oculta em segundo plano. | Testes JVM passaram no job `build` #752; há validação física pendente. |
-| C1.3 — Projetos | Arquivos locais UUID, CRC, escrita temporária/atômica, limites explícitos, busca sem acentos, filtros, ordenação, renomeação, Lixeira, restauração e recuperação do prefixo íntegro do journal. Projetos continuam vinculados ao ID do perfil. | Testes JVM e autoteste Android passaram; o backup recebeu 44 assertions, incluindo merge, integridade, v1/v2, colisão, perfil ausente e rollback. Exclusão de perfil que ainda possui projetos é bloqueada. |
-| C1.4 — Reprodução/exportação | Player agenda eventos na saída MIDI funcional, pausa/cancelamento liberam notas e pedal; reconexão não retoma; opção de trim não altera dados. SAF grava SMF formato 0 com resolução 960 PPQN e mapa explícito de 120 BPM. | Roundtrip SMF pelo importador existente e scheduler passaram no job `build` #752. Nenhum sintetizador/áudio local. |
-| C1.5 — Backup/compatibilidade | Backup v3 inclui projetos e metadados com SHA-256; restore de v1/v2 continua legível, faz merge sem apagar projetos locais mais novos e usa staging/journal para remover apenas adições incompletas em rollback. | Autoteste isolado passou no emulador completo #729 (`BACKUP_SELFTEST_PASS assertions=44`), além da verificação de upgrade da beta anterior. |
+| C1.1 | Laboratório → Criação; Aprender desabilitado; recentes, gravação, biblioteca, detalhes e Voltar; busca/filtro/ordem/posição conservados; entrada e saída separadas. | Navegação e jornada funcional em telefone/tablet, paisagem e fonte ampliada. |
+| C1.2 | Tomada original, relógio na recepção, canais, velocity, simultaneidade, CC64/120/121/123, pausa/retomada segura, interrupção por conexão/perfil. | Recorder, regressões de geração/época e MidiReceiver em thread separada antes da fila da UI. |
+| C1.3 | UUID/proprietário imutáveis, escrita atômica, busca sem acentos, ordenação, renomeação, Lixeira, restauração, exclusão confirmada e recuperação de journal. | Persistência, corrupção, limites, reinício do processo e controles reais. |
+| C1.4 | Prévia, reprodução na saída MIDI, Pausar/Continuar/Parar, liberação de notas/pedal, ignorar silêncios das pontas, exportação SAF da revisão ou projeto. | Player, roundtrip SMF e seletor Android real com leitura de retorno dos bytes. |
+| C1.5 | Backup v3/SHA-256, leitura v1/v2, pré-validação, confirmação, merge conservador de criações e rollback. | BackupArchiveSelfTest, upgrades .54/.52/.46 e suíte completa no SHA integrado. |
 
-## Limites do formato e segurança
+## Componentes e decisões
 
-- Gravação: máximo 200.000 eventos e quatro horas ativas por tomada.
-- Projeto: máximo 16 MiB; biblioteca: máximo 200 projetos. O backup v3 limita o conjunto serializado de composições a 6 MiB para caber no envelope atual do backup.
-- O SMF exportado usa formato 0, PPQN 960 e meta-evento de tempo 500.000 µs por semínima (120 BPM). Os tempos monotônicos originais e segmentos continuam no projeto local; o exportador converte para ticks sem quantizar a fonte.
-- Backup não abre o destino externo se validação local ou de integridade falhar. Colisão de ID com conteúdo divergente bloqueia a restauração antes da mutação. Backup antigo sem um perfil proprietário de projeto local também é bloqueado para impedir perda silenciosa.
-- Os IDs de perfil seguem o armazenamento público existente (índices estáveis enquanto perfil existe); exclusão é impedida enquanto houver projeto salvo, recuperável ou na Lixeira para esse perfil.
+- `MidiTakeRecorder`: fonte imutável com status/dados, canal, ordem, relógio monotônico, época, timestamp Android opcional e ID da entrada; fechamentos derivados identificados. Segmentos excluem pausas, sem quantização.
+- `CreationJournal`: fila limitada, thread própria e fsync; formato 3 lê 1/2, CRC do cabeçalho/registros, criação exclusiva. Início de segmento e relógio confirmado preservam notas longas até o último ponto durável. Morte do processo pode perder a cauda ainda não confirmada; não se promete perda zero. Activity recriada não lê journal ativo.
+- `CreationProjectStore`: fonte canônica privada `creations/<UUID>.plc`, formato 2 lê 1; CRC, arquivo temporário validado e troca atômica. Metadados/eventos juntos evitam MIDI redundante divergente. UI executa operações de disco em fila de trabalho.
+- `MidiTakePlayer`: um agendamento pendente e lotes limitados; cancelamento por geração e saída Android serializada no Handler. Retomada recompõe controladores, teclas e vozes sustentadas. Sem seek livre, overdub ou áudio do telefone.
+- `MidiStandardFileWriter`: SMF formato 0, 960 PPQN, mapa de relógio 500.000 µs/semínima. Conversão para ticks tem arredondamento e não impõe ritmo/quantização à fonte. Nota menor que um tick recebe fechamento mínimo de um tick. Off órfão é omitido apenas da derivação. O importador existente tem limites próprios; não se promete reimportar qualquer tomada extensa.
+- `MusicCreationScreen`/`MainActivity`: captura não depende de atraso visual; exportação/projetos fora da UI. SAF usa cópia temporária com SHA-256 e restaura estado do seletor; sem permissão ampla de armazenamento. Mudança de perfil preserva a tomada sob o proprietário original.
+- `BackupArchive`: v3 inclui criações/SHA-256 e lê v1/v2. Conserva criações locais ausentes do backup e rejeita colisões divergentes/proprietários ausentes antes de mutar. Preferências/importados mantêm substituição confirmada e rollback.
 
-## Verificação e pendências
+## Limites
 
-Validação final no SHA `a86ea4d6d57e8cfb3dc834d03ee989ef742a022d`: `build` #752 passou; `emulator` #729 passou com `debug-apk`, `ui-fast` e `emulator-suite` verdes. O APK de validação e evidências estão nos artefatos do run [#729](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440). APK de validação é de depuração e não é uma Release oficial. PR #82 está pronto para revisão em https://github.com/atshimura/Piano-livre-aberto/pull/82. Não houve merge nem publicação; o push na main aciona publicação beta e é necessária autorização explícita de release.
+100.000 eventos totais por tomada, incluindo reserva de fechamentos; quatro horas ativas; até 200 projetos e 6 MiB de biblioteca, inclusive no merge de backup; teto defensivo de 16 MiB por arquivo. Ao atingir limite, interromper com trecho recuperável. É possível exportar a revisão sem adicioná-la à biblioteca cheia.
 
-Testes físicos Yamaha P-45 + Realme 7 5G e Lenovo Tab M9 ainda não foram realizados. A Criação C1 não declara 1.0 nem inicia recursos da C2/C3.
+Ensaio JVM local com heap de 128 MiB e 97.000 eventos: projeto 3.783.143 bytes, SMF 388.050 bytes; recepção 39–45 ms, salvamento 128–140 ms, exportação 64–83 ms nas execuções locais. São medidas do computador de desenvolvimento, não desempenho de Android físico.
 
-## Histórico desta implementação
+## Verificação
 
-- Base conferida: branch parte do commit consolidado `cf4b24b` da main, 0.9.54/code63.
-- Branch `feat/criacao-c1` criada para a implementação ordenada C1.1–C1.5.
-- Código C1.1–C1.5 e testes adicionados à branch; PR #82 aberto para revisão. SHA validado: `a86ea4d6d57e8cfb3dc834d03ee989ef742a022d`. Build #752: https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177942271 — sucesso. Emulador #729: https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440 — sucesso. Artefato APK de validação: https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440/artifacts/13034403866. Evidências de UI: https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440/artifacts/13034094737. Sem merge/Release até autorização de publicação. Próxima etapa: C2, após integração e testes físicos; C1 não declara versão 1.0.
+Testes JVM: recorder (24), projetos (10), journal (6), SMF (7), player (9), segurança/recuperação (20), 97.000 eventos e proteção de publicação (16). A CI mantém as regressões musicais, JavaScript, MIDI e auditoria pública.
+
+`CreationSelfTest`/`emulator_creation_functional.py` usa controles Android reais e portas explicitamente SIMULADAS: acordes/canais/pedal, pausa/eco, revisão, salvar, renomear, busca/ordem/Back, Lixeira/restauração/exclusão, ausência de entrada/saída, segundo plano, recuperáveis, perfis e reinício. Exportação abre DocumentsUI e lê o URI retornado; o importador confirma quatro notas. São 18 estados por dispositivo, 36 PNGs e `piano-c1-report.json`, além da navegação e regressões anteriores. Telefone 1280×720; tablet 1920×1080, fonte 1,3; densidade 240 dpi.
+
+Execução falha preserva logs/capturas, sem contar como aceite. A revisão corrigiu IDs repetidos das portas simuladas, leitura de PID antes do processo existir e atualização redundante do contador que impedia a ociosidade do leitor de acessibilidade.
+
+## Limitações e continuidade
+
+Yamaha P-45, Realme 7 5G e Lenovo Tab M9 exigem testes físicos posteriores. TalkBack não foi validado especificamente; CI não mede latência USB física. Offline/GPL-3.0-only preservados, sem novas partituras ou bibliotecas externas. C2 (partitura), C3 (PDF), camadas e sintetizador ficam fora; V1 não está concluída.
+
+APK de PR usa certificado descartável; release da main usa assinatura permanente dos Actions Secrets. Artefatos expiram conforme retenção. Release durável requer autorização específica; não habilitar publicação como decisão técnica rotineira.

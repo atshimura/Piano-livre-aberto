@@ -109,3 +109,11 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [59 — Análise automática e Estudo adaptável](59-ESTUDO-ADAPTAVEL.md).
 
 - [75 ? Descobrir: layout estavel e validacao rapida](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md)
+
+
+## Criação C1 — execução
+
+- [76 — Especificação aprovada](76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md)
+- [78 — Implementação, componentes, testes e limites](78-CREACAO-C1-IMPLEMENTACAO.md)
+- [Prompt completo de execução e integração](prompts/CRIACAO_C1_EXECUCAO_COMPLETA.md)
+- [Histórico de alterações](CHANGELOG.md)

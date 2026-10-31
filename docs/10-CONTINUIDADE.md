@@ -1,6 +1,6 @@
 # 10 — Como continuar o Piano Livre aberto
 
-Implementação da Criação C1 em andamento na branch `feat/criacao-c1`, baseada na main `cf4b24b` (0.9.54/63). Candidato local 0.9.55/64; sem PR, integração ou publicação ainda. C1.1–C1.5 em implementação e validação; aceite físico Yamaha P-45/Realme 7 5G/Lenovo Tab M9 continua pendente.
+Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
 
 
 ## Continuidade ativa — Criação C1
@@ -387,6 +387,6 @@ Nova branch de correção baseada na `main` `e9cc70afaba68bc4240945ffb08c33300a8
 Branch independente de #76, baseada em main f91c278; candidato 0.9.54/63. Consulte [75](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md) para layout, enquadramento, testes rapidos e completos, proveniencia de APK e registro final do PR. Sem merge/Release; hardware e V1 pendentes.
 
 
-## Criação C1 — resultado da implementação / 31/10/2026
+## Criação C1 — revisão da entrega / 31/10/2026
 
-Implementadas C1.1–C1.5 na branch `feat/criacao-c1`, baseada na main `cf4b24b` (0.9.54/code63), versão candidata 0.9.55/code64. PR #82 aberto para revisão; sem merge/Release. Build #752 passou (https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177942271) e emulador integral #729 passou (https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440) no SHA `a86ea4d6d57e8cfb3dc834d03ee989ef742a022d`. Artefato APK de validação e evidências estão no run #729. A publicação na main requer autorização explícita de release. Testes físicos Yamaha P-45, Realme 7 5G e Lenovo Tab M9 permanecem pendentes. Próximo desenvolvimento: C2 após integração e aceite físico; C1 não declara a versão 1.0.
+Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
