@@ -232,20 +232,86 @@ a.handler.postDelayed(this,100);}};ticker.run();
   player.stop();final MidiTakeRecorder source=take;final CreationJournal log=journal;source.interrupt(android.os.SystemClock.elapsedRealtimeNanos(),"Descarte confirmado");busy=true;
   disk.execute(()->{try{if(log!=null)log.discardAndDelete();source.discard();post(()->{busy=false;take=null;journal=null;showHome();});}catch(IOException error){post(()->{busy=false;a.message("Não foi possível concluir o descarte; o trecho foi mantido: "+error.getMessage());});}});
  }).setNegativeButton("Continuar",null).show();}
- private void showList(){player.stop();restoreListPosition=true;page="list";base("Minhas Criações",this::showHome);EditText search=new EditText(a);listSearch=search;search.setSingleLine(true);search.setHint("Buscar composição…");search.setText(query);body.addView(search,new LayoutParams(-1,dp(48)));Spinner filters=new Spinner(a);String[] names={"Todas","Salvas","Recuperáveis","Lixeira"};filters.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,names));filters.setSelection(filter.ordinal());body.addView(filters,new LayoutParams(-1,dp(48)));Spinner sorting=new Spinner(a);String[] sortNames={"Mais recentes","Mais antigos","Nome A–Z","Nome Z–A","Maior duração","Menor duração"};sorting.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,sortNames));sorting.setSelection(sortMode);body.addView(sorting,new LayoutParams(-1,dp(48)));LinearLayout results=new LinearLayout(a);results.setOrientation(VERTICAL);body.addView(results,new LayoutParams(-1,-2));Runnable refresh=()->{query=search.getText().toString();filter=CreationProjectStore.Filter.values()[filters.getSelectedItemPosition()];sortMode=sorting.getSelectedItemPosition();results.removeAllViews();populate(results,filter,query);};search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int af){}public void onTextChanged(CharSequence s,int st,int before,int count){restoreListPosition=false;refresh.run();}public void afterTextChanged(android.text.Editable e){}});android.widget.AdapterView.OnItemSelectedListener changed=new android.widget.AdapterView.OnItemSelectedListener(){public void onNothingSelected(android.widget.AdapterView<?> p){}public void onItemSelected(android.widget.AdapterView<?> p,View v,int pos,long id){refresh.run();}};filters.setOnItemSelectedListener(changed);sorting.setOnItemSelectedListener(changed);refresh.run();scroll.post(()->scroll.scrollTo(0,listScrollY));}
+ private void showList(){
+  player.stop();restoreListPosition=true;page="list";base("Minhas Criações",this::showHome);
+  label(body,"Minhas Criações",23,true,10);
+  EditText search=new EditText(a);listSearch=search;search.setSingleLine(true);
+  search.setTextSize(15);search.setHint("Buscar composição…");search.setContentDescription("Buscar composição");
+  search.setPadding(dp(12),0,dp(12),0);search.setBackground(shape(white,13,0xffDCE7F2));
+  search.setText(query);attach(body,search,50,10);
+  LinearLayout filters=horizontal();attach(body,filters,48,12);
+  Spinner categories=new Spinner(a);String[] names={"Todas","Salvas","Recuperáveis","Lixeira"};
+  categories.setContentDescription("Filtrar composições");
+  categories.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,names));
+  categories.setSelection(filter.ordinal());
+  Spinner sorting=new Spinner(a);String[] sortNames={"Mais recentes","Mais antigos","Nome A–Z","Nome Z–A","Maior duração","Menor duração"};
+  sorting.setContentDescription("Ordenar composições");
+  sorting.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,sortNames));
+  sorting.setSelection(sortMode);
+  int gap=dp(8);View space=new View(a);
+  filters.addView(categories,new LayoutParams(0,dp(48),1));filters.addView(space,new LayoutParams(gap,dp(1)));
+  filters.addView(sorting,new LayoutParams(0,dp(48),1));
+  LinearLayout results=column();attach(body,results,-2,0);
+  Runnable refresh=()->{
+   query=search.getText().toString();
+   filter=CreationProjectStore.Filter.values()[categories.getSelectedItemPosition()];
+   sortMode=sorting.getSelectedItemPosition();
+   results.removeAllViews();populate(results,filter,query);
+  };
+  search.addTextChangedListener(new android.text.TextWatcher(){
+   public void beforeTextChanged(CharSequence s,int st,int c,int af){}
+   public void onTextChanged(CharSequence s,int st,int before,int count){restoreListPosition=false;refresh.run();}
+   public void afterTextChanged(android.text.Editable e){}
+  });
+  android.widget.AdapterView.OnItemSelectedListener changed=new android.widget.AdapterView.OnItemSelectedListener(){
+   public void onNothingSelected(android.widget.AdapterView<?> p){}
+   public void onItemSelected(android.widget.AdapterView<?> p,View v,int pos,long id){refresh.run();}
+  };
+  categories.setOnItemSelectedListener(changed);sorting.setOnItemSelectedListener(changed);
+  refresh.run();scroll.post(()->scroll.scrollTo(0,listScrollY));
+ }
  private void addProjects(CreationProjectStore.Filter f,int limit){
-  if(store==null)return;final int owner=a.user;final long revision=++homeRevision;
-  disk.execute(()->{try{List<CreationProjectStore.Project> projects=store.list(owner,f,"",null);post(()->{if(revision!=homeRevision||!"home".equals(page)||a.user!=owner)return;if(projects.isEmpty())body.addView(text("Suas composições aparecerão aqui. Conecte seu piano para começar uma gravação.",15,false));for(int i=0;i<Math.min(limit,projects.size());i++)addProjectRow(body,projects.get(i));});}catch(IOException error){post(()->a.message("Não foi possível ler os projetos: "+error.getMessage()));}});
+  if(store==null)return;
+  LinearLayout recent=column();attach(body,recent,-2,0);
+  final int owner=a.user,profile=listProfile;final long revision=++homeRevision;
+  disk.execute(()->{try{
+   List<CreationProjectStore.Project> projects=store.list(owner,f,"",null);
+   post(()->{
+    if(revision!=homeRevision||!"home".equals(page)||a.user!=owner)return;
+    recent.removeAllViews();
+    if(projects.isEmpty()){
+     LinearLayout empty=card();
+     attach(empty,mutedText("Suas composições aparecerão aqui. Conecte seu piano para começar uma gravação.",14),-2,0);
+     attach(recent,empty,-2,0);
+    }else for(int i=0;i<Math.min(limit,projects.size());i++)addProjectRow(recent,projects.get(i));
+   });
+  }catch(IOException error){post(()->a.message("Não foi possível ler os projetos: "+error.getMessage()));}});
  }
  private void populate(LinearLayout target,CreationProjectStore.Filter f,String q){
   final int owner=a.user,sort=sortMode;final long revision=++listRevision;target.addView(text("Carregando composições…",15,false));
   disk.execute(()->{try{
    Comparator<CreationProjectStore.Project> cmp;switch(sort){case 1:cmp=Comparator.comparingLong((CreationProjectStore.Project p)->p.editedAt);break;case 2:cmp=Comparator.comparing(p->p.title.toLowerCase(Locale.ROOT));break;case 3:cmp=Comparator.comparing((CreationProjectStore.Project p)->p.title.toLowerCase(Locale.ROOT)).reversed();break;case 4:cmp=Comparator.comparingLong((CreationProjectStore.Project p)->p.durationNs).reversed();break;case 5:cmp=Comparator.comparingLong((CreationProjectStore.Project p)->p.durationNs);break;default:cmp=null;}
    if(cmp!=null)cmp=cmp.thenComparing(p->p.id);final List<CreationProjectStore.Project> projects=store.list(owner,f,q,cmp);
-   post(()->{if(revision!=listRevision||!"list".equals(page)||a.user!=owner)return;target.removeAllViews();if(projects.isEmpty()){target.addView(text("Nenhuma composição encontrada.",15,false));if(!q.isEmpty())target.addView(button("Limpar busca",false,()->{if(listSearch!=null)listSearch.setText("");}));}for(CreationProjectStore.Project p:projects)addProjectRow(target,p);if(restoreListPosition){restoreListPosition=false;scroll.post(()->scroll.scrollTo(0,listScrollY));}});
+   post(()->{if(revision!=listRevision||!"list".equals(page)||a.user!=owner)return;target.removeAllViews();if(projects.isEmpty()){
+     LinearLayout empty=card();attach(empty,mutedText("Nenhuma composição encontrada.",16),-2,10);
+     if(!q.isEmpty())attach(empty,button("Limpar busca",false,()->{if(listSearch!=null)listSearch.setText("");}),48,0);
+     attach(target,empty,-2,0);
+    }for(CreationProjectStore.Project p:projects)addProjectRow(target,p);if(restoreListPosition){restoreListPosition=false;scroll.post(()->scroll.scrollTo(0,listScrollY));}});
   }catch(IOException error){post(()->a.message("Não foi possível ler Minhas Criações: "+error.getMessage()));}});
  }
- private void addProjectRow(LinearLayout target,CreationProjectStore.Project p){Button row=button(p.title+"\n"+new Date(p.createdAt)+" · "+(p.durationNs/1_000_000_000.0)+" s"+(p.recoverable?" · Recuperável":p.trash?" · Lixeira":""),false,()->showDetails(p.id));row.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);row.setMinHeight(dp(68));target.addView(row,new LayoutParams(-1,-2));}
+ private void addProjectRow(LinearLayout target,CreationProjectStore.Project p){
+  String status=p.recoverable?" · Recuperável":p.trash?" · Lixeira":"";
+  String updated=p.editedAt!=p.createdAt?" · Editada "+new java.text.SimpleDateFormat("dd/MM",Locale.getDefault()).format(new Date(p.editedAt)):"";
+  String subtitle=new java.text.SimpleDateFormat("dd/MM/yyyy",Locale.getDefault()).format(new Date(p.createdAt))
+    +" · "+duration(p.durationNs)+updated+status;
+  Button row=button(p.title+"\n"+subtitle,false,()->showDetails(p.id));
+  row.setSingleLine(false);row.setMaxLines(2);row.setTextSize(14);
+  row.setTypeface(null,android.graphics.Typeface.NORMAL);row.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
+  row.setContentDescription(p.title+". "+subtitle+". Abrir composição");
+  row.setMinHeight(dp(72));row.setMinimumHeight(dp(72));
+  row.setBackground(shape(white,14,0xffE0E9F4));
+  attach(target,row,72,8);
+ }
  private void showDetails(String id){if("list".equals(page))listScrollY=scroll.getScrollY();detailsBack="home".equals(page)?"home":"list";page="details";selectedId=id;base("Abrindo composição…",this::showList);disk.execute(()->{try{CreationProjectStore.Project project=store.get(id);post(()->{if("details".equals(page)&&id.equals(selectedId))renderDetails(project);});}catch(IOException error){post(()->{a.message("Não foi possível abrir a composição: "+error.getMessage());showList();});}});}
  private void renderDetails(CreationProjectStore.Project p){String id=p.id;try{base(p.title,this::requestLeave);body.addView(text(p.title,22,true));if(!p.instrument.isEmpty())body.addView(text("Instrumento observado · "+p.instrument,15,false));body.addView(text("Criada · "+new Date(p.createdAt)+"\nÚltima alteração · "+new Date(p.editedAt)+"\nDuração · "+(p.durationNs/1_000_000_000.0)+" s\nNotas · "+p.events.stream().filter(e->!e.generated&&e.command()==0x90&&e.data2>0).count()+"\nEventos · "+p.events.size()+"\nPerfil · "+profileName(),15,false));
   body.addView(button("Renomear",false,()->rename(p)),new LayoutParams(-1,dp(48)));
