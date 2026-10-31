@@ -1,5 +1,9 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Implementação E — Descobrir (decidida em 31/10/2026, ainda não implementada)
+
+Para retomar os **três ajustes exclusivos da pauta** (aumentar pauta, alinhar nota isolada ao início, enquadramento automático reversível incluindo extremos simultâneos), ler [documento 95 — Implementação E](95-IMPLEMENTACAO-E-DESCOBRIR-PAUTA.md), [issue #89](https://github.com/atshimura/Piano-livre-aberto/issues/89), docs 66/75/93 e AGENTS.md. Executar o plano E0–E6 em **branch de implementação separada**; preservar restante do Descobrir, MIDI, Estudar e Criação. O documento de planejamento **não comprova implementação, APK nem testes físicos**. A regra anterior de enquadramento que só crescia na sessão foi **substituída** pela decisão de retorno automático quando uma nova entrada comum for exibida.
+
 Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
 
 
