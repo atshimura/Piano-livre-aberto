@@ -199,15 +199,15 @@ class PianoScreens {
    card.setTag("home-shortcut");
    LinearLayout.LayoutParams cardLp=new LinearLayout.LayoutParams(0,d(cardHeight),1);
    cardLp.setMargins(d(3),d(2),d(7),d(2));nav.addView(card,cardLp);
-   int iconSize=compact?34:(shortScreen?48:70);
-   TextView icon=text(icons[i],compact?(tiny?24:28):(shortScreen?28:34),colors[i],true);
+   int iconSize=compact?(tiny?40:46):(shortScreen?48:70);
+   TextView icon=text(icons[i],compact?(tiny?21:24):(shortScreen?28:34),colors[i],true);
    icon.setGravity(Gravity.CENTER);icon.setBackground(bg(0x55ffffff,50,0));
    card.addView(icon,lp(iconSize,iconSize));
    if(compact){View gap=new View(a);card.addView(gap,lp(1,4));}else addGap(card,12);
    LinearLayout labels=column();labels.setGravity(compact?Gravity.CENTER:Gravity.CENTER_VERTICAL);
    String visibleTitle=tiny?(i==0?"Biblioteca":i==1?"Laboratório":"Histórico"):titles[i];
    TextView title=text(visibleTitle,compact?(tiny?13:16):(shortScreen?16:18),ink,true);
-   title.setMaxLines(2);title.setGravity(compact?Gravity.CENTER:Gravity.CENTER_VERTICAL);
+   title.setMaxLines(2);title.setContentDescription(titles[i]);title.setGravity(compact?Gravity.CENTER:Gravity.CENTER_VERTICAL);
    labels.addView(title,lp(-1,-2));
    if(!compact){
     TextView sub=text(descriptions[i],shortScreen?12:14,muted,false);
