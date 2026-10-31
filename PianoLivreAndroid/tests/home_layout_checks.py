@@ -36,6 +36,14 @@ def capture_home_viewports():
             assert abs(hero['height']/density-old_height*.7)<=1,('Banner must shrink 30%',name,hero)
             assert art['width']/density>old_art,('Artwork did not grow',name,art)
             assert len(shortcuts)==3 and len(cards)==10,('Shortcut or score lost',name,len(shortcuts),len(cards))
+            # Every viewport must display all three shortcuts side by side,
+            # with equal widths and no clipping or horizontal overlap.
+            ordered_shortcuts=sorted(shortcuts,key=lambda item:item['x'])
+            assert len({item['y'] for item in ordered_shortcuts})==1,('Shortcuts not in one row',name,ordered_shortcuts)
+            assert max(item['width'] for item in ordered_shortcuts)-min(item['width'] for item in ordered_shortcuts)<=2,('Shortcuts not equal width',name,ordered_shortcuts)
+            assert all(item['width']>0 and item['height']>0 for item in ordered_shortcuts),('Shortcut has empty size',name)
+            assert all(left['x']+left['width']<=right['x'] for left,right in zip(ordered_shortcuts,ordered_shortcuts[1:])),('Overlapping shortcuts',name,ordered_shortcuts)
+
             assert len({c['x'] for c in cards})==columns,('Incorrect score columns',name,cards)
             assert not any(t['text']=='Opções' for i in shortcuts for t in i['labels']),'Removed Options card returned'
             for i in [hero]+shortcuts+cards:
