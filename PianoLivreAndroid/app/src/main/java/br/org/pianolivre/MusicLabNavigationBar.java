@@ -75,7 +75,7 @@ final class MusicLabNavigationBar {
    b.setTag("lab-nav-"+names[i].toLowerCase(java.util.Locale.ROOT));
    background(bar,b,active?ACTIVE:PANEL);
    b.setSelected(active);
-   b.setEnabled(!unavailable);
+   b.setEnabled(!unavailable&&!active);
    if(active)b.setClickable(false);
    if(!active&&!unavailable)b.setOnClickListener(v->{if(tab==DISCOVER)goDiscover.run();else goCreation.run();});
    tabs.addView(b,new LinearLayout.LayoutParams(0,dp(bar,40),1));
