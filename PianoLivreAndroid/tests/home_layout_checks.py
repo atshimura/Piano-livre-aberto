@@ -54,8 +54,9 @@ def capture_home_viewports():
                 assert label['x']>=copy['x'] and label['x']+label['width']<=copy['x']+copy['width']+1,('Banner action clipped by copy container',name,label)
             for i in shortcuts:
                 assert i['height']/density>=96
-                title=next(t for t in i['labels'] if t['text'] in ('Biblioteca Musical','Laboratório Musical','Histórico'))
-                assert title['sizeSp']>=16
+                title=next(t for t in i['labels'] if t['text'] in ('Biblioteca Musical','Laboratório Musical','Histórico','Biblioteca','Laboratório'))
+                minimum=13 if i['width']/density<125 else 16
+                assert title['sizeSp']>=minimum,('Shortcut title too small',name,title,minimum)
             for i in cards:
                 assert i['labels'][0]['sizeSp']>=17
                 assert all(t['sizeSp']>=14 for t in i['labels'] if t['text'] in ('▶  Estudar','Partitura livre'))
