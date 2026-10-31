@@ -5,7 +5,7 @@ from unittest.mock import patch
 SCRIPT=pathlib.Path(__file__).resolve().parents[1]/'scripts/publish_public_beta.py'
 CERT='7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290'
 class PublishBetaTest(unittest.TestCase):
- def scenario(self,*,change=1,conclusion='success',certificate=CERT,existing=None,debuggable=False,wait_checks=0,version_notes=None,package='br.org.pianolivre.opensource',internet=False,missing=False,publish_approved=True):
+ def scenario(self,*,change=1,conclusion='success',certificate=CERT,existing=None,debuggable=False,wait_checks=0,version_notes=None,package='br.org.pianolivre.opensource',internet=False,missing=False,publish_approved=True,approved_version='0.9.31-open-beta'):
   calls=[];api_calls=0;self.published_notes=None
   def command(args,**kw):
    nonlocal api_calls
@@ -23,7 +23,7 @@ class PublishBetaTest(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    previous=pathlib.Path.cwd();os.chdir(tmp)
    try:
-    pathlib.Path('PianoLivreAndroid').mkdir();pathlib.Path('PianoLivreAndroid/gradle.properties').write_text('pianolivre.beta.versionName=0.9.31-open-beta\npianolivre.beta.versionCode=40\n')
+    pathlib.Path('PianoLivreAndroid').mkdir();pathlib.Path('PianoLivreAndroid/gradle.properties').write_text('pianolivre.beta.versionName=0.9.31-open-beta\npianolivre.beta.versionCode=40\npianolivre.beta.publishApproved=true\npianolivre.beta.publishApprovedVersion='+approved_version+'\n')
     if not publish_approved:
      with pathlib.Path('PianoLivreAndroid/gradle.properties').open('a') as f:f.write('pianolivre.beta.publishApproved=false\n')
     if version_notes is not None:
@@ -42,6 +42,10 @@ class PublishBetaTest(unittest.TestCase):
   calls,error=self.scenario();self.assertIsNone(error);publish=next(c for c in calls if c[:3]==['gh','release','create']);self.assertIn('--prerelease',publish);self.assertEqual(publish[publish.index('--target')+1],'abc')
  def test_unapproved_candidate_never_calls_release_or_check_api(self):
   calls,error=self.scenario(publish_approved=False);self.assertIsNone(error);self.assertFalse(any(c[0]=='gh' for c in calls))
+ def test_scoped_approval_blocks_another_version(self):
+  calls,error=self.scenario(approved_version='0.9.32-open-beta')
+  self.assertIsNotNone(error)
+  self.assertFalse(any(c[0]=='gh' for c in calls))
  def test_failed_check_blocks(self):
   calls,error=self.scenario(conclusion='failure');self.assertIsNotNone(error);self.assertFalse(any(c[:3]==['gh','release','create'] for c in calls))
  def test_wrong_certificate_blocks(self):
