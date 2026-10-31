@@ -45,3 +45,6 @@ A fonte de versão é `gradle.properties` aplicada por `settings.gradle`. Abra o
 
 ## Critérios para passagem entre sessões
 Confira `main`, PRs e runs atuais; preserve os invariantes acima; verifique catálogo/manifesto de direitos/validador; rode testes; atualize docs relevantes e registre PR, commit, resultados e pendências de hardware. O projeto deve permanecer utilizável por outra pessoa ou IA sem acesso ao repositório privado.
+
+## Política experimental de CI visual V1
+A branch de infraestrutura propõe rota rápida somente para recursos raster isolados, sem dispensar a suíte completa para publicação. Consulte [docs/78](docs/78-POLITICA-CI-VISUAL-V1.md). Não ampliar para Java, XML, lógica MIDI ou persistência sem revisão explícita. A main mantém regras de proteção; o workflow de publicação passa a exigir disparo manual na main após suíte completa. Antes de usar, conferir status do PR e checks.
