@@ -200,6 +200,7 @@ def assert_collection_filter_option(name, present=True):
     tap_text(["Biblioteca Musical"],exact=True)
     wait_for_text("Categoria")
     tap_text(["Categoria"],exact=True,scroll=True)
+    assert any(n.attrib.get("text")=="Todas as categorias" for n in dump().iter("node")), "Full category option missing in dropdown"
     target="Coleção: "+name
     if present:
         wait_for_text(target)
@@ -316,9 +317,9 @@ if __name__=="__main__":
     # Exercise it through the same scroll view while retaining the top-of-home
     # screenshots above as the visual evidence for each viewport.
     home=dump()
-    category_accessible=any("Todas as categorias" in n.attrib.get("text","") for n in home.iter("node"))
+    category_accessible=any(n.attrib.get("text","")=="Categoria" for n in home.iter("node"))
     if not category_accessible:
-        tap_text(["Todas as categorias"],exact=True,scroll=True)
+        tap_text(["Categoria"],exact=True,scroll=True)
         category_accessible=True
         adb("shell","input","keyevent","4")
         home_scroll_to_top()
