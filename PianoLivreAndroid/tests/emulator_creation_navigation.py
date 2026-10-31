@@ -9,6 +9,14 @@ try:
         adb('shell','am','force-stop',P)
         adb('shell','wm','size',size);adb('shell','wm','density','240')
         adb('shell','am','start','-W','-n',P+'/br.org.pianolivre.MainActivity')
+        # Other emulator checks may persist the last route (for example Study).
+        # Android Back returns from that screen to the real app home.
+        for _ in range(4):
+            labels=[n.attrib.get('text','') or n.attrib.get('content-desc','') for n in dump().iter('node')]
+            if any('Bem-vindo ao' in value for value in labels):
+                break
+            adb('shell','input','keyevent','4')
+            time.sleep(.3)
         wait_for_text('Bem-vindo ao',timeout=30)
         tap_text(['Biblioteca'],scroll=True)
         tap_text(['Laboratório Musical'],exact=True,scroll=True)

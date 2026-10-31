@@ -33,7 +33,9 @@ public final class MidiTakeRecorder {
  /** Accepts only channel voice events from the current input epoch. */
  public synchronized boolean accept(int status,int a,int b,long nowNs,long inputEpoch){
   if(state!=State.RECORDING||inputEpoch!=epoch||status<0x80||status>0xef||a<0||a>127||b<0||b>127)return false;
-  if(nowNs<startNs||nowNs<lastNs||nowNs-startNs-pausedNs>MAX_DURATION_NS||events.size()>=MAX_EVENTS-2048) {interrupt(nowNs,"Limite de gravação atingido");return false;}
+  if(nowNs<startNs||nowNs<lastNs){interrupt(nowNs,"Relógio monotônico inválido");return false;}
+  if(nowNs-startNs-pausedNs>MAX_DURATION_NS){interrupt(startNs+pausedNs+MAX_DURATION_NS,"Limite de gravação atingido");return false;}
+  if(events.size()>=MAX_EVENTS-2048){interrupt(nowNs,"Limite de eventos atingido");return false;}
   append(status,a,b,nowNs,false);lastNs=nowNs;
   int command=status&0xf0,ch=status&15,key=(ch<<7)|a;
   if(command==0x90&&b>0)held.put(key,events.get(events.size()-1));
@@ -47,17 +49,18 @@ public final class MidiTakeRecorder {
   }
   return true;
  }
- public synchronized void pause(long nowNs){if(state!=State.RECORDING)throw new IllegalStateException("Não está gravando");if(nowNs<lastNs)throw new IllegalArgumentException("Relógio regressivo");segments.add(new Segment(segmentStartNs,nowNs));silenceForBoundary(nowNs);lastNs=nowNs;pauseStartedNs=nowNs;state=State.PAUSED;}
+ public synchronized void pause(long nowNs){if(state!=State.RECORDING)throw new IllegalStateException("Não está gravando");if(nowNs<lastNs)throw new IllegalArgumentException("Relógio regressivo");if(nowNs-startNs-pausedNs>MAX_DURATION_NS)nowNs=startNs+pausedNs+MAX_DURATION_NS;segments.add(new Segment(segmentStartNs,nowNs));silenceForBoundary(nowNs);lastNs=nowNs;pauseStartedNs=nowNs;state=State.PAUSED;}
  public synchronized void resume(long nowNs,long connectionEpoch){
   if(state!=State.PAUSED)throw new IllegalStateException("Gravação não pausada");
   if(connectionEpoch!=epoch){interrupt(nowNs,"Conexão MIDI mudou durante a pausa");return;}
-  if(nowNs<pauseStartedNs||nowNs-startNs-pausedNs-(nowNs-pauseStartedNs)>MAX_DURATION_NS){interrupt(nowNs,"Limite de gravação atingido");return;}
+  if(nowNs<pauseStartedNs||nowNs-startNs-pausedNs-(nowNs-pauseStartedNs)>=MAX_DURATION_NS){interrupt(nowNs,"Limite de gravação atingido");return;}
   pausedNs+=nowNs-pauseStartedNs;lastNs=nowNs;segmentStartNs=nowNs;state=State.RECORDING;
  }
  public synchronized void stop(long nowNs){
   if(state!=State.RECORDING&&state!=State.PAUSED)throw new IllegalStateException("Tomada não ativa");
   if(state==State.PAUSED){nowNs=pauseStartedNs;}
   if(nowNs<lastNs)nowNs=lastNs;
+  if(state==State.RECORDING&&nowNs-startNs-pausedNs>MAX_DURATION_NS)nowNs=startNs+pausedNs+MAX_DURATION_NS;
   if(state==State.RECORDING)segments.add(new Segment(segmentStartNs,nowNs));
   // Safety closures are derived events; received source events remain untouched.
   silenceForBoundary(nowNs);held.clear();pedals.clear();lastNs=nowNs;state=State.REVIEW;

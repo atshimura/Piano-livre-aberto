@@ -69,6 +69,10 @@ public final class BackupArchiveSelfTest {
    ok(projects.get(backed.id).title.equals("Backup test")&&projects.get(newer.id).title.equals("Created later"),"v3 merge preserves projects created after backup");
    JSONObject legacyV2=new JSONObject(original.toString());legacyV2.put("version",2).remove("creations");BackupArchive.restore(prefs,root,legacyV2);
    ok(projects.get(backed.id)!=null&&projects.get(newer.id)!=null,"legacy v2 restore preserves newer compositions");
+   projects.rename(backed.id,"Edited after backup",3);
+   rejected=false;try{BackupArchive.restore(prefs,root,original);}catch(Exception ex){rejected=true;}
+   ok(rejected&&projects.get(backed.id).title.equals("Edited after backup")&&projects.get(newer.id)!=null,"conflicting project ID blocks restore before replacing local project bytes");
+   projects.rename(backed.id,"Backup test",4);
 
    JSONObject tampered=new JSONObject(original.toString());
    tampered.getJSONArray("imported").getJSONObject(0).put("content",
@@ -78,6 +82,14 @@ public final class BackupArchiveSelfTest {
    ok(rejected,"SHA-256 corruption rejected");
    ok(Arrays.equals(read(note),bytes("<music>teste</music>")),"rejection preserves original file");
    ok(prefs.getInt("user_0_mode",-1)==2,"rejection preserves prefs");
+
+   JSONObject badCreation=new JSONObject(original.toString());
+   badCreation.getJSONArray("creations").getJSONObject(0).put("content",Base64.encodeToString(bytes("tampered project"),Base64.NO_WRAP));
+   rejected=false;try{BackupArchive.restore(prefs,root,badCreation);}catch(Exception ex){rejected=true;}
+   ok(rejected&&projects.get(backed.id).title.equals("Backup test")&&prefs.getInt("user_0_mode",-1)==2,"corrupt project SHA rejected before changing library or preferences");
+   JSONObject incompleteV3=new JSONObject(original.toString());incompleteV3.remove("creations");
+   rejected=false;try{BackupArchive.restore(prefs,root,incompleteV3);}catch(Exception ex){rejected=true;}
+   ok(rejected&&projects.get(backed.id)!=null,"incomplete v3 backup rejected without losing saved projects");
 
    JSONObject unsafe=new JSONObject(original.toString());
    unsafe.getJSONArray("imported").getJSONObject(0).put("name","../escape.xml");

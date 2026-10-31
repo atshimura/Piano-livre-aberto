@@ -10,6 +10,8 @@ public final class MidiTakePlayerTest {
    MidiTakePlayer player=new MidiTakePlayer(new MidiTakePlayer.Sink(){public boolean available(){return true;}public boolean send(byte[] m){sent.add(m);if((m[0]&0xf0)==0x80)off.countDown();return true;}public void silence(){paused.countDown();}},(s,pos,d)->{});
    try{player.play(p,false);Thread.sleep(170);player.pause();int countAtPause=sent.size();Thread.sleep(350);ok(player.state()==MidiTakePlayer.State.PAUSED,"pause state retained");ok(sent.size()==countAtPause,"paused scheduler emits no MIDI");ok(paused.getCount()==0,"pause silenced output");player.resume();ok(off.await(1,TimeUnit.SECONDS),"resume schedules remaining Note Off");player.stop();ok(player.state()==MidiTakePlayer.State.STOPPED,"stop state");}
    finally{player.close();}
+   final int[] unavailableSends={0};MidiTakePlayer unavailable=new MidiTakePlayer(new MidiTakePlayer.Sink(){public boolean available(){return false;}public boolean send(byte[] m){unavailableSends[0]++;return false;}public void silence(){}},(s,pos,d)->{});
+   try{unavailable.play(p,false);ok(unavailable.state()==MidiTakePlayer.State.STOPPED&&unavailableSends[0]==0,"playback requires a real available MIDI output");}finally{unavailable.close();}
   }finally{remove(dir);}
   System.out.println("MIDI_TAKE_PLAYER_PASS checks="+checks);
  }

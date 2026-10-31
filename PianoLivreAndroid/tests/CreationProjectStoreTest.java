@@ -17,6 +17,14 @@ public final class CreationProjectStoreTest {
    s.moveToTrash(p.id,1500);s.deletePermanently(p.id);ok(s.list(8,CreationProjectStore.Filter.ALL,"",null).size()==1,"permanent deletion only for trash");
    File f=new File(new File(root,"creations"),s.list(8,CreationProjectStore.Filter.ALL,"",null).get(0).id+".plc");try(RandomAccessFile raf=new RandomAccessFile(f,"rw")){raf.seek(f.length()-1);raf.write(0x7f);}
    ok(s.list(8,CreationProjectStore.Filter.ALL,"",null).isEmpty(),"corrupt project never appears as saved");
+   CreationProjectStore bounded=new CreationProjectStore(new File(root,"bounded"));
+   for(int i=0;i<CreationProjectStore.MAX_PROJECTS;i++)bounded.save("Limit "+i,0,2000+i,100,r.events());
+   boolean rejected=false;try{bounded.save("Beyond limit",0,3000,100,r.events());}catch(IOException ex){rejected=true;}
+   ok(rejected&&bounded.list(0,CreationProjectStore.Filter.ALL,"",null).size()==CreationProjectStore.MAX_PROJECTS,"200-project library limit is enforced without hiding valid files");
+   CreationProjectStore oversized=new CreationProjectStore(new File(root,"oversized"));
+   ArrayList<MidiTakeRecorder.Event> tooMany=new ArrayList<>(Collections.nCopies(CreationProjectStore.MAX_EVENTS+1,r.events().get(0)));
+   rejected=false;try{oversized.save("Too many events",0,4000,100,tooMany);}catch(IOException ex){rejected=true;}
+   ok(rejected&&oversized.list(0,CreationProjectStore.Filter.ALL,"",null).isEmpty(),"event-count limit rejects oversized projects before writing");
   }finally{remove(root);}
   System.out.println("CREATION_PROJECT_STORE_PASS checks="+checks);
  }

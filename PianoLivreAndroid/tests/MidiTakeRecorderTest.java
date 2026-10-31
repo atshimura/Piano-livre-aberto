@@ -34,6 +34,10 @@ public final class MidiTakeRecorderTest {
   ok(!lost.accept(0x90,49,50,30,2),"interrupted epoch rejects later bytes");
   MidiTakeRecorder pausedLost=new MidiTakeRecorder();pausedLost.start(3,100);pausedLost.accept(0x90,50,60,200,3);pausedLost.pause(300);pausedLost.interrupt(900,"disconnect while paused");
   ok(pausedLost.durationNs()==200,"disconnect during pause excludes paused wall time");
+  MidiTakeRecorder durationBound=new MidiTakeRecorder();durationBound.start(4,0);durationBound.accept(0x90,60,90,1,4);durationBound.stop(MidiTakeRecorder.MAX_DURATION_NS+100);
+  ok(durationBound.durationNs()==MidiTakeRecorder.MAX_DURATION_NS,"stop clamps idle recording to four-hour active-duration limit");
+  MidiTakeRecorder resumeBound=new MidiTakeRecorder();resumeBound.start(5,0);resumeBound.accept(0x90,60,90,1,5);resumeBound.pause(MidiTakeRecorder.MAX_DURATION_NS+10);resumeBound.resume(MidiTakeRecorder.MAX_DURATION_NS+100,5);
+  ok(resumeBound.state()==MidiTakeRecorder.State.INTERRUPTED&&resumeBound.durationNs()==MidiTakeRecorder.MAX_DURATION_NS,"pause/resume cannot extend the active-duration limit");
   System.out.println("MIDI_TAKE_RECORDER_PASS checks="+checks);
  }
 }
