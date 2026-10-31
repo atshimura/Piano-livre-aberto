@@ -198,8 +198,8 @@ def assert_collection_filter_option(name, present=True):
     """Inspect the Spinner's real dropdown; closed spinners expose only selection."""
     home_scroll_to_top()
     tap_text(["Biblioteca Musical"],exact=True)
-    wait_for_text("Todas as categorias")
-    tap_text(["Todas as categorias"],exact=True,scroll=True)
+    wait_for_text("Categoria")
+    tap_text(["Categoria"],exact=True,scroll=True)
     target="Coleção: "+name
     if present:
         wait_for_text(target)
