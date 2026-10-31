@@ -217,4 +217,13 @@ Ao ouvir **“vamos continuar a implementação do criação - C1”**, a IA dev
 O Plano Geral até V1 e a C1 são trilhas distintas: nada aqui declara versão 1.0 concluída ou autoriza substituir a assinatura permanente, divulgar dados reais ou acessar o repositório histórico privado. O app permanece **offline**, sem novos serviços, telemetria ou permissões amplas.
 
 **Estado atual:** C1.1–C1.5 implementadas e validadas no SHA `a86ea4d6d57e8cfb3dc834d03ee989ef742a022d`; build #752 e suíte integral de emulador #729 passaram. PR #82 aberto para revisão, sem merge nem Release. Os testes físicos no Yamaha P-45, Realme 7 5G e Lenovo Tab M9 continuam pendentes. A próxima etapa de produto é C2; não declarar versão 1.0.
-\n\n## Registro da entrega C1 — 31/10/2026\n\n- PR #82 (`feat/criacao-c1`) contra a base consolidada `cf4b24b` (0.9.54/code63); candidata 0.9.55/code64.\n- `build` #752: sucesso — https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177942271.\n- `emulator` #729: sucesso, incluindo `debug-apk`, `ui-fast` e `emulator-suite` — https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440.\n- Artefato APK de validação (debug): https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440/artifacts/13034403866. Evidências de UI: https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440/artifacts/13034094737.\n- Testes físicos Yamaha P-45 + Realme 7 5G e Lenovo Tab M9 pendentes com o usuário.\n- Não houve merge ou publicação: a integração na `main` dispara a geração de beta e aguarda autorização explícita de release. Próxima etapa após integração e hardware: C2.
+
+
+## Registro da entrega C1 — 31/10/2026
+
+- PR #82 (`feat/criacao-c1`) contra a base consolidada `cf4b24b` (0.9.54/code63); candidata 0.9.55/code64.
+- `build` #752: sucesso — https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177942271.
+- `emulator` #729: sucesso, incluindo `debug-apk`, `ui-fast` e `emulator-suite` — https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440.
+- Artefato APK de validação (debug): https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440/artifacts/13034403866. Evidências de UI: https://github.com/atshimura/Piano-livre-aberto/actions/runs/41177941440/artifacts/13034094737.
+- Testes físicos Yamaha P-45 + Realme 7 5G e Lenovo Tab M9 pendentes com o usuário.
+- Não houve merge ou publicação: a integração na `main` dispara a geração de beta e aguarda autorização explícita de release. Próxima etapa após integração e hardware: C2.
