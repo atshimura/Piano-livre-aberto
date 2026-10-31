@@ -31,9 +31,9 @@ final class MusicCreationScreen extends LinearLayout {
  private CreationProjectStore store;private MidiTakeRecorder take;private CreationJournal journal;private int takeProfileId;private long takeCreatedAt,takeConnectionGeneration;private String selectedId;private String page="home",detailsBack="list";private boolean restoreListPosition;private final MidiTakePlayer player;private TextView playbackStatus,connectionStatus;private EditText listSearch;private boolean ignoreSilence=true,journalsScanned;
  private CreationProjectStore.Filter filter=CreationProjectStore.Filter.ALL;private String query="";private int sortMode=0;
  private final int navy=0xff101C31,ink=0xff172A44,blue=0xff286BCB,muted=0xff57708A,light=0xffF0F5FB,white=Color.WHITE;
- private TextView recordingClock,recordingNotes,recordingEvents;
+ private TextView recordingClock,recordingNotes,recordingEvents;private Button detailPlay,detailPause,detailResume,detailStop;
  MusicCreationScreen(MainActivity activity,Runnable goBack){super(activity);a=activity;back=goBack;setOrientation(VERTICAL);setVisibility(GONE);setBackgroundColor(0xffF7F9FC);
-  player=new MidiTakePlayer(new MidiTakePlayer.Sink(){public boolean available(){return a.midiConnection.snapshot().canSend;}public boolean send(byte[] data){return a.midiConnection.send(data);}public void silence(){a.midiConnection.silence();}},(state,pos,duration)->post(()->{if(playbackStatus!=null)playbackStatus.setText((state==MidiTakePlayer.State.PLAYING?"Reproduzindo":state==MidiTakePlayer.State.PAUSED?"Pausada":"Parada")+" · "+String.format(Locale.ROOT,"%.1f / %.1f s",pos/1e9,duration/1e9));}),command->a.handler.post(command));
+  player=new MidiTakePlayer(new MidiTakePlayer.Sink(){public boolean available(){return a.midiConnection.snapshot().canSend;}public boolean send(byte[] data){return a.midiConnection.send(data);}public void silence(){a.midiConnection.silence();}},(state,pos,duration)->post(()->{if(playbackStatus!=null)playbackStatus.setText((state==MidiTakePlayer.State.PLAYING?"Reproduzindo":state==MidiTakePlayer.State.PAUSED?"Pausada":"Parada")+" · "+String.format(Locale.ROOT,"%.1f / %.1f s",pos/1e9,duration/1e9));if("details".equals(page))updatePlaybackControls();}),command->a.handler.post(command));
   bar=new LinearLayout(a);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(dp(8),dp(3),dp(8),dp(3));bar.setBackgroundColor(navy);addView(bar,new LayoutParams(-1,dp(56)));
   body=new LinearLayout(a);body.setOrientation(VERTICAL);body.setPadding(dp(16),dp(12),dp(16),dp(16));scroll=new ScrollView(a);scroll.setFillViewport(true);scroll.addView(body);addView(scroll,new LayoutParams(-1,0,1));
   try{store=new CreationProjectStore(a.getFilesDir());}catch(IOException ex){a.message("Não foi possível abrir Minhas Criações: "+ex.getMessage());}
@@ -81,7 +81,7 @@ final class MusicCreationScreen extends LinearLayout {
   t.setEllipsize(TextUtils.TruncateAt.END);t.setContentDescription(title);t.setGravity(Gravity.CENTER_VERTICAL);
   bar.addView(t,new LayoutParams(0,-1,1));
  }
- private void base(String title,Runnable returnAction){header(title,returnAction);body.removeAllViews();}
+ private void base(String title,Runnable returnAction){header(title,returnAction);body.removeAllViews();detailPlay=detailPause=detailResume=detailStop=null;playbackStatus=null;}
  void enter(){setVisibility(VISIBLE);if(hasUnsavedTake()){showRecorder();return;}if(listProfile!=a.user){listProfile=a.user;query="";filter=CreationProjectStore.Filter.ALL;sortMode=0;listScrollY=0;}if(!journalsScanned){journalsScanned=true;busy=true;disk.execute(()->{recoverJournals();post(()->{busy=false;showHome();});});}showHome();}
  boolean hasUnsavedTake(){return take!=null&&(take.state()==MidiTakeRecorder.State.RECORDING||take.state()==MidiTakeRecorder.State.PAUSED||take.state()==MidiTakeRecorder.State.REVIEW||take.state()==MidiTakeRecorder.State.INTERRUPTED);}
  void requestLeave(){if(busy){a.message("Aguarde a confirmação dos dados locais.");return;}player.stop();if("details".equals(page)){if("home".equals(detailsBack))showHome();else showList();return;}if("list".equals(page)){showHome();return;}if("recording".equals(page)){if(!hasUnsavedTake()){showHome();return;}activeDialog=new AlertDialog.Builder(a).setTitle("Gravação não salva").setMessage("Salve o trecho recuperável antes de sair?")
@@ -313,16 +313,85 @@ a.handler.postDelayed(this,100);}};ticker.run();
   attach(target,row,72,8);
  }
  private void showDetails(String id){if("list".equals(page))listScrollY=scroll.getScrollY();detailsBack="home".equals(page)?"home":"list";page="details";selectedId=id;base("Abrindo composição…",this::showList);disk.execute(()->{try{CreationProjectStore.Project project=store.get(id);post(()->{if("details".equals(page)&&id.equals(selectedId))renderDetails(project);});}catch(IOException error){post(()->{a.message("Não foi possível abrir a composição: "+error.getMessage());showList();});}});}
- private void renderDetails(CreationProjectStore.Project p){String id=p.id;try{base(p.title,this::requestLeave);body.addView(text(p.title,22,true));if(!p.instrument.isEmpty())body.addView(text("Instrumento observado · "+p.instrument,15,false));body.addView(text("Criada · "+new Date(p.createdAt)+"\nÚltima alteração · "+new Date(p.editedAt)+"\nDuração · "+(p.durationNs/1_000_000_000.0)+" s\nNotas · "+p.events.stream().filter(e->!e.generated&&e.command()==0x90&&e.data2>0).count()+"\nEventos · "+p.events.size()+"\nPerfil · "+profileName(),15,false));
-  body.addView(button("Renomear",false,()->rename(p)),new LayoutParams(-1,dp(48)));
-  if(p.recoverable&&!p.trash)body.addView(button("Revisar e salvar trecho recuperado",true,()->mutate(()->store.finalizeRecovery(id,System.currentTimeMillis()))),new LayoutParams(-1,dp(52)));
-  if(!p.trash)body.addView(button("Exportar MIDI (.mid)",false,()->a.exportCreationMidi(id,p.title)),new LayoutParams(-1,dp(48)));
-  if(!p.trash){CheckBox trim=new CheckBox(a);trim.setText("Ignorar silêncio inicial e final na reprodução");trim.setChecked(ignoreSilence);trim.setOnCheckedChangeListener((v,checked)->ignoreSilence=checked);body.addView(trim,new LayoutParams(-1,-2));playbackStatus=text("Parado",14,false);body.addView(playbackStatus,new LayoutParams(-1,dp(40)));
-   Button play=button("▶ Reproduzir no piano",true,()->{if(!a.midiConnection.snapshot().canSend){a.message("Conecte uma saída MIDI funcional para reproduzir no instrumento.");return;}player.play(p,ignoreSilence);});body.addView(play,new LayoutParams(-1,dp(50)));
-   body.addView(button("Pausar",false,()->player.pause()),new LayoutParams(-1,dp(48)));body.addView(button("Continuar",false,()->player.resume()),new LayoutParams(-1,dp(48)));body.addView(button("Parar",false,()->player.stop()),new LayoutParams(-1,dp(48)));}
-  if(p.trash){body.addView(button("Restaurar",false,()->mutate(()->store.restore(id,System.currentTimeMillis()))),new LayoutParams(-1,dp(48)));body.addView(button("Excluir definitivamente…",false,()->activeDialog=new AlertDialog.Builder(a).setTitle("Excluir definitivamente?").setMessage("Excluir definitivamente "+p.title+"? Esta ação não pode ser desfeita.").setPositiveButton("Excluir",(d,w)->mutate(()->store.deletePermanently(id))).setNegativeButton("Cancelar",null).show()),new LayoutParams(-1,dp(48)));}
-  else body.addView(button("Mover para Lixeira",false,()->mutate(()->store.moveToTrash(id,System.currentTimeMillis()))),new LayoutParams(-1,dp(48)));
- }catch(Exception ex){a.message("Não foi possível abrir a composição: "+ex.getMessage());showList();}}
+ private void renderDetails(CreationProjectStore.Project p){
+  String id=p.id;
+  try{
+   base("Detalhes da composição",this::requestLeave);
+   label(body,p.title,23,true,3);
+   attach(body,mutedText(p.trash?"Na Lixeira":p.recoverable?"Trecho recuperável":"Composição salva",13),-2,12);
+   LinearLayout summary=card();
+   label(summary,"Duração  "+duration(p.durationNs),17,true,4);
+   long noteCount=p.events.stream().filter(e->!e.generated&&e.command()==0x90&&e.data2>0).count();
+   attach(summary,mutedText(noteCount+" notas · "+p.events.size()+" eventos MIDI",14),-2,0);
+   attach(body,summary,-2,12);
+   if(p.trash){
+    attach(body,button("Restaurar",true,()->mutate(()->store.restore(id,System.currentTimeMillis()))),50,9);
+    Button remove=button("Excluir definitivamente…",false,()->activeDialog=new AlertDialog.Builder(a)
+     .setTitle("Excluir definitivamente?")
+     .setMessage("Excluir definitivamente "+p.title+"? Esta ação não pode ser desfeita.")
+     .setPositiveButton("Excluir",(d,w)->mutate(()->store.deletePermanently(id)))
+     .setNegativeButton("Cancelar",null).show());
+    remove.setTextColor(0xff9D4444);attach(body,remove,48,12);
+   }else{
+    if(p.recoverable){
+     LinearLayout warning=card();
+     attach(warning,mutedText("Gravação recuperável · revise o trecho íntegro antes de finalizar.",14),-2,7);
+     attach(warning,button("Revisar e salvar trecho recuperado",true,()->mutate(()->store.finalizeRecovery(id,System.currentTimeMillis()))),50,0);
+     attach(body,warning,-2,12);
+    }
+    LinearLayout playerCard=card();label(playerCard,"Reprodução no piano",17,true,6);
+    playbackStatus=mutedText("Parado",13);attach(playerCard,playbackStatus,-2,9);
+    Button play=button("▶ Reproduzir no piano",true,()->{
+     if(!a.midiConnection.snapshot().canSend){a.message("Conecte uma saída MIDI funcional para reproduzir no instrumento.");return;}
+     player.play(p,ignoreSilence);
+    });
+    Button pause=button("Pausar",false,()->player.pause());
+    Button resume=button("Continuar",false,()->player.resume());
+    Button stop=button("Parar",false,()->player.stop());
+    attach(playerCard,play,50,7);
+    LinearLayout controls=horizontal();
+    for(Button control:new Button[]{pause,resume,stop}){
+     LayoutParams lp=new LayoutParams(0,dp(48),1);lp.rightMargin=dp(5);controls.addView(control,lp);
+    }
+    attach(playerCard,controls,48,8);
+    detailPlay=play;detailPause=pause;detailResume=resume;detailStop=stop;
+    CheckBox trim=new CheckBox(a);trim.setText("Ignorar silêncio inicial e final");trim.setTextSize(13);
+    trim.setTextColor(ink);trim.setChecked(ignoreSilence);
+    trim.setOnCheckedChangeListener((v,checked)->ignoreSilence=checked);
+    attach(playerCard,trim,-2,0);
+    attach(body,playerCard,-2,12);
+    updatePlaybackControls();
+   }
+   Button rename=button("Renomear",false,()->rename(p));
+   if(!p.trash){
+    Button export=button("Exportar MIDI (.mid)",false,()->a.exportCreationMidi(id,p.title));
+    actionRow(body,rename,export,12);
+   }else attach(body,rename,48,12);
+   Button infoButton=button("Informações da gravação  ▾",false,()->{});
+   LinearLayout infoCard=card();infoCard.setVisibility(View.GONE);
+   label(infoCard,"Criada · "+new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",Locale.getDefault()).format(new Date(p.createdAt)),14,false,6);
+   label(infoCard,"Última alteração · "+new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",Locale.getDefault()).format(new Date(p.editedAt)),14,false,6);
+   label(infoCard,"Duração · "+duration(p.durationNs),14,false,6);
+   label(infoCard,"Notas · "+noteCount+" · Eventos · "+p.events.size(),14,false,6);
+   label(infoCard,"Perfil · "+profileName(),14,false,6);
+   if(!p.instrument.isEmpty())label(infoCard,"Instrumento observado · "+p.instrument,14,false,0);
+   infoButton.setOnClickListener(v->{boolean open=infoCard.getVisibility()!=View.VISIBLE;setShown(infoCard,open);infoButton.setText(open?"Informações da gravação  ▴":"Informações da gravação  ▾");});
+   attach(body,infoButton,48,8);attach(body,infoCard,-2,12);
+   if(!p.trash){
+    Button trash=button("Mover para Lixeira",false,()->mutate(()->store.moveToTrash(id,System.currentTimeMillis())));
+    trash.setTextColor(0xff9D4444);attach(body,trash,48,0);
+   }
+  }catch(Exception ex){a.message("Não foi possível abrir a composição: "+ex.getMessage());showList();}
+ }
+ private void updatePlaybackControls(){
+  if(detailPlay==null)return;
+  boolean playing=player.state()==MidiTakePlayer.State.PLAYING;
+  boolean paused=player.state()==MidiTakePlayer.State.PAUSED;
+  setShown(detailPlay,!playing&&!paused);
+  setShown(detailPause,playing);
+  setShown(detailResume,paused);
+  setShown(detailStop,playing||paused);
+ }
  private interface Mutation{void run()throws Exception;}private void mutate(Mutation m){player.stop();busy=true;disk.execute(()->{try{m.run();post(()->{busy=false;showList();});}catch(Exception ex){post(()->{busy=false;a.message("A alteração não foi aplicada: "+ex.getMessage());});}});}
  private void rename(CreationProjectStore.Project p){EditText input=new EditText(a);input.setSingleLine(true);input.setText(p.title);activeDialog=new AlertDialog.Builder(a).setTitle("Renomear composição").setView(input).setPositiveButton("Salvar",(d,w)->mutate(()->store.rename(p.id,input.getText().toString().trim(),System.currentTimeMillis()))).setNegativeButton("Cancelar",null).show();}
  void close(){onBackground();player.close();disk.shutdown();}
