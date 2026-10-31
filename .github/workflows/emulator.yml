@@ -48,8 +48,14 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            python3 PianoLivreAndroid/scripts/classify_pr_risk.py --base "$BASE_SHA" --head "$HEAD_SHA" --output risk-report.json
-            tier=$(python3 -c 'import json; print(json.load(open("risk-report.json"))["tier"])')
+            if git cat-file -e "$BASE_SHA:PianoLivreAndroid/scripts/classify_pr_risk.py" 2>/dev/null; then
+              git show "$BASE_SHA:PianoLivreAndroid/scripts/classify_pr_risk.py" > "$RUNNER_TEMP/trusted-classifier.py"
+              python3 "$RUNNER_TEMP/trusted-classifier.py" --base "$BASE_SHA" --head "$HEAD_SHA" --output risk-report.json
+              tier=$(python3 -c 'import json; print(json.load(open("risk-report.json"))["tier"])')
+            else
+              # Bootstrap: classifer absent from the protected base, never grant V1.
+              tier=full
+            fi
           else
             tier=full
           fi
