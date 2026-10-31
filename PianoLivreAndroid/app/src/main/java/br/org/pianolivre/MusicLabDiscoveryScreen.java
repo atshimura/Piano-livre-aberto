@@ -15,6 +15,7 @@ final class MusicLabDiscoveryScreen extends LinearLayout {
  static final String EMPTY_TEXT="toque uma nota, acorde ou escala musical";
  final MainActivity activity;
  final MusicDiscoverySession session=new MusicDiscoverySession();
+ final Button back,discover,learn,creation;
  final TextView instruction,title,detail,ciphers;
  final HorizontalScrollView ciphersScroll;
  final DiscoveryStaffView staff;
@@ -23,6 +24,9 @@ final class MusicLabDiscoveryScreen extends LinearLayout {
  MusicLabDiscoveryScreen(MainActivity a,Runnable goBack,Runnable goCreation){super(a);activity=a;setOrientation(VERTICAL);setBackgroundColor(0xffF7F9FC);setVisibility(GONE);
   LinearLayout bar=new LinearLayout(a);
   MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.DISCOVER,goBack,()->{},goCreation);
+  // Stable handles for the existing Discovery debug probes.
+  back=bar.findViewWithTag("lab-nav-back");discover=bar.findViewWithTag("lab-nav-descobrir");
+  learn=bar.findViewWithTag("lab-nav-aprender");creation=bar.findViewWithTag("lab-nav-criação");
   addView(bar,new LayoutParams(-1,dp(56)));
   LinearLayout content=new LinearLayout(a);content.setPadding(dp(10),dp(10),dp(10),dp(10));addView(content,new LayoutParams(-1,0,1));
   staff=new DiscoveryStaffView(a);content.addView(staff,new LayoutParams(0,-1,3));
