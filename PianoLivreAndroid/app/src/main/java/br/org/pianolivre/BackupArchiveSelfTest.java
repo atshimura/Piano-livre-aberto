@@ -73,6 +73,8 @@ public final class BackupArchiveSelfTest {
    boolean rejected=false;try{BackupArchive.restore(prefs,root,original);}catch(Exception ex){rejected=true;}
    ok(rejected&&projects.get(backed.id).title.equals("Edited after backup")&&projects.get(newer.id)!=null,"conflicting project ID blocks restore before replacing local project bytes");
    projects.rename(backed.id,"Backup test",4);
+   // Rename updates project bytes; use a current snapshot for subsequent integrity and restore checks.
+   original=BackupArchive.create(prefs,root);
 
    JSONObject tampered=new JSONObject(original.toString());
    tampered.getJSONArray("imported").getJSONObject(0).put("content",
