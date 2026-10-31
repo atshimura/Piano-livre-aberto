@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Criação navigation smoke on phone/tablet landscape; no physical MIDI required."""
 import subprocess,time
-from emulator_ui import adb,wait_for_text,tap_text,screenshot
+from emulator_ui import adb,wait_for_text,tap_text,screenshot,dump
 
 P='br.org.pianolivre.opensource'
 try:
