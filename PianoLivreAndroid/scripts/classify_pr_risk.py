@@ -11,7 +11,7 @@ import pathlib
 import subprocess
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = pathlib.Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
 PREFIX = "PianoLivreAndroid/app/src/main/res/"
 EXTENSIONS = {".png", ".webp", ".jpg", ".jpeg"}
 
