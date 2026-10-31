@@ -128,6 +128,7 @@ jobs:
             python3 tests/emulator_discovery_layout.py
             python3 tests/emulator_ui_fast.py
             python3 tests/emulator_discovery_components.py --representative
+            python3 tests/emulator_creation_functional.py
       - name: Preserve focused evidence, including failed runs
         if: always()
         uses: actions/upload-artifact@v4
@@ -139,6 +140,7 @@ jobs:
             PianoLivreAndroid/piano-discovery-layout.json
             PianoLivreAndroid/piano-home-refined-*
             PianoLivreAndroid/piano-fast-*.png
+            PianoLivreAndroid/piano-c1-*
             PianoLivreAndroid/piano-discovery-staff-grand-chord.png
             PianoLivreAndroid/piano-discovery-staff-phone-sequence.png
             PianoLivreAndroid/piano-discovery-selftest.log
@@ -240,6 +242,8 @@ jobs:
             python3 tests/emulator_study_layout.py
             python3 tests/emulator_midi_interfaces.py
             adb uninstall br.org.pianolivre.opensource
+            python3 tests/emulator_upgrade.py --baseline-54
+            adb uninstall br.org.pianolivre.opensource
             python3 tests/emulator_upgrade.py --baseline-52
             adb uninstall br.org.pianolivre.opensource
             python3 tests/emulator_upgrade.py
@@ -262,6 +266,8 @@ jobs:
             adb logcat -d -v brief | grep 'XML_INPUT_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'HISTORY_ACTIVITY_SELFTEST_PASS'
             python3 tests/emulator_ui.py
+            python3 tests/emulator_creation_navigation.py
+            python3 tests/emulator_creation_functional.py
             python3 tests/emulator_discovery_components.py
             python3 tests/emulator_study_failure.py
             python3 tests/emulator_polyphony.py
@@ -271,6 +277,7 @@ jobs:
             python3 tests/emulator_release.py
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py; fi
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py --previous 0.9.52; fi
+            if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py --previous 0.9.54; fi
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
       - name: Upload temporary validation APK for this pull request
         if: success() && github.event_name == 'pull_request'
@@ -347,6 +354,9 @@ jobs:
           for profile in ('phone','tablet'):
               for stage in ('empty','note','retained','chord','sequence','held-after-sequence','low','high','common-after-extreme'):
                   names.append('piano-discovery-layout-'+profile+'-'+stage+'.png')
+          for creation_profile in ('phone', 'tablet'):
+              for creation_stage in ('home','recording','paused','review','saved','renamed','searched','trash','restored','no-output','no-input','background','recovered','deleted','profile','reopened','export-picker','exported'):
+                  names.append('piano-c1-'+creation_profile+'-'+creation_stage+'.png')
           report = []
           for viewport in ('phone', 'landscape', 'tablet', 'compact-tablet'):
               for suffix in ('', '-library', '-grid'):
@@ -393,6 +403,8 @@ jobs:
             PianoLivreAndroid/piano-study*failure.png
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png
+            PianoLivreAndroid/piano-creation-*.png
+            PianoLivreAndroid/piano-c1-*
             PianoLivreAndroid/piano-home-phone.png
             PianoLivreAndroid/piano-home-tablet.png
             PianoLivreAndroid/piano-laboratorio.png
@@ -448,6 +460,7 @@ jobs:
             PianoLivreAndroid/piano-performance.json
             PianoLivreAndroid/piano-upgrade.json
             PianoLivreAndroid/piano-upgrade-52.json
+            PianoLivreAndroid/piano-upgrade-54.json
             PianoLivreAndroid/piano-public-upgrade-*.json
             PianoLivreAndroid/piano-osmd-context-probe.txt
             PianoLivreAndroid/window.xml

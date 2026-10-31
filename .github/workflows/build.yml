@@ -149,6 +149,20 @@ jobs:
           java -cp build/score-tests MidiConnectionTest
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiProtocol.java tests/MidiProtocolEpochTest.java
           java -cp build/score-tests MidiProtocolEpochTest
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java tests/MidiTakeRecorderTest.java
+          java -cp build/score-tests MidiTakeRecorderTest
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java tests/CreationProjectStoreTest.java
+          java -cp build/score-tests CreationProjectStoreTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java app/src/main/java/br/org/pianolivre/MidiFileImport.java app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java app/src/main/java/br/org/pianolivre/MidiStandardFileWriter.java tests/MidiStandardFileWriterTest.java
+          java -cp build/score-tests MidiStandardFileWriterTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java app/src/main/java/br/org/pianolivre/MidiStandardFileWriter.java app/src/main/java/br/org/pianolivre/MidiTakePlayer.java tests/MidiTakePlayerTest.java
+          java -cp build/score-tests MidiTakePlayerTest
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java app/src/main/java/br/org/pianolivre/CreationJournal.java tests/CreationJournalTest.java
+          java -cp build/score-tests CreationJournalTest
+          javac -encoding UTF-8 -cp build/score-tests -d build/score-tests tests/CreationSafetyRegressionTest.java
+          java -cp build/score-tests br.org.pianolivre.CreationSafetyRegressionTest
+          javac -encoding UTF-8 -cp build/score-tests -d build/score-tests tests/CreationLimitsTest.java
+          java -Xmx128m -cp build/score-tests br.org.pianolivre.CreationLimitsTest
       - name: Test Laboratory scale and arpeggio sequences (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicSequenceAnalyzer.java tests/MusicSequenceAnalyzerTest.java

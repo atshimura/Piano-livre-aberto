@@ -1,7 +1,11 @@
 # 10 — Como continuar o Piano Livre aberto
 
-Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
 
+
+## Continuidade ativa — Criação C1
+
+A solicitação atual manda concluir a sequência C1.1 → C1.5 sem parar em entrega intermediária. A branch `feat/criacao-c1` parte de `cf4b24b`; o candidato é 0.9.55/code64. O documento [78](78-CREACAO-C1-IMPLEMENTACAO.md) registra o que foi implementado e os gates pendentes. Atualizar o registro com SHA, PR e resultados reais de Actions; não integrar sem build e emulador completos, nem publicar sem autorização específica. Testes físicos Yamaha P-45/Realme 7 5G/Lenovo Tab M9 ficam para o usuário.
 
 ## Ajustes da Home após a beta (30/10/2026)
 
@@ -381,6 +385,11 @@ Nova branch de correção baseada na `main` `e9cc70afaba68bc4240945ffb08c33300a8
 ## Entrega Descobrir / issue #77 ? 30/10/2026
 
 Branch independente de #76, baseada em main f91c278; candidato 0.9.54/63. Consulte [75](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md) para layout, enquadramento, testes rapidos e completos, proveniencia de APK e registro final do PR. Sem merge/Release; hardware e V1 pendentes.
+
+
+## Criação C1 — revisão da entrega / 31/10/2026
+
+Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
 
 ## Política de CI por risco (V1)
 Consulte [docs/90 — Política de CI visual V1](90-POLITICA-CI-VISUAL-V1.md). Raster drawable isolado pode usar gate visual rápido; outros diffs seguem suíte completa. Publicação não é automática: exige dispatch e testes completos no commit exato. Não tratar esta política como vigente na main antes do merge e da verificação de proteção.

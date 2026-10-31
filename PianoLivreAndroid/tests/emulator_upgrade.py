@@ -6,9 +6,10 @@ No historical/private repository is used.
 """
 import subprocess, os, tempfile, pathlib, struct, json, html, hashlib, argparse, time
 BASELINE='15cafe3c8da7c67b9752d14ba0fb6f8f6141177d' # public 0.9.46/code55
-parser=argparse.ArgumentParser();parser.add_argument('--baseline-52',action='store_true');options=parser.parse_args()
-old_code=61 if options.baseline_52 else 55
+parser=argparse.ArgumentParser();parser.add_argument('--baseline-52',action='store_true');parser.add_argument('--baseline-54',action='store_true');options=parser.parse_args()
+old_code=63 if options.baseline_54 else 61 if options.baseline_52 else 55
 if options.baseline_52: BASELINE='f91c27853be576a353628e220d4e716d02507bed'
+if options.baseline_54: BASELINE='cf4b24bfcb7d5ee5e3c19b6ad879429e6c72cc3b'
 PACKAGE='br.org.pianolivre.opensource'
 def run(*args, capture=False):
     return subprocess.run(args,check=True,text=True,stdout=subprocess.PIPE if capture else None).stdout
@@ -25,7 +26,7 @@ with tempfile.TemporaryDirectory(prefix='piano-upgrade-') as temporary:
         aapt=signer.with_name('aapt')
         old_info=run(str(aapt),'dump','badging',str(old),capture=True)
         new_info=run(str(aapt),'dump','badging',str(current),capture=True)
-        assert f"versionCode='{old_code}'" in old_info and "versionCode='63'" in new_info
+        assert f"versionCode='{old_code}'" in old_info and "versionCode='64'" in new_info
         def cert(apk):
             return next(x.strip() for x in run(str(signer),'verify','--print-certs',str(apk),capture=True).splitlines() if 'certificate SHA-256 digest:' in x)
         assert cert(old)==cert(current), 'Upgrade APK certificates must match on this runner'
@@ -46,9 +47,9 @@ with tempfile.TemporaryDirectory(prefix='piano-upgrade-') as temporary:
         run('adb','shell','pidof',PACKAGE)
         run('adb','shell','am','force-stop',PACKAGE)
         # A read-only debug assertion verifies state after the current APK is installed.
-        report=pathlib.Path('piano-upgrade-52.json' if options.baseline_52 else 'piano-upgrade.json')
-        report.write_text(json.dumps(dict(baseline=BASELINE,versionCode=old_code,targetVersionCode=63,sourceSha256=hashlib.sha256(source.read_bytes()).hexdigest(),certificate=cert(current),scope='emulator synthetic data; public-signed binary check is separate'),indent=2))
-        if options.baseline_52:
+        report=pathlib.Path('piano-upgrade-54.json' if options.baseline_54 else 'piano-upgrade-52.json' if options.baseline_52 else 'piano-upgrade.json')
+        report.write_text(json.dumps(dict(baseline=BASELINE,versionCode=old_code,targetVersionCode=64,sourceSha256=hashlib.sha256(source.read_bytes()).hexdigest(),certificate=cert(current),scope='emulator synthetic data; public-signed binary check is separate'),indent=2))
+        if options.baseline_52 or options.baseline_54:
             run('adb','install','-r',str(current))
             run('adb','logcat','-c')
             run('adb','shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity','--ez','upgrade_selftest','true')
@@ -56,8 +57,8 @@ with tempfile.TemporaryDirectory(prefix='piano-upgrade-') as temporary:
                 log=run('adb','logcat','-d','-v','brief',capture=True)
                 if 'UPGRADE_SELFTEST_PASS' in log: break
                 time.sleep(1)
-            else: raise AssertionError('0.9.52 to 0.9.54 upgrade did not preserve synthetic data: '+log[-4000:])
-            print('UPGRADE_0952_TO_0954_PASS profiles=true library=true sessions=true preferences=true',flush=True)
+            else: raise AssertionError('Baseline to 0.9.55 upgrade did not preserve synthetic data: '+log[-4000:])
+            print(('UPGRADE_0954_TO_0955_PASS' if options.baseline_54 else 'UPGRADE_0952_TO_0955_PASS')+' profiles=true library=true sessions=true preferences=true',flush=True)
         print('PASS: baseline APK installed and synthetic legacy state seeded; current APK upgrade follows',flush=True)
     finally:
         run('git','worktree','remove','--force',str(baseline))

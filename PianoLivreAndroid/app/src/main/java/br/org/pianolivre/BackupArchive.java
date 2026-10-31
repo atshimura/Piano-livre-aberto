@@ -17,7 +17,7 @@ import java.util.*;
  */
 public final class BackupArchive {
  private BackupArchive(){}
- public static final int VERSION=2;
+ public static final int VERSION=3;
  private static final int MAX_ITEMS=ScoreImport.MAX_FILES;
  private static final int MAX_FILE=16*1024*1024;
  private static final int MAX_TOTAL=ScoreImport.MAX_TOTAL;
@@ -27,6 +27,11 @@ public final class BackupArchive {
  private static final String JOURNAL="restore-pending.json";
  private static final String JOURNAL_TMP="restore-pending.tmp";
  private static final String FILES="imported";
+ private static final String CREATIONS="creations";
+ private static final String CREATION_STAGE="creations.restore-stage";
+ private static final int MAX_CREATIONS=CreationProjectStore.MAX_PROJECTS;
+ // Leaves room for the existing 64 MiB imported payload inside the 95 MiB JSON envelope.
+ private static final int MAX_CREATION_TOTAL=CreationProjectStore.MAX_LIBRARY_BYTES;
  public static byte[] readLimited(InputStream input,int max)throws IOException{
   if(input==null)throw new IOException("Não foi possível abrir o documento");
   ByteArrayOutputStream buffer=new ByteArrayOutputStream();
@@ -164,8 +169,8 @@ public final class BackupArchive {
   if(!ed.commit())throw new IOException("Falha ao gravar preferências");
  }
  public static JSONObject create(SharedPreferences prefs,File root)throws Exception{
-  JSONObject backup=new JSONObject();
-  backup.put("version",VERSION).put("prefs",typedPrefs(prefs.getAll()));
+  JSONObject backup=new JSONObject();JSONObject encodedPrefs=typedPrefs(prefs.getAll());Map<String,Object> decodedPrefs=decodePrefs(encodedPrefs,true);Set<Integer> owners=profileIds(decodedPrefs);
+  backup.put("version",VERSION).put("prefs",encodedPrefs);
   JSONArray files=new JSONArray();long total=0;
   File dir=new File(root,FILES);File[] list=dir.listFiles();
   if(list!=null){
@@ -181,6 +186,14 @@ public final class BackupArchive {
    }
   }
   backup.put("imported",files);
+  File creationsDir=new File(root,CREATIONS);CreationProjectStore.validateDirectory(creationsDir);
+  JSONArray projects=new JSONArray();long creationTotal=0;CreationProjectStore store=new CreationProjectStore(root);
+  for(CreationProjectStore.Project project:store.snapshotAll()){
+   if(!owners.contains(project.profileId))throw new IOException("Composição vinculada a perfil ausente; o backup foi cancelado sem alterações");
+   if(projects.length()>=MAX_CREATIONS)throw new IOException("Muitas composições para o backup");byte[] bytes=store.rawFile(project.id);creationTotal+=bytes.length;if(creationTotal>MAX_CREATION_TOTAL)throw new IOException("Dados de criação excedem o limite do backup");
+   projects.put(new JSONObject().put("id",project.id).put("content",Base64.encodeToString(bytes,Base64.NO_WRAP)).put("sha256",sha256(bytes)));
+  }
+  backup.put("creations",projects);
   if(backup.toString().getBytes(StandardCharsets.UTF_8).length>MAX_JSON)
    throw new IOException("Backup excede limite de exportação");
   return backup;
@@ -197,13 +210,14 @@ public final class BackupArchive {
  private static final class Validated {
   final Map<String,Object> prefs;
   final LinkedHashMap<String,byte[]> files;
-  Validated(Map<String,Object> p,LinkedHashMap<String,byte[]> f){prefs=p;files=f;}
+  final LinkedHashMap<String,byte[]> creations;final int version;
+  Validated(Map<String,Object> p,LinkedHashMap<String,byte[]> f,LinkedHashMap<String,byte[]> c,int v){prefs=p;files=f;creations=c;version=v;}
  }
  private static Validated validate(JSONObject backup)throws Exception{
   if(backup==null)throw new IOException("Backup vazio");
   int version=backup.getInt("version");
-  if(version!=1&&version!=VERSION)throw new IOException("Versão do backup não suportada: "+version);
-  Map<String,Object> p=decodePrefs(backup.getJSONObject("prefs"),version==VERSION);
+  if(version<1||version>VERSION)throw new IOException("Versão do backup não suportada: "+version);
+  Map<String,Object> p=decodePrefs(backup.getJSONObject("prefs"),version>=2);
   SessionPreferences.validate(p);
   JSONArray imported=backup.optJSONArray("imported");
   if(imported==null)throw new IOException("Lista de arquivos ausente");
@@ -221,16 +235,20 @@ public final class BackupArchive {
    }
    total+=bytes.length;
    if(bytes.length>MAX_FILE||total>MAX_TOTAL)throw new IOException("Arquivos excedem o limite");
-   if(version==VERSION&&!sha256(bytes).equalsIgnoreCase(file.getString("sha256")))
+   if(version>=2&&!sha256(bytes).equalsIgnoreCase(file.getString("sha256")))
     throw new IOException("Integridade incorreta: "+name);
    files.put(name,bytes);
   }
-  return new Validated(p,files);
+  LinkedHashMap<String,byte[]> projects=new LinkedHashMap<>();
+  if(version>=3){JSONArray entries=backup.optJSONArray("creations");if(entries==null||entries.length()>MAX_CREATIONS)throw new IOException("Lista de composições ausente ou grande demais");long creationTotal=0;
+   for(int i=0;i<entries.length();i++){JSONObject item=entries.getJSONObject(i);String id=item.getString("id");if(id==null||!id.matches("[0-9a-fA-F-]{36}")||projects.containsKey(id))throw new IOException("ID de composição repetido ou inválido");String content=item.getString("content");if(content.length()>CreationProjectStore.MAX_PROJECT_BYTES*4L/3L+100)throw new IOException("Composição grande demais");byte[] bytes;try{bytes=Base64.decode(content,Base64.DEFAULT);}catch(IllegalArgumentException ex){throw new IOException("Dados de composição inválidos",ex);}creationTotal+=bytes.length;if(bytes.length>CreationProjectStore.MAX_PROJECT_BYTES+12||creationTotal>MAX_CREATION_TOTAL)throw new IOException("Composições excedem o limite");if(!sha256(bytes).equalsIgnoreCase(item.getString("sha256")))throw new IOException("Integridade incorreta na composição "+id);projects.put(id,bytes);}
+  }
+  return new Validated(p,files,projects,version);
  }
  public static String summary(JSONObject backup)throws Exception{
   Validated v=validate(backup);
-  return "Perfis e preferências: "+v.prefs.size()+" registros. Partituras importadas: "+v.files.size()+
-    ". A restauração substituirá os dados locais deste aparelho.";
+  return "Perfis e preferências: "+v.prefs.size()+" registros. Partituras importadas: "+v.files.size()+". Composições no backup: "+v.creations.size()+
+    ". Composições locais serão mantidas e as do backup serão mescladas. Preferências e partituras importadas serão substituídas.";
  }
  private static void deleteTree(File dir)throws IOException{
   if(!dir.exists())return;
@@ -243,9 +261,13 @@ public final class BackupArchive {
  private static void writeFile(File target,byte[] bytes)throws IOException{
   try(FileOutputStream out=new FileOutputStream(target)){out.write(bytes);out.getFD().sync();}
  }
- private static void writeJournal(File root,boolean hadFiles,SharedPreferences prefs)throws Exception{
+ private static Set<Integer> profileIds(Map<String,Object> prefs)throws Exception{
+  Object modern=prefs.get("profiles_v2");if(modern instanceof String){Set<Integer> ids=new HashSet<>();for(LocalProfiles.Profile p:LocalProfiles.decode((String)modern))ids.add(p.id);return ids;}
+  Object legacy=prefs.get("profiles");if(!(legacy instanceof String))throw new IOException("Perfis ausentes no backup");JSONArray names=new JSONArray((String)legacy);if(names.length()<1||names.length()>20)throw new IOException("Perfis inválidos no backup");Set<Integer> ids=new HashSet<>();for(int i=0;i<names.length();i++)ids.add(i);return ids;
+ }
+ private static void writeJournal(File root,boolean hadFiles,SharedPreferences prefs,List<String> addedCreationIds)throws Exception{
   JSONObject json=new JSONObject().put("previousPrefs",typedPrefs(prefs.getAll()))
-    .put("hadImported",hadFiles);
+    .put("hadImported",hadFiles).put("addedCreations",new JSONArray(addedCreationIds));
   File tmp=new File(root,JOURNAL_TMP);
   writeFile(tmp,json.toString().getBytes(StandardCharsets.UTF_8));
   File marker=new File(root,JOURNAL);
@@ -259,10 +281,12 @@ public final class BackupArchive {
   File marker=new File(root,JOURNAL);
   File old=new File(root,ROLLBACK);
   File dest=new File(root,FILES);
+  File creations=new File(root,CREATIONS);
   if(marker.isFile()){
    String text=new String(readFile(marker,MAX_JSON),StandardCharsets.UTF_8);JsonLimits.check(text,MAX_JSON,64);JSONObject journal=new JSONObject(text);
    Map<String,Object> before=decodePrefs(journal.getJSONObject("previousPrefs"),true);
    boolean had=journal.getBoolean("hadImported");
+   JSONArray added=journal.optJSONArray("addedCreations");if(added!=null){for(int i=0;i<added.length();i++){String id=added.getString(i);if(!id.matches("[0-9a-fA-F-]{36}"))throw new IOException("Journal de composições inválido");File project=new File(creations,id.toLowerCase(Locale.ROOT)+".plc");if(project.exists()&&!project.delete())throw new IOException("Não foi possível desfazer composição restaurada");}}
    if(old.exists()){
     deleteTree(dest);
     if(!old.renameTo(dest))throw new IOException("Não foi possível restaurar arquivos anteriores");
@@ -273,6 +297,7 @@ public final class BackupArchive {
    if(!marker.delete())throw new IOException("Não foi possível terminar recuperação");
   }
   deleteTree(new File(root,STAGE));
+  deleteTree(new File(root,CREATION_STAGE));
   deleteTree(new File(root,JOURNAL_TMP));
   // A transaction with no marker committed successfully; remove old leftovers.
   deleteTree(old);
@@ -282,15 +307,32 @@ public final class BackupArchive {
   Validated target=validate(backup);
   recover(prefs,root);
   File stage=new File(root,STAGE),old=new File(root,ROLLBACK),dest=new File(root,FILES);
-  if(!stage.mkdir())throw new IOException("Não foi possível preparar a restauração");
-  boolean had=dest.exists();
+  File creationStageRoot=new File(root,CREATION_STAGE),creationStage=new File(creationStageRoot,CREATIONS),creationDest=new File(root,CREATIONS);
+  Set<Integer> targetProfiles=profileIds(target.prefs);CreationProjectStore currentStore=new CreationProjectStore(root);
+  for(CreationProjectStore.Project p:currentStore.snapshotAll())if(!targetProfiles.contains(p.profileId))throw new IOException("A restauração removeria o perfil dono de uma composição local; os dados foram mantidos. Inclua esse perfil no backup ou exporte/exclua a composição explicitamente.");
+  if(!stage.mkdir())throw new IOException("Não foi possível preparar a restauração");if(!creationStage.mkdirs())throw new IOException("Não foi possível preparar a mesclagem de composições");
+  boolean had=dest.exists();ArrayList<String> addedCreationIds=new ArrayList<>();
   try{
    for(Map.Entry<String,byte[]> file:target.files.entrySet())
     writeFile(new File(stage,file.getKey()),file.getValue());
-   writeJournal(root,had,prefs);
+   for(Map.Entry<String,byte[]> entry:target.creations.entrySet())writeFile(new File(creationStage,entry.getKey()+".plc"),entry.getValue());
+   CreationProjectStore.validateDirectory(creationStage);
+   CreationProjectStore incomingStore=new CreationProjectStore(creationStageRoot);
+   for(CreationProjectStore.Project p:incomingStore.snapshotAll())if(!targetProfiles.contains(p.profileId))throw new IOException("Composição do backup aponta para um perfil ausente: "+p.id);
+   for(Map.Entry<String,byte[]> entry:target.creations.entrySet()){
+    File existing=new File(creationDest,entry.getKey()+".plc");if(existing.exists()){
+     byte[] bytes=readFile(existing,CreationProjectStore.MAX_PROJECT_BYTES+12);if(!Arrays.equals(bytes,entry.getValue()))throw new IOException("Colisão de identificador de composição; nenhum dado foi alterado: "+entry.getKey());
+     File duplicate=new File(creationStage,entry.getKey()+".plc");if(!duplicate.delete())throw new IOException("Não foi possível preparar composição duplicada");
+    }else addedCreationIds.add(entry.getKey());
+   }
+   long mergedBytes=0;for(CreationProjectStore.Project p:currentStore.snapshotAll())mergedBytes+=currentStore.rawFile(p.id).length;for(String id:addedCreationIds)mergedBytes+=target.creations.get(id).length;
+   if(currentStore.snapshotAll().size()+addedCreationIds.size()>MAX_CREATIONS||mergedBytes>MAX_CREATION_TOTAL)throw new IOException("A mesclagem excede os limites de armazenamento; os dados locais foram mantidos");
+   writeJournal(root,had,prefs,addedCreationIds);
    if(had&&!dest.renameTo(old))throw new IOException("Não foi possível preservar os arquivos anteriores");
    if(!stage.renameTo(dest))throw new IOException("Não foi possível instalar os arquivos");
    applyPrefs(prefs,target.prefs);
+   if(!creationDest.exists()&&!creationDest.mkdirs())throw new IOException("Não foi possível criar Minhas Criações");
+   for(String id:addedCreationIds){File source=new File(creationStage,id+".plc"),targetFile=new File(creationDest,id+".plc");try{java.nio.file.Files.move(source.toPath(),targetFile.toPath(),java.nio.file.StandardCopyOption.ATOMIC_MOVE);}catch(IOException ex){throw new IOException("Não foi possível mesclar composição "+id,ex);}}
    File marker=new File(root,JOURNAL);
    if(!marker.delete())throw new IOException("Não foi possível finalizar restauração");
    // The swap is already committed; stale rollback files are safe to retry
@@ -298,6 +340,7 @@ public final class BackupArchive {
    try{deleteTree(old);}catch(IOException cleanup){
     android.util.Log.w("PianoLivreBackup","Limpeza de cópia anterior será repetida",cleanup);
    }
+   try{deleteTree(creationStageRoot);}catch(IOException cleanup){android.util.Log.w("PianoLivreBackup","Limpeza de composições temporárias será repetida",cleanup);}
   }catch(Exception error){
    try{recover(prefs,root);}catch(Exception rollback){error.addSuppressed(rollback);}
    throw error;

@@ -47,9 +47,13 @@ public final class BackupArchiveSelfTest {
     .putBoolean("user_0_keyboard",true).putFloat("user_0_volume",.5f)
     .putStringSet("test_set",new HashSet<>(Arrays.asList("A","B"))).commit();
   try{
+   CreationProjectStore projects=new CreationProjectStore(root);MidiTakeRecorder take=new MidiTakeRecorder();take.start(1,1_000_000_000L);take.accept(0x90,60,88,1_100_000_000L,1);take.accept(0x80,60,0,1_300_000_000L,1);take.stop(1_400_000_000L);
+   CreationProjectStore.Project backed=projects.save("Backup test",0,1,take.durationNs(),take.events(),take.segments());
    JSONObject original=BackupArchive.create(prefs,root);
-   ok(original.getInt("version")==2,"v2");
-   ok(original.getJSONArray("imported").length()==1,"saved one file");
+   ok(original.getInt("version")==3,"v3");ok(original.getJSONArray("imported").length()==1,"saved one file");
+   ok(original.getJSONArray("creations").length()==1,"v3 includes saved projects");
+   // Capture v3 with a project, then add later local work before restoring the older archive.
+   CreationProjectStore.Project newer=projects.save("Created later",0,2,take.durationNs(),take.events(),take.segments());
    prefs.edit().putInt("user_0_mode",0).commit();
    write(note,bytes("overwritten"));
    write(new File(imported,"stale.xml"),bytes("must be removed"));
@@ -62,15 +66,32 @@ public final class BackupArchiveSelfTest {
    ok(Arrays.equals(read(note),bytes("<music>teste</music>")),"file bytes recovered");
    ok(!new File(imported,"stale.xml").exists(),"old files removed");
    ok(!new File(root,"restore-pending.json").exists(),"journal removed after success");
+   ok(projects.get(backed.id).title.equals("Backup test")&&projects.get(newer.id).title.equals("Created later"),"v3 merge preserves projects created after backup");
+   JSONObject legacyV2=new JSONObject(original.toString());legacyV2.put("version",2).remove("creations");BackupArchive.restore(prefs,root,legacyV2);
+   ok(projects.get(backed.id)!=null&&projects.get(newer.id)!=null,"legacy v2 restore preserves newer compositions");
+   projects.rename(backed.id,"Edited after backup",3);
+   boolean rejected=false;try{BackupArchive.restore(prefs,root,original);}catch(Exception ex){rejected=true;}
+   ok(rejected&&projects.get(backed.id).title.equals("Edited after backup")&&projects.get(newer.id)!=null,"conflicting project ID blocks restore before replacing local project bytes");
+   projects.rename(backed.id,"Backup test",4);
+   // Rename updates project bytes; use a current snapshot for subsequent integrity and restore checks.
+   original=BackupArchive.create(prefs,root);
 
    JSONObject tampered=new JSONObject(original.toString());
    tampered.getJSONArray("imported").getJSONObject(0).put("content",
     Base64.encodeToString(bytes("corrupted"),Base64.NO_WRAP));
-   boolean rejected=false;
+   rejected=false;
    try{BackupArchive.restore(prefs,root,tampered);}catch(Exception ex){rejected=true;}
    ok(rejected,"SHA-256 corruption rejected");
    ok(Arrays.equals(read(note),bytes("<music>teste</music>")),"rejection preserves original file");
    ok(prefs.getInt("user_0_mode",-1)==2,"rejection preserves prefs");
+
+   JSONObject badCreation=new JSONObject(original.toString());
+   badCreation.getJSONArray("creations").getJSONObject(0).put("content",Base64.encodeToString(bytes("tampered project"),Base64.NO_WRAP));
+   rejected=false;try{BackupArchive.restore(prefs,root,badCreation);}catch(Exception ex){rejected=true;}
+   ok(rejected&&projects.get(backed.id).title.equals("Backup test")&&prefs.getInt("user_0_mode",-1)==2,"corrupt project SHA rejected before changing library or preferences");
+   JSONObject incompleteV3=new JSONObject(original.toString());incompleteV3.remove("creations");
+   rejected=false;try{BackupArchive.restore(prefs,root,incompleteV3);}catch(Exception ex){rejected=true;}
+   ok(rejected&&projects.get(backed.id)!=null,"incomplete v3 backup rejected without losing saved projects");
 
    JSONObject unsafe=new JSONObject(original.toString());
    unsafe.getJSONArray("imported").getJSONObject(0).put("name","../escape.xml");
@@ -89,11 +110,15 @@ public final class BackupArchiveSelfTest {
    JSONObject paths=new JSONObject(original.toString());paths.getJSONObject("prefs").put("user_0_file",new JSONObject().put("type","string").put("value","/data/user/0/br.org.pianolivre/files/imported/partitura.xml"));
    BackupArchive.restore(prefs,root,paths);
    ok(prefs.getString("user_0_file","").equals("imported/partitura.xml")&&SessionFiles.resolve(root,prefs.getString("user_0_file","")).equals(note.getAbsolutePath()),"portable path restored into current package, original package untouched");
+   CreationProjectStore.Project otherProfile=projects.save("Other profile",1,3,take.durationNs(),take.events(),take.segments());
    JSONObject v1=new JSONObject().put("version",1);
    v1.put("prefs",new JSONObject().put("profiles","[\"Usuário 1\"]")
     .put("user_0_mode",2).put("user_0_position",position));
    v1.put("imported",new JSONArray().put(new JSONObject()
     .put("name","legacy.xml").put("content",Base64.encodeToString(bytes("legacy"),Base64.NO_WRAP))));
+   rejected=false;try{BackupArchive.restore(prefs,root,v1);}catch(Exception ex){rejected=true;}
+   ok(rejected&&projects.get(otherProfile.id)!=null,"legacy backup missing a composition owner profile is rejected without deleting the project");
+   projects.moveToTrash(otherProfile.id,4);projects.deletePermanently(otherProfile.id);
    BackupArchive.restore(prefs,root,v1);
    ok(prefs.getInt("user_0_mode",-1)==2,"legacy int type");
    ok(prefs.getLong("user_0_position",0)==position,"legacy long type");
@@ -106,6 +131,7 @@ public final class BackupArchiveSelfTest {
    // Legacy prefs need typed encoding in the journal (v2).
    JSONObject prior=BackupArchive.create(prefs,root).getJSONObject("prefs");
    journal.put("previousPrefs",prior);
+   String rolledBackId=UUID.randomUUID().toString();File creationsDir=new File(root,"creations");if(!creationsDir.exists())creationsDir.mkdirs();write(new File(creationsDir,rolledBackId+".plc"),bytes("partial project"));journal.put("addedCreations",new JSONArray().put(rolledBackId));
    File old=new File(root,"imported.restore-rollback");
    ok(imported.renameTo(old),"move old files to rollback dir");
    ok(imported.mkdir(),"create half-restored dir");
@@ -117,6 +143,7 @@ public final class BackupArchiveSelfTest {
    ok(new File(imported,"legacy.xml").exists(),"crash restored files");
    ok(!new File(imported,"incorrect.xml").exists(),"crash removed partial files");
    ok(!new File(root,"restore-pending.json").exists(),"crash removed marker");
+   ok(!new File(creationsDir,rolledBackId+".plc").exists(),"crash rollback removes only projects added by interrupted restore");
    String[] legacyNames={"_etude..mxl","-file.mxl",".hidden.mxl",new String(new char[240]).replace('\0','_')+".mxl"};
    for(String name:legacyNames)write(new File(imported,name),bytes("synthetic legacy filename"));
    prefs.edit().putString("user_0_file","/data/data/previous.package/files/imported/"+legacyNames[0]).commit();
@@ -133,7 +160,7 @@ public final class BackupArchiveSelfTest {
    final boolean[] closed={false};ByteArrayOutputStream destination=new ByteArrayOutputStream(){@Override public void close()throws IOException{closed[0]=true;super.close();}};
    BackupArchive.export(prefs,root,()->destination);
    JSONObject exported=new JSONObject(new String(destination.toByteArray(),StandardCharsets.UTF_8));
-   ok(closed[0]&&exported.getInt("version")==2&&exported.getJSONArray("imported").length()==5,"prepared archive written completely and destination closed");
+   ok(closed[0]&&exported.getInt("version")==3&&exported.getJSONArray("imported").length()==5&&exported.getJSONArray("creations").length()==2,"prepared archive written completely with compositions and destination closed");
    return count;
   }finally{
    rm(root);prefs.edit().clear().commit();

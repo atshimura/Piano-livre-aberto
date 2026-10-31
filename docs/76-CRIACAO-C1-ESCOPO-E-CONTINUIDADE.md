@@ -1,7 +1,7 @@
 # 76 — Laboratório Musical / Criação C1: escopo-base, UX e continuidade
 
 **Data do planejamento:** 30/10/2026  
-**Situação:** especificação para implementação futura; **nenhum código da C1 foi implementado por este documento**.  
+**Situação atual (31/10/2026):** implementação em andamento na branch `feat/criacao-c1`, baseada na main `cf4b24b` (0.9.54/63). O documento continua sendo a fonte autoritativa de escopo; consulte o [registro técnico da implementação](78-CREACAO-C1-IMPLEMENTACAO.md) para distinguir código, testes e gates ainda pendentes.
 **Issue de acompanhamento:** [#79 — Criação C1](https://github.com/atshimura/Piano-livre-aberto/issues/79).  
 **Instrução de retomada:** [prompt C1](prompts/CRIACAO_C1_IMPLEMENTACAO.md).  
 **Frase do usuário para a próxima conversa:** “vamos continuar a implementação do criação - C1”.
@@ -216,4 +216,4 @@ Ao ouvir **“vamos continuar a implementação do criação - C1”**, a IA dev
 
 O Plano Geral até V1 e a C1 são trilhas distintas: nada aqui declara versão 1.0 concluída ou autoriza substituir a assinatura permanente, divulgar dados reais ou acessar o repositório histórico privado. O app permanece **offline**, sem novos serviços, telemetria ou permissões amplas.
 
-**Próximo passo quando autorizado:** começar pela C1.1/C1.2 preservando arquitetura de persistência definida em C1.3/C1.5; não iniciar nesta entrega documental.
+**Estado da revisão:** Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.

@@ -1,14 +1,15 @@
 # Documentação do Piano Livre aberto
 
-Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+Criação C1 (C1.1–C1.5) implementada na branch `feat/criacao-c1`, baseada na main `cf4b24b` (0.9.54/63), candidata 0.9.55/64. PR #82 aberto para revisão; build #752 e emulador completo #729 passaram no SHA `a86ea4d6d57e8cfb3dc834d03ee989ef742a022d`. Sem merge/Release; publicação exige autorização. Testes físicos Yamaha P-45/Realme 7 5G/Lenovo Tab M9 continuam pendentes.
 
 
 - [74 — Ajustes da Tela Inicial após a beta 0.9.52](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md): banner 30% menor, três atalhos ampliados, biblioteca reorganizada e grade de duas colunas; entrega em PR, sem merge/Release.
 
-## Planejamento futuro — Criação C1 (não implementada)
+## Criação C1 — implementação concluída, integração pendente
 
 - [76 — Criação C1: escopo-base, navegação, gravação, projetos e continuidade](76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md): especificação integral do Laboratório Musical → Criação, uma tomada MIDI, reprodução via instrumento, lista de projetos, busca, ordenação, Lixeira, perfis, recuperação, exportação .mid e backup.
-- [Prompt de retomada e implementação da Criação C1](prompts/CRIACAO_C1_IMPLEMENTACAO.md): guia executável para a frase “vamos continuar a implementação do criação - C1”; [issue #79](https://github.com/atshimura/Piano-livre-aberto/issues/79). **A C1 ainda não foi implementada.**
+- [78 — Implementação C1, limites, backup e pendências de validação](78-CREACAO-C1-IMPLEMENTACAO.md).
+- [Prompt de retomada e implementação da Criação C1](prompts/CRIACAO_C1_IMPLEMENTACAO.md): guia executável para a frase “vamos continuar a implementação do criação - C1”; [issue #79](https://github.com/atshimura/Piano-livre-aberto/issues/79). Implementação funcional e validada por CI; confira o [registro técnico e estado de validação](78-CREACAO-C1-IMPLEMENTACAO.md).
 
 - [73 — Consolidação, integração e publicação, Prompt 4](73-CONSOLIDACAO-PUBLICACAO-PROMPT-04.md): precedência sobre os estados históricos de PR aberto abaixo; versão 0.9.52, gates finais, assinatura, APK e aceite físico pendente.
 - [Notas da 0.9.52-open-beta](releases/0.9.52-open-beta.md).
@@ -108,3 +109,11 @@ O índice do histórico privado, instruções de assinatura beta antiga e config
 - [59 — Análise automática e Estudo adaptável](59-ESTUDO-ADAPTAVEL.md).
 
 - [75 ? Descobrir: layout estavel e validacao rapida](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md)
+
+
+## Criação C1 — execução
+
+- [76 — Especificação aprovada](76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md)
+- [78 — Implementação, componentes, testes e limites](78-CREACAO-C1-IMPLEMENTACAO.md)
+- [Prompt completo de execução e integração](prompts/CRIACAO_C1_EXECUCAO_COMPLETA.md)
+- [Histórico de alterações](CHANGELOG.md)

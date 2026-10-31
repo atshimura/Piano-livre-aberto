@@ -6,8 +6,8 @@ from upgrade_fixture import synthetic_upgrade_preferences
 
 PACKAGE = "br.org.pianolivre.opensource"
 ACTIVITY = PACKAGE + "/br.org.pianolivre.MainActivity"
-parser=argparse.ArgumentParser();parser.add_argument('--previous',choices=['0.9.46','0.9.52'],default='0.9.46');options=parser.parse_args()
-previous_version=options.previous+'-open-beta';previous_code=61 if options.previous=='0.9.52' else 55
+parser=argparse.ArgumentParser();parser.add_argument('--previous',choices=['0.9.46','0.9.52','0.9.54'],default='0.9.46');options=parser.parse_args()
+previous_version=options.previous+'-open-beta';previous_code={'0.9.46':55,'0.9.52':61,'0.9.54':63}[options.previous]
 PREVIOUS_URL = f"https://github.com/atshimura/Piano-livre-aberto/releases/download/v{previous_version}/PianoLivre-{previous_version}.apk"
 EXPECTED_CERT = "7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290"
 NEW_APK = pathlib.Path("app/build/outputs/apk/release/app-release.apk")
@@ -35,7 +35,7 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     signer=sdk/"build-tools/35.0.0/apksigner"
     aapt=signer.with_name("aapt")
     assert version(aapt,old_apk)==(PACKAGE,str(previous_code),previous_version)
-    assert version(aapt,NEW_APK)==(PACKAGE,"63","0.9.54-open-beta")
+    assert version(aapt,NEW_APK)==(PACKAGE,"64","0.9.55-open-beta")
     assert certificate(signer,old_apk)==EXPECTED_CERT
     assert certificate(signer,NEW_APK)==EXPECTED_CERT
 
@@ -92,7 +92,7 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
         assert values[key]==seeded[key],'Public upgrade changed '+key
     result={"result":"PUBLIC_APK_UPDATE_PRESERVED_DATA_PASS",
       "previousVersion":previous_version,"previousVersionCode":previous_code,
-      "newVersion":"0.9.54-open-beta","newVersionCode":63,"package":PACKAGE,
+      "newVersion":"0.9.55-open-beta","newVersionCode":64,"package":PACKAGE,
       "certificateSha256":EXPECTED_CERT,"profile":"synthetic ID 7 preserved",
       "keyboard":"preserved","tempo":"80% preserved","importedScoreSha256":after,
       "sessions":"synthetic history preserved", "scope":"API 29 emulator; actual previous public release APK; synthetic user data"}

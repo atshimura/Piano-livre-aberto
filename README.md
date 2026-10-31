@@ -1,11 +1,11 @@
 # Piano Livre — Android, código aberto
 
-Consolidacao **0.9.54-open-beta (63)**: Home refinada, Descobrir com pautas profissionais estaveis, feedback rapido de UI e planejamento futuro da Criacao C1. [Registro e validacao](docs/77-CONSOLIDACAO-PUBLICACAO-0954.md) e [notas da versao](docs/releases/0.9.54-open-beta.md). Publicacao oficial somente apos checks do SHA integrado; conferir a Release efetiva antes de baixar. C1 ainda nao implementada.
+Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](docs/78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
 
 Aplicativo experimental de estudo de piano com leitura MusicXML, importação MIDI aproximada, USB-MIDI, modo Espera e demonstração MIDI. Na implementação do Prompt 2, a tela Estudar prioriza a pauta, com controles responsivos e sem teclado guia. Desenvolvido em Java/Android e JavaScript. **O código aberto não é uma versão V1 concluída.** Consulte [a entrega e seus limites](docs/71-TELA-ESTUDAR-PROMPT-02.md).
 
 ## Onde o desenvolvimento acontece
-**Planejamento futuro — Laboratório Musical / Criação C1:** [especificação completa e navegação entre projetos](docs/76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md) · [roteiro para implementação em outra conversa](docs/prompts/CRIACAO_C1_IMPLEMENTACAO.md) · [issue #79](https://github.com/atshimura/Piano-livre-aberto/issues/79). Quando solicitado “vamos continuar a implementação do criação - C1”, usar esses documentos. **Ainda não é funcionalidade implementada**; a C1 prevê gravação simples MIDI, gestão de projetos e reprodução, deixando partitura/PDF para etapas posteriores.
+**Laboratório Musical → Criação:** gravação MIDI original, gestão por perfil, recuperação, reprodução no instrumento e exportação .mid. [Escopo](docs/76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md) e [validação](docs/78-CREACAO-C1-IMPLEMENTACAO.md). Partitura/PDF pertencem à C2/C3.
 
 Este **é o repositório principal do desenvolvimento**. Correções, propostas, versões, testes e APKs futuros devem ser feitos aqui, em branches com pull requests. A base histórica privada permanece separada e **não** é necessária para compilar o aplicativo aberto. Veja [AGENTS.md](AGENTS.md) e o [índice técnico](docs/00-INDICE.md).
 
