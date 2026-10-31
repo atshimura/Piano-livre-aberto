@@ -70,14 +70,14 @@ public final class BackupArchiveSelfTest {
    JSONObject legacyV2=new JSONObject(original.toString());legacyV2.put("version",2).remove("creations");BackupArchive.restore(prefs,root,legacyV2);
    ok(projects.get(backed.id)!=null&&projects.get(newer.id)!=null,"legacy v2 restore preserves newer compositions");
    projects.rename(backed.id,"Edited after backup",3);
-   rejected=false;try{BackupArchive.restore(prefs,root,original);}catch(Exception ex){rejected=true;}
+   boolean rejected=false;try{BackupArchive.restore(prefs,root,original);}catch(Exception ex){rejected=true;}
    ok(rejected&&projects.get(backed.id).title.equals("Edited after backup")&&projects.get(newer.id)!=null,"conflicting project ID blocks restore before replacing local project bytes");
    projects.rename(backed.id,"Backup test",4);
 
    JSONObject tampered=new JSONObject(original.toString());
    tampered.getJSONArray("imported").getJSONObject(0).put("content",
     Base64.encodeToString(bytes("corrupted"),Base64.NO_WRAP));
-   boolean rejected=false;
+   rejected=false;
    try{BackupArchive.restore(prefs,root,tampered);}catch(Exception ex){rejected=true;}
    ok(rejected,"SHA-256 corruption rejected");
    ok(Arrays.equals(read(note),bytes("<music>teste</music>")),"rejection preserves original file");
