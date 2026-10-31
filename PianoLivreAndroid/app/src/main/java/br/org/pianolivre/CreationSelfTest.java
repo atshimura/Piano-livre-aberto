@@ -44,7 +44,8 @@ final class CreationSelfTest {
  private static List<Spinner> spinners(View view){List<Spinner> result=new ArrayList<>();if(view instanceof Spinner)result.add((Spinner)view);if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++)result.addAll(spinners(((ViewGroup)view).getChildAt(i)));return result;}
  private void click(String text){Button button=findButton(screen,text);check(button!=null&&button.isEnabled(),"enabled action "+text);button.requestRectangleOnScreen(new Rect(0,0,button.getWidth(),button.getHeight()),true);button.performClick();}
  private void dialog(String value){check(screen.activeDialog!=null&&screen.activeDialog.isShowing(),"real project dialog");EditText input=findEdit(screen.activeDialog.getWindow().getDecorView());check(input!=null,"dialog input");input.setText(value);screen.activeDialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();}
- private void record(){click("Nova gravação");click("Gravar");
+ private static int emptyMessages(View view){int count=view instanceof TextView&&((TextView)view).getText().toString().startsWith("Suas composições aparecerão aqui.")?1:0;if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++)count+=emptyMessages(((ViewGroup)view).getChildAt(i));return count;}
+ private void record(){check(emptyMessages(screen)<=1,"stale recent-load callbacks cannot duplicate empty state");click("Nova gravação");click("Gravar");
   MidiTakeRecorder take=screen.debugTake();check(take.state()==MidiTakeRecorder.State.RECORDING,"recording state");
   final android.media.midi.MidiReceiver input=a.createReceiver(a.midiGeneration);
   Thread receiver=new Thread(()->{try{input.send(new byte[]{(byte)0x90,60,91,(byte)0x90,64,75,(byte)0x91,60,66,(byte)0xb0,64,127},0,12,12345);}catch(IOException error){throw new RuntimeException(error);}});
