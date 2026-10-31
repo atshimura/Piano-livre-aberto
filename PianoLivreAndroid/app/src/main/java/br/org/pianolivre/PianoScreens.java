@@ -225,24 +225,54 @@ class PianoScreens {
   }
  }
  void buildLibraryPanel(){
-  boolean shortScreen=shortLandscape();libraryPanel=column();libraryPanel.setPadding(d(16),d(14),d(16),d(14));libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
-  LinearLayout.LayoutParams panelLp=lp(-1,-2);panelLp.topMargin=d(shortScreen?7:13);libraryInner.addView(libraryPanel,panelLp);
-  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean compact=widthDp<720;
+  boolean shortScreen=shortLandscape();
+  libraryPanel=column();libraryPanel.setPadding(d(16),d(14),d(16),d(14));
+  libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
+  LinearLayout.LayoutParams panelLp=lp(-1,-2);panelLp.topMargin=d(shortScreen?7:13);
+  libraryInner.addView(libraryPanel,panelLp);
+  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
+  float fontScale=Math.max(1f,a.getResources().getConfiguration().fontScale);
+  // R: one toolbar strip on every screen; only the search consumes extra width.
+  // The existing outer 20dp and panel 16dp padding on each side total 72dp.
+  int availableDp=Math.max(1,widthDp-72);
+  boolean iconActions=availableDp<380||fontScale>1.30f;
+  int actionsWidth=iconActions?52:Math.min(134,Math.max(110,Math.round(118*fontScale)));
+  int categoryWidth=availableDp<280?100:availableDp<380?120:148;
+  int toolbarGap=availableDp<300?5:8;
   LinearLayout section=row();section.addView(text("♫",25,blue,true),lp(35,44));
-  TextView title=text("Biblioteca Musical",compact?22:26,0xff102344,true);title.setSingleLine(true);
+  TextView title=text("Biblioteca Musical",availableDp<310?20:26,0xff102344,true);
+  title.setSingleLine(true);title.setEllipsize(TextUtils.TruncateAt.END);
   section.addView(title,new LinearLayout.LayoutParams(0,d(48),1));
-  Button importButton=btn("Importar partitura",false,()->a.importScore());importButton.setTextSize(14);
-  LinearLayout search=compact?column():row();
-  librarySearch=new EditText(a);librarySearch.setSingleLine(true);librarySearch.setTextSize(16);librarySearch.setHint("⌕  Buscar título ou arquivo");librarySearch.setContentDescription("Buscar por título ou nome de arquivo");librarySearch.setPadding(d(10),0,d(10),0);librarySearch.setBackground(bg(0xffF6F9FD,12,0xffD9E5F1));
+  libraryPanel.addView(section,lp(-1,48));
+  LinearLayout toolbar=row();toolbar.setTag("home-library-toolbar");
+  librarySearch=new EditText(a);librarySearch.setSingleLine(true);
+  librarySearch.setTextSize(availableDp<320?14:16);
+  librarySearch.setHint(availableDp<320?"⌕  Buscar":"⌕  Buscar título ou arquivo");
+  librarySearch.setContentDescription("Buscar por título ou nome de arquivo");
+  librarySearch.setPadding(d(availableDp<320?5:10),0,d(availableDp<320?5:10),0);
+  librarySearch.setBackground(bg(0xffF6F9FD,12,0xffD9E5F1));
+  librarySearch.setTag("home-library-search");
+  // Weighted width: grows on tablets, while category/action columns stay bounded.
+  toolbar.addView(librarySearch,new LinearLayout.LayoutParams(0,d(48),1));
+  addGap(toolbar,toolbarGap);
   libraryFilter=new Spinner(a);libraryFilter.setContentDescription("Filtrar biblioteca");
   libraryFilter.setMinimumHeight(d(48));libraryFilter.setTag("home-filter");
   libraryFilter.setBackground(new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{bg(0xffF6F9FD,12,0xffD9E5F1),libraryFilter.getBackground()}));
-  Button collections=btn("▱  Coleções",false,()->manageCollections());collections.setTextSize(14);
-  if(compact){libraryPanel.addView(section,lp(-1,48));LinearLayout actions=row();actions.addView(importButton,new LinearLayout.LayoutParams(0,d(48),1));addGap(actions,10);actions.addView(collections,new LinearLayout.LayoutParams(0,d(48),1));libraryPanel.addView(actions,lp(-1,56));
-   search.addView(librarySearch,lp(-1,48));LinearLayout.LayoutParams filterLp=lp(-1,48);filterLp.topMargin=d(10);search.addView(libraryFilter,filterLp);}
-  else{section.addView(collections,lp(132,48));addGap(section,12);section.addView(importButton,lp(166,48));libraryPanel.addView(section,lp(-1,56));
-   search.addView(librarySearch,new LinearLayout.LayoutParams(0,d(48),1));addGap(search,16);search.addView(libraryFilter,lp(widthDp<1000?245:320,48));}
-  LinearLayout.LayoutParams searchLp=lp(-1,-2);searchLp.topMargin=d(8);libraryPanel.addView(search,searchLp);
+  toolbar.addView(libraryFilter,lp(categoryWidth,48));
+  addGap(toolbar,toolbarGap);
+  LinearLayout actions=column();actions.setTag("home-library-actions");
+  Button importButton=compact(iconActions?"+":"＋  Importar",false,()->a.importScore());
+  importButton.setContentDescription("Importar partitura");
+  importButton.setTextSize(iconActions?19:13);
+  actions.addView(importButton,lp(-1,44));
+  View actionGap=new View(a);actions.addView(actionGap,lp(1,4));
+  Button collections=compact(iconActions?"▱":"▱  Coleções",false,()->manageCollections());
+  collections.setContentDescription("Coleções");
+  collections.setTextSize(iconActions?21:13);
+  actions.addView(collections,lp(-1,44));
+  toolbar.addView(actions,lp(actionsWidth,92));
+  LinearLayout.LayoutParams toolbarLp=lp(-1,92);toolbarLp.topMargin=d(6);
+  libraryPanel.addView(toolbar,toolbarLp);
   libraryResult=text("",13,muted,false);libraryPanel.addView(libraryResult,lp(-1,32));
   librarySearch.addTextChangedListener(new android.text.TextWatcher(){
    public void beforeTextChanged(CharSequence t,int start,int count,int after){}
