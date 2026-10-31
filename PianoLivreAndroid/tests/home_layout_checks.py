@@ -84,7 +84,7 @@ def capture_home_viewports():
             adb('shell','input','keyevent','4')
             tap_text(['Biblioteca Musical'],exact=True,scroll=True);time.sleep(.8)
             root=dump();labels=[n.attrib.get('text','')+' '+n.attrib.get('content-desc','') for n in root.iter('node')]
-            for essential in ('Buscar título ou arquivo','Todas as categorias','Importar partitura','Coleções','10 de 10 partituras'):
+            for essential in ('Buscar título ou arquivo','Categoria','Importar partitura','Coleções','10 de 10 partituras'):
                 assert any(essential.casefold() in value.casefold() for value in labels),('Library control missing',name,essential)
             screenshot('piano-home-refined-'+name+'-library.png')
             scroll=next(n for n in root.iter('node') if n.attrib.get('scrollable')=='true' and 'Horizontal' not in n.attrib.get('class',''))

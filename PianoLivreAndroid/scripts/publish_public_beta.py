@@ -12,6 +12,9 @@ version=properties['pianolivre.beta.versionName'];code=properties['pianolivre.be
 if properties.get('pianolivre.beta.publishApproved','true')!='true':
     print('PUBLIC_BETA_PUBLICATION_NOT_AUTHORIZED: signed validation artifacts only');raise SystemExit(0)
 if not version.endswith('-open-beta'):raise RuntimeError('Automatic publication accepts open-beta versions only')
+# Approval is scoped to one version. Future version increments are fail-closed.
+if properties.get('pianolivre.beta.publishApprovedVersion') != version:
+    raise RuntimeError('Publication approval is not valid for this version')
 # Idempotent recovery also supports a later main commit when this version's
 # publication was blocked by a failed check. Existing assets are never replaced.
 existing=subprocess.run(['gh','release','view',tag,'--repo',repo,'--json','targetCommitish'],text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)

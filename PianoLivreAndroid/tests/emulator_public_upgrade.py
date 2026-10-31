@@ -11,6 +11,10 @@ previous_version=options.previous+'-open-beta';previous_code={'0.9.46':55,'0.9.5
 PREVIOUS_URL = f"https://github.com/atshimura/Piano-livre-aberto/releases/download/v{previous_version}/PianoLivre-{previous_version}.apk"
 EXPECTED_CERT = "7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290"
 NEW_APK = pathlib.Path("app/build/outputs/apk/release/app-release.apk")
+properties=dict(line.split('=',1) for line in pathlib.Path('gradle.properties').read_text(encoding='utf-8').splitlines() if line.startswith('pianolivre.beta.') and '=' in line)
+new_version=properties['pianolivre.beta.versionName']
+new_code=int(properties['pianolivre.beta.versionCode'])
+assert new_code>previous_code, 'Target APK version must be newer than released baseline'
 
 def run(*args, check=True):
     return subprocess.run(args, check=check, text=True, stdout=subprocess.PIPE,
@@ -35,7 +39,7 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     signer=sdk/"build-tools/35.0.0/apksigner"
     aapt=signer.with_name("aapt")
     assert version(aapt,old_apk)==(PACKAGE,str(previous_code),previous_version)
-    assert version(aapt,NEW_APK)==(PACKAGE,"64","0.9.55-open-beta")
+    assert version(aapt,NEW_APK)==(PACKAGE,str(new_code),new_version)
     assert certificate(signer,old_apk)==EXPECTED_CERT
     assert certificate(signer,NEW_APK)==EXPECTED_CERT
 
@@ -92,7 +96,7 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
         assert values[key]==seeded[key],'Public upgrade changed '+key
     result={"result":"PUBLIC_APK_UPDATE_PRESERVED_DATA_PASS",
       "previousVersion":previous_version,"previousVersionCode":previous_code,
-      "newVersion":"0.9.55-open-beta","newVersionCode":64,"package":PACKAGE,
+      "newVersion":new_version,"newVersionCode":new_code,"package":PACKAGE,
       "certificateSha256":EXPECTED_CERT,"profile":"synthetic ID 7 preserved",
       "keyboard":"preserved","tempo":"80% preserved","importedScoreSha256":after,
       "sessions":"synthetic history preserved", "scope":"API 29 emulator; actual previous public release APK; synthetic user data"}
