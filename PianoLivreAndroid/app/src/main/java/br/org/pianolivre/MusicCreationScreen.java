@@ -115,6 +115,7 @@ final class MusicCreationScreen extends LinearLayout {
   return connection;
  }
  private String duration(long nanos){long seconds=Math.max(0,nanos/1_000_000_000L);return String.format(Locale.ROOT,"%02d:%02d",seconds/60,seconds%60);}
+ private boolean wide(){return getResources().getDisplayMetrics().widthPixels/getResources().getDisplayMetrics().density>=850;}
  private void setShown(View view,boolean shown){int target=shown?View.VISIBLE:View.GONE;if(view.getVisibility()!=target)view.setVisibility(target);}
 
  private void showHome(){
@@ -123,19 +124,26 @@ final class MusicCreationScreen extends LinearLayout {
   MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.CREATION,this::requestLeave,()->a.screens.showLab(),()->{});
   label(body,"Criação Musical",24,true,1);
   attach(body,mutedText("Perfil ativo · "+profileName(),13),-2,12);
-  attach(body,connectionCard(),-2,12);
+  LinearLayout left=column(),right=column();
+  if(wide()){
+   LinearLayout columns=horizontal();columns.setGravity(Gravity.TOP);
+   attach(body,columns,-2,0);
+   LayoutParams lpLeft=new LayoutParams(0,-2,2);lpLeft.rightMargin=dp(14);
+   columns.addView(left,lpLeft);columns.addView(right,new LayoutParams(0,-2,3));
+  }else{attach(body,left,-2,0);attach(body,right,-2,0);}
+  attach(left,connectionCard(),-2,12);
   Button record=button("＋  Nova gravação",true,()->showRecorder());
   Button list=button("Minhas Criações",false,()->showList());
-  actionRow(body,record,list,14);
+  if(wide()){attach(left,record,52,8);attach(left,list,52,12);}else actionRow(left,record,list,14);
   if(recoveryWarning!=null){
    TextView warning=mutedText(recoveryWarning,13);warning.setTextColor(0xff986425);
-   attach(body,warning,-2,10);
+   attach(left,warning,-2,10);
   }
   LinearLayout heading=horizontal();TextView recent=text("Recentes",18,true);
   heading.addView(recent,new LayoutParams(0,dp(40),1));
   Button all=button("Ver todas",false,()->showList());all.setTextSize(12);
-  heading.addView(all,new LayoutParams(dp(124),dp(40)));attach(body,heading,40,8);
-  addProjects(CreationProjectStore.Filter.ALL,3);
+  heading.addView(all,new LayoutParams(dp(124),dp(40)));attach(right,heading,40,8);
+  addProjects(right,CreationProjectStore.Filter.ALL,3);
  }
  private String captureLabel(MidiTakeRecorder.State current){switch(current){case RECORDING:return "Gravando… toque no piano conectado";case PAUSED:return "Pausada · "+take.eventCount()+" eventos recebidos";case REVIEW:return take.noteCount()==0?"Nenhuma nota gravada · descarte a tomada ou preserve os controles MIDI recebidos":"Revisão · "+take.noteCount()+" notas · "+take.eventCount()+" eventos";case INTERRUPTED:return "Trecho interrompido · "+take.interruption();case SAVED:return "Composição salva";case DISCARDED:return "Tomada descartada";default:return "Nova composição · pronta para gravar";}}
  private void showRecorder(){final long revision=++formRevision;page="recording";base("Nova gravação",this::requestLeave);if(take==null){take=new MidiTakeRecorder();takeCreatedAt=System.currentTimeMillis();}attach(body,mutedText("Perfil · "+profileName(),13),-2,8);
@@ -175,7 +183,8 @@ final class MusicCreationScreen extends LinearLayout {
   Runnable ticker=new Runnable(){public void run(){if(revision!=formRevision||!a.foreground||!"recording".equals(page)||take==null)return;MidiTakeRecorder.State current=take.state();if(current==MidiTakeRecorder.State.RECORDING&&take.elapsedNs(android.os.SystemClock.elapsedRealtimeNanos())>=MidiTakeRecorder.MAX_DURATION_NS){take.stop(android.os.SystemClock.elapsedRealtimeNanos());try{persistJournalDelta();confirmJournalAsync();}catch(IOException ignored){}current=take.state();}if(current==MidiTakeRecorder.State.RECORDING&&captureSession!=null&&!captureSession.checkpoint(android.os.SystemClock.elapsedRealtimeNanos())){take.interrupt("Falha no diário; salve o trecho");current=take.state();}boolean recording=current==MidiTakeRecorder.State.RECORDING,paused=current==MidiTakeRecorder.State.PAUSED,review=current==MidiTakeRecorder.State.REVIEW||current==MidiTakeRecorder.State.INTERRUPTED;
    start.setEnabled(current==MidiTakeRecorder.State.READY);pause.setEnabled(recording||player.state()==MidiTakePlayer.State.PLAYING);resume.setEnabled(paused||player.state()==MidiTakePlayer.State.PAUSED);stop.setEnabled(recording||paused||player.state()!=MidiTakePlayer.State.STOPPED);save.setEnabled(review&&take.eventCount()>0);discard.setEnabled(current!=MidiTakeRecorder.State.READY);preview.setEnabled(review&&take.eventCount()>0);export.setEnabled(review&&take.eventCount()>0);boolean interrupted=current==MidiTakeRecorder.State.INTERRUPTED;
     setShown(start,current==MidiTakeRecorder.State.READY);
-    setShown(pause,recording);setShown(resume,paused);
+    setShown(pause,recording||review&&player.state()==MidiTakePlayer.State.PLAYING);
+    setShown(resume,paused||review&&player.state()==MidiTakePlayer.State.PAUSED);
     setShown(stop,recording||paused||player.state()!=MidiTakePlayer.State.STOPPED);
     setShown(revisionActions,review);
     setShown(playbackStatus,review);setShown(export,review);setShown(discard,review||paused||recording);
@@ -270,10 +279,10 @@ a.handler.postDelayed(this,100);}};ticker.run();
   categories.setOnItemSelectedListener(changed);sorting.setOnItemSelectedListener(changed);
   refresh.run();scroll.post(()->scroll.scrollTo(0,listScrollY));
  }
- private void addProjects(CreationProjectStore.Filter f,int limit){
+ private void addProjects(LinearLayout parent,CreationProjectStore.Filter f,int limit){
   if(store==null)return;
-  LinearLayout recent=column();attach(body,recent,-2,0);
-  final int owner=a.user,profile=listProfile;final long revision=++homeRevision;
+  LinearLayout recent=column();attach(parent,recent,-2,0);
+  final int owner=a.user;final long revision=++homeRevision;
   disk.execute(()->{try{
    List<CreationProjectStore.Project> projects=store.list(owner,f,"",null);
    post(()->{
