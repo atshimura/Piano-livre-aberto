@@ -214,6 +214,7 @@ jobs:
             adb logcat -d -v brief | grep 'XML_INPUT_SELFTEST_PASS'
             adb logcat -d -v brief | grep 'HISTORY_ACTIVITY_SELFTEST_PASS'
             python3 tests/emulator_ui.py
+            python3 tests/emulator_creation_navigation.py
             python3 tests/emulator_discovery_components.py
             python3 tests/emulator_study_failure.py
             python3 tests/emulator_polyphony.py
@@ -345,6 +346,7 @@ jobs:
             PianoLivreAndroid/piano-study*failure.png
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png
+            PianoLivreAndroid/piano-creation-*.png
             PianoLivreAndroid/piano-home-phone.png
             PianoLivreAndroid/piano-home-tablet.png
             PianoLivreAndroid/piano-laboratorio.png
