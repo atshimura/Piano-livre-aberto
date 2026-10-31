@@ -33,7 +33,7 @@ public final class MidiTakeRecorder {
  /** Accepts only channel voice events from the current input epoch. */
  public synchronized boolean accept(int status,int a,int b,long nowNs,long inputEpoch){
   if(state!=State.RECORDING||inputEpoch!=epoch||status<0x80||status>0xef||a<0||a>127||b<0||b>127)return false;
-  if(nowNs<startNs||nowNs<lastNs||nowNs-startNs-pausedNs>MAX_DURATION_NS||events.size()>=MAX_EVENTS-2048) {interrupt("Limite de gravação atingido");return false;}
+  if(nowNs<startNs||nowNs<lastNs||nowNs-startNs-pausedNs>MAX_DURATION_NS||events.size()>=MAX_EVENTS-2048) {interrupt(nowNs,"Limite de gravação atingido");return false;}
   append(status,a,b,nowNs,false);lastNs=nowNs;
   int command=status&0xf0,ch=status&15,key=(ch<<7)|a;
   if(command==0x90&&b>0)held.put(key,events.get(events.size()-1));
@@ -50,8 +50,8 @@ public final class MidiTakeRecorder {
  public synchronized void pause(long nowNs){if(state!=State.RECORDING)throw new IllegalStateException("Não está gravando");if(nowNs<lastNs)throw new IllegalArgumentException("Relógio regressivo");segments.add(new Segment(segmentStartNs,nowNs));silenceForBoundary(nowNs);lastNs=nowNs;pauseStartedNs=nowNs;state=State.PAUSED;}
  public synchronized void resume(long nowNs,long connectionEpoch){
   if(state!=State.PAUSED)throw new IllegalStateException("Gravação não pausada");
-  if(connectionEpoch!=epoch){interrupt("Conexão MIDI mudou durante a pausa");return;}
-  if(nowNs<pauseStartedNs||nowNs-startNs-pausedNs-(nowNs-pauseStartedNs)>MAX_DURATION_NS){interrupt("Limite de gravação atingido");return;}
+  if(connectionEpoch!=epoch){interrupt(nowNs,"Conexão MIDI mudou durante a pausa");return;}
+  if(nowNs<pauseStartedNs||nowNs-startNs-pausedNs-(nowNs-pauseStartedNs)>MAX_DURATION_NS){interrupt(nowNs,"Limite de gravação atingido");return;}
   pausedNs+=nowNs-pauseStartedNs;lastNs=nowNs;segmentStartNs=nowNs;state=State.RECORDING;
  }
  public synchronized void stop(long nowNs){
@@ -62,7 +62,8 @@ public final class MidiTakeRecorder {
   // Safety closures are derived events; received source events remain untouched.
   silenceForBoundary(nowNs);held.clear();pedals.clear();lastNs=nowNs;state=State.REVIEW;
  }
- public synchronized void interrupt(String reason){if(state!=State.RECORDING&&state!=State.PAUSED)return;interruption=reason==null?"Interrompida":reason;if(state==State.RECORDING)segments.add(new Segment(segmentStartNs,lastNs));silenceForBoundary(lastNs);state=State.INTERRUPTED;}
+ public synchronized void interrupt(String reason){interrupt(lastNs,reason);}
+ public synchronized void interrupt(long nowNs,String reason){if(state!=State.RECORDING&&state!=State.PAUSED)return;boolean recording=state==State.RECORDING;long boundary=recording?Math.max(lastNs,nowNs):lastNs;interruption=reason==null?"Interrompida":reason;if(recording)segments.add(new Segment(segmentStartNs,boundary));silenceForBoundary(boundary);lastNs=boundary;state=State.INTERRUPTED;}
  public synchronized void discard(){if(state==State.SAVED)throw new IllegalStateException("Projeto salvo não pode ser descartado como tomada");events.clear();segments.clear();held.clear();state=State.DISCARDED;}
  public synchronized void markSaved(){if(state!=State.REVIEW&&state!=State.INTERRUPTED)throw new IllegalStateException("Tomada não revisada");state=State.SAVED;}
  public synchronized List<Event> events(){ArrayList<Event> copy=new ArrayList<>(events);copy.sort(Comparator.comparingLong((Event e)->e.timeNs).thenComparingInt(e->e.order));return Collections.unmodifiableList(copy);}

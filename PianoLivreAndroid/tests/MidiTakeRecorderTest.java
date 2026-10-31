@@ -28,9 +28,12 @@ public final class MidiTakeRecorderTest {
   ok(rawPostPause,"raw monotonic time retained across pause");
   ok(r.state()==MidiTakeRecorder.State.REVIEW,"stopped take enters review");
   ok(r.durationNs()==600_000_000L,"duration excludes paused time");
-  MidiTakeRecorder lost=new MidiTakeRecorder();lost.start(2,10);lost.accept(0x90,48,50,20,2);lost.interrupt("disconnect");
-  ok(lost.state()==MidiTakeRecorder.State.INTERRUPTED&&lost.eventCount()==1,"disconnect preserves captured prefix");
+  MidiTakeRecorder lost=new MidiTakeRecorder();lost.start(2,10);lost.accept(0x90,48,50,20,2);lost.interrupt(30,"disconnect");
+  ok(lost.state()==MidiTakeRecorder.State.INTERRUPTED&&lost.eventCount()==2,"disconnect preserves captured event and adds safety note-off");
+  ok(!lost.events().get(0).generated&&lost.events().get(1).generated&&lost.events().get(1).timeNs==30,"disconnect closure uses monotonic loss time without changing source event");
   ok(!lost.accept(0x90,49,50,30,2),"interrupted epoch rejects later bytes");
+  MidiTakeRecorder pausedLost=new MidiTakeRecorder();pausedLost.start(3,100);pausedLost.accept(0x90,50,60,200,3);pausedLost.pause(300);pausedLost.interrupt(900,"disconnect while paused");
+  ok(pausedLost.durationNs()==200,"disconnect during pause excludes paused wall time");
   System.out.println("MIDI_TAKE_RECORDER_PASS checks="+checks);
  }
 }
