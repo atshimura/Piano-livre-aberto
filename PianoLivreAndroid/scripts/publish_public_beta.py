@@ -9,6 +9,8 @@ changed=subprocess.run(['git','diff','--quiet',before,sha,'--','PianoLivreAndroi
 if changed not in (0,1):raise RuntimeError('Cannot compare version commit')
 properties=dict(line.split('=',1) for line in pathlib.Path('PianoLivreAndroid/gradle.properties').read_text().splitlines() if '=' in line and not line.startswith('#'))
 version=properties['pianolivre.beta.versionName'];code=properties['pianolivre.beta.versionCode'];tag='v'+version
+if properties.get('pianolivre.beta.publishApproved','true')!='true':
+    print('PUBLIC_BETA_PUBLICATION_NOT_AUTHORIZED: signed validation artifacts only');raise SystemExit(0)
 if not version.endswith('-open-beta'):raise RuntimeError('Automatic publication accepts open-beta versions only')
 # Idempotent recovery also supports a later main commit when this version's
 # publication was blocked by a failed check. Existing assets are never replaced.

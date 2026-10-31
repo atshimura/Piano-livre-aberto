@@ -1,5 +1,15 @@
 # 78 — Criação C1: implementação e validação
 
+## Revisão complementar em andamento — 31/10/2026
+
+A retomada encontrou o PR #82 já implementado e aprovado em 1133ecd. A inspeção contra o documento 76 encontrou lacunas não cobertas pelo smoke vazio. O PR voltou a draft durante correções; resultados anteriores não aprovam o código revisado.
+
+Corrigidos até aqui: proteção contra reinício destrutivo de tomada; retomada explícita no journal para não recuperar o intervalo pausado; deltas incrementais sem copiar todo o log a cada evento; metadados separados de timestamp Android e origem da entrada; fechamentos derivados em recuperáveis; colisões de journal preservam projeto válido; exportação de notas menores que um tick produz duração mínima de um tick sem alterar a fonte; agendador com um único wakeup, callbacks por geração e saída Android serializada no Handler; prévia de revisão e cronômetro; flags de estado dos controles.
+
+Teste novo: CreationSafetyRegressionTest (15 verificações iniciais) reproduz pausa/interrupção, metadados, finalização, colisão, pedal/CC121/123 e callbacks obsoletos. Testes JVM anteriores passam. Ainda ampliar UI/persistência/backup e repetir build/emulador da revisão final.
+
+A integração da C1 foi autorizada no prompt de execução completo, preservado nesta retomada. A publicação de Release ainda exige autorização específica: propriedade `pianolivre.beta.publishApproved=false`, com teste de que nenhum endpoint de publicação é chamado. Não habilitar essa propriedade como decisão técnica rotineira.
+
 **Data:** 31/10/2026. **Base:** `main` em `cf4b24b` (0.9.54-open-beta / code63). **Branch:** `feat/criacao-c1`. **Candidato:** 0.9.55-open-beta / code64. Não é Release nem autorização de publicação. O escopo normativo permanece no [documento 76](76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md).
 
 ## Estado por subetapa

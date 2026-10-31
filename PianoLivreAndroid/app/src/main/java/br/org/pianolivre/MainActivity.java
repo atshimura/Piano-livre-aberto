@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
     final long uiSession=screens==null?-1:screens.discoveryGeneration();
     handler.post(()->{
      if(generation!=midiGeneration||inputEpoch!=midiInputEpoch||!foreground)return;
-     for(int[] event:decoded)onMidiMessage(event[0],event[1],event[2],packet,arrivalTime,arrivalTimeNs,uiSession);
+     for(int[] event:decoded)onMidiMessage(event[0],event[1],event[2],packet,arrivalTime,arrivalTimeNs,timestamp,uiSession);
      if(screens!=null)screens.onLabMidiBatchEnd(packet,arrivalTime,uiSession);
     });
    }
@@ -325,6 +325,7 @@ public class MainActivity extends Activity {
      .setPositiveButton("Substituir",(dialog,which)->{
       stopPlayback();
       try{
+       if(screens!=null)screens.prepareCreationBackup();
        BackupArchive.restore(prefs,getFilesDir(),backup);
        score=null;scoreView.score=null;scoreView.pressed.clear();
        position=0;currentFile="";currentName="";user=0;
@@ -432,11 +433,11 @@ public class MainActivity extends Activity {
   sustainDown=false;for(int ch=0;ch<16;ch++)if(performance.pedalDown(ch)){sustainDown=true;break;}
  }
  void onMidiMessage(int statusCode,int data1,int data2){
-  onMidiMessage(statusCode,data1,data2,midiPacketSequence.incrementAndGet(),SystemClock.uptimeMillis(),SystemClock.elapsedRealtimeNanos(),screens==null?-1:screens.discoveryGeneration());
+  onMidiMessage(statusCode,data1,data2,midiPacketSequence.incrementAndGet(),SystemClock.uptimeMillis(),SystemClock.elapsedRealtimeNanos(),-1,screens==null?-1:screens.discoveryGeneration());
  }
- private void onMidiMessage(int statusCode,int data1,int data2,long packet,long eventTime,long eventTimeNs,long uiSession){
+ private void onMidiMessage(int statusCode,int data1,int data2,long packet,long eventTime,long eventTimeNs,long androidTime,long uiSession){
   currentMidiPacket=packet;currentMidiEventTime=eventTime;currentUiSession=uiSession;
-  if(screens!=null)screens.onCreationMidi(statusCode,data1,data2,eventTimeNs,midiInputEpoch);
+  if(screens!=null)screens.onCreationMidi(statusCode,data1,data2,eventTimeNs,midiInputEpoch,androidTime,midiConnection.snapshot().target==null?-1:midiConnection.snapshot().target.id);
   int command=statusCode&0xF0;
   receivedMessages++;lastMidiChannel=(statusCode&0x0f)+1;
   if(command==0x90&&data2>0){
@@ -923,7 +924,7 @@ public class MainActivity extends Activity {
     }else new AlertDialog.Builder(this).setTitle("Excluir perfil?")
      .setMessage("Excluir este perfil e seus registros de estudo? As partituras compartilhadas serão mantidas.")
      .setPositiveButton("Excluir",(d,w)->{
-      try{if(new CreationProjectStore(getFilesDir()).hasProjectsForProfile(selected.id)){message("Este perfil ainda possui composições, inclusive itens na Lixeira ou recuperáveis. Exporte ou exclua definitivamente cada projeto antes de excluir o perfil.");return;}stopPlayback();finishStudyWindow();int active=profileStore().delete(selected.id);score=null;applyProfile(active);loadProfiles();}
+      try{if(hasCreationDataForProfile(selected.id)){message("Este perfil ainda possui composições, inclusive itens na Lixeira ou recuperáveis. Exporte ou exclua definitivamente cada projeto antes de excluir o perfil.");return;}stopPlayback();finishStudyWindow();int active=profileStore().delete(selected.id);score=null;applyProfile(active);loadProfiles();}
       catch(RuntimeException ex){message(ex.getMessage());}
       catch(IOException ex){message("Não foi possível verificar as composições deste perfil; o perfil foi mantido.");}
      }).setNegativeButton("Cancelar",null).show();
@@ -995,6 +996,12 @@ public class MainActivity extends Activity {
   return BackupArchive.create(prefs,getFilesDir());
  }
  void exportBackup(){Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.setType("application/json");i.putExtra(Intent.EXTRA_TITLE,"pianolivre-backup.json");startActivityForResult(i,EXPORT);}
+ boolean hasCreationDataForProfile(int id)throws IOException{
+  if(new CreationProjectStore(getFilesDir()).hasProjectsForProfile(id))return true;
+  File[] journals=new File(getFilesDir(),"creation-journals").listFiles((d,n)->n.endsWith(".journal"));
+  if(journals!=null)for(File file:journals)if(CreationJournal.read(file).profileId==id)return true;
+  return false;
+ }
  void exportCreationMidi(String projectId,String title){try{CreationProjectStore store=new CreationProjectStore(getFilesDir());CreationProjectStore.Project project=store.get(projectId);MidiStandardFileWriter.write(project);String name=title.replaceAll("[^\\p{L}\\p{N}._-]+","_").replaceAll("^[_ .-]+|[_ .-]+$","");if(name.isEmpty())name="composicao";pendingCreationExportId=projectId;Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("audio/midi");i.putExtra(Intent.EXTRA_TITLE,name+".mid");startActivityForResult(i,CREATION_MIDI_EXPORT);}catch(Exception ex){message("Composição não validada para exportação: "+ex.getMessage());}}
  void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
  void message(String m){new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}

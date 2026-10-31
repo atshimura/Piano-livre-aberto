@@ -157,6 +157,8 @@ jobs:
           java -cp build/score-tests MidiTakePlayerTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java app/src/main/java/br/org/pianolivre/CreationJournal.java tests/CreationJournalTest.java
           java -cp build/score-tests CreationJournalTest
+          javac -encoding UTF-8 -cp build/score-tests -d build/score-tests tests/CreationSafetyRegressionTest.java
+          java -cp build/score-tests br.org.pianolivre.CreationSafetyRegressionTest
       - name: Test Laboratory scale and arpeggio sequences (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicSequenceAnalyzer.java tests/MusicSequenceAnalyzerTest.java
