@@ -32,7 +32,7 @@ public final class CreationProjectStore {
  }
  public synchronized Project saveRecoverable(String title,int profileId,long createdAt,long durationNs,List<MidiTakeRecorder.Event> events,List<MidiTakeRecorder.Segment> segments)throws IOException{return saveProject(title,profileId,createdAt,durationNs,events,segments,true);}
  public synchronized Project saveRecoverable(String id,String title,int profileId,long createdAt,long durationNs,List<MidiTakeRecorder.Event> events,List<MidiTakeRecorder.Segment> segments)throws IOException{
-  if(id==null||!id.matches("[0-9a-fA-F-]{36}"))throw new IOException("Identificador de recuperação inválido");File dst=file(id);if(dst.exists()){Project existing=read(dst);if(existing.profileId==profileId&&sameEvents(existing.events,closeEvents(events)))return existing;throw new IOException("Colisão de identificador de recuperação");}
+  if(id==null||!id.matches("[0-9a-fA-F-]{36}"))throw new IOException("Identificador de recuperação inválido");File dst=file(id);if(dst.exists()){Project existing=read(dst);if(existing.profileId==profileId&&sameEvents(existing.events,closeEvents(events,segments)))return existing;throw new IOException("Colisão de identificador de recuperação");}
   validateTitle(title);if(profileId<0||createdAt<0||durationNs<0||events==null||events.isEmpty()||events.size()>MAX_EVENTS)throw new IOException("Trecho recuperável inválido");if(listAll().size()>=MAX_PROJECTS)throw new IOException("Limite de composições atingido");Project p=new Project(id.toLowerCase(Locale.ROOT),title,profileId,createdAt,createdAt,durationNs,false,true,new ArrayList<>(events),new ArrayList<>(segments));writeAtomic(p,false);return p;
  }
  private Project saveProject(String title,int profileId,long createdAt,long durationNs,List<MidiTakeRecorder.Event> events,List<MidiTakeRecorder.Segment> segments,boolean recoverable)throws IOException{
@@ -43,7 +43,7 @@ public final class CreationProjectStore {
  public synchronized Project save(String id,String title,int profile,long created,long duration,List<MidiTakeRecorder.Event> events,List<MidiTakeRecorder.Segment> segments,String instrument)throws IOException{return saveWithSource(id,title,profile,created,duration,events,segments,instrument,false);}
  public synchronized Project saveRecoverable(String id,String title,int profile,long created,long duration,List<MidiTakeRecorder.Event> events,List<MidiTakeRecorder.Segment> segments,String instrument)throws IOException{return saveWithSource(id,title,profile,created,duration,events,segments,instrument,true);}
  private Project saveWithSource(String id,String title,int profile,long created,long duration,List<MidiTakeRecorder.Event> events,List<MidiTakeRecorder.Segment> segments,String instrument,boolean recoverable)throws IOException{
-  if(file(id).exists()){Project prior=get(id);if(recoverable&&prior.profileId==profile&&sameEvents(prior.events,closeEvents(events)))return prior;throw new IOException("Identificador de composição já existe");}
+  if(file(id).exists()){Project prior=get(id);if(recoverable&&prior.profileId==profile&&sameEvents(prior.events,closeEvents(events,segments)))return prior;throw new IOException("Identificador de composição já existe");}
   validateTitle(title);Project p=new Project(id,title,profile,created,created,duration,false,recoverable,new ArrayList<>(events),new ArrayList<>(segments),instrument);writeAtomic(p,false);return p;
  }
  public synchronized Project get(String id)throws IOException{File f=file(id);if(!f.isFile())throw new FileNotFoundException("Composição não encontrada");return read(f);}
@@ -72,7 +72,7 @@ public final class CreationProjectStore {
  private static final Object WRITE_LOCK=new Object();
  private void writeAtomic(Project p,boolean replace)throws IOException{synchronized(WRITE_LOCK){writeAtomicLocked(p,replace);}}
  private void writeAtomicLocked(Project p,boolean replace)throws IOException{
-  if(p.recoverable)p=new Project(p.id,p.title,p.profileId,p.createdAt,p.editedAt,p.durationNs,p.trash,true,closeEvents(p.events),p.segments,p.instrument);
+  if(p.recoverable)p=new Project(p.id,p.title,p.profileId,p.createdAt,p.editedAt,p.durationNs,p.trash,true,closeEvents(p.events,p.segments),p.segments,p.instrument);
   File dst=file(p.id),tmp=new File(root,p.id+".tmp");ByteArrayOutputStream payload=new ByteArrayOutputStream();
   try(DataOutputStream d=new DataOutputStream(payload)){
    d.writeInt(MAGIC);d.writeInt(FORMAT);writeText(d,p.id,64);writeText(d,p.title,512);writeText(d,p.instrument,512);d.writeInt(p.profileId);d.writeLong(p.createdAt);d.writeLong(p.editedAt);d.writeLong(p.durationNs);d.writeBoolean(p.trash);d.writeBoolean(p.recoverable);d.writeInt(p.segments.size());for(MidiTakeRecorder.Segment s:p.segments){d.writeLong(s.startNs);d.writeLong(s.endNs);}d.writeInt(p.events.size());long prev=-1;
@@ -94,13 +94,14 @@ public final class CreationProjectStore {
  }
 
  private static boolean sameEvents(List<MidiTakeRecorder.Event> a,List<MidiTakeRecorder.Event> b){if(a.size()!=b.size())return false;for(int i=0;i<a.size();i++){MidiTakeRecorder.Event x=a.get(i),y=b.get(i);if(x.status!=y.status||x.data1!=y.data1||x.data2!=y.data2||x.timeNs!=y.timeNs||x.epoch!=y.epoch||x.generated!=y.generated||x.order!=y.order||x.androidTimestampNs!=y.androidTimestampNs||x.sourceId!=y.sourceId)return false;}return true;}
- static List<MidiTakeRecorder.Event> closeEvents(List<MidiTakeRecorder.Event> source){
+ static List<MidiTakeRecorder.Event> closeEvents(List<MidiTakeRecorder.Event> source,List<MidiTakeRecorder.Segment> segments){
   ArrayList<MidiTakeRecorder.Event> out=new ArrayList<>(source);TreeSet<Integer> held=new TreeSet<>(),pedals=new TreeSet<>();
   long time=0,epoch=0;int order=0;
   for(MidiTakeRecorder.Event e:source){time=e.timeNs;epoch=e.epoch;order=Math.max(order,e.order+1);int key=e.channel()*128+e.data1;
    if(e.command()==0x90&&e.data2>0)held.add(key);
    else if(e.command()==0x80||e.command()==0x90)held.remove(key);
    else if(e.command()==0xb0){if(e.data1==64){if(e.data2>=64)pedals.add(e.channel());else pedals.remove(e.channel());}if(e.data1==121)pedals.remove(e.channel());if(e.data1==120||e.data1==123)held.removeIf(k->k/128==e.channel());}}
+  if(!segments.isEmpty())time=Math.max(time,segments.get(segments.size()-1).endNs);
   for(int k:held)out.add(new MidiTakeRecorder.Event(0x80|k/128,k%128,0,time,epoch,order++,true));
   for(int ch:pedals)out.add(new MidiTakeRecorder.Event(0xb0|ch,64,0,time,epoch,order++,true));return out;
  }

@@ -663,6 +663,7 @@ class PianoScreens {
   if(lab!=null&&lab.getVisibility()==View.VISIBLE)lab.onMidiAttack(pitch);
  }
  void onLabMidiAttack(int pitch,long time,long batch,long generation,long uiGeneration){if(discovery!=null)discovery.midiAttack(pitch,time,batch,generation,uiGeneration);}
+ void captureCreationMidi(int status,int d1,int d2,long nowNs,long epoch,long androidTime,int source){if(creation!=null)creation.onMidi(status,d1,d2,nowNs,epoch,androidTime,source);}
  void onCreationMidi(int status,int d1,int d2,long nowNs,long epoch,long androidTime,int source){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onMidi(status,d1,d2,nowNs,epoch,androidTime,source);}
  void resumeCreation(){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onForeground();}
  void pauseCreation(){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onBackground();}

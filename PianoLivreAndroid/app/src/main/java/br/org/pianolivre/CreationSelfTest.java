@@ -46,7 +46,10 @@ final class CreationSelfTest {
  private void dialog(String value){check(screen.activeDialog!=null&&screen.activeDialog.isShowing(),"real project dialog");EditText input=findEdit(screen.activeDialog.getWindow().getDecorView());check(input!=null,"dialog input");input.setText(value);screen.activeDialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();}
  private void record(){click("Nova gravação");click("Gravar");
   MidiTakeRecorder take=screen.debugTake();check(take.state()==MidiTakeRecorder.State.RECORDING,"recording state");
-  a.onMidiMessage(0x90,60,91);a.onMidiMessage(0x90,64,75);a.onMidiMessage(0x91,60,66);a.onMidiMessage(0xb0,64,127);
+  final android.media.midi.MidiReceiver input=a.createReceiver(a.midiGeneration);
+  Thread receiver=new Thread(()->{try{input.send(new byte[]{(byte)0x90,60,91,(byte)0x90,64,75,(byte)0x91,60,66,(byte)0xb0,64,127},0,12,12345);}catch(IOException error){throw new RuntimeException(error);}});
+  receiver.start();try{receiver.join(1000);}catch(InterruptedException error){throw new RuntimeException(error);}
+  check(!receiver.isAlive()&&take.noteCount()==3,"capture occurs on reception before the UI queue is drained");
   a.handler.postDelayed(()->{check(!findButton(screen,"Gravar").isEnabled(),"cannot replace an unsaved take");ready("recording",this::pause);},150);
  }
  private void pause(){click("Pausar");int n=screen.debugTake().eventCount();a.onMidiMessage(0x90,75,99);check(screen.debugTake().eventCount()==n,"pause rejects capture");ready("paused",this::resume);}

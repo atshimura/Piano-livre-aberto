@@ -54,7 +54,7 @@ public final class MidiTakeRecorder {
   }
   return true;
  }
- public synchronized void pause(long nowNs){if(state!=State.RECORDING)throw new IllegalStateException("Não está gravando");if(nowNs<lastNs)throw new IllegalArgumentException("Relógio regressivo");if(nowNs-startNs-pausedNs>MAX_DURATION_NS)nowNs=startNs+pausedNs+MAX_DURATION_NS;segments.add(new Segment(segmentStartNs,nowNs));silenceForBoundary(nowNs);lastNs=nowNs;pauseStartedNs=nowNs;state=State.PAUSED;}
+ public synchronized void pause(long nowNs){if(state!=State.RECORDING)throw new IllegalStateException("Não está gravando");if(nowNs<lastNs)nowNs=lastNs;if(nowNs-startNs-pausedNs>MAX_DURATION_NS)nowNs=startNs+pausedNs+MAX_DURATION_NS;segments.add(new Segment(segmentStartNs,nowNs));silenceForBoundary(nowNs);lastNs=nowNs;pauseStartedNs=nowNs;state=State.PAUSED;}
  public synchronized void resume(long nowNs,long connectionEpoch){
   if(state!=State.PAUSED)throw new IllegalStateException("Gravação não pausada");
   if(connectionEpoch!=epoch){interrupt(nowNs,"Conexão MIDI mudou durante a pausa");return;}

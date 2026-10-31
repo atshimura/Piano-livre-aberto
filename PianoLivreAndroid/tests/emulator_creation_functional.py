@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Real Android C1 controls, synthetic MIDI, persistence and process restart."""
-import json, os, pathlib, struct, time
+import json, os, pathlib, struct, time, subprocess
 from emulator_ui import adb, screenshot, dump, tap_text
 
 PACKAGE = "br.org.pianolivre.opensource"
@@ -16,10 +16,15 @@ def wait_for(marker, pid, timeout=70):
         log = adb("logcat", "-d", "--pid=" + pid, "-v", "brief")
         if marker in log:
             return log
-        if "FATAL EXCEPTION" in log or not adb("shell", "pidof", PACKAGE).strip():
+        if "FATAL EXCEPTION" in log or not process_id():
             raise AssertionError("Creation process stopped: " + log[-18000:])
         time.sleep(.2)
     raise AssertionError("Creation timed out waiting for " + marker + "\n" + log[-18000:])
+
+
+def process_id():
+    return subprocess.run(["adb", "shell", "pidof", PACKAGE],
+                          capture_output=True, text=True, timeout=10).stdout.strip()
 
 
 def launch(flag, label):
@@ -28,7 +33,7 @@ def launch(flag, label):
     adb("shell", "am", "start", "-W", "-n", ACTIVITY, "--ez", flag, "true",
         "--es", "creation_label", label)
     for _ in range(50):
-        pid = adb("shell", "pidof", PACKAGE).strip()
+        pid = process_id()
         if pid.isdigit():
             return pid
         time.sleep(.1)

@@ -29,6 +29,14 @@ public final class CreationSafetyRegressionTest {
    boolean badHeader=false;try{CreationJournal.read(file);}catch(IOException expected){badHeader=true;}
    ok(badHeader,"header integrity protects owner/session metadata");
    Files.write(file.toPath(),journalBytes);
+   String heldId=UUID.randomUUID().toString();CreationJournal heldLog=new CreationJournal(root,heldId,"Held",7,1000,1_000_000_000L);
+   MidiTakeRecorder heldTake=new MidiTakeRecorder();heldTake.start(3,1_000_000_000L);heldTake.accept(0x90,69,82,1_100_000_000L,3);
+   heldLog.append(heldTake.events().get(0));heldLog.checkpoint(1_400_000_000L);heldLog.flush();heldLog.close();
+   CreationJournal.Recovery heldRecovery=CreationJournal.read(new File(root,"creation-journals/"+heldId+".journal"));
+   ok(heldRecovery.segments.get(0).endNs==1_400_000_000L,"durable clock checkpoint retains an otherwise silent held note interval");
+   CreationProjectStore heldStore=new CreationProjectStore(root);heldStore.saveRecoverable(heldId,"Held",7,1000,400_000_000L,heldRecovery.events,heldRecovery.segments);
+   CreationProjectStore.Project heldProject=heldStore.get(heldId);
+   ok(heldProject.events.get(1).generated&&heldProject.events.get(1).timeNs==1_400_000_000L,"recovery safety release uses last confirmed clock, not an invented post-crash time");
    CreationJournal.Recovery recovered=CreationJournal.read(file);
    ok(recovered.segments.size()==2&&recovered.segments.get(1).startNs==1000,"crash after resume does not include paused wall time");
    ok(recovered.events.get(0).androidTimestampNs==17&&recovered.events.get(0).sourceId==44,"Android timestamp and input source retained separately");

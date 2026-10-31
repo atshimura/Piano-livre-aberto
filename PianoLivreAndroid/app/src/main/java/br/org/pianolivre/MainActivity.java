@@ -74,10 +74,12 @@ public class MainActivity extends Activity {
  Handler handler=new Handler(Looper.getMainLooper());long previousTick;int user=0;JSONArray catalog;
  android.content.SharedPreferences prefs;
  MidiReceiver createReceiver(final long generation){
+  final int sourceId=midiConnection.snapshot().target==null?-1:midiConnection.snapshot().target.id;
   final MidiProtocol decoder=new MidiProtocol();
   return new MidiReceiver(){
    @Override public synchronized void onSend(byte[] data,int offset,int count,long timestamp){
     if(generation!=midiGeneration)return;
+    final long arrivalTimeNs=SystemClock.elapsedRealtimeNanos();
     final long inputEpoch=midiInputEpoch;
     final boolean arrivedInForeground=foreground;
     final ArrayList<int[]> decoded=new ArrayList<>();
@@ -88,11 +90,12 @@ public class MainActivity extends Activity {
     if(!arrivedInForeground||!foreground||decoded.isEmpty())return;
     final long packet=midiPacketSequence.incrementAndGet();
     final long arrivalTime=SystemClock.uptimeMillis();
-    final long arrivalTimeNs=SystemClock.elapsedRealtimeNanos();
     final long uiSession=screens==null?-1:screens.discoveryGeneration();
+    if(generation!=midiGeneration||inputEpoch!=midiInputEpoch||!foreground)return;
+    if(screens!=null)for(int[] event:decoded)screens.captureCreationMidi(event[0],event[1],event[2],arrivalTimeNs,inputEpoch,timestamp,sourceId);
     handler.post(()->{
      if(generation!=midiGeneration||inputEpoch!=midiInputEpoch||!foreground)return;
-     for(int[] event:decoded)onMidiMessage(event[0],event[1],event[2],packet,arrivalTime,arrivalTimeNs,timestamp,uiSession);
+     for(int[] event:decoded)onMidiMessage(event[0],event[1],event[2],packet,arrivalTime,arrivalTimeNs,timestamp,uiSession,false);
      if(screens!=null)screens.onLabMidiBatchEnd(packet,arrivalTime,uiSession);
     });
    }
@@ -450,11 +453,11 @@ public class MainActivity extends Activity {
   sustainDown=false;for(int ch=0;ch<16;ch++)if(performance.pedalDown(ch)){sustainDown=true;break;}
  }
  void onMidiMessage(int statusCode,int data1,int data2){
-  onMidiMessage(statusCode,data1,data2,midiPacketSequence.incrementAndGet(),SystemClock.uptimeMillis(),SystemClock.elapsedRealtimeNanos(),-1,screens==null?-1:screens.discoveryGeneration());
+  onMidiMessage(statusCode,data1,data2,midiPacketSequence.incrementAndGet(),SystemClock.uptimeMillis(),SystemClock.elapsedRealtimeNanos(),-1,screens==null?-1:screens.discoveryGeneration(),true);
  }
- private void onMidiMessage(int statusCode,int data1,int data2,long packet,long eventTime,long eventTimeNs,long androidTime,long uiSession){
+ private void onMidiMessage(int statusCode,int data1,int data2,long packet,long eventTime,long eventTimeNs,long androidTime,long uiSession,boolean recordCreation){
   currentMidiPacket=packet;currentMidiEventTime=eventTime;currentUiSession=uiSession;
-  if(screens!=null)screens.onCreationMidi(statusCode,data1,data2,eventTimeNs,midiInputEpoch,androidTime,midiConnection.snapshot().target==null?-1:midiConnection.snapshot().target.id);
+  if(recordCreation&&screens!=null)screens.onCreationMidi(statusCode,data1,data2,eventTimeNs,midiInputEpoch,androidTime,midiConnection.snapshot().target==null?-1:midiConnection.snapshot().target.id);
   int command=statusCode&0xF0;
   receivedMessages++;lastMidiChannel=(statusCode&0x0f)+1;
   if(command==0x90&&data2>0){
