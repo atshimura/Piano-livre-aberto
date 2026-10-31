@@ -390,3 +390,6 @@ Branch independente de #76, baseada em main f91c278; candidato 0.9.54/63. Consul
 ## Criação C1 — revisão da entrega / 31/10/2026
 
 Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
+
+## Política de CI por risco (V1)
+Consulte [docs/90 — Política de CI visual V1](90-POLITICA-CI-VISUAL-V1.md). Raster drawable isolado pode usar gate visual rápido; outros diffs seguem suíte completa. Publicação não é automática: exige dispatch e testes completos no commit exato. Não tratar esta política como vigente na main antes do merge e da verificação de proteção.
