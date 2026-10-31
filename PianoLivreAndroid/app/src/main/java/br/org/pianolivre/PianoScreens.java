@@ -232,6 +232,7 @@ class PianoScreens {
    .setPositiveButton("Entendi",null).show();
  }
  void updateMidiIndicator(){
+  if(creation!=null)creation.refreshConnection();
   if(homeMidiIndicator==null&&studyMidiIndicator==null)return;
   MidiConnection.Snapshot state=a.midiConnection.snapshot();
   boolean connected=state.connected();

@@ -92,6 +92,7 @@ jobs:
             python3 tests/emulator_discovery_layout.py
             python3 tests/emulator_ui_fast.py
             python3 tests/emulator_discovery_components.py --representative
+            python3 tests/emulator_creation_functional.py
       - name: Preserve focused evidence, including failed runs
         if: always()
         uses: actions/upload-artifact@v4
@@ -103,6 +104,7 @@ jobs:
             PianoLivreAndroid/piano-discovery-layout.json
             PianoLivreAndroid/piano-home-refined-*
             PianoLivreAndroid/piano-fast-*.png
+            PianoLivreAndroid/piano-c1-*
             PianoLivreAndroid/piano-discovery-staff-grand-chord.png
             PianoLivreAndroid/piano-discovery-staff-phone-sequence.png
             PianoLivreAndroid/piano-discovery-selftest.log
@@ -215,6 +217,7 @@ jobs:
             adb logcat -d -v brief | grep 'HISTORY_ACTIVITY_SELFTEST_PASS'
             python3 tests/emulator_ui.py
             python3 tests/emulator_creation_navigation.py
+            python3 tests/emulator_creation_functional.py
             python3 tests/emulator_discovery_components.py
             python3 tests/emulator_study_failure.py
             python3 tests/emulator_polyphony.py
@@ -300,6 +303,9 @@ jobs:
           for profile in ('phone','tablet'):
               for stage in ('empty','note','retained','chord','sequence','held-after-sequence','low','high','common-after-extreme'):
                   names.append('piano-discovery-layout-'+profile+'-'+stage+'.png')
+          for creation_profile in ('phone', 'tablet'):
+              for creation_stage in ('home','recording','paused','review','saved','renamed','searched','trash','restored','no-output','no-input','background','recovered','deleted','profile','reopened','export-picker','exported'):
+                  names.append('piano-c1-'+creation_profile+'-'+creation_stage+'.png')
           report = []
           for viewport in ('phone', 'landscape', 'tablet', 'compact-tablet'):
               for suffix in ('', '-library', '-grid'):
@@ -347,6 +353,7 @@ jobs:
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png
             PianoLivreAndroid/piano-creation-*.png
+            PianoLivreAndroid/piano-c1-*
             PianoLivreAndroid/piano-home-phone.png
             PianoLivreAndroid/piano-home-tablet.png
             PianoLivreAndroid/piano-laboratorio.png

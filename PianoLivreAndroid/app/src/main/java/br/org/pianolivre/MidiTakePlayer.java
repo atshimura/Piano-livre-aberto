@@ -51,7 +51,7 @@ public final class MidiTakePlayer implements AutoCloseable {
   while(index<times.length&&times[index]<=now&&batch++<128){MidiTakeRecorder.Event e=project.events.get(index++);
    if(!sink.send(message(e))){stop();return;}if(token!=generation||state!=State.PLAYING)return;}
   publish(state,position,durationNs);
-  if(index==times.length&&position>=durationNs){cancel();sink.silence();state=State.STOPPED;project=null;times=null;publish(state,durationNs,durationNs);return;}
+  if(position>=durationNs&&(index==times.length||times[index]>now)){cancel();sink.silence();state=State.STOPPED;project=null;times=null;publish(state,durationNs,durationNs);return;}
   long delay=index<times.length?Math.min(50_000_000L,Math.max(0,times[index]-now)):Math.min(50_000_000L,Math.max(0,durationNs-position));schedule(token,delay);
  }}
  private void cancel(){generation++;if(pending!=null)pending.cancel(false);pending=null;}

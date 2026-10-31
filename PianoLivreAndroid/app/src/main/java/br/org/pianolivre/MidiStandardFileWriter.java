@@ -13,7 +13,7 @@ public final class MidiStandardFileWriter {
   byte[] title=project.title.getBytes(StandardCharsets.UTF_8);writeVlq(track,0);track.write(0xff);track.write(0x03);writeVlq(track,title.length);track.write(title);
   long previousTick=0;Timeline timeline=new Timeline(project.segments);Map<Integer,Long> attacks=new HashMap<>();
   for(MidiTakeRecorder.Event e:events){long ns=timeline.map(e.timeNs);long tick=Math.max(previousTick,Math.round((double)ns*PPQN/DEFAULT_TEMPO_US/1000.0));int key=e.channel()*128+e.data1;
-   if(e.command()==0x80||e.command()==0x90&&e.data2==0){Long attack=attacks.remove(key);if(attack!=null)tick=Math.max(tick,attack+1);}
+   if(e.command()==0x80||e.command()==0x90&&e.data2==0){Long attack=attacks.remove(key);if(attack==null)continue;tick=Math.max(tick,attack+1);}
    else if(e.command()==0x90)attacks.put(key,tick);
    writeVlq(track,tick-previousTick);previousTick=tick;
    int command=e.command();track.write(e.status);

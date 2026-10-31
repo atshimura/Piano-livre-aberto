@@ -31,7 +31,7 @@ public final class BackupArchive {
  private static final String CREATION_STAGE="creations.restore-stage";
  private static final int MAX_CREATIONS=CreationProjectStore.MAX_PROJECTS;
  // Leaves room for the existing 64 MiB imported payload inside the 95 MiB JSON envelope.
- private static final int MAX_CREATION_TOTAL=6*1024*1024;
+ private static final int MAX_CREATION_TOTAL=CreationProjectStore.MAX_LIBRARY_BYTES;
  public static byte[] readLimited(InputStream input,int max)throws IOException{
   if(input==null)throw new IOException("Não foi possível abrir o documento");
   ByteArrayOutputStream buffer=new ByteArrayOutputStream();
@@ -325,6 +325,8 @@ public final class BackupArchive {
      File duplicate=new File(creationStage,entry.getKey()+".plc");if(!duplicate.delete())throw new IOException("Não foi possível preparar composição duplicada");
     }else addedCreationIds.add(entry.getKey());
    }
+   long mergedBytes=0;for(CreationProjectStore.Project p:currentStore.snapshotAll())mergedBytes+=currentStore.rawFile(p.id).length;for(String id:addedCreationIds)mergedBytes+=target.creations.get(id).length;
+   if(currentStore.snapshotAll().size()+addedCreationIds.size()>MAX_CREATIONS||mergedBytes>MAX_CREATION_TOTAL)throw new IOException("A mesclagem excede os limites de armazenamento; os dados locais foram mantidos");
    writeJournal(root,had,prefs,addedCreationIds);
    if(had&&!dest.renameTo(old))throw new IOException("Não foi possível preservar os arquivos anteriores");
    if(!stage.renameTo(dest))throw new IOException("Não foi possível instalar os arquivos");
