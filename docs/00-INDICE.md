@@ -1,5 +1,9 @@
 # Documentação do Piano Livre aberto
 
+## Implementação E — Descobrir (planejamento aprovado, código pendente)
+
+- [95 — Implementação E: ampliação da pauta, notas no início e enquadramento automático reversível](95-IMPLEMENTACAO-E-DESCOBRIR-PAUTA.md): três decisões aprovadas, diagnóstico dos arquivos, sequência E0–E6, ensaios extremos simultâneos, aceite, riscos e retomada. **Somente documentação; nenhuma funcionalidade E foi implementada nesta entrega.** [Issue #89](https://github.com/atshimura/Piano-livre-aberto/issues/89).
+
 Criação C1 (C1.1–C1.5) implementada na branch `feat/criacao-c1`, baseada na main `cf4b24b` (0.9.54/63), candidata 0.9.55/64. PR #82 aberto para revisão; build #752 e emulador completo #729 passaram no SHA `a86ea4d6d57e8cfb3dc834d03ee989ef742a022d`. Sem merge/Release; publicação exige autorização. Testes físicos Yamaha P-45/Realme 7 5G/Lenovo Tab M9 continuam pendentes.
 
 
