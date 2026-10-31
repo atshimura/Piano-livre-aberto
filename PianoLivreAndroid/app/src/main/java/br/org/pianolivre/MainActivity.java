@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
  });
  private volatile long midiInputEpoch;private boolean midiDestroyed;
  long midiInputEpoch(){return midiInputEpoch;}
+ long beginCreationCapture(){midiInputEpoch++;clearMidiObservation();return midiInputEpoch;}
  private long outputTestSequence;
  Set<Integer> activeNotes=new HashSet<>(); Set<Integer> downKeys=new HashSet<>();Set<Integer> midiSources=new HashSet<>();
  final WaitRecognizer waitRecognizer=new WaitRecognizer();
@@ -293,14 +294,15 @@ public class MainActivity extends Activity {
   if(request==CREATION_MIDI_EXPORT){
    if(result!=RESULT_OK||data==null||data.getData()==null){clearCreationExport();return;}
    final Uri destination=data.getData();final String file=pendingCreationExportFile,id=pendingCreationExportId,expected=pendingCreationExportSha;
+   pendingCreationExportFile=pendingCreationExportId=pendingCreationExportSha=null;creationExportPreparing=false;
    creationExportDisk.execute(()->{try{
     byte[] bytes=null;
     if(file!=null&&file.matches("creation-export-[a-f0-9-]{36}\\.mid")){File cached=new File(getCacheDir(),file);if(cached.isFile())try(InputStream in=new FileInputStream(cached)){byte[] candidate=BackupArchive.readLimited(in,MidiStandardFileWriter.MAX_BYTES);if(sha256Creation(candidate).equals(expected))bytes=candidate;}}
     if(bytes==null)bytes=MidiStandardFileWriter.write(new CreationProjectStore(getFilesDir()).get(id));
     try(OutputStream out=getContentResolver().openOutputStream(destination,"w")){if(out==null)throw new IOException("Destino indisponível");out.write(bytes);out.flush();}
     if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0&&getIntent().getBooleanExtra("creation_export_selftest",false))CreationSelfTest.verifyExport(this,destination,bytes);
-    handler.post(()->{clearCreationExport();message("Arquivo MIDI exportado com sucesso.");});
-   }catch(Exception error){handler.post(()->{clearCreationExport();message("Não foi possível exportar a composição: "+error.getMessage());});}});
+    deleteCreationExportCache(file);handler.post(()->message("Arquivo MIDI exportado com sucesso."));
+   }catch(Exception error){deleteCreationExportCache(file);handler.post(()->message("Não foi possível exportar a composição: "+error.getMessage()));}});
    return;
   }
   if(result!=RESULT_OK||data==null)return;
@@ -1032,10 +1034,11 @@ public class MainActivity extends Activity {
     Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType("audio/midi");intent.putExtra(Intent.EXTRA_TITLE,fileName+".mid");startActivityForResult(intent,CREATION_MIDI_EXPORT);});
   }catch(Exception error){handler.post(()->{clearCreationExport();message("Composição não validada para exportação: "+error.getMessage());});}});
  }
+ private void deleteCreationExportCache(String name){if(name!=null&&name.matches("creation-export-[a-f0-9-]{36}\\.mid"))new File(getCacheDir(),name).delete();}
  private void clearCreationExport(){if(pendingCreationExportFile!=null&&pendingCreationExportFile.matches("creation-export-[a-f0-9-]{36}\\.mid"))new File(getCacheDir(),pendingCreationExportFile).delete();pendingCreationExportFile=pendingCreationExportSha=pendingCreationExportId=null;creationExportPreparing=false;}
  @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("creationExportId",pendingCreationExportId);state.putString("creationExportFile",pendingCreationExportFile);state.putString("creationExportSha",pendingCreationExportSha);}
  void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
- void message(String m){lastMessageDialog=new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
+ void message(String m){if(isFinishing()||isDestroyed())return;lastMessageDialog=new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
  @Override public void onBackPressed(){
   if(screens!=null&&screens.isLabOpen()){screens.backFromLab();return;}
   if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.showHome();return;}
@@ -1055,6 +1058,7 @@ public class MainActivity extends Activity {
   if(screens!=null)screens.resumeDiscovery();
   reconcileMidiDevices();if(screens!=null)screens.updateMidiIndicator();
   rearmWaitIfStudying();beginStudyWindow();
+  if(screens!=null)screens.resumeCreation();
   android.util.Log.i("PianoLivreUI","LIFECYCLE_RESUMED");
  }
  @Override protected void onPause(){

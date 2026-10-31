@@ -32,13 +32,20 @@ public final class MidiTakePlayer implements AutoCloseable {
  }}
  public void pause(){synchronized(lock){if(state!=State.PLAYING)return;baseNs=trimOffsetNs+position();cancel();sink.silence();state=State.PAUSED;publish(state,baseNs-trimOffsetNs,durationNs);}}
  public void resume(){synchronized(lock){if(state!=State.PAUSED||!sink.available())return;
-  Map<Integer,MidiTakeRecorder.Event> held=new TreeMap<>();Map<Integer,MidiTakeRecorder.Event> controllers=new TreeMap<>();
+  Map<Integer,MidiTakeRecorder.Event> held=new TreeMap<>(),sustained=new TreeMap<>();Map<Integer,MidiTakeRecorder.Event> controllers=new TreeMap<>();Set<Integer> pedals=new HashSet<>();
   index=0;while(index<times.length&&times[index]<baseNs){MidiTakeRecorder.Event e=project.events.get(index++);int key=e.channel()*128+e.data1;
-   if(e.command()==0x90&&e.data2>0)held.put(key,e);
-   else if(e.command()==0x80||e.command()==0x90)held.remove(key);
-   else if(e.command()==0xb0){controllers.put(key,e);if(e.data1==120||e.data1==123)held.keySet().removeIf(k->k/128==e.channel());}}
-  for(MidiTakeRecorder.Event e:controllers.values())if(e.data1!=120&&e.data1!=123&&!sink.send(message(e))){stop();return;}
+   if(e.command()==0x90&&e.data2>0){held.put(key,e);sustained.remove(key);}
+   else if(e.command()==0x80||e.command()==0x90){MidiTakeRecorder.Event attack=held.remove(key);if(attack!=null&&pedals.contains(e.channel()))sustained.put(key,attack);}
+   else if(e.command()==0xb0){
+    if(e.data1==121){controllers.keySet().removeIf(k->k/128==e.channel());pedals.remove(e.channel());sustained.keySet().removeIf(k->k/128==e.channel());}
+    controllers.put(key,e);
+    if(e.data1==64){if(e.data2>=64)pedals.add(e.channel());else{pedals.remove(e.channel());sustained.keySet().removeIf(k->k/128==e.channel());}}
+    if(e.data1==123){if(pedals.contains(e.channel()))for(Map.Entry<Integer,MidiTakeRecorder.Event> entry:held.entrySet())if(entry.getKey()/128==e.channel())sustained.put(entry.getKey(),entry.getValue());held.keySet().removeIf(k->k/128==e.channel());}
+    if(e.data1==120){held.keySet().removeIf(k->k/128==e.channel());sustained.keySet().removeIf(k->k/128==e.channel());}}}
+  List<MidiTakeRecorder.Event> controls=new ArrayList<>(controllers.values());controls.sort(Comparator.comparingInt(e->e.order));
+  for(MidiTakeRecorder.Event e:controls)if(e.data1!=120&&e.data1!=123&&!sink.send(message(e))){stop();return;}
   for(MidiTakeRecorder.Event e:held.values())if(!sink.send(message(e))){stop();return;}
+  for(MidiTakeRecorder.Event e:sustained.values())if(!sink.send(message(e))||!sink.send(new byte[]{(byte)(0x80|e.channel()),(byte)e.data1,0})){stop();return;}
   anchorNs=System.nanoTime();state=State.PLAYING;long token=++generation;publish(state,baseNs-trimOffsetNs,durationNs);schedule(token,0);
  }}
  public void stop(){synchronized(lock){cancel();sink.silence();state=State.STOPPED;project=null;times=null;index=0;baseNs=0;publish(state,0,durationNs);}}

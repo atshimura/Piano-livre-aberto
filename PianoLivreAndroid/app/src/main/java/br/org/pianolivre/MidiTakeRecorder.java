@@ -35,9 +35,10 @@ public final class MidiTakeRecorder {
  public synchronized boolean accept(int status,int a,int b,long nowNs,long inputEpoch){return accept(status,a,b,nowNs,inputEpoch,-1,-1);}
  public synchronized boolean accept(int status,int a,int b,long nowNs,long inputEpoch,long androidTime,int source){
   if(state!=State.RECORDING||inputEpoch!=epoch||status<0x80||status>0xef||a<0||a>127||b<0||b>127)return false;
-  if(nowNs<startNs||nowNs<lastNs){interrupt(nowNs,"Relógio monotônico inválido");return false;}
+  if(nowNs<startNs)return false;
+  if(nowNs<lastNs){interrupt(nowNs,"Relógio monotônico inválido");return false;}
   if(nowNs-startNs-pausedNs>MAX_DURATION_NS){interrupt(startNs+pausedNs+MAX_DURATION_NS,"Limite de gravação atingido");return false;}
-  if(events.size()>=MAX_EVENTS-2064){interrupt(nowNs,"Limite de eventos atingido");return false;}
+  if(events.size()>=MAX_EVENTS-2066){interrupt(nowNs,"Limite de eventos atingido");return false;}
   int command=status&0xf0,ch=status&15,key=(ch<<7)|a;
   if(command==0x90&&b>0&&held.containsKey(key))append(0x80|ch,a,0,nowNs,true);
   events.add(new Event(status,a,b,nowNs,epoch,order++,false,androidTime>0?androidTime:-1,source));lastNs=nowNs;

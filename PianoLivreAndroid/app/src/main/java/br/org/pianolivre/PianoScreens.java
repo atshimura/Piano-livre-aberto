@@ -599,6 +599,7 @@ class PianoScreens {
   android.util.Log.i("PianoLivreUI","free_open");
  }
  void showLab(){
+  if(creation!=null){creation.onBackground();creation.setVisibility(View.GONE);}
   stopLabDemonstration();
   a.stopPlayback();a.finishStudyWindow();
   header.setVisibility(View.GONE);
@@ -663,6 +664,7 @@ class PianoScreens {
  }
  void onLabMidiAttack(int pitch,long time,long batch,long generation,long uiGeneration){if(discovery!=null)discovery.midiAttack(pitch,time,batch,generation,uiGeneration);}
  void onCreationMidi(int status,int d1,int d2,long nowNs,long epoch,long androidTime,int source){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onMidi(status,d1,d2,nowNs,epoch,androidTime,source);}
+ void resumeCreation(){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onForeground();}
  void pauseCreation(){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onBackground();}
  void connectionLostCreation(){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onConnectionLost();}
  void prepareCreationBackup()throws java.io.IOException{if(creation!=null)creation.prepareBackup();}

@@ -194,6 +194,8 @@ jobs:
             python3 tests/emulator_study_layout.py
             python3 tests/emulator_midi_interfaces.py
             adb uninstall br.org.pianolivre.opensource
+            python3 tests/emulator_upgrade.py --baseline-54
+            adb uninstall br.org.pianolivre.opensource
             python3 tests/emulator_upgrade.py --baseline-52
             adb uninstall br.org.pianolivre.opensource
             python3 tests/emulator_upgrade.py
@@ -227,6 +229,7 @@ jobs:
             python3 tests/emulator_release.py
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py; fi
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py --previous 0.9.52; fi
+            if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py --previous 0.9.54; fi
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
       - name: Upload temporary validation APK for this pull request
         if: success() && github.event_name == 'pull_request'
@@ -409,6 +412,7 @@ jobs:
             PianoLivreAndroid/piano-performance.json
             PianoLivreAndroid/piano-upgrade.json
             PianoLivreAndroid/piano-upgrade-52.json
+            PianoLivreAndroid/piano-upgrade-54.json
             PianoLivreAndroid/piano-public-upgrade-*.json
             PianoLivreAndroid/piano-osmd-context-probe.txt
             PianoLivreAndroid/window.xml

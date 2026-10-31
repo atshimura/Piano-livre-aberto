@@ -6,8 +6,8 @@ from upgrade_fixture import synthetic_upgrade_preferences
 
 PACKAGE = "br.org.pianolivre.opensource"
 ACTIVITY = PACKAGE + "/br.org.pianolivre.MainActivity"
-parser=argparse.ArgumentParser();parser.add_argument('--previous',choices=['0.9.46','0.9.52'],default='0.9.46');options=parser.parse_args()
-previous_version=options.previous+'-open-beta';previous_code=61 if options.previous=='0.9.52' else 55
+parser=argparse.ArgumentParser();parser.add_argument('--previous',choices=['0.9.46','0.9.52','0.9.54'],default='0.9.46');options=parser.parse_args()
+previous_version=options.previous+'-open-beta';previous_code={'0.9.46':55,'0.9.52':61,'0.9.54':63}[options.previous]
 PREVIOUS_URL = f"https://github.com/atshimura/Piano-livre-aberto/releases/download/v{previous_version}/PianoLivre-{previous_version}.apk"
 EXPECTED_CERT = "7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290"
 NEW_APK = pathlib.Path("app/build/outputs/apk/release/app-release.apk")

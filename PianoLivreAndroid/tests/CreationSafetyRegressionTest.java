@@ -22,6 +22,13 @@ public final class CreationSafetyRegressionTest {
    for(MidiTakeRecorder.Event e:take.eventsSince(2))journal.append(e);
    journal.flush();journal.close();
    File file=new File(root,"creation-journals/"+id+".journal");
+   byte[] journalBytes=Files.readAllBytes(file.toPath());boolean collision=false;
+   try{new CreationJournal(root,id,"Collision",9,2000,100);}catch(IOException expected){collision=true;}
+   ok(collision&&Arrays.equals(journalBytes,Files.readAllBytes(file.toPath())),"journal identity is exclusive and never truncates earlier work");
+   try(RandomAccessFile corrupt=new RandomAccessFile(file,"rw")){corrupt.seek(20);corrupt.writeByte(journalBytes[20]^1);}
+   boolean badHeader=false;try{CreationJournal.read(file);}catch(IOException expected){badHeader=true;}
+   ok(badHeader,"header integrity protects owner/session metadata");
+   Files.write(file.toPath(),journalBytes);
    CreationJournal.Recovery recovered=CreationJournal.read(file);
    ok(recovered.segments.size()==2&&recovered.segments.get(1).startNs==1000,"crash after resume does not include paused wall time");
    ok(recovered.events.get(0).androidTimestampNs==17&&recovered.events.get(0).sourceId==44,"Android timestamp and input source retained separately");
@@ -41,6 +48,8 @@ public final class CreationSafetyRegressionTest {
    ok(pedal.events().stream().anyMatch(e->e.generated&&e.command()==0xb0&&e.data1==64&&e.data2==0),"CC123 does not erase pedal safety state");
    MidiTakeRecorder reset=new MidiTakeRecorder();reset.start(1,0);reset.accept(0x90,60,90,1,1);reset.accept(0xb0,121,0,2,1);reset.stop(3);
    ok(reset.events().stream().anyMatch(e->e.generated&&e.command()==0x80),"Reset Controllers does not erase physically held keys");
+   MidiTakeRecorder foreground=new MidiTakeRecorder();foreground.start(7,100);foreground.accept(0x90,60,80,110,7);foreground.pause(120);foreground.resumeForeground(1000,7,8);
+   ok(!foreground.accept(0x90,61,80,1010,7)&&foreground.accept(0x90,61,80,1010,8),"explicit same-port foreground continuation invalidates the old receive epoch");
    // A queued callback from a stopped take must not reach a new playback.
    BlockingQueue<Runnable> queue=new LinkedBlockingQueue<>();List<byte[]> sent=new ArrayList<>();
    MidiTakeRecorder phrase=new MidiTakeRecorder();phrase.start(1,0);phrase.accept(0x90,65,70,0,1);phrase.accept(0x80,65,0,1_000_000_000L,1);phrase.stop(1_000_000_000L);

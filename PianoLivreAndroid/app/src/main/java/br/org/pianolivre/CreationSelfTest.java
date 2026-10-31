@@ -17,7 +17,7 @@ import org.json.JSONObject;
 final class CreationSelfTest {
  private final MainActivity a;private final MusicCreationScreen screen;private final File ack;
  private final String label;private final int owner;private int checks;private String savedId,title;
- private Ports ports;private String recoveredId;
+ private Ports ports;private String recoveredId;private int nextTarget=900;
  private static final class Ports implements MidiConnection.Ports {
   final boolean input,output;final List<byte[]> sent=new ArrayList<>();
   Ports(boolean input,boolean output){this.input=input;this.output=output;}public boolean canReceive(){return input;}public boolean canSend(){return output;}
@@ -31,7 +31,7 @@ final class CreationSelfTest {
  }
  private void check(boolean ok,String reason){checks++;if(!ok)throw new AssertionError("Creation: "+reason);}
  private void connect(boolean output){connect(true,output);}
- private void connect(boolean input,boolean output){ports=new Ports(input,output);a.midiConnection.connect(new MidiConnection.Target(900,"SIMULADO C1 · entrada de teste",true),(target,generation,completion)->completion.complete(ports));}
+ private void connect(boolean input,boolean output){final Ports opened=new Ports(input,output);ports=opened;a.midiConnection.connect(new MidiConnection.Target(nextTarget++,"SIMULADO C1 · entrada de teste",true),(target,generation,completion)->completion.complete(opened));check(a.midiConnection.snapshot().canReceive==input&&a.midiConnection.snapshot().canSend==output,"simulated ports actually changed");}
  private void start(){connect(true);a.screens.showCreation();await(()->screen.debugIdle(),()->ready("home",this::record),0);}
  private static Button findButton(View view,String text){
   if(view instanceof Button&&((Button)view).getText().toString().contains(text))return (Button)view;
