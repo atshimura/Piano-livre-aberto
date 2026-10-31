@@ -26,7 +26,19 @@ tap_text(['Criação'],exact=True);wait_for_text('Criação Musical',timeout=30)
 creation_bounds=lab_tabs('Criação')
 assert discover_bounds==creation_bounds,('Laboratory bar moved between screens',discover_bounds,creation_bounds)
 screenshot('piano-fast-creation.png')
+# Minimalist Creation smoke: home -> searchable library -> recorder -> home.
+tap_text(['Minhas Criações'],exact=True)
+nodes=list(dump().iter('node'))
+assert any(n.attrib.get('content-desc')=='Filtrar composições' for n in nodes),'Creation library filter missing'
+assert any(n.attrib.get('content-desc')=='Ordenar composições' for n in nodes),'Creation library sort missing'
+screenshot('piano-fast-creation-library.png')
+tap_text(['Voltar'],exact=True);wait_for_text('Criação Musical',timeout=20)
+tap_text(['＋  Nova gravação'],exact=True);wait_for_text('Nova gravação',timeout=20)
+buttons=[n.attrib.get('text','') for n in dump().iter('node') if n.attrib.get('class')=='android.widget.Button']
+assert any('Gravar' in n for n in buttons),'Creation record command missing'
+screenshot('piano-fast-creation-record-ready.png')
+tap_text(['Voltar'],exact=True);wait_for_text('Criação Musical',timeout=20)
 tap_text(['Descobrir'],exact=True);wait_for_text('toque uma nota',timeout=30)
 assert lab_tabs('Descobrir')==discover_bounds,'Laboratory bar changed after roundtrip'
 tap_text(['Voltar'],exact=True);wait_for_text('Bem-vindo ao',timeout=30);screenshot('piano-fast-return.png')
-print('FAST_NAVIGATION_PASS captures=5 scope=home-study-discovery-creation-shared-navigation',flush=True)
+print('FAST_NAVIGATION_PASS captures=7 scope=home-study-discovery-creation-library-record-ready-shared-navigation',flush=True)
