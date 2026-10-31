@@ -381,3 +381,6 @@ Nova branch de correção baseada na `main` `e9cc70afaba68bc4240945ffb08c33300a8
 ## Entrega Descobrir / issue #77 ? 30/10/2026
 
 Branch independente de #76, baseada em main f91c278; candidato 0.9.54/63. Consulte [75](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md) para layout, enquadramento, testes rapidos e completos, proveniencia de APK e registro final do PR. Sem merge/Release; hardware e V1 pendentes.
+
+## Política de CI por risco (V1)
+Consulte [docs/78 — Política de CI visual V1](78-POLITICA-CI-VISUAL-V1.md). Raster drawable isolado pode usar gate visual rápido; outros diffs seguem suíte completa. Publicação não é automática: exige dispatch e testes completos no commit exato. Não tratar esta política como vigente na main antes do merge e da verificação de proteção.
