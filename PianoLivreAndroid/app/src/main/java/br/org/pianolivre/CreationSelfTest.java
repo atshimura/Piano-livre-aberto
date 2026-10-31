@@ -32,7 +32,7 @@ final class CreationSelfTest {
  private void check(boolean ok,String reason){checks++;if(!ok)throw new AssertionError("Creation: "+reason);}
  private void connect(boolean output){connect(true,output);}
  private void connect(boolean input,boolean output){final Ports opened=new Ports(input,output);ports=opened;a.midiConnection.connect(new MidiConnection.Target(nextTarget++,"SIMULADO C1 · entrada de teste",true),(target,generation,completion)->completion.complete(opened));check(a.midiConnection.snapshot().canReceive==input&&a.midiConnection.snapshot().canSend==output,"simulated ports actually changed");}
- private void start(){connect(true);a.screens.showCreation();await(()->screen.debugIdle(),()->ready("home",this::record),0);}
+ private void start(){connect(true);a.screens.showCreation();await(()->screen.debugIdle(),()->ready("home",this::emptyTake),0);}
  private static Button findButton(View view,String text){
   if(view instanceof Button&&((Button)view).getText().toString().contains(text))return (Button)view;
   if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++){Button b=findButton(((ViewGroup)view).getChildAt(i),text);if(b!=null)return b;}return null;
@@ -45,6 +45,8 @@ final class CreationSelfTest {
  private void click(String text){Button button=findButton(screen,text);check(button!=null&&button.isEnabled(),"enabled action "+text);button.requestRectangleOnScreen(new Rect(0,0,button.getWidth(),button.getHeight()),true);button.performClick();}
  private void dialog(String value){check(screen.activeDialog!=null&&screen.activeDialog.isShowing(),"real project dialog");EditText input=findEdit(screen.activeDialog.getWindow().getDecorView());check(input!=null,"dialog input");input.setText(value);screen.activeDialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();}
  private static int emptyMessages(View view){int count=view instanceof TextView&&((TextView)view).getText().toString().startsWith("Suas composições aparecerão aqui.")?1:0;if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++)count+=emptyMessages(((ViewGroup)view).getChildAt(i));return count;}
+ private static boolean textContains(View view,String text){if(view instanceof TextView&&((TextView)view).getText().toString().contains(text))return true;if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++)if(textContains(((ViewGroup)view).getChildAt(i),text))return true;return false;}
+ private void emptyTake(){click("Nova gravação");click("Gravar");a.handler.postDelayed(()->{click("Parar");screen.onForeground();check(textContains(screen,"Nenhuma nota gravada"),"empty take explanation survives rebuilding the foreground view");check(!findButton(screen,"Salvar composição").isEnabled()&&!findButton(screen,"Exportar tomada MIDI").isEnabled(),"empty take cannot be published or exported");click("Descartar");check(screen.activeDialog.isShowing(),"empty take discard still requires confirmation");screen.activeDialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();await(()->screen.debugIdle()&&"home".equals(screen.debugPage()),this::record,0);},150);}
  private void record(){check(emptyMessages(screen)<=1,"stale recent-load callbacks cannot duplicate empty state");click("Nova gravação");click("Gravar");
   MidiTakeRecorder take=screen.debugTake();check(take.state()==MidiTakeRecorder.State.RECORDING,"recording state");
   final android.media.midi.MidiReceiver input=a.createReceiver(a.midiGeneration);
