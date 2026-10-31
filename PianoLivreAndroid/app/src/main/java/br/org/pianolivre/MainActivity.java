@@ -16,7 +16,8 @@ import java.util.*;
 
 /** Prototype native Android piano trainer. Needs real-device USB MIDI testing. */
 public class MainActivity extends Activity {
- static final int IMPORT=100,EXPORT=101,RESTORE=102;
+ static final int IMPORT=100,EXPORT=101,RESTORE=102,CREATION_MIDI_EXPORT=103;
+ private String pendingCreationExportId;
  PianoScreens screens;LinearLayout root,toolbar;PianoView scoreView;TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
  Score score;String currentFile="";String currentName="";int currentHand=0;int mode=0;boolean running=false,waitTraveling=false;double waitTravelTarget=0,position=0;double tempoFactor=1,loopStart=0,loopEnd=Double.MAX_VALUE;
  MidiManager midiManager;private MidiManager.DeviceCallback midiDeviceCallback;
@@ -24,6 +25,7 @@ public class MainActivity extends Activity {
   public void invalidated(long generation){
    midiGeneration=generation;midiInputEpoch++;stopPlayback();
    if(screens!=null)screens.stopLabDemonstration();
+   if(screens!=null)screens.connectionLostCreation();
    clearMidiObservation();chordCalibration.stop();
    if(screens!=null)screens.onMidiConnectionChanged(generation);
   }
@@ -32,6 +34,7 @@ public class MainActivity extends Activity {
   }
  });
  private volatile long midiInputEpoch;private boolean midiDestroyed;
+ long midiInputEpoch(){return midiInputEpoch;}
  private long outputTestSequence;
  Set<Integer> activeNotes=new HashSet<>(); Set<Integer> downKeys=new HashSet<>();Set<Integer> midiSources=new HashSet<>();
  final WaitRecognizer waitRecognizer=new WaitRecognizer();
@@ -82,10 +85,11 @@ public class MainActivity extends Activity {
     if(!arrivedInForeground||!foreground||decoded.isEmpty())return;
     final long packet=midiPacketSequence.incrementAndGet();
     final long arrivalTime=SystemClock.uptimeMillis();
+    final long arrivalTimeNs=SystemClock.elapsedRealtimeNanos();
     final long uiSession=screens==null?-1:screens.discoveryGeneration();
     handler.post(()->{
      if(generation!=midiGeneration||inputEpoch!=midiInputEpoch||!foreground)return;
-     for(int[] event:decoded)onMidiMessage(event[0],event[1],event[2],packet,arrivalTime,uiSession);
+     for(int[] event:decoded)onMidiMessage(event[0],event[1],event[2],packet,arrivalTime,arrivalTimeNs,uiSession);
      if(screens!=null)screens.onLabMidiBatchEnd(packet,arrivalTime,uiSession);
     });
    }
@@ -281,6 +285,10 @@ public class MainActivity extends Activity {
  void importScore(){Intent in=new Intent(Intent.ACTION_OPEN_DOCUMENT);in.setType("*/*");in.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(in,IMPORT);}
  @Override protected void onActivityResult(int request,int result,Intent data){
   super.onActivityResult(request,result,data);
+  if(request==CREATION_MIDI_EXPORT){if(result!=RESULT_OK||data==null||data.getData()==null){pendingCreationExportId=null;return;}
+   try{CreationProjectStore store=new CreationProjectStore(getFilesDir());CreationProjectStore.Project project=store.get(pendingCreationExportId);byte[] bytes=MidiStandardFileWriter.write(project);try(OutputStream out=getContentResolver().openOutputStream(data.getData(),"w")){if(out==null)throw new IOException("Destino indisponível");out.write(bytes);out.flush();}message("Arquivo MIDI exportado com sucesso.");}
+   catch(Exception ex){message("Não foi possível exportar a composição: "+ex.getMessage());}finally{pendingCreationExportId=null;}return;
+  }
   if(result!=RESULT_OK||data==null)return;
   Uri uri=data.getData();if(uri==null)return;
   try {
@@ -424,10 +432,11 @@ public class MainActivity extends Activity {
   sustainDown=false;for(int ch=0;ch<16;ch++)if(performance.pedalDown(ch)){sustainDown=true;break;}
  }
  void onMidiMessage(int statusCode,int data1,int data2){
-  onMidiMessage(statusCode,data1,data2,midiPacketSequence.incrementAndGet(),SystemClock.uptimeMillis(),screens==null?-1:screens.discoveryGeneration());
+  onMidiMessage(statusCode,data1,data2,midiPacketSequence.incrementAndGet(),SystemClock.uptimeMillis(),SystemClock.elapsedRealtimeNanos(),screens==null?-1:screens.discoveryGeneration());
  }
- private void onMidiMessage(int statusCode,int data1,int data2,long packet,long eventTime,long uiSession){
+ private void onMidiMessage(int statusCode,int data1,int data2,long packet,long eventTime,long eventTimeNs,long uiSession){
   currentMidiPacket=packet;currentMidiEventTime=eventTime;currentUiSession=uiSession;
+  if(screens!=null)screens.onCreationMidi(statusCode,data1,data2,eventTimeNs,midiInputEpoch);
   int command=statusCode&0xF0;
   receivedMessages++;lastMidiChannel=(statusCode&0x0f)+1;
   if(command==0x90&&data2>0){
@@ -914,8 +923,9 @@ public class MainActivity extends Activity {
     }else new AlertDialog.Builder(this).setTitle("Excluir perfil?")
      .setMessage("Excluir este perfil e seus registros de estudo? As partituras compartilhadas serão mantidas.")
      .setPositiveButton("Excluir",(d,w)->{
-      try{stopPlayback();finishStudyWindow();int active=profileStore().delete(selected.id);score=null;applyProfile(active);loadProfiles();}
+      try{if(new CreationProjectStore(getFilesDir()).hasProjectsForProfile(selected.id)){message("Este perfil ainda possui composições, inclusive itens na Lixeira ou recuperáveis. Exporte ou exclua definitivamente cada projeto antes de excluir o perfil.");return;}stopPlayback();finishStudyWindow();int active=profileStore().delete(selected.id);score=null;applyProfile(active);loadProfiles();}
       catch(RuntimeException ex){message(ex.getMessage());}
+      catch(IOException ex){message("Não foi possível verificar as composições deste perfil; o perfil foi mantido.");}
      }).setNegativeButton("Cancelar",null).show();
    }).show();
   }catch(RuntimeException ex){message(ex.getMessage());}
@@ -981,13 +991,15 @@ public class MainActivity extends Activity {
  }
  JSONObject makeBackup()throws Exception{
   saveSession();
+  if(screens!=null)screens.prepareCreationBackup();
   return BackupArchive.create(prefs,getFilesDir());
  }
  void exportBackup(){Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.setType("application/json");i.putExtra(Intent.EXTRA_TITLE,"pianolivre-backup.json");startActivityForResult(i,EXPORT);}
+ void exportCreationMidi(String projectId,String title){try{CreationProjectStore store=new CreationProjectStore(getFilesDir());CreationProjectStore.Project project=store.get(projectId);MidiStandardFileWriter.write(project);String name=title.replaceAll("[^\\p{L}\\p{N}._-]+","_").replaceAll("^[_ .-]+|[_ .-]+$","");if(name.isEmpty())name="composicao";pendingCreationExportId=projectId;Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("audio/midi");i.putExtra(Intent.EXTRA_TITLE,name+".mid");startActivityForResult(i,CREATION_MIDI_EXPORT);}catch(Exception ex){message("Composição não validada para exportação: "+ex.getMessage());}}
  void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
  void message(String m){new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
  @Override public void onBackPressed(){
-  if(screens!=null&&screens.isLabOpen()){screens.showHome();return;}
+  if(screens!=null&&screens.isLabOpen()){screens.backFromLab();return;}
   if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.showHome();return;}
   super.onBackPressed();
  }
@@ -1008,7 +1020,7 @@ public class MainActivity extends Activity {
   android.util.Log.i("PianoLivreUI","LIFECYCLE_RESUMED");
  }
  @Override protected void onPause(){
-  foreground=false;midiInputEpoch++;super.onPause();if(screens!=null){screens.stopLabDemonstration();screens.pauseDiscovery();}
+  foreground=false;midiInputEpoch++;super.onPause();if(screens!=null){screens.stopLabDemonstration();screens.pauseDiscovery();screens.pauseCreation();}
   // Drop held-key bookkeeping across backgrounding; a later Note Off remains harmless.
   clearMidiObservation();
   stopPlayback();finishStudyWindow();saveSession();handler.removeCallbacks(ticker);

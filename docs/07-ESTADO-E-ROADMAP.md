@@ -1,7 +1,11 @@
 # 07 — Estado atual e prioridades da linha aberta
 
-Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+Implementação da Criação C1 em andamento na branch `feat/criacao-c1`, baseada na main `cf4b24b` (0.9.54/63). Candidato local 0.9.55/64; sem PR, integração ou publicação ainda. C1.1–C1.5 em implementação e validação; aceite físico Yamaha P-45/Realme 7 5G/Lenovo Tab M9 continua pendente.
 
+
+## Laboratório Musical — Criação C1
+
+C1.1–C1.5 estão em implementação na branch `feat/criacao-c1`; consulte o [registro 78](78-CREACAO-C1-IMPLEMENTACAO.md). O candidato de validação é 0.9.55/code64, sem publicação. Critério de avanço: build e emulador completos no SHA final; a próxima etapa de produto após aceite técnico da C1 é C2 (derivação de partitura), ainda fora deste escopo.
 
 ## Refinamento da Home após a 0.9.52 (30/10/2026)
 

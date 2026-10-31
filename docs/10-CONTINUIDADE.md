@@ -1,7 +1,11 @@
 # 10 — Como continuar o Piano Livre aberto
 
-Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+Implementação da Criação C1 em andamento na branch `feat/criacao-c1`, baseada na main `cf4b24b` (0.9.54/63). Candidato local 0.9.55/64; sem PR, integração ou publicação ainda. C1.1–C1.5 em implementação e validação; aceite físico Yamaha P-45/Realme 7 5G/Lenovo Tab M9 continua pendente.
 
+
+## Continuidade ativa — Criação C1
+
+A solicitação atual manda concluir a sequência C1.1 → C1.5 sem parar em entrega intermediária. A branch `feat/criacao-c1` parte de `cf4b24b`; o candidato é 0.9.55/code64. O documento [78](78-CREACAO-C1-IMPLEMENTACAO.md) registra o que foi implementado e os gates pendentes. Atualizar o registro com SHA, PR e resultados reais de Actions; não integrar sem build e emulador completos, nem publicar sem autorização específica. Testes físicos Yamaha P-45/Realme 7 5G/Lenovo Tab M9 ficam para o usuário.
 
 ## Ajustes da Home após a beta (30/10/2026)
 

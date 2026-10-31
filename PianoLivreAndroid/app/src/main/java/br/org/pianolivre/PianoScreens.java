@@ -28,6 +28,7 @@ class PianoScreens {
  NotationView notation,freeNotation;
  MusicLabScreen lab;
  MusicLabDiscoveryScreen discovery;
+ MusicCreationScreen creation;
  PianoView legacyFallback;
  final StudyChromeState chrome=new StudyChromeState();
  String lastStudyLayout="";
@@ -80,7 +81,8 @@ class PianoScreens {
   buildStudio();screens.addView(studio,new FrameLayout.LayoutParams(-1,-1));
   buildFree();screens.addView(freeRoot,new FrameLayout.LayoutParams(-1,-1));
   lab=new MusicLabScreen(a,()->showHome());screens.addView(lab,new FrameLayout.LayoutParams(-1,-1));
-  discovery=new MusicLabDiscoveryScreen(a,()->showHome());screens.addView(discovery,new FrameLayout.LayoutParams(-1,-1));
+  discovery=new MusicLabDiscoveryScreen(a,()->showHome(),()->showCreation());screens.addView(discovery,new FrameLayout.LayoutParams(-1,-1));
+  creation=new MusicCreationScreen(a,()->showHome());screens.addView(creation,new FrameLayout.LayoutParams(-1,-1));
   showHome();
  }
  void buildLibrary(){
@@ -604,6 +606,12 @@ class PianoScreens {
   if(lab!=null)lab.setVisibility(View.GONE);
   if(discovery!=null){discovery.setVisibility(View.VISIBLE);discovery.enter();}
  }
+ void showCreation(){
+  stopLabDemonstration();a.stopPlayback();a.finishStudyWindow();header.setVisibility(View.GONE);
+  if(homeHeader!=null)homeHeader.setVisibility(View.GONE);library.setVisibility(View.GONE);studio.setVisibility(View.GONE);freeRoot.setVisibility(View.GONE);
+  if(lab!=null)lab.setVisibility(View.GONE);if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
+  if(creation!=null)creation.enter();
+ }
  void showHome(){
   stopLabDemonstration();
   a.stopPlayback();a.finishStudyWindow();
@@ -612,6 +620,7 @@ class PianoScreens {
   freeRoot.setVisibility(View.GONE);
   studio.setVisibility(View.GONE);if(lab!=null)lab.setVisibility(View.GONE);
   if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
+  if(creation!=null)creation.setVisibility(View.GONE);
   library.setVisibility(View.VISIBLE);refreshLibrary();updateMidiIndicator();
  }
  void showStudy(){
@@ -622,6 +631,7 @@ class PianoScreens {
   freeRoot.setVisibility(View.GONE);
   library.setVisibility(View.GONE);if(lab!=null)lab.setVisibility(View.GONE);
   if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
+  if(creation!=null)creation.setVisibility(View.GONE);
   studio.setVisibility(View.VISIBLE);
   songTitle.setText(a.currentName==null||a.currentName.isEmpty()?a.score.title:a.currentName);
   if(notation!=null)notation.postDelayed(()->notation.resizeToFit(),180);
@@ -651,6 +661,11 @@ class PianoScreens {
   if(lab!=null&&lab.getVisibility()==View.VISIBLE)lab.onMidiAttack(pitch);
  }
  void onLabMidiAttack(int pitch,long time,long batch,long generation,long uiGeneration){if(discovery!=null)discovery.midiAttack(pitch,time,batch,generation,uiGeneration);}
+ void onCreationMidi(int status,int d1,int d2,long nowNs,long epoch){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onMidi(status,d1,d2,nowNs,epoch);}
+ void pauseCreation(){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onBackground();}
+ void connectionLostCreation(){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.onConnectionLost();}
+ void prepareCreationBackup()throws java.io.IOException{if(creation!=null)creation.prepareBackup();}
+ void backFromLab(){if(creation!=null&&creation.getVisibility()==View.VISIBLE)creation.requestLeave();else showHome();}
  void onLabMidiRelease(int pitch,long generation,long uiGeneration){if(discovery!=null)discovery.midiRelease(pitch,generation,uiGeneration);}
  void onLabMidiBatchEnd(long batch,long now,long uiGeneration){if(discovery!=null)discovery.midiBatchEnd(batch,now,uiGeneration);}
  long discoveryGeneration(){return discovery==null?-1:discovery.sessionGeneration();}
@@ -668,9 +683,9 @@ class PianoScreens {
  }
  void destroyNotation(){if(notation!=null){notation.dispose();notation=null;}
   if(freeNotation!=null){freeNotation.dispose();freeNotation=null;}
-  if(discovery!=null)discovery.dispose();}
+  if(discovery!=null)discovery.dispose();if(creation!=null)creation.close();}
  boolean isFreeOpen(){return freeRoot!=null&&freeRoot.getVisibility()==View.VISIBLE;}
- boolean isLabOpen(){return discovery!=null&&discovery.getVisibility()==View.VISIBLE;}
+ boolean isLabOpen(){return (discovery!=null&&discovery.getVisibility()==View.VISIBLE)||(creation!=null&&creation.getVisibility()==View.VISIBLE);}
  boolean isStudyOpen(){return studio!=null&&studio.getVisibility()==View.VISIBLE;}
 
 }

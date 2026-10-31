@@ -25,7 +25,7 @@ with tempfile.TemporaryDirectory(prefix='piano-upgrade-') as temporary:
         aapt=signer.with_name('aapt')
         old_info=run(str(aapt),'dump','badging',str(old),capture=True)
         new_info=run(str(aapt),'dump','badging',str(current),capture=True)
-        assert f"versionCode='{old_code}'" in old_info and "versionCode='63'" in new_info
+        assert f"versionCode='{old_code}'" in old_info and "versionCode='64'" in new_info
         def cert(apk):
             return next(x.strip() for x in run(str(signer),'verify','--print-certs',str(apk),capture=True).splitlines() if 'certificate SHA-256 digest:' in x)
         assert cert(old)==cert(current), 'Upgrade APK certificates must match on this runner'
@@ -47,7 +47,7 @@ with tempfile.TemporaryDirectory(prefix='piano-upgrade-') as temporary:
         run('adb','shell','am','force-stop',PACKAGE)
         # A read-only debug assertion verifies state after the current APK is installed.
         report=pathlib.Path('piano-upgrade-52.json' if options.baseline_52 else 'piano-upgrade.json')
-        report.write_text(json.dumps(dict(baseline=BASELINE,versionCode=old_code,targetVersionCode=63,sourceSha256=hashlib.sha256(source.read_bytes()).hexdigest(),certificate=cert(current),scope='emulator synthetic data; public-signed binary check is separate'),indent=2))
+        report.write_text(json.dumps(dict(baseline=BASELINE,versionCode=old_code,targetVersionCode=64,sourceSha256=hashlib.sha256(source.read_bytes()).hexdigest(),certificate=cert(current),scope='emulator synthetic data; public-signed binary check is separate'),indent=2))
         if options.baseline_52:
             run('adb','install','-r',str(current))
             run('adb','logcat','-c')
