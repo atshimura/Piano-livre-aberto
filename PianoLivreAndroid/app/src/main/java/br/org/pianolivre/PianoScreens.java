@@ -205,7 +205,8 @@ class PianoScreens {
    card.addView(icon,lp(iconSize,iconSize));
    if(compact){View gap=new View(a);card.addView(gap,lp(1,4));}else addGap(card,12);
    LinearLayout labels=column();labels.setGravity(compact?Gravity.CENTER:Gravity.CENTER_VERTICAL);
-   TextView title=text(titles[i],compact?(tiny?13:16):(shortScreen?16:18),ink,true);
+   String visibleTitle=tiny?(i==0?"Biblioteca":i==1?"Laboratório":"Histórico"):titles[i];
+   TextView title=text(visibleTitle,compact?(tiny?13:16):(shortScreen?16:18),ink,true);
    title.setMaxLines(2);title.setGravity(compact?Gravity.CENTER:Gravity.CENTER_VERTICAL);
    labels.addView(title,lp(-1,-2));
    if(!compact){
