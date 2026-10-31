@@ -32,7 +32,8 @@ final class MusicLabDiscoverySelfTest {
   check(d.learn.getVisibility()==View.VISIBLE&&!d.learn.isEnabled(),"Aprender visible and disabled");
   check(d.instruction.getText().toString().equals(MusicLabDiscoveryScreen.EMPTY_TEXT),"exact empty instruction");
   List<View> elements=tree(d);int buttons=0;for(View v:elements)if(v instanceof Button)buttons++;
-  check(buttons==3,"only toolbar controls in empty state");
+  check(buttons==4,"toolbar contains Back and exactly three Lab tabs in the empty state");
+  check(d.creation.getVisibility()==View.VISIBLE&&d.creation.isEnabled(),"Criação is available as the third Lab area");
   for(View v:elements)if(v instanceof TextView){String t=((TextView)v).getText().toString();check(!Arrays.asList("Tocar","Montar","Iniciar","Gravar","Praticar","Metrônomo","Demonstração").contains(t),"legacy control absent: "+t);}
   long conn=a.midiGeneration,ui=screens.discoveryGeneration();d.session.reconnect(conn,null);
   d.midiAttack(60,100,1,conn,ui);d.midiRelease(60,conn,ui);d.midiBatchEnd(1,101,ui);
