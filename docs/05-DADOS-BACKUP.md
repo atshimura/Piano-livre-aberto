@@ -48,3 +48,8 @@ Perfis passam a IDs estáveis com nome/avatar e exclusão confirmada, conservand
 Biblioteca organizada, IDs de perfil estáveis, histórico/metas, MIDI original e XML derivado integram o backup v2. Novos caminhos de sessão são portáteis; a restauração remapeia referências antigas à biblioteca imported local, sem acessar outro pacote. Tipos/valores conhecidos e profundidade JSON são pré-validados antes da troca. Rejeições preservam dados anteriores; journal permite rollback. Documentos 33–40 substituem as antigas listas de pendências sobre esses recursos.
 
 O novo ensaio no emulador usa somente a base pública 0.9.25 e dados sintéticos, com chave debug comum no runner. Não é evidência de migração do pacote privado nem de instalação física; essa evidência continua pendente. A fonte original importada permanece byte a byte no arquivo e no backup.
+
+
+## Criação C1 — backup v3
+
+A exportação passa a v3 e inclui criações com SHA-256. Leitura v1/v2 preservada. Restore mantém criações locais ausentes do backup, rejeita colisão divergente e perfil proprietário ausente; orçamento conjunto de 200 projetos/6 MiB validado antes de mutação. Preferências/importados mantêm confirmação e rollback existentes. Journals ativos são pausados/confirmados antes de backup/restore. Consulte o [registro técnico](78-CREACAO-C1-IMPLEMENTACAO.md).

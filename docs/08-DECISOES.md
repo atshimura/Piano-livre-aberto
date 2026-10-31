@@ -80,3 +80,8 @@ Veja [01](01-VISAO-E-REQUISITOS.md), [07](07-ESTADO-E-ROADMAP.md) e [10](10-CONT
 ## D-021 ? Descobrir estavel e dois niveis de validacao (30/10/2026)
 
 Produto aprovado no pedido: duas pautas permanentes a esquerda, painel textual lateral, ultimo resultado retido e ajuste excepcional por faixas com histerese. Tecnica: mesmo OSMD do Estudar em pagina independente; camera so amplia ate reabrir Descobrir. Issue #77: fluxo rapido rastreavel sem substituir build/emulator completos. PR #76 permanece independente. [Especificacao, implementacao e evidencias](75-DESCOBRIR-LAYOUT-ESTAVEL-E-PAUTA-PROFISSIONAL.md).
+
+
+## D-022 — Criação C1 e publicação separada (31/10/2026)
+
+Tomada original canônica, derivações SMF sem modificar fonte, UUID/perfil imutáveis, journal incremental e merge conservador de criações no backup v3. Cronometria monotônica na recepção, metadados Android separados. Integração autorizada após gates; Release somente com autorização própria, protegida por propriedade explícita. [Detalhes e limites](78-CREACAO-C1-IMPLEMENTACAO.md).

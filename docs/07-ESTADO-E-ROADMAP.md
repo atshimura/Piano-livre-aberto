@@ -1,7 +1,11 @@
 # 07 — Estado atual e prioridades da linha aberta
 
-Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
 
+
+## Laboratório Musical — Criação C1
+
+C1.1–C1.5 estão em implementação na branch `feat/criacao-c1`; consulte o [registro 78](78-CREACAO-C1-IMPLEMENTACAO.md). O candidato de validação é 0.9.55/code64, sem publicação. Critério de avanço: build e emulador completos no SHA final; a próxima etapa de produto após aceite técnico da C1 é C2 (derivação de partitura), ainda fora deste escopo.
 
 ## Refinamento da Home após a 0.9.52 (30/10/2026)
 

@@ -1,6 +1,6 @@
 # AGENTS.md — continuidade do Piano Livre aberto
 
-Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](docs/77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
+Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](docs/78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
 
 
 Este repositório é a **base principal de desenvolvimento** do Piano Livre. Leia este arquivo antes de alterar código. Trabalhe em português do Brasil; preserve a GPL-3.0-only do código próprio e as licenças de terceiros.
@@ -14,7 +14,7 @@ Este repositório é a **base principal de desenvolvimento** do Piano Livre. Lei
 - Há testes Android, JVM, JavaScript, auditoria MusicXML/MIDI e UI no emulador em `.github/workflows/build.yml` e `emulator.yml`; executores Linux hospedados pelo GitHub. Nunca vincular runner Windows pessoal ao repositório público.
 
 ## Decisões de produto obrigatórias
-**Continuidade futura — Criação C1 (somente planejamento em 30/10/2026):** quando a solicitação disser “vamos continuar a implementação do criação - C1”, ler [docs/76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md](docs/76-CRIACAO-C1-ESCOPO-E-CONTINUIDADE.md), [docs/prompts/CRIACAO_C1_IMPLEMENTACAO.md](docs/prompts/CRIACAO_C1_IMPLEMENTACAO.md) e [issue #79](https://github.com/atshimura/Piano-livre-aberto/issues/79) antes de agir. O usuário aprovou a opção A (uma tomada MIDI inicial, camadas depois); C1 cobre gravação/reprodução/projetos, não gera MusicXML/PDF (C2/C3). Verificar PRs #76/#78 e issue #77 no estado atual, sem pressupor integração. **A C1 não está implementada por este registro.**
+**Continuidade Criação C1:** ler docs/76, docs/78 e o prompt completo de execução. C1 implementa tomada original MIDI, projetos, recuperação, reprodução e exportação; C2/C3 ficam fora. Não reutilizar os resultados do smoke antigo como prova da revisão. Integração autorizada após gates completos; publicação exige autorização específica. Não alterar `publishApproved=false` como escolha técnica rotineira.
 
 - App de aprendizagem musical local/offline; **sem login, servidor, telemetria ou sincronização automática** sem aprovação explícita.
 - Modo Espera: notas esperadas avançam; notas extras não bloqueiam, mas devem ser indicadas. Não penalizar demora. Acordes: janela temporal ajustável após calibração, sem valores arbitrários fixados antecipadamente. Duração/pedal: orientação após ataque correto, não bloqueio.
