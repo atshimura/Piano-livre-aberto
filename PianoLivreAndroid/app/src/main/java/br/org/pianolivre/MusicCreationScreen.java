@@ -2,6 +2,10 @@ package br.org.pianolivre;
 
 import android.app.AlertDialog;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.content.res.ColorStateList;
+import android.graphics.drawable.RippleDrawable;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
@@ -26,7 +30,8 @@ final class MusicCreationScreen extends LinearLayout {
  }
  private CreationProjectStore store;private MidiTakeRecorder take;private CreationJournal journal;private int takeProfileId;private long takeCreatedAt,takeConnectionGeneration;private String selectedId;private String page="home",detailsBack="list";private boolean restoreListPosition;private final MidiTakePlayer player;private TextView playbackStatus,connectionStatus;private EditText listSearch;private boolean ignoreSilence=true,journalsScanned;
  private CreationProjectStore.Filter filter=CreationProjectStore.Filter.ALL;private String query="";private int sortMode=0;
- private final int navy=0xff101C31,ink=0xff172A44,blue=0xff286BCB,muted=0xff57708A;
+ private final int navy=0xff101C31,ink=0xff172A44,blue=0xff286BCB,muted=0xff57708A,light=0xffF0F5FB,white=Color.WHITE;
+ private TextView recordingClock,recordingNotes,recordingEvents;
  MusicCreationScreen(MainActivity activity,Runnable goBack){super(activity);a=activity;back=goBack;setOrientation(VERTICAL);setVisibility(GONE);setBackgroundColor(0xffF7F9FC);
   player=new MidiTakePlayer(new MidiTakePlayer.Sink(){public boolean available(){return a.midiConnection.snapshot().canSend;}public boolean send(byte[] data){return a.midiConnection.send(data);}public void silence(){a.midiConnection.silence();}},(state,pos,duration)->post(()->{if(playbackStatus!=null)playbackStatus.setText((state==MidiTakePlayer.State.PLAYING?"Reproduzindo":state==MidiTakePlayer.State.PAUSED?"Pausada":"Parada")+" · "+String.format(Locale.ROOT,"%.1f / %.1f s",pos/1e9,duration/1e9));}),command->a.handler.post(command));
   bar=new LinearLayout(a);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(dp(8),dp(3),dp(8),dp(3));bar.setBackgroundColor(navy);addView(bar,new LayoutParams(-1,dp(56)));
@@ -35,9 +40,47 @@ final class MusicCreationScreen extends LinearLayout {
   showHome();
  }
  private int dp(float v){return Math.round(v*getResources().getDisplayMetrics().density);}
- private TextView text(String s,int size,boolean bold){TextView t=new TextView(a);t.setText(s);t.setTextSize(size);t.setTextColor(ink);if(bold)t.setTypeface(null,android.graphics.Typeface.BOLD);return t;}
- private Button button(String s,boolean primary,Runnable action){Button b=new Button(a){@Override public void setEnabled(boolean enabled){super.setEnabled(enabled);setAlpha(enabled?1f:.45f);}};b.setText(s);b.setAllCaps(false);b.setTextSize(14);b.setTextColor(primary?Color.WHITE:ink);b.setMinHeight(dp(48));b.setOnClickListener(v->{if(!busy)action.run();});b.setBackgroundColor(primary?blue:0xffEAF0F7);return b;}
- private void header(String title,Runnable returnAction){bar.removeAllViews();Button b=button("← Voltar",false,returnAction);bar.addView(b,new LayoutParams(dp(110),-1));TextView t=text(title,18,true);t.setTextColor(Color.WHITE);t.setSingleLine(true);t.setEllipsize(android.text.TextUtils.TruncateAt.END);t.setContentDescription(title);t.setGravity(Gravity.CENTER_VERTICAL);bar.addView(t,new LayoutParams(0,-1,1));}
+ private TextView text(String s,int size,boolean bold){
+  TextView t=new TextView(a);t.setText(s);t.setTextSize(size);t.setTextColor(ink);
+  t.setGravity(Gravity.CENTER_VERTICAL);if(bold)t.setTypeface(null,android.graphics.Typeface.BOLD);
+  return t;
+ }
+ private GradientDrawable shape(int color,int radius,int stroke){
+  GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));
+  if(stroke!=0)d.setStroke(dp(1),stroke);return d;
+ }
+ private LinearLayout column(){LinearLayout x=new LinearLayout(a);x.setOrientation(VERTICAL);return x;}
+ private LinearLayout horizontal(){LinearLayout x=new LinearLayout(a);x.setOrientation(HORIZONTAL);x.setGravity(Gravity.CENTER_VERTICAL);return x;}
+ private LinearLayout card(){LinearLayout x=column();x.setPadding(dp(14),dp(13),dp(14),dp(13));x.setBackground(shape(white,16,0xffE0E9F4));return x;}
+ private void space(LinearLayout target,int height){View v=new View(a);target.addView(v,new LayoutParams(dp(1),dp(height)));}
+ private void attach(LinearLayout parent,View view,int height,int margin){
+  LayoutParams p=new LayoutParams(-1,height<0?height:dp(height));p.bottomMargin=dp(margin);parent.addView(view,p);
+ }
+ private TextView mutedText(String s,int size){TextView t=text(s,size,false);t.setTextColor(muted);return t;}
+ private void label(LinearLayout target,String s,int size,boolean bold,int bottom){attach(target,text(s,size,bold),-2,bottom);}
+ private Button button(String s,boolean primary,Runnable action){
+  Button b=new Button(a){@Override public void setEnabled(boolean enabled){super.setEnabled(enabled);setAlpha(enabled?1f:.45f);}};
+  b.setText(s);b.setAllCaps(false);b.setTextSize(14);b.setSingleLine(true);b.setEllipsize(TextUtils.TruncateAt.END);
+  b.setTypeface(null,android.graphics.Typeface.BOLD);b.setTextColor(primary?white:ink);
+  b.setMinHeight(dp(48));b.setMinimumHeight(dp(48));b.setPadding(dp(9),0,dp(9),0);
+  b.setOnClickListener(v->{if(!busy)action.run();});
+  b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x22286BCB),shape(primary?blue:light,12,primary?0:0xffDCE7F2),null));
+  return b;
+ }
+ private LinearLayout actionRow(LinearLayout target,Button aButton,Button bButton,int bottom){
+  LinearLayout row=horizontal();LayoutParams lp=new LayoutParams(-1,dp(50));lp.bottomMargin=dp(bottom);target.addView(row,lp);
+  row.addView(aButton,new LayoutParams(0,-1,1));View gap=new View(a);row.addView(gap,new LayoutParams(dp(8),dp(1)));
+  row.addView(bButton,new LayoutParams(0,-1,1));return row;
+ }
+ private void header(String title,Runnable returnAction){
+  bar.removeAllViews();bar.setBackgroundColor(navy);
+  Button b=button("← Voltar",false,returnAction);b.setTextColor(white);
+  b.setBackground(shape(0xff243955,11,0));b.setContentDescription("Voltar");
+  LayoutParams backLp=new LayoutParams(dp(110),dp(44));backLp.rightMargin=dp(12);bar.addView(b,backLp);
+  TextView t=text(title,18,true);t.setTextColor(white);t.setSingleLine(true);
+  t.setEllipsize(TextUtils.TruncateAt.END);t.setContentDescription(title);t.setGravity(Gravity.CENTER_VERTICAL);
+  bar.addView(t,new LayoutParams(0,-1,1));
+ }
  private void base(String title,Runnable returnAction){header(title,returnAction);body.removeAllViews();}
  void enter(){setVisibility(VISIBLE);if(hasUnsavedTake()){showRecorder();return;}if(listProfile!=a.user){listProfile=a.user;query="";filter=CreationProjectStore.Filter.ALL;sortMode=0;listScrollY=0;}if(!journalsScanned){journalsScanned=true;busy=true;disk.execute(()->{recoverJournals();post(()->{busy=false;showHome();});});}showHome();}
  boolean hasUnsavedTake(){return take!=null&&(take.state()==MidiTakeRecorder.State.RECORDING||take.state()==MidiTakeRecorder.State.PAUSED||take.state()==MidiTakeRecorder.State.REVIEW||take.state()==MidiTakeRecorder.State.INTERRUPTED);}
@@ -59,13 +102,40 @@ final class MusicCreationScreen extends LinearLayout {
  }
  void onConnectionLost(){player.stop();if(busy)return;if(take!=null&&(take.state()==MidiTakeRecorder.State.RECORDING||take.state()==MidiTakeRecorder.State.PAUSED||take.state()==MidiTakeRecorder.State.REVIEW||take.state()==MidiTakeRecorder.State.INTERRUPTED)){if(saveRecoverable("Gravação interrompida"))showHome();}}
  private String profileName(){for(LocalProfiles.Profile p:a.profileStore().list())if(p.id==a.user)return p.name;return "Perfil "+a.user;}
- private String midiState(){MidiConnection.Snapshot s=a.midiConnection.snapshot();return "MIDI · Entrada: "+(s.canReceive?"conectada":"indisponível")+" · Saída: "+(s.canSend?"conectada":"indisponível")+(s.connected()&&s.target!=null&&!s.target.name.isEmpty()?"\n"+s.target.name:"");}
- private void showHome(){page="home";player.stop();take=null;captureSession=null;selectedId=null;base("Criação Musical",this::requestLeave);MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.CREATION,this::requestLeave,()->a.screens.showLab(),()->{});
-  body.addView(text("Criação Musical",22,true));body.addView(text("Perfil ativo · "+profileName(),17,true));connectionStatus=text(midiState(),14,false);body.addView(connectionStatus);body.addView(button("Gerenciar USB-MIDI",false,()->a.selectMidi()),new LayoutParams(-1,dp(48)));
-  Button record=button("＋  Nova gravação",true,()->showRecorder());body.addView(record,new LayoutParams(-1,dp(58)));
-  Button list=button("Minhas Criações",false,()->showList());body.addView(list,new LayoutParams(-1,dp(54)));
-  if(recoveryWarning!=null)body.addView(text(recoveryWarning,15,false));body.addView(text("Recentes",18,true));addProjects(CreationProjectStore.Filter.ALL,3);
-  if(body.getChildCount()<=4)body.addView(text("Suas composições aparecerão aqui. Conecte seu piano para começar uma gravação.",15,false));
+ private String midiState(){
+  MidiConnection.Snapshot s=a.midiConnection.snapshot();
+  return "Entrada: "+(s.canReceive?"conectada":"indisponível")+"  ·  Saída: "+(s.canSend?"conectada":"indisponível")
+   +(s.connected()&&s.target!=null&&!s.target.name.isEmpty()?"\n"+s.target.name:"");
+ }
+ private LinearLayout connectionCard(){
+  LinearLayout connection=card();
+  label(connection,"USB-MIDI",15,true,4);
+  connectionStatus=mutedText(midiState(),13);attach(connection,connectionStatus,-2,7);
+  attach(connection,button("Gerenciar USB-MIDI",false,()->a.selectMidi()),48,0);
+  return connection;
+ }
+ private String duration(long nanos){long seconds=Math.max(0,nanos/1_000_000_000L);return String.format(Locale.ROOT,"%02d:%02d",seconds/60,seconds%60);}
+ private void setShown(View view,boolean shown){int target=shown?View.VISIBLE:View.GONE;if(view.getVisibility()!=target)view.setVisibility(target);}
+
+ private void showHome(){
+  page="home";player.stop();take=null;captureSession=null;selectedId=null;
+  base("Criação Musical",this::requestLeave);
+  MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.CREATION,this::requestLeave,()->a.screens.showLab(),()->{});
+  label(body,"Criação Musical",24,true,1);
+  attach(body,mutedText("Perfil ativo · "+profileName(),13),-2,12);
+  attach(body,connectionCard(),-2,12);
+  Button record=button("＋  Nova gravação",true,()->showRecorder());
+  Button list=button("Minhas Criações",false,()->showList());
+  actionRow(body,record,list,14);
+  if(recoveryWarning!=null){
+   TextView warning=mutedText(recoveryWarning,13);warning.setTextColor(0xff986425);
+   attach(body,warning,-2,10);
+  }
+  LinearLayout heading=horizontal();TextView recent=text("Recentes",18,true);
+  heading.addView(recent,new LayoutParams(0,dp(40),1));
+  Button all=button("Ver todas",false,()->showList());all.setTextSize(12);
+  heading.addView(all,new LayoutParams(dp(124),dp(40)));attach(body,heading,40,8);
+  addProjects(CreationProjectStore.Filter.ALL,3);
  }
  private String captureLabel(MidiTakeRecorder.State current){switch(current){case RECORDING:return "Gravando… toque no piano conectado";case PAUSED:return "Pausada · "+take.eventCount()+" eventos recebidos";case REVIEW:return take.noteCount()==0?"Nenhuma nota gravada · descarte a tomada ou preserve os controles MIDI recebidos":"Revisão · "+take.noteCount()+" notas · "+take.eventCount()+" eventos";case INTERRUPTED:return "Trecho interrompido · "+take.interruption();case SAVED:return "Composição salva";case DISCARDED:return "Tomada descartada";default:return "Nova composição · pronta para gravar";}}
  private void showRecorder(){final long revision=++formRevision;page="recording";base("Nova gravação",this::requestLeave);if(take==null){take=new MidiTakeRecorder();takeCreatedAt=System.currentTimeMillis();}body.addView(text("Perfil · "+profileName(),15,true));connectionStatus=text(midiState(),15,false);body.addView(connectionStatus);
