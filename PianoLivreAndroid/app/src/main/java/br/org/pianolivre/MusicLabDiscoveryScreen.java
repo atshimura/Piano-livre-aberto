@@ -15,18 +15,15 @@ final class MusicLabDiscoveryScreen extends LinearLayout {
  static final String EMPTY_TEXT="toque uma nota, acorde ou escala musical";
  final MainActivity activity;
  final MusicDiscoverySession session=new MusicDiscoverySession();
- final Button back,discover,learn,creation;
  final TextView instruction,title,detail,ciphers;
  final HorizontalScrollView ciphersScroll;
  final DiscoveryStaffView staff;
  private final Handler handler=new Handler();private volatile long callbackGeneration=0;
  private boolean observing=false;
  MusicLabDiscoveryScreen(MainActivity a,Runnable goBack,Runnable goCreation){super(a);activity=a;setOrientation(VERTICAL);setBackgroundColor(0xffF7F9FC);setVisibility(GONE);
-  LinearLayout bar=new LinearLayout(a);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(dp(8),dp(3),dp(8),dp(3));bar.setBackgroundColor(0xff101C31);addView(bar,new LayoutParams(-1,dp(50)));
-  back=button("Voltar",false);back.setOnClickListener(v->goBack.run());bar.addView(back,new LayoutParams(0,-1,1));
-  discover=button("Descobrir",true);discover.setEnabled(false);discover.setSelected(true);discover.setContentDescription("Descobrir selecionado");bar.addView(discover,new LayoutParams(0,-1,1));
-  learn=button("Aprender",false);learn.setEnabled(false);learn.setContentDescription("Aprender indisponível nesta versão");bar.addView(learn,new LayoutParams(0,-1,1));
-  creation=button("Criação",false);creation.setContentDescription("Criação Musical");creation.setOnClickListener(v->goCreation.run());bar.addView(creation,new LayoutParams(0,-1,1));
+  LinearLayout bar=new LinearLayout(a);
+  MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.DISCOVER,goBack,()->{},goCreation);
+  addView(bar,new LayoutParams(-1,dp(56)));
   LinearLayout content=new LinearLayout(a);content.setPadding(dp(10),dp(10),dp(10),dp(10));addView(content,new LayoutParams(-1,0,1));
   staff=new DiscoveryStaffView(a);content.addView(staff,new LayoutParams(0,-1,3));
   ScrollView information=new ScrollView(a);information.setFillViewport(true);information.setBackgroundColor(0xffEAF1FA);content.addView(information,new LayoutParams(0,-1,1));
@@ -43,7 +40,6 @@ final class MusicLabDiscoveryScreen extends LinearLayout {
  private final LinearLayout resultView;
  long sessionGeneration(){return callbackGeneration;}
  private int dp(float v){return Math.round(v*getResources().getDisplayMetrics().density);}
- private Button button(String text,boolean selected){Button b=new Button(activity);b.setText(text);b.setAllCaps(false);b.setTextSize(14);b.setTypeface(null,Typeface.BOLD);b.setTextColor(selected?Color.WHITE:0xffDCE6F1);GradientDrawable bg=new GradientDrawable();bg.setColor(selected?0xff286BCB:Color.TRANSPARENT);bg.setCornerRadius(dp(8));b.setBackground(bg);b.setPadding(dp(4),0,dp(4),0);return b;}
  void enter(){staff.onResume();staff.resetFraming();observing=true;callbackGeneration++;shownKey="";session.reset();session.reconnect(activity.midiGeneration,activity.waitRecognizer.chordWindowMs());showState();}
  void leave(){observing=false;callbackGeneration++;session.cancelPending();staff.onPause();}
  void pause(){observing=false;callbackGeneration++;session.cancelPending();staff.onPause();}
