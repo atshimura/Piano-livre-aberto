@@ -23,7 +23,7 @@ def is_safe_visual(path: str, status: str) -> bool:
     parts = p.parts
     return (
         path.startswith(PREFIX)
-        and len(parts) == 8
+        and len(parts) == 7
         and parts[5].startswith("drawable")
         and p.suffix.lower() in EXTENSIONS
         and ".." not in parts
