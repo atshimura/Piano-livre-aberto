@@ -32,6 +32,22 @@ def capture_home_viewports():
             shortcuts=[i for i in items if i['kind']=='home-shortcut']
             cards=[i for i in items if i['kind']=='home-score']
             filter_item=next(i for i in items if i['kind']=='home-filter')
+            search_item=next(i for i in items if i['kind']=='home-library-search')
+            toolbar_item=next(i for i in items if i['kind']=='home-library-toolbar')
+            actions_item=next(i for i in items if i['kind']=='home-library-actions')
+            assert toolbar_item['y']<=search_item['y'] and toolbar_item['y']<=filter_item['y'],('R toolbar alignment',name)
+            assert search_item['y']==filter_item['y'],('R search and category not on the same row',name)
+            assert search_item['x']+search_item['width']<=filter_item['x'],('R search overlaps category',name)
+            assert filter_item['x']+filter_item['width']<=actions_item['x'],('R category overlaps actions',name)
+            assert actions_item['x']+actions_item['width']<=toolbar_item['x']+toolbar_item['width']+1,('R actions overflow toolbar',name)
+            assert search_item['width']>0 and filter_item['width']>0,('R empty search/category',name)
+            if toolbar_item['width']/density>=650:
+                assert search_item['width']>filter_item['width'] and search_item['width']>actions_item['width'],('R search must be largest on wide display',name)
+            buttons=[label for label in actions_item['labels'] if label['text'] in ('+', '＋  Importar', '▱', '▱  Coleções')]
+            assert len(buttons)==2,('R stacked actions missing',name,actions_item)
+            assert buttons[0]['y']+buttons[0]['height']<=buttons[1]['y'],('R actions not stacked',name,buttons)
+            assert all(button['height']/density>=44 for button in buttons),('R undersized touch targets',name,buttons)
+
             assert filter_item['labels'] and all(t['sizeSp']>=16 for t in filter_item['labels']),('Library filter is too small',name,filter_item)
             assert abs(hero['height']/density-old_height*.7)<=1,('Banner must shrink 30%',name,hero)
             assert art['width']/density>old_art,('Artwork did not grow',name,art)
