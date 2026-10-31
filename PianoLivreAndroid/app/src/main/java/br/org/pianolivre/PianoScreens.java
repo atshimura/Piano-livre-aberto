@@ -369,7 +369,15 @@ class PianoScreens {
   int selected=ids.indexOf(selectedLibraryFilter);if(selected<0){selected=0;selectedLibraryFilter="";}
   libraryFilter.setOnItemSelectedListener(null);
   ArrayAdapter<String> filterAdapter=new ArrayAdapter<>(a,android.R.layout.simple_spinner_item,names){
-   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){TextView item=(TextView)super.getView(position,convertView,parent);item.setTextSize(16);return item;}
+   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){
+    TextView item=(TextView)super.getView(position,convertView,parent);
+    item.setTextSize(16);item.setSingleLine(true);item.setEllipsize(TextUtils.TruncateAt.END);
+    // Fit "Categoria" inside the fixed-width selector; keep the full
+    // selected value in accessibility and the unmodified dropdown options.
+    if(position==0)item.setText("Categoria");
+    item.setContentDescription(names.get(position));item.setPadding(d(7),0,d(4),0);
+    return item;
+   }
   };filterAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
   libraryFilter.setAdapter(filterAdapter);libraryFilter.setSelection(selected);
   libraryFilter.setOnItemSelectedListener(new MainActivity.Listener(index->{
