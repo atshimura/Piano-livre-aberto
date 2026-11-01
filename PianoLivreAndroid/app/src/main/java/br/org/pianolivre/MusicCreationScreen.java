@@ -371,6 +371,13 @@ a.handler.postDelayed(this,100);}};ticker.run();
     attach(body,playerCard,-2,12);
     updatePlaybackControls();
    }
+   if(!p.recoverable){
+    LinearLayout scoreCard=card();label(scoreCard,"Partitura",17,true,6);
+    attach(scoreCard,mutedText("Gerar e ajustar uma prévia MusicXML em duas pautas, sem modificar a gravação original.",13),-2,8);
+    attach(scoreCard,button("Gerar partitura",true,()->CreationScorePreviewScreen.open(a,p)),50,5);
+    attach(scoreCard,mutedText("Prévia temporária: salvar e Estudar serão acrescentados na C2-C.",12),-2,0);
+    attach(body,scoreCard,-2,12);
+   }
    Button rename=button("Renomear",false,()->rename(p));
    if(!p.trash){
     Button export=button("Exportar MIDI (.mid)",false,()->a.exportCreationMidi(id,p.title));
