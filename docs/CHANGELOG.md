@@ -1,5 +1,9 @@
 # Histórico de alterações
 
+## Implementação E — Bloco E-B (E2 + E3), branch de desenvolvimento — 01/11/2026
+
+A pauta normal de Descobrir foi ampliada em ~27% nas dimensões Chromium verificadas (celular/tablet), e notas, acordes e sequências começam após as claves na mesma coluna. OSMD e MIDI preservados; teste dedicado, 16 capturas e build CI [#41316106385](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41316106385) aprovados no código verificado. **Somente no PR draft #91**, não integrado nem publicado; retorno automático dos extremos (E4) e entrega final pendentes. [Relatório](98-IMPLEMENTACAO-E-E-B-PAUTA-ALINHADA.md).
+
 ## Planejamento aprovado — Implementação E (31/10/2026; sem nova versão)
 
 Documentados três ajustes futuros e exclusivos da pauta de Descobrir: pautas maiores, coluna inicial comum de nota/acorde/sequência e enquadramento automático reversível para extremos simultâneos. Definidos plano E0–E6, matrizes de teste e critérios de aceite. **Nenhuma alteração do aplicativo, teste executado para E ou APK é reivindicada.** [Plano técnico](95-IMPLEMENTACAO-E-DESCOBRIR-PAUTA.md) · [Issue #89](https://github.com/atshimura/Piano-livre-aberto/issues/89).
