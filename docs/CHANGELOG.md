@@ -1,5 +1,9 @@
 # Histórico de alterações
 
+## Implementação E — E4 (E-C) na branch #91 — 01/11/2026
+
+Câmera do Descobrir agora é automaticamente reversível pela extensão das notas visíveis, preservando último resultado e retornando à pauta ampliada em entrada comum. Testes [build #41318276669](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41318276669) aprovados (56 verificações JVM, 12 PNGs e seis ciclos por perfil em Chromium); teste Android `ui-fast` [#41318276483](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41318276483) aprovado (22 estados reais da UI, MIDI sintético). **Somente PR draft #91; E5/E6, integração, APK assinado e testes físicos pendentes**. [Relatório](99-IMPLEMENTACAO-E-E-C-ENQUADRAMENTO-REVERSIVEL.md).
+
 ## Implementação E — Bloco E-B (E2 + E3), branch de desenvolvimento — 01/11/2026
 
 A pauta normal de Descobrir foi ampliada em ~27% nas dimensões Chromium verificadas (celular/tablet), e notas, acordes e sequências começam após as claves na mesma coluna. OSMD e MIDI preservados; teste dedicado, 16 capturas e build CI [#41316106385](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41316106385) aprovados no código verificado. **Somente no PR draft #91**, não integrado nem publicado; retorno automático dos extremos (E4) e entrega final pendentes. [Relatório](98-IMPLEMENTACAO-E-E-B-PAUTA-ALINHADA.md).
