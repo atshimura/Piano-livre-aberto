@@ -46,7 +46,9 @@
     var clefs=Array.from(svg.querySelectorAll('.vf-clef'));
     if(clefs.length!==2)throw Error('Expected two engraved clefs');
     var railWidth=Math.max.apply(null,clefs.map(function(n){var b=n.getBBox();return b.x+b.width+8;}));
-    var startX=railWidth+24;
+    // Reserve room for an accidental immediately before the first head,
+    // so the fixed clef rail cannot cover its leftmost ink.
+    var startX=railWidth+40;
     var pitchedByStaff=staves.map(function(staff){return Array.from(staff.querySelectorAll('.vf-notehead'));});
     function noteCenterX(n){var b=n.getBBox();return b.x+b.width/2;}
     function moveStaff(staff,dx){
