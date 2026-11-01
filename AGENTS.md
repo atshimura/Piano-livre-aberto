@@ -1,5 +1,8 @@
 # AGENTS.md — continuidade do Piano Livre aberto
 
+**Plano posterior — Criação C2 (01/11/2026; ainda não implementada):** [docs/101-CRIACAO-C2-PLANO-EXECUCAO.md](docs/101-CRIACAO-C2-PLANO-EXECUCAO.md), [guia C2-A/B/C/D](docs/prompts/CRIACAO_C2_EXECUCAO.md), [issue #95](https://github.com/atshimura/Piano-livre-aberto/issues/95). A C1 grava MIDI e exporta .mid; C2 gerará MusicXML **interno derivado** com parâmetros ajustáveis e divisão entre pautas (nota/acorde/trecho), sem alterar original, integrando Estudar e backup. C3 exportação MusicXML/PDF, C4 edição musical. Não presumir C2 implementada e não misturar com publicação pendente da 0.9.60. A seção histórica abaixo sobre C1 planejada deve ser lida à luz da main atual.
+
+
 Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](docs/77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
 
 

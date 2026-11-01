@@ -1,5 +1,10 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Planejamento Criação C2 (01/11/2026; ainda não implementada)
+
+Depois da gravação C1, o próximo recurso planejado é a **transformação de tomada MIDI em partitura interna derivada**. A experiência e o projeto técnico estão em [docs/101](101-CRIACAO-C2-PLANO-EXECUCAO.md), [guia nomeado C2-A/B/C/D](prompts/CRIACAO_C2_EXECUCAO.md) e [issue #95](https://github.com/atshimura/Piano-livre-aberto/issues/95). Etapas solicitáveis: “Implemente C2-A”, C2-B, C2-C, C2-D. **Nunca sobrescrever a gravação original; garantir backup do sidecar antes de C2-C; C3 exportará MusicXML/PDF e C4 editará notas.** Consultar o estado real da main e não confundir plano com código concluído.
+
+
 ## Correção da abertura — candidata 0.9.60-open-beta (01/11/2026)
 
 A nova Activity mostra Home mesmo com `user_N_file` gravado, em vez de carregar automaticamente uma partitura e abrir Estudar. `saveSession` e todos os dados anteriores permanecem intactos. Ver [issue #92](https://github.com/atshimura/Piano-livre-aberto/issues/92) e [notas da versão 0.9.60](releases/0.9.60-open-beta.md). A versão 0.9.60 possui autorização específica para Release; conferir os gates da CI e artefatos da publicação, sem reaproveitar aprovação de versões antigas. Testes físicos pendentes.
