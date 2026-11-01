@@ -55,8 +55,11 @@ final class CreationScorePreviewScreen extends LinearLayout {
             w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);}
         d.setOnDismissListener(x->view.shutdown());
         d.setOnKeyListener((dialog,key,event)->{
-            if(key==android.view.KeyEvent.KEYCODE_BACK&&event.getAction()==android.view.KeyEvent.ACTION_UP){
-                if(view.busy)d.dismiss();else view.confirmClose();return true;
+            if(key==android.view.KeyEvent.KEYCODE_BACK){
+                if(event.getAction()==android.view.KeyEvent.ACTION_UP){
+                    if(view.busy)d.dismiss();else view.confirmClose();
+                }
+                return true;
             }
             return false;
         });
