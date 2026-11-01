@@ -11,7 +11,7 @@ import java.util.*;
 final class DiscoveryLayoutSelfTest {
  private final MainActivity a;private final MusicLabDiscoveryScreen d;private final Handler h=new Handler();
  private int stage=0;private long batch=1000,time;private JSONObject normal;
- private static final String[] NAMES={"empty","note","retained","chord","sequence","held-after-sequence","low","high","common-after-extreme"};
+ private static final String[] NAMES={"empty","note","retained","chord","sequence","held-after-sequence","low","high","extremes-together","common-after-extreme"};
  private DiscoveryLayoutSelfTest(MainActivity a){this.a=a;d=a.screens.discovery;}
  static void run(MainActivity a){new DiscoveryLayoutSelfTest(a).begin();}
  private void check(boolean b,String m){if(!b)throw new IllegalStateException("Discovery layout: "+m);}
@@ -25,7 +25,10 @@ final class DiscoveryLayoutSelfTest {
    case 3:play(60,64,67);check(d.session.result().kind==MusicDiscoverySession.Kind.CHORD,"chord");break;
    case 4:for(int n:new int[]{60,62,64,65,67,69,71,72})play(n);check(d.session.result().kind==MusicDiscoverySession.Kind.SEQUENCE,"parallel scale analyzer");break;
    case 5:d.midiAttack(64,time,batch,a.midiGeneration,d.sessionGeneration());check(d.title.getText().toString().equals("MI - E4"),"new held note replaces prior scale immediately");check(d.session.result().kind==MusicDiscoverySession.Kind.SEQUENCE,"active preview preserves parallel recognized result");break;
-   case 6:d.midiRelease(64,a.midiGeneration,d.sessionGeneration());d.session.reconnect(a.midiGeneration,null);batch++;time+=2000;play(0);break;case 7:play(127);break;case 8:play(64);break;
+   case 6:d.midiRelease(64,a.midiGeneration,d.sessionGeneration());d.session.reconnect(a.midiGeneration,null);batch++;time+=2000;play(0);break;
+   case 7:play(127);break;
+   case 8:play(21,108);check(d.session.result()!=null&&d.session.result().notes.containsAll(Arrays.asList(21,108)),"simultaneous real-piano extremes in session");break;
+   case 9:play(64);break;
   }
  }
  private boolean capturing=false;
@@ -34,7 +37,7 @@ final class DiscoveryLayoutSelfTest {
   JSONObject g=new JSONObject((String)decoded);
   float density=a.getResources().getDisplayMetrics().density;
   if(Math.abs(g.getDouble("viewportHeight")-d.staff.getHeight()/density)>2||Math.abs(g.getDouble("viewportWidth")-d.staff.getWidth()/density)>2){capturing=false;h.postDelayed(()->capture(),100);return;}
-  int expected=new int[]{0,1,1,3,8,1,1,1,1}[stage];
+  int expected=new int[]{0,1,1,3,8,1,1,1,2,1}[stage];
   if(g.getInt("notes")!=expected||g.getInt("tier")!=(stage>=6?2:0)){capturing=false;return;}
   check(g.getJSONArray("staves").length()==2,"two painted staves");
   if(stage==0)normal=g;
