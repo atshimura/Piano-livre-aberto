@@ -8,9 +8,11 @@
   revision=revision||0;current=[xml,tier,ordered,count,revision];var ticket=++generation;
   // Build offscreen: keep the previous complete frame while the next engraves.
   var stage=document.createElement('div');stage.style.cssText='position:absolute;left:0;top:0;visibility:hidden';host.appendChild(stage);
-  var camera=[{top:95,bass:225,height:360},{top:170,bass:310,height:510},{top:255,bass:405,height:700}][tier];
+  // E2: the normal two-staff camera uses the same vertical space with larger
+  // engraved symbols. Keep the wider registral tiers for the next E-C task.
+  var camera=[{top:82,bass:185,height:284},{top:170,bass:310,height:510},{top:255,bass:405,height:700}][tier];
   var inputHeight=viewport.clientHeight,inputWidth=viewport.clientWidth;
-  var scale=Math.min(1.8,Math.max(1,inputHeight-16)/camera.height);
+  var scale=Math.min(tier===0?2.1:1.8,Math.max(1,inputHeight-16)/camera.height);
   var width=Math.max(inputWidth/scale,ordered?100+count*60:340);
   stage.style.width=width+'px';
   try{
@@ -36,12 +38,47 @@
      var last=measures[measures.length-1];
      Array.from(last.children).filter(function(n){return n.tagName.toLowerCase()==='path';}).slice(0,5).forEach(function(p){var b=p.getBBox();p.setAttribute('d','M '+b.x+' '+b.y+' L '+Math.max(b.x+b.width,width-20)+' '+b.y);});
      measures.forEach(function(m){Array.from(m.children).filter(function(n){return n.tagName.toLowerCase()==='rect'&&n.getBBox().height>=step*3.9;}).forEach(function(n){n.remove();});});
-     if(!ordered&&count){
-      var heads=Array.from(staff.querySelectorAll('.vf-stavenote'));
-      var pitched=heads.filter(function(n){return !!n.querySelector('.vf-notehead');});
-      if(pitched.length){var box=pitched[0].querySelector('.vf-notehead').getBBox(),dx=width*.46-(box.x+box.width/2);heads.concat(Array.from(staff.querySelectorAll('.vf-ledgers'))).forEach(function(n){n.setAttribute('transform','translate('+dx+',0)');});}
-     }
     });
+    // E3: a single note, a chord and the first note of an ordered sequence
+    // share a starting column immediately AFTER the fixed, engraved clefs.
+    // Move VexFlow note groups and their sibling ledger groups together.
+    // Never move a notehead alone or re-space the sequence's musical events.
+    var clefs=Array.from(svg.querySelectorAll('.vf-clef'));
+    if(clefs.length!==2)throw Error('Expected two engraved clefs');
+    var railWidth=Math.max.apply(null,clefs.map(function(n){var b=n.getBBox();return b.x+b.width+8;}));
+    // Reserve room for an accidental immediately before the first head,
+    // so the fixed clef rail cannot cover its leftmost ink.
+    var startX=railWidth+40;
+    // Invisible quarter rests used to keep both staves visible also contain
+    // .vf-notehead elements, but their glyphs are tall and narrow. The
+    // engraved piano noteheads in this transient quarter-note score are ovals.
+    function isPitchedHead(n){var b=n.getBBox();return b.width>0&&b.height>0&&b.width>=b.height*.85;}
+    var pitchedByStaff=staves.map(function(staff){return Array.from(staff.querySelectorAll('.vf-notehead')).filter(isPitchedHead);});
+    function noteCenterX(n){var b=n.getBBox();return b.x+b.width/2;}
+    function moveStaff(staff,dx){
+     if(Math.abs(dx)<.001)return;
+     Array.from(staff.querySelectorAll('.vf-stavenote,.vf-ledgers')).forEach(function(n){
+      n.setAttribute('transform','translate('+dx+',0)');
+     });
+    }
+    if(count){
+     if(ordered){
+      var allHeads=pitchedByStaff.reduce(function(result,heads){return result.concat(heads);},[]);
+      if(allHeads.length){
+       var firstX=Math.min.apply(null,allHeads.map(noteCenterX));
+       staves.forEach(function(staff){moveStaff(staff,startX-firstX);});
+      }
+     }else{
+      // Independent empty/rest voices can start at different OSMD offsets.
+      // Non-ordered chords have one onset on both staves, so align them.
+      staves.forEach(function(staff,i){
+       if(pitchedByStaff[i].length){
+        var firstX=Math.min.apply(null,pitchedByStaff[i].map(noteCenterX));
+        moveStaff(staff,startX-firstX);
+       }
+      });
+     }
+    }
     // System-spanning brace/barlines depend on the original staff separation.
     // Descobrir has no metre: show two independent complete staves and clefs.
     Array.from(svg.querySelectorAll('.vf-brace,.vf-connector,.vf-timesignature')).forEach(function(n){n.remove();});
@@ -53,8 +90,6 @@
     Array.from(host.children).forEach(function(n){if(n!==stage)n.remove();});viewport.scrollLeft=0;
     // A fixed crop of the same engraved staff keeps both clefs at the left
     // while a long sequence scrolls. No duplicate or substitute glyph drawing.
-    var clefs=Array.from(svg.querySelectorAll('.vf-clef'));
-    var railWidth=Math.max.apply(null,clefs.map(function(n){var b=n.getBBox();return b.x+b.width+8;}));
     var rail=document.getElementById('rail'),crop=svg.cloneNode(true);
     Array.from(crop.querySelectorAll('.vf-stavenote')).forEach(function(n){n.remove();});
     crop.setAttribute('viewBox','0 0 '+railWidth+' '+camera.height);

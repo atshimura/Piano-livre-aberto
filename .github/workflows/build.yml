@@ -53,12 +53,39 @@ jobs:
           javac -encoding UTF-8 -d build/score-tests app/src/main/java/br/org/pianolivre/DiscoveryScoreBuilder.java tests/DiscoveryNotationFixtures.java
           java -cp build/score-tests br.org.pianolivre.DiscoveryNotationFixtures > build/discovery-fixtures.txt
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryNotationBrowserTest.js
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryEBaselineBrowserTest.js
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryEVisualBrowserTest.js
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryEReversibleBrowserTest.js
       - name: Save adaptive Study measurements
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: adaptive-study-corpus
           path: docs/evidence/study-profile/
+      - name: Preserve E-A baseline browser screenshots and measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: implementacao-e-baseline-browser
+          retention-days: 14
+          path: PianoLivreAndroid/build/implementacao-e-baseline/browser/
+          if-no-files-found: warn
+      - name: Preserve E-B visual screenshots and measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: implementacao-e-visual-eb
+          retention-days: 14
+          path: PianoLivreAndroid/build/implementacao-e-baseline/visual-eb/
+          if-no-files-found: warn
+      - name: Preserve E-C camera-transition visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: implementacao-e-visual-ec
+          retention-days: 14
+          path: PianoLivreAndroid/build/implementacao-e-baseline/visual-ec/
+          if-no-files-found: warn
       - name: Task 06 exact source and native fidelity
         run: |
           python3 tests/complex_notation_source_test.py
@@ -171,6 +198,11 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicSequenceAnalyzer.java app/src/main/java/br/org/pianolivre/MusicPatternTracker.java tests/MusicPatternTrackerTest.java
           java -cp build/score-tests MusicPatternTrackerTest
+      - name: Test reversible Descobrir framing selection (JVM)
+        run: |
+          mkdir -p build/score-tests
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/DiscoveryFraming.java tests/DiscoveryFramingTest.java
+          java -cp build/score-tests br.org.pianolivre.DiscoveryFramingTest
       - name: Test Descobrir MusicXML engraving source (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java app/src/main/java/br/org/pianolivre/DiscoveryScoreBuilder.java tests/DiscoveryScoreBuilderTest.java

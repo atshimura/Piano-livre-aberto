@@ -44,7 +44,10 @@ final class DiscoveryStaffView extends FrameLayout {
  void setNotes(List<Integer> values,boolean isSequence){
   List<Integer> next=values==null?Collections.emptyList():new ArrayList<>(values);
   notes=next;sequence=isSequence;revision++;
-  for(int n:notes)tier=Math.max(tier,n<21||n>108?2:n<36||n>84?1:0);
+  // Reversible: the rendered preview or retained result alone determines the
+  // camera. Note Off does not shrink a retained extreme because showState()
+  // continues supplying that result; a new common entry restores tier 0.
+  tier=DiscoveryFraming.tierFor(notes);
   renderedXml=DiscoveryScoreBuilder.build(notes,sequence);requestLayout();send();
  }
  private void send(){if(ready&&renderer!=null)renderer.evaluateJavascript("Discovery.render("+org.json.JSONObject.quote(renderedXml)+","+tier+","+sequence+","+notes.size()+","+revision+")",null);}
