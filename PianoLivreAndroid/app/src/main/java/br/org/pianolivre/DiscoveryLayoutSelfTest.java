@@ -39,12 +39,13 @@ final class DiscoveryLayoutSelfTest {
   float density=a.getResources().getDisplayMetrics().density;
   if(Math.abs(g.getDouble("viewportHeight")-d.staff.getHeight()/density)>2||Math.abs(g.getDouble("viewportWidth")-d.staff.getWidth()/density)>2){capturing=false;h.postDelayed(()->capture(),100);return;}
   int expected=new int[]{0,1,1,3,8,1,1,1,2,2,1}[stage];
-  if(g.getInt("notes")!=expected||g.getInt("tier")!=(stage>=6&&stage<=9?2:0)){capturing=false;return;}
+  if(g.getInt("notes")!=expected||g.getInt("tier")!=new int[]{0,0,0,0,0,0,2,2,1,1,0}[stage]){capturing=false;return;}
   check(g.getJSONArray("staves").length()==2,"two painted staves");
   if(stage==0)normal=g;
   if(stage<=5){check(g.getInt("tier")==0,"ordinary notes keep standard tier");check(Math.abs(g.getDouble("scale")-normal.getDouble("scale"))<.001,"stable ordinary scale");
    for(int i=0;i<2;i++)check(Math.abs(g.getJSONArray("staves").getJSONArray(i).getJSONObject(0).getDouble("y")-normal.getJSONArray("staves").getJSONArray(i).getJSONObject(0).getDouble("y"))<1,"stable staff origin");}
-  if(stage>=6&&stage<=9)check(g.getInt("tier")==2,"all extreme notes remain visible until replaced");
+  if(stage>=6&&stage<=7)check(g.getInt("tier")==2,"full MIDI extremes require complete framing");
+  if(stage>=8&&stage<=9)check(g.getInt("tier")==1,"88-key piano extremes require expanded framing even after Note Off");
   if(stage==10){
    check(g.getInt("tier")==0,"new common note restores large normal camera");
    check(Math.abs(g.getDouble("scale")-normal.getDouble("scale"))<.001,"normal scale restored exactly");
