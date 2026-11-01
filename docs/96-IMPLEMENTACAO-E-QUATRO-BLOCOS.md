@@ -1,6 +1,6 @@
 # Implementação E — plano de execução acelerado em quatro blocos
 
-**Estado:** E-A (E0+E1) executado/documentado; **E-B (E2+E3) implementado e testado na branch funcional do PR #91**; **E-C (E4) implementado e validado em JVM/Chromium/UI Android**, mas ainda sem merge; **E-D pendente**. [Relatório E-C](99-IMPLEMENTACAO-E-E-C-ENQUADRAMENTO-REVERSIVEL.md). [Registro E-B](98-IMPLEMENTACAO-E-E-B-PAUTA-ALINHADA.md) · [E-A](97-IMPLEMENTACAO-E-E-A-BASELINE.md). [Registro E-A e capturas](97-IMPLEMENTACAO-E-E-A-BASELINE.md) · [PR funcional #91](https://github.com/atshimura/Piano-livre-aberto/pull/91).  
+**Estado:** E-A (E0+E1) executado/documentado; **E-B (E2+E3) implementado e testado na branch funcional do PR #91**; **E-C (E4) implementado e validado em JVM/Chromium/UI Android**, mas ainda sem merge; **E-D em execução, aguardando os gates do SHA final e integração**. [Registro E-D](100-IMPLEMENTACAO-E-E-D-VALIDACAO-ENTREGA.md). [Relatório E-C](99-IMPLEMENTACAO-E-E-C-ENQUADRAMENTO-REVERSIVEL.md). [Registro E-B](98-IMPLEMENTACAO-E-E-B-PAUTA-ALINHADA.md) · [E-A](97-IMPLEMENTACAO-E-E-A-BASELINE.md). [Registro E-A e capturas](97-IMPLEMENTACAO-E-E-A-BASELINE.md) · [PR funcional #91](https://github.com/atshimura/Piano-livre-aberto/pull/91).  
 **Registro:** 01/11/2026.  
 **Especificação integral:** [95 — Implementação E](95-IMPLEMENTACAO-E-DESCOBRIR-PAUTA.md).  
 **Acompanhamento:** [issue #89](https://github.com/atshimura/Piano-livre-aberto/issues/89).  
@@ -108,7 +108,7 @@ Este documento organiza as sete etapas técnicas **E0–E6** da especificação 
 - **Cada pedido de bloco significa executar apenas aquele bloco e seus pré-requisitos inseparáveis**, registrando o resultado. Não publicar nem integrar antes de E-D. Se o usuário pedir explicitamente “implemente toda a E”, executar os quatro em sequência, respeitando gates e limitações do ambiente.
 - **Não abrir um PR por bloco:** isso multiplicaria a CI e o trabalho de integração. Um único PR funcional em evolução oferece rastreabilidade pelos commits/marcadores `E-A`, `E-B`, `E-C` e `E-D`, além do registro de conclusão em cada passagem.
 - **Se o PR documental #90 ainda não estiver integrado**, a especificação continua disponível naquela branch; não confundir sua aprovação/CI com evidência da implementação funcional. Ao retomar E-A, preferir iniciar após o merge seguro da documentação, se ele ainda estiver pendente.
-- **Situação atual (01/11/2026):** A = **concluído como diagnóstico/baseline CI**; B = **código implementado, testes Chromium e capturas concluídos na branch #91**; C = **implementado, testes JVM/Chromium e UI-focada Android aprovados na branch #91**; D = pendente. [Evidência E-A](97-IMPLEMENTACAO-E-E-A-BASELINE.md). A criação original deste plano não havia executado os blocos.
+- **Situação atual (01/11/2026):** A = **concluído como diagnóstico/baseline CI**; B = **código implementado, testes Chromium e capturas concluídos na branch #91**; C = **implementado, testes JVM/Chromium e UI-focada Android aprovados na branch #91**; D = **em validação final para a candidata 0.9.59/code68, sem merge nem Release até os gates**. [Evidência E-A](97-IMPLEMENTACAO-E-E-A-BASELINE.md). A criação original deste plano não havia executado os blocos.
 
 ## Checklist final resumido
 

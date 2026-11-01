@@ -1,5 +1,9 @@
 # Histórico de alterações
 
+## 0.9.59-open-beta / code68 — candidata Implementação E (01/11/2026)
+
+Melhoria exclusiva da pauta Descobrir: ampliação proporcional do padrão, alinhamento de notas/acordes/sequências à esquerda e ajuste reversível de enquadramento conforme alturas visíveis, com retorno automático após nova entrada normal. **E5/E6 em validação no PR #91; versão não publicada, Release não autorizada**. [Protocolo](100-IMPLEMENTACAO-E-E-D-VALIDACAO-ENTREGA.md) · [notas da candidata](releases/0.9.59-open-beta.md).
+
 ## Implementação E — E4 (E-C) na branch #91 — 01/11/2026
 
 Câmera do Descobrir agora é automaticamente reversível pela extensão das notas visíveis, preservando último resultado e retornando à pauta ampliada em entrada comum. Testes [build #41318276669](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41318276669) aprovados (56 verificações JVM, 12 PNGs e seis ciclos por perfil em Chromium); teste Android `ui-fast` [#41318276483](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41318276483) aprovado (22 estados reais da UI, MIDI sintético). **Somente PR draft #91; E5/E6, integração, APK assinado e testes físicos pendentes**. [Relatório](99-IMPLEMENTACAO-E-E-C-ENQUADRAMENTO-REVERSIVEL.md).
