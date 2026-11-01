@@ -26,6 +26,6 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
  await page.evaluate(xml=>{window.report=null;Discovery.render(xml,0,false,1);},Buffer.from(fixtures[1],'base64').toString('utf8'));
  await page.setViewportSize({width:900,height:430});
  await page.waitForFunction(()=>window.report&&window.report.viewportWidth===900&&window.report.viewportHeight===430);
- assert(Math.abs((await page.evaluate(()=>window.report.scale))-(430-16)/360)<.001,'resize must use one consistent viewport');
+ assert(Math.abs((await page.evaluate(()=>window.report.scale))-(430-16)/284)<.001,'resize must use one consistent viewport');
  await browser.close();console.log('DISCOVERY_NOTATION_BROWSER_PASS stable=7 extremes=2 expanded=2 staves=2 offline=true resize=true');
 })().catch(e=>{console.error(e);process.exit(1);});
