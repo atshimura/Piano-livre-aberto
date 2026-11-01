@@ -82,7 +82,7 @@ def reveal_study_controls():
         box=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
     adb("shell","input","tap",str(box[2]-12),str(box[3]-12));time.sleep(.6)
 
-def study_renderer(temporal):
+def study_renderer(temporal, score_title=None):
     """Debug-only renderer fixture; no manual production selector exists."""
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-W","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity",
@@ -92,9 +92,14 @@ def study_renderer(temporal):
     # was saved. The renderer probe must explicitly enter Study, matching
     # normal user navigation. Keep the debug-only temporal intent in place.
     wait_for_text("Bem-vindo ao",timeout=30)
-    tap_text(["Começar pela Ode à Alegria"],scroll=True)
+    # The default short fixture is Ode à Alegria; long-score checks must
+    # deliberately reopen Gymnopédie after EACH force-stop. Otherwise they
+    # accidentally prove a 19-head score while expecting 469 written heads.
+    tap_text([score_title] if score_title else ["Começar pela Ode à Alegria"],scroll=True)
     wait_for_text("Espera",timeout=30)
     assert_study_controls()
+    print("STUDY_RENDERER_FIXTURE "+(score_title or DEFAULT_SCORE_TITLE)+
+          " temporal="+str(temporal),flush=True)
 
 def assert_study_controls():
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
@@ -930,10 +935,10 @@ if __name__=="__main__":
     tap_text(["Gymnopédie nº 1"],scroll=True)
     time.sleep(3)
     assert_running()
-    study_renderer(True)
+    study_renderer(True,score_title="Gymnopédie nº 1")
     time.sleep(1)
     screenshot("piano-temporal-long.png")
-    study_renderer(False)
+    study_renderer(False,score_title="Gymnopédie nº 1")
     long_pid=adb("shell","pidof","br.org.pianolivre.opensource").strip()
     long_proof=None
     for attempt in range(35):
