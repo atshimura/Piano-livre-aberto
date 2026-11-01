@@ -54,6 +54,7 @@ jobs:
           java -cp build/score-tests br.org.pianolivre.DiscoveryNotationFixtures > build/discovery-fixtures.txt
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryNotationBrowserTest.js
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryEBaselineBrowserTest.js
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryEVisualBrowserTest.js
       - name: Save adaptive Study measurements
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,6 +68,14 @@ jobs:
           name: implementacao-e-baseline-browser
           retention-days: 14
           path: PianoLivreAndroid/build/implementacao-e-baseline/browser/
+          if-no-files-found: warn
+      - name: Preserve E-B visual screenshots and measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: implementacao-e-visual-eb
+          retention-days: 14
+          path: PianoLivreAndroid/build/implementacao-e-baseline/visual-eb/
           if-no-files-found: warn
       - name: Task 06 exact source and native fidelity
         run: |
