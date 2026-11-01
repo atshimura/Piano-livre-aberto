@@ -88,6 +88,13 @@ def study_renderer(temporal):
     adb("shell","am","start","-W","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity",
         "--ez","study_temporal_selftest","true" if temporal else "false")
     time.sleep(2);assert_running()
+    # Since 0.9.60 all cold starts intentionally show Home, even if a score
+    # was saved. The renderer probe must explicitly enter Study, matching
+    # normal user navigation. Keep the debug-only temporal intent in place.
+    wait_for_text("Bem-vindo ao",timeout=30)
+    tap_text(["Começar pela Ode à Alegria"],scroll=True)
+    wait_for_text("Espera",timeout=30)
+    assert_study_controls()
 
 def assert_study_controls():
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
