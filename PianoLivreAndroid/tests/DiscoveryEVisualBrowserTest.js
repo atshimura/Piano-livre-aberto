@@ -27,7 +27,10 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
      const vp=document.getElementById('viewport').getBoundingClientRect();
      const rail=document.getElementById('rail').getBoundingClientRect();
      function bounds(n){const b=n.getBoundingClientRect();return {x:b.x-vp.x,y:b.y-vp.y,w:b.width,h:b.height};}
-     const heads=Array.from(svg.querySelectorAll('.vf-notehead')).map(bounds);
+     // The invisible rest placeholders also have .vf-notehead wrappers:
+     // actual pitched quarter-note heads are oval, unlike the tall rest glyphs.
+     const heads=Array.from(svg.querySelectorAll('.vf-notehead')).map(bounds)
+      .filter(b=>b.w>0&&b.h>0&&b.w>=b.h*.85);
      const ledgers=Array.from(svg.querySelectorAll('.vf-ledgers')).map(bounds);
      // OSMD/VexFlow may retain zero-area placeholders in the SVG tree;
      // only a painted accidental can overlap the fixed clef rail.
