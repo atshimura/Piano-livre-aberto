@@ -15,8 +15,8 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
    await page.route(/^https?:/,request=>request.abort());
    await page.goto('file://'+path.resolve('app/src/main/assets/discovery.html'));
    await page.evaluate(()=>{window.DiscoveryNotation={rendered(json){window.ebRender=JSON.parse(json);},error(e){window.ebError=e;}};});
-   async function render(name,index,tier,count,ordered){
-    const xml=Buffer.from(fixtures[index],'base64').toString('utf8');
+   async function render(name,index,tier,count,ordered,xmlOverride){
+    const xml=xmlOverride||Buffer.from(fixtures[index],'base64').toString('utf8');
     await page.evaluate(([xml,tier,count,ordered])=>{window.ebRender=null;window.ebError=null;Discovery.render(xml,tier,ordered,count);},[xml,tier,count,ordered]);
     await page.waitForFunction(()=>window.ebRender||window.ebError);
     const err=await page.evaluate(()=>window.ebError);
@@ -55,7 +55,15 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
    const sequence=await render('sequence',10,0,4,true);
    const c2=await render('c2-ledgers',5,0,1,false);
    const c6=await render('c6-ledgers',6,0,1,false);
-   const accident=await render('eb4-accidental',3,0,1,false);
+   // E-flat is an alteration of the known C4 fixture, not a replacement
+   // for the application's MusicXML-to-engraving production path.
+   const ebXml=Buffer.from(fixtures[1],'base64').toString('utf8')
+    .replace('<pitch><step>C</step><octave>4</octave></pitch>',
+             '<pitch><step>E</step><alter>-1</alter><octave>4</octave></pitch>')
+    .replace('<type>quarter</type><staff>1</staff></note>',
+             '<type>quarter</type><accidental>flat</accidental><staff>1</staff></note>');
+   assert(ebXml.includes('<accidental>flat</accidental>'),'E-flat fixture must include accidental');
+   const accident=await render('eb4-accidental',1,0,1,false,ebXml);
    const extreme=await render('extremes-together',13,1,2,false);
    assert(empty.staffSpace>profile.oldSpace*1.18,
     profile.name+' normal staff must grow >=18% from E-A baseline');
@@ -71,7 +79,7 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
     profile.name+' note with accidental still has same initial column');
    assert(c4.firstX>c4.railWidth+8,
     profile.name+' first note cannot appear under the clef rail');
-   assert(accident.accidental.every(b=>b.x>accident.railWidth-2),
+   assert(accident.accidental.length>0&&accident.accidental.every(b=>b.x>accident.railWidth-2),
     profile.name+' accidental must clear the fixed clef rail');
    assert(chord.heads.length>=3,'chord heads remain engraved');
    assert(Math.max(...chord.heads.map(b=>b.x+b.w/2))-Math.min(...chord.heads.map(b=>b.x+b.w/2))<2,
