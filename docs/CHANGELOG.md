@@ -1,5 +1,9 @@
 # Histórico de alterações
 
+## 0.9.60-open-beta (code69) — correção de abertura (01/11/2026)
+
+Corrigido o lançamento que abria diretamente Estudar quando o perfil possuía uma partitura salva. Toda nova Activity inicia em Home, preservando dados e preferências; o estudo só abre após escolha explícita. Testes de reabertura com sessão salva adicionados à CI Android. **Release aprovada especificamente pelo usuário; publicação condicionada aos gates do SHA final.** [Issue #92](https://github.com/atshimura/Piano-livre-aberto/issues/92) · [notas 0.9.60](releases/0.9.60-open-beta.md).
+
 ## 0.9.59-open-beta / code68 — candidata Implementação E (01/11/2026)
 
 Melhoria exclusiva da pauta Descobrir: ampliação proporcional do padrão, alinhamento de notas/acordes/sequências à esquerda e ajuste reversível de enquadramento conforme alturas visíveis, com retorno automático após nova entrada normal. **E5/E6 em validação no PR #91; versão não publicada, Release não autorizada**. [Protocolo](100-IMPLEMENTACAO-E-E-D-VALIDACAO-ENTREGA.md) · [notas da candidata](releases/0.9.59-open-beta.md).
