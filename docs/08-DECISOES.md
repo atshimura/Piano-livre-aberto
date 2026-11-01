@@ -2,6 +2,10 @@
 
 # 08 — Registro de decisões de produto e arquitetura (ADRs)
 
+## D-023 — Implementação E: tamanho e posição das pautas do Descobrir (31/10/2026)
+
+**Tipo: decisões de produto aprovadas; estado: planejamento/documentação, não implementado.** (1) Aumentar visualmente as duas pautas de Sol/Fá na região esquerda, **sem alterar o restante da tela**; (2) posicionar notas isoladas, acordes e o começo de sequências na mesma coluna inicial logo após as claves, sem salto de centro para esquerda; (3) adaptar automaticamente o tamanho somente para notas que não couberem (inclusive Lá0+Do8 simultâneos) e **restaurar automaticamente** o tamanho normal grande quando uma nova entrada couber, preservando o último resultado após Note Off e evitando oscilação. O ajuste é automático, **sem criar botão**. A terceira decisão **substitui expressamente** a retenção monotônica do enquadramento até reabrir a tela descrita em D-021/doc 75; as demais regras permanecem válidas. [Implementação E — plano e testes](95-IMPLEMENTACAO-E-DESCOBRIR-PAUTA.md) · [Issue #89](https://github.com/atshimura/Piano-livre-aberto/issues/89).
+
 ## D-020 — Refinamento da Home após a beta 0.9.52 (30/10/2026)
 
 **Solicitado pelo usuário:** diminuir o banner em 30%, ampliar sua arte, remover somente o cartão Opções mantendo a engrenagem, ampliar os três atalhos restantes, reorganizar busca/filtro/importação/coleções e usar duas colunas maiores para as partituras em tablet. Preservar funcionalidades e as decisões de Estudar/MIDI. Uma coluna em larguras pequenas é adaptação técnica para leitura, documentada e testada. [Entrega e imagem anotada](74-AJUSTES-TELA-INICIAL-POS-BETA-0952.md). Escopo autorizado: implementação, testes e novo PR, sem merge ou Release.
