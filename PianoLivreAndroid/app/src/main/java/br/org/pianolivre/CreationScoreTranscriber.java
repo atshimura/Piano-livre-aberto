@@ -2,6 +2,7 @@ package br.org.pianolivre;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -86,23 +87,24 @@ public final class CreationScoreTranscriber {
         Group(int staff,long start,long end){this.staff=staff;this.start=start;this.end=end;}
     }
     private static final class Timeline {
-        final List<MidiTakeRecorder.Segment> segments;final long[] offsets;final long length;
+        final long[] starts,ends,offsets;final long length;
         Timeline(List<MidiTakeRecorder.Segment> segments)throws IOException{
             if(segments==null||segments.isEmpty()||segments.size()>10000)throw new IOException("Segmentos de gravação ausentes ou excessivos");
-            this.segments=segments;offsets=new long[segments.size()];long previous=-1,total=0;
+            starts=new long[segments.size()];ends=new long[segments.size()];
+            offsets=new long[segments.size()];long previous=-1,total=0;
             for(int i=0;i<segments.size();i++){
                 MidiTakeRecorder.Segment s=segments.get(i);
                 if(s==null||s.startNs<0||s.startNs<previous||s.endNs<s.startNs||s.endNs-s.startNs>MidiTakeRecorder.MAX_DURATION_NS-total)
                     throw new IOException("Segmentos MIDI inválidos");
-                offsets[i]=total;total+=s.endNs-s.startNs;previous=s.endNs;
+                starts[i]=s.startNs;ends[i]=s.endNs;offsets[i]=total;
+                total+=s.endNs-s.startNs;previous=s.endNs;
             }
             length=total;
         }
         long at(long ns)throws IOException{
-            for(int i=0;i<segments.size();i++){
-                MidiTakeRecorder.Segment s=segments.get(i);
-                if(ns>=s.startNs&&ns<=s.endNs)return offsets[i]+ns-s.startNs;
-            }
+            int i=Arrays.binarySearch(starts,ns);
+            if(i<0)i=-i-2;
+            if(i>=0&&ns<=ends[i])return offsets[i]+ns-starts[i];
             throw new IOException("Evento fora dos segmentos gravados");
         }
     }
