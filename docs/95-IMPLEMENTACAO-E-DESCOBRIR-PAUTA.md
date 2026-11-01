@@ -144,3 +144,15 @@ Não considerar E1/E2/E3 isoladas como conclusão. A **Implementação E funcion
 **Não concluído:** mudança de código, novos PNGs, teste automatizado da E, APK, validação em aparelhos físicos, merge do futuro PR de código e versão 1.0. O planejamento não aumenta `versionCode` nem aprova publicação.
 
 **Próxima ação de desenvolvimento:** iniciar E0/E1 na `main` vigente (sem presumir que o SHA de referência ainda é o atual), criar branch de implementação própria e seguir E2→E6 até concluir as três mudanças juntas. Usar a issue #89 e **este documento como fonte de escopo**, respeitando decisões anteriores que não foram substituídas.
+
+
+## 9. Plano operacional otimizado — quatro blocos solicitáveis (01/11/2026)
+
+O usuário aprovou organizar as sete etapas técnicas E0–E6 deste documento em **quatro blocos com nomes fixos para retomada independente**. A fonte operacional é [**96 — Implementação E: quatro blocos**](96-IMPLEMENTACAO-E-QUATRO-BLOCOS.md), que especifica entradas, ações, testes direcionados, critérios de saída e comandos prontos para cada bloco:
+
+- **E-A — Diagnóstico Direto** (E0+E1); solicitação: **“Implemente o Bloco E-A da Implementação E.”**
+- **E-B — Pauta Grande e Alinhada** (E2+E3); solicitação: **“Implemente o Bloco E-B da Implementação E.”**
+- **E-C — Escala Inteligente Reversível** (E4); solicitação: **“Implemente o Bloco E-C da Implementação E.”**
+- **E-D — Validação e Entrega** (E5+E6); solicitação: **“Implemente o Bloco E-D da Implementação E.”**
+
+**Meta agregada:** 8–12 horas de esforço técnico, sujeita aos resultados de testes e CI. Trabalhar em **uma branch/PR funcional** com commits por bloco, testes rápidos nos blocos intermediários e validação completa antes de merge. O plano em quatro blocos é reorganização operacional, **não é redução de escopo** das três melhorias nem declaração de execução. [Issue #89](https://github.com/atshimura/Piano-livre-aberto/issues/89).
