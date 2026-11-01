@@ -49,7 +49,11 @@
     // Reserve room for an accidental immediately before the first head,
     // so the fixed clef rail cannot cover its leftmost ink.
     var startX=railWidth+40;
-    var pitchedByStaff=staves.map(function(staff){return Array.from(staff.querySelectorAll('.vf-notehead'));});
+    // Invisible quarter rests used to keep both staves visible also contain
+    // .vf-notehead elements, but their glyphs are tall and narrow. The
+    // engraved piano noteheads in this transient quarter-note score are ovals.
+    function isPitchedHead(n){var b=n.getBBox();return b.width>0&&b.height>0&&b.width>=b.height*.85;}
+    var pitchedByStaff=staves.map(function(staff){return Array.from(staff.querySelectorAll('.vf-notehead')).filter(isPitchedHead);});
     function noteCenterX(n){var b=n.getBBox();return b.x+b.width/2;}
     function moveStaff(staff,dx){
      if(Math.abs(dx)<.001)return;
