@@ -2,6 +2,11 @@
 
 # 08 — Registro de decisões de produto e arquitetura (ADRs)
 
+## D-024 — Criação C2: transcrição MIDI como partitura derivada (01/11/2026)
+
+**Estado:** planejamento para implementação; nenhuma C2 implementada neste registro. **Decisões e direcionamento aprovados pela conversa:** botão **Gerar partitura** somente quando o usuário solicitar em composição salva; primeira prévia de duas pautas sem formulário de parâmetros; configurações iniciais 100 BPM/4/4/1/16 editáveis; divisão musical sugerida (não identifica mãos) com corte por altura opcional e correções por nota, acorde, seleção múltipla e intervalos de compassos; desfazer/restaurar/salvar. Gravação canônica `.plc` nunca quantizada nem modificada por C2. Música derivada vinculada ao mesmo projeto, backup seguro e acesso pelo Estudar. C3 terá exportação MusicXML/PDF; C4 editará notas. [Especificação executável](101-CRIACAO-C2-PLANO-EXECUCAO.md) · [issue #95](https://github.com/atshimura/Piano-livre-aberto/issues/95).
+
+
 ## D-023 — Implementação E: tamanho e posição das pautas do Descobrir (31/10/2026)
 
 **Tipo: decisões de produto aprovadas; estado posterior: E2/E3/E4 implementadas em PR #91, E5/E6 em validação da candidata 0.9.59/code68, ainda sem integração/publicação até os gates.** (1) Aumentar visualmente as duas pautas de Sol/Fá na região esquerda, **sem alterar o restante da tela**; (2) posicionar notas isoladas, acordes e o começo de sequências na mesma coluna inicial logo após as claves, sem salto de centro para esquerda; (3) adaptar automaticamente o tamanho somente para notas que não couberem (inclusive Lá0+Do8 simultâneos) e **restaurar automaticamente** o tamanho normal grande quando uma nova entrada couber, preservando o último resultado após Note Off e evitando oscilação. O ajuste é automático, **sem criar botão**. A terceira decisão **substitui expressamente** a retenção monotônica do enquadramento até reabrir a tela descrita em D-021/doc 75; as demais regras permanecem válidas. [Implementação E — plano e testes](95-IMPLEMENTACAO-E-DESCOBRIR-PAUTA.md) · [Issue #89](https://github.com/atshimura/Piano-livre-aberto/issues/89).

@@ -1,5 +1,11 @@
 # Documentação do Piano Livre aberto
 
+## Criação C2 — plano de conversão MIDI → partitura (01/11/2026)
+
+- [101 — Criação C2: especificação do usuário, motor, ajustes entre pautas, preservação/backup, critérios e quatro blocos](101-CRIACAO-C2-PLANO-EXECUCAO.md). **Planejamento, não implementação.** [Issue #95](https://github.com/atshimura/Piano-livre-aberto/issues/95).
+- [Guia de execução C2-A a C2-D](prompts/CRIACAO_C2_EXECUCAO.md). A gravação C1 continua original e imutável; C3 exportará MusicXML/PDF, C4 terá edição detalhada.
+
+
 ## Correção de inicialização 0.9.60
 
 - [Release candidata 0.9.60 — abertura sempre na Tela Inicial](releases/0.9.60-open-beta.md): diagnóstico e correção do redirecionamento indevido ao Estudar, testes de reabertura sem apagar sessão e autorização de publicação versionada. [Issue #92](https://github.com/atshimura/Piano-livre-aberto/issues/92).
