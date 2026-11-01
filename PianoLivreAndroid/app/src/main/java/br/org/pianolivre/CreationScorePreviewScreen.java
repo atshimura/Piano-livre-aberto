@@ -54,6 +54,12 @@ final class CreationScorePreviewScreen extends LinearLayout {
         if(w!=null){w.setBackgroundDrawableResource(android.R.color.transparent);
             w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);}
         d.setOnDismissListener(x->view.shutdown());
+        d.setOnKeyListener((dialog,key,event)->{
+            if(key==android.view.KeyEvent.KEYCODE_BACK&&event.getAction()==android.view.KeyEvent.ACTION_UP){
+                if(view.busy)d.dismiss();else view.confirmClose();return true;
+            }
+            return false;
+        });
         d.show();
         if(d.getWindow()!=null)d.getWindow().setLayout(-1,-1);
         view.generateInitial();
@@ -61,7 +67,9 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private CreationScorePreviewScreen(MainActivity a,CreationProjectStore.Project p){
         super(a);activity=a;project=p;setOrientation(VERTICAL);setBackgroundColor(0xffF7F9FC);
         LinearLayout header=horizontal();header.setPadding(dp(12),dp(5),dp(12),dp(5));header.setBackgroundColor(0xff101C31);
-        Button close=button("← Voltar",false,()->confirmClose());close.setTextColor(Color.WHITE);
+        Button close=button("← Voltar",false,()->confirmClose());
+        close.setOnClickListener(v->{if(closed)return;if(busy)window.dismiss();else confirmClose();});
+        close.setTextColor(Color.WHITE);
         close.setBackgroundColor(0xff243955);
         header.addView(close,new LayoutParams(dp(110),dp(48)));
         TextView name=label("Transformar em partitura",18,true,Color.WHITE);
