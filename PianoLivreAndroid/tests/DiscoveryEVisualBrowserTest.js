@@ -29,7 +29,9 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
      function bounds(n){const b=n.getBoundingClientRect();return {x:b.x-vp.x,y:b.y-vp.y,w:b.width,h:b.height};}
      const heads=Array.from(svg.querySelectorAll('.vf-notehead')).map(bounds);
      const ledgers=Array.from(svg.querySelectorAll('.vf-ledgers')).map(bounds);
-     const accidental=Array.from(svg.querySelectorAll('.vf-accidental')).map(bounds);
+     // OSMD/VexFlow may retain zero-area placeholders in the SVG tree;
+     // only a painted accidental can overlap the fixed clef rail.
+     const accidental=Array.from(svg.querySelectorAll('.vf-accidental')).map(bounds).filter(b=>b.w>0&&b.h>0);
      const stems=Array.from(svg.querySelectorAll('.vf-stem')).map(bounds);
      const clefs=Array.from(svg.querySelectorAll('.vf-clef')).map(bounds);
      const ink=[...heads,...ledgers,...accidental,...stems,...clefs].filter(b=>b.w>0&&b.h>0);
@@ -80,7 +82,7 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||'playwright');
    assert(c4.firstX>c4.railWidth+8,
     profile.name+' first note cannot appear under the clef rail');
    assert(accident.accidental.length>0&&accident.accidental.every(b=>b.x>accident.railWidth-2),
-    profile.name+' accidental must clear the fixed clef rail');
+    profile.name+' visible accidental must clear the fixed clef rail '+JSON.stringify({railWidth:accident.railWidth,accidentals:accident.accidental}));
    assert(chord.heads.length>=3,'chord heads remain engraved');
    assert(Math.max(...chord.heads.map(b=>b.x+b.w/2))-Math.min(...chord.heads.map(b=>b.x+b.w/2))<2,
     profile.name+' chord heads must share a single attack column');
