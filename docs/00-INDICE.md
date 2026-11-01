@@ -1,5 +1,9 @@
 # Documentação do Piano Livre aberto
 
+## Correção de inicialização 0.9.60
+
+- [Release candidata 0.9.60 — abertura sempre na Tela Inicial](releases/0.9.60-open-beta.md): diagnóstico e correção do redirecionamento indevido ao Estudar, testes de reabertura sem apagar sessão e autorização de publicação versionada. [Issue #92](https://github.com/atshimura/Piano-livre-aberto/issues/92).
+
 ## Implementação E — Descobrir (candidata 0.9.59, E-D em validação)
 
 - [95 — Implementação E: ampliação da pauta, notas no início e enquadramento automático reversível](95-IMPLEMENTACAO-E-DESCOBRIR-PAUTA.md): três decisões aprovadas, diagnóstico dos arquivos, sequência E0–E6, ensaios extremos simultâneos, aceite, riscos e retomada. **Somente documentação; nenhuma funcionalidade E foi implementada nesta entrega.** [Issue #89](https://github.com/atshimura/Piano-livre-aberto/issues/89).

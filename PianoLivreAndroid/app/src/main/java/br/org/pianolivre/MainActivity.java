@@ -172,7 +172,11 @@ public class MainActivity extends Activity {
   String notation06=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      ?getIntent().getStringExtra("engraving_notation06_selftest"):null;
   boolean notation06SelfTest=notation06!=null&&java.util.Arrays.asList("accidentals","beams","tuplets","grace","adversarial").contains(notation06);
-  if(!contextSelfTest&&!complexEngravingSelfTest&&!polyphonySelfTest&&!notation06SelfTest&&!previous.isEmpty())loadScore(previous,false);
+  // Every new Activity starts on Home, even when a profile has a saved score.
+  // Keep user_N_file, position and all study preferences untouched. Loading a
+  // score remains an explicit user action; debug engraving fixtures below may
+  // still open Study intentionally when invoked with their test-only flags.
+  android.util.Log.i("PianoLivreUI","STARTUP_HOME lastScoreSaved="+!previous.isEmpty());
   setupMidi();
   handler.post(ticker);
   if(contextSelfTest){

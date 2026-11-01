@@ -213,10 +213,10 @@ def assert_collection_filter_option(name, present=True):
         raise AssertionError("Collection filter option presence mismatch for "+repr(target)+"; options="+repr(labels))
 
 def return_to_library_if_study_was_restored():
+    """Cold starts must display Home, not silently load the previous Study."""
     labels=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in dump().iter("node")]
-    if any("← Biblioteca" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in dump().iter("node")):
-        tap_text(["← Biblioteca"],exact=True)
-        wait_for_text("Bem-vindo ao")
+    assert any("Bem-vindo ao" in label for label in labels), "Cold start bypassed the Home screen"
+    assert not any("← Biblioteca" in label for label in labels), "Cold start reopened Study automatically"
 
 def tap_text(targets, return_point=False, exact=False, scroll=False, _scroll_pass=0):
     if any(value in ("Parar","Iniciar","Pausar") for value in targets):

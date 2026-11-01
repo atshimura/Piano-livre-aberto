@@ -42,3 +42,24 @@ tap_text(['Descobrir'],exact=True);wait_for_text('toque uma nota',timeout=30)
 assert lab_tabs('Descobrir')==discover_bounds,'Laboratory bar changed after roundtrip'
 tap_text(['Voltar'],exact=True);wait_for_text('Bem-vindo ao',timeout=30);screenshot('piano-fast-return.png')
 print('FAST_NAVIGATION_PASS captures=7 scope=home-study-discovery-creation-library-record-ready-shared-navigation',flush=True)
+
+# Regression: a saved study session must never hijack a fresh launcher start.
+tap_text(['Começar pela Ode à Alegria'],scroll=True)
+wait_for_text('Espera',timeout=30)
+before=adb('shell','run-as',P,'cat','shared_prefs/piano_data.xml')
+assert 'user_0_file' in before and 'ode-to-joy' in before, 'Study session was not persisted before cold start'
+adb('shell','am','force-stop',P)
+adb('shell','am','start','-W','-n',P+'/br.org.pianolivre.MainActivity')
+wait_for_text('Bem-vindo ao',timeout=30)
+labels=[n.attrib.get('text','') for n in dump().iter('node')]
+assert not ('Espera' in labels or 'Contínuo' in labels), 'Study controls shown instead of Home after restart'
+after=adb('shell','run-as',P,'cat','shared_prefs/piano_data.xml')
+# Compare the original pref lines rather than whole XML: app may reorder tags.
+before_saved=[line.strip() for line in before.splitlines() if 'name="user_0_' in line]
+after_saved=[line.strip() for line in after.splitlines() if 'name="user_0_' in line]
+assert before_saved and sorted(before_saved)==sorted(after_saved), 'Saved study session changed when opening Home'
+screenshot('piano-fast-relaunch-home.png')
+tap_text(['Começar pela Ode à Alegria'],scroll=True)
+wait_for_text('Espera',timeout=30)
+assert_study_controls()
+print('STARTUP_HOME_REGRESSION_PASS previous_score=true saved_preferences_unchanged=true explicit_study=true',flush=True)

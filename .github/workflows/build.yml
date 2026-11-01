@@ -344,7 +344,7 @@ jobs:
     needs: build
     # One-time, version-scoped release authorized by the maintainer; never on PRs.
     # Exact-version authorization and build/emulator gates remain enforced by the publisher.
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-0.9.58]')))
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-0.9.60]')))
     runs-on: ubuntu-latest
     timeout-minutes: 100
     permissions:
