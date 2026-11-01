@@ -1,5 +1,7 @@
 # AGENTS.md — continuidade do Piano Livre aberto
 
+**Regra de testes definida pelo usuário em 01/11/2026, para implementações futuras:** executar **somente testes básicos direcionados; não rodar a suíte completa**. A CI atual dispara a suíte completa em todo PR com mudança Java (`build.yml` e `classify_pr_risk.py` + `emulator-suite`). **Não abrir PR que a dispare sem resolver esse conflito de processo**, não enfraquecer silenciosamente verificações/proteção de `main` e não declarar uma branch como integrada sem os gates efetivos. Para C2-A, consultar [relatório 102](docs/102-CRIACAO-C2-A-MOTOR-IMPLEMENTACAO.md) e [issue #95](https://github.com/atshimura/Piano-livre-aberto/issues/95). O planejamento C2 está no [PR documental #96](https://github.com/atshimura/Piano-livre-aberto/pull/96); este registro não implica que o PR foi integrado.
+
 Consolidacao vigente: beta **0.9.54-open-beta (63)** em PR unico reunindo #76, #78 e #80, autorizada pelo usuario. Consultar [registro e protocolo final](docs/77-CONSOLIDACAO-PUBLICACAO-0954.md). Estados anteriores de PR sem merge/Release sao historicos. Validar checks do conjunto e da main antes de publicar; C1 continua planejada, issue #79 aberta; hardware/V1 pendentes.
 
 
