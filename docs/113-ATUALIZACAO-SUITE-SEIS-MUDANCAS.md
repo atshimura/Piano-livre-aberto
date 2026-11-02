@@ -38,3 +38,11 @@ No Pixel 3 720×540, o menu da engrenagem pode rolar verticalmente e UIAutomator
 - Auditoria adicional encontrou pressuposto frágil no teste de calibração MIDI de `emulator_ui.py`: a opção ficava fora da primeira janela do menu da engrenagem em telefones menores. O teste agora procura e acessa a opção com rolagem, mantendo as asserções sobre calibração e ausência de entrada MIDI.
 - O contrato automatizado das seis alterações verifica que o helper não executa `dump()` nem toque durante a execução, e exige a busca acessível com rolagem. **Correções de testes, não supressão das verificações.**
 - Esta atualização deve ser comprovada com `build` e `emulator` completos no SHA final da PR, antes do merge protegido e da publicação do APK permanente. O status anterior de falha não autoriza integração.
+
+## Segunda falha comprovada — autoteste da Biblioteca
+
+- A nova execução [#41517779729](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41517779729) passou por **emulator_study_layout** em telefone e tablet, testes **MIDI interfaces**, e migrações sintéticas das versões anteriores 0.9.54, 0.9.52 e legada. Em seguida parou ao procurar `UPGRADE_SELFTEST_PASS`.
+- Diagnóstico do artefato `PianoLivre-public-emulator-evidence/piano-selftests.log`: `BACKUP_SELFTEST_PASS assertions=51` e `PROFILES_SELFTEST_PASS assertions=14`; depois, `FATAL EXCEPTION: main` em `LibrarySelfTest.java:28` com `AssertionError: empty metadata is read-only`. Não se tratou de falha na restauração de backup nem de simples atraso do runner.
+- O próprio `LibrarySelfTest` adicionava uma criação e seu favorito, persistia ambos e **só então** exigia que a biblioteca e o arquivo de metadados estivessem vazios. Isso é contraditório. A asserção de leitura não-mutante foi movida para ANTES dos atos de escrita. Foram preservados os testes de inclusão idempotente, separação entre perfis, favoritos e backup.
+- Foi adicionado contrato estático para detectar inversão futura da ordem. **Sem alterar o comportamento do aplicativo nem excluir qualquer teste.**
+- Exigir novamente `build` e `emulator` completos no SHA final após esta correção antes de integrar a main e publicar.
