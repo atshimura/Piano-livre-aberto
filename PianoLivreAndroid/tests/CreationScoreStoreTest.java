@@ -22,6 +22,10 @@ public final class CreationScoreStoreTest {
    CreationProjectStore.Project project=originals.save("Original",0,1,recording.durationNs(),recording.events(),recording.segments());
    byte[] before=originals.rawFile(project.id);
    CreationScoreStore scores=new CreationScoreStore(root);
+   String session="creation-score:"+project.id;
+   ok(SessionFiles.portable(session).equals(session),"derivative session portable");
+   ok(SessionFiles.resolve(root,session).equals(session),"session never expands to a file path");
+   reject(()->SessionFiles.portable("creation-score:../../etc"),"invalid derivative session rejected");
    CreationScoreTranscriber.Options opts=CreationScoreTranscriber.Options.defaults();
    String xml=CreationScoreTranscriber.transcribe(project.events,project.segments,opts,project.title).xml;
    ok(!scores.has(project.id),"not generated initially");
@@ -42,6 +46,12 @@ public final class CreationScoreStoreTest {
    reject(()->scores.save(project.id,0,opts,xml),"trash cannot save");
    originals.restore(project.id,5);
    ok(scores.read(project.id).xml.equals(xml),"trash restore retains derivative");
+   // Simulate a process killed after moving the score into deletion quarantine.
+   File quarantine=new File(new File(root,CreationScoreStore.DIRECTORY),project.id+".deleting");
+   File actual=new File(new File(root,CreationScoreStore.DIRECTORY),project.id+CreationScoreStore.EXT);
+   Files.move(actual.toPath(),quarantine.toPath());
+   new CreationScoreStore(root);
+   ok(actual.exists()&&!quarantine.exists(),"restart recovers score while PLC still exists");
    File f=new File(new File(root,CreationScoreStore.DIRECTORY),project.id+CreationScoreStore.EXT);
    byte[] corrupted=unchanged.clone();corrupted[corrupted.length-5]^=1;Files.write(f.toPath(),corrupted);
    reject(()->scores.read(project.id),"corruption detected before use");
