@@ -67,6 +67,11 @@ class CreationLibraryContracts(unittest.TestCase):
         self.assertIn('click("Adicionar à Biblioteca")',SMOKE)
         self.assertIn('find("Na Biblioteca Musical")',SMOKE)
         self.assertIn('study-via-library',SMOKE)
+        self.assertIn('click("Voltar")',SMOKE)
+        self.assertIn('click("← Biblioteca")',SMOKE)
+        self.assertIn('find("Criação Musical")',SMOKE)
+        self.assertIn('find("Biblioteca Musical")',SMOKE)
+        self.assertNotIn('keyevent", "KEYCODE_BACK")  # Library home',SMOKE)
         self.assertNotIn('click("Estudar esta partitura")',SMOKE)
 
 if __name__=="__main__":
