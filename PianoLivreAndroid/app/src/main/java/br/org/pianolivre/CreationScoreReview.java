@@ -35,15 +35,20 @@ public final class CreationScoreReview {
     private CreationScoreTranscriber.Result result;
     private boolean dirty;
     public CreationScoreReview(List<MidiTakeRecorder.Event> events,List<MidiTakeRecorder.Segment> segments,String title)throws IOException{
-        if(events==null||segments==null||title==null)throw new IOException("Composição ausente");
+        this(events,segments,title,CreationScoreTranscriber.Options.defaults());
+    }
+    public CreationScoreReview(List<MidiTakeRecorder.Event> events,List<MidiTakeRecorder.Segment> segments,String title,
+                               CreationScoreTranscriber.Options stored)throws IOException{
+        if(events==null||segments==null||title==null||stored==null)throw new IOException("Composição ausente");
         this.events=Collections.unmodifiableList(new ArrayList<>(events));
         this.segments=Collections.unmodifiableList(new ArrayList<>(segments));
-        this.title=title;
+        this.title=title;options=stored;
         result=CreationScoreTranscriber.transcribe(this.events,this.segments,options,title);
     }
     public synchronized CreationScoreTranscriber.Result result(){return result;}
     public synchronized CreationScoreTranscriber.Options options(){return options;}
     public synchronized boolean isDirty(){return dirty;}
+    public synchronized void markSaved(){dirty=false;}
     public synchronized int selectedCount(){return selected.size();}
     public synchronized Set<String> selection(){return Collections.unmodifiableSet(new LinkedHashSet<>(selected));}
     public synchronized boolean canUndo(){return !undo.isEmpty();}
