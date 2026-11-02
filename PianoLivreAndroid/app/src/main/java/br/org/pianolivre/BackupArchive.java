@@ -317,10 +317,18 @@ public final class BackupArchive {
   File old=new File(root,ROLLBACK);
   File dest=new File(root,FILES);
   File creations=new File(root,CREATIONS);
+  File scores=new File(root,SCORE_SUBDIR);
   if(marker.isFile()){
    String text=new String(readFile(marker,MAX_JSON),StandardCharsets.UTF_8);JsonLimits.check(text,MAX_JSON,64);JSONObject journal=new JSONObject(text);
    Map<String,Object> before=decodePrefs(journal.getJSONObject("previousPrefs"),true);
    boolean had=journal.getBoolean("hadImported");
+   JSONArray addedScores=journal.optJSONArray("addedScores");
+   if(addedScores!=null)for(int i=0;i<addedScores.length();i++){
+    String id=addedScores.getString(i);
+    if(!id.matches("[0-9a-fA-F-]{36}"))throw new IOException("Journal de partitura inválido");
+    File score=new File(scores,id.toLowerCase(Locale.ROOT)+CreationScoreStore.EXT);
+    if(score.exists()&&!score.delete())throw new IOException("Não foi possível desfazer partitura restaurada");
+   }
    JSONArray added=journal.optJSONArray("addedCreations");if(added!=null){for(int i=0;i<added.length();i++){String id=added.getString(i);if(!id.matches("[0-9a-fA-F-]{36}"))throw new IOException("Journal de composições inválido");File project=new File(creations,id.toLowerCase(Locale.ROOT)+".plc");if(project.exists()&&!project.delete())throw new IOException("Não foi possível desfazer composição restaurada");}}
    if(old.exists()){
     deleteTree(dest);
@@ -343,14 +351,17 @@ public final class BackupArchive {
   recover(prefs,root);
   File stage=new File(root,STAGE),old=new File(root,ROLLBACK),dest=new File(root,FILES);
   File creationStageRoot=new File(root,CREATION_STAGE),creationStage=new File(creationStageRoot,CREATIONS),creationDest=new File(root,CREATIONS);
+  File scoreStage=new File(creationStageRoot,SCORE_SUBDIR),scoreDest=new File(root,SCORE_SUBDIR);
   Set<Integer> targetProfiles=profileIds(target.prefs);CreationProjectStore currentStore=new CreationProjectStore(root);
   for(CreationProjectStore.Project p:currentStore.snapshotAll())if(!targetProfiles.contains(p.profileId))throw new IOException("A restauração removeria o perfil dono de uma composição local; os dados foram mantidos. Inclua esse perfil no backup ou exporte/exclua a composição explicitamente.");
-  if(!stage.mkdir())throw new IOException("Não foi possível preparar a restauração");if(!creationStage.mkdirs())throw new IOException("Não foi possível preparar a mesclagem de composições");
-  boolean had=dest.exists();ArrayList<String> addedCreationIds=new ArrayList<>();
+  if(!stage.mkdir())throw new IOException("Não foi possível preparar a restauração");if(!creationStage.mkdirs()||!scoreStage.mkdirs())throw new IOException("Não foi possível preparar a mesclagem de composições/partituras");
+  boolean had=dest.exists();ArrayList<String> addedCreationIds=new ArrayList<>(),addedScoreIds=new ArrayList<>();
   try{
    for(Map.Entry<String,byte[]> file:target.files.entrySet())
     writeFile(new File(stage,file.getKey()),file.getValue());
    for(Map.Entry<String,byte[]> entry:target.creations.entrySet())writeFile(new File(creationStage,entry.getKey()+".plc"),entry.getValue());
+   for(Map.Entry<String,byte[]> entry:target.scores.entrySet())
+    writeFile(new File(scoreStage,entry.getKey()+CreationScoreStore.EXT),entry.getValue());
    CreationProjectStore.validateDirectory(creationStage);
    CreationProjectStore incomingStore=new CreationProjectStore(creationStageRoot);
    for(CreationProjectStore.Project p:incomingStore.snapshotAll())if(!targetProfiles.contains(p.profileId))throw new IOException("Composição do backup aponta para um perfil ausente: "+p.id);
@@ -362,12 +373,46 @@ public final class BackupArchive {
    }
    long mergedBytes=0;for(CreationProjectStore.Project p:currentStore.snapshotAll())mergedBytes+=currentStore.rawFile(p.id).length;for(String id:addedCreationIds)mergedBytes+=target.creations.get(id).length;
    if(currentStore.snapshotAll().size()+addedCreationIds.size()>MAX_CREATIONS||mergedBytes>MAX_CREATION_TOTAL)throw new IOException("A mesclagem excede os limites de armazenamento; os dados locais foram mantidos");
-   writeJournal(root,had,prefs,addedCreationIds);
+   // Verify every incoming score against its source project before changing live data.
+   // A v4 score may refer to a project already present locally but not in the backup.
+   for(Map.Entry<String,byte[]> entry:target.scores.entrySet()){
+    String id=entry.getKey();
+    File source=new File(creationStage,id+".plc");
+    if(!source.exists()){
+     File local=new File(creationDest,id+".plc");
+     if(!local.isFile())throw new IOException("Partitura derivada sem composição: "+id);
+     writeFile(source,readFile(local,CreationProjectStore.MAX_PROJECT_BYTES+12));
+    }
+    CreationProjectStore.Project p=incomingStore.get(id);
+    if(!targetProfiles.contains(p.profileId))throw new IOException("Partitura vinculada a perfil ausente: "+id);
+    try{CreationScoreStore.verified(entry.getValue(),p);}
+    catch(Exception e){throw new IOException("Partitura do backup não corresponde à gravação: "+id,e);}
+    File existing=new File(scoreDest,id+CreationScoreStore.EXT);
+    if(existing.exists()){
+     if(!Arrays.equals(readFile(existing,CreationScoreStore.MAX_SCORE_BYTES),entry.getValue()))
+      throw new IOException("Colisão de partitura derivada; os dados locais foram preservados: "+id);
+     if(!new File(scoreStage,id+CreationScoreStore.EXT).delete())
+      throw new IOException("Não foi possível limpar partitura duplicada");
+    }else addedScoreIds.add(id);
+   }
+   CreationScoreStore currentScores=new CreationScoreStore(root);
+   long combinedScoreBytes=0;
+   for(String id:currentScores.ids())combinedScoreBytes+=currentScores.raw(id).length;
+   for(String id:addedScoreIds)combinedScoreBytes+=target.scores.get(id).length;
+   if(currentScores.ids().size()+addedScoreIds.size()>MAX_SCORES||combinedScoreBytes>MAX_SCORE_TOTAL)
+    throw new IOException("A mesclagem de partituras excede os limites");
+   writeJournal(root,had,prefs,addedCreationIds,addedScoreIds);
    if(had&&!dest.renameTo(old))throw new IOException("Não foi possível preservar os arquivos anteriores");
    if(!stage.renameTo(dest))throw new IOException("Não foi possível instalar os arquivos");
    applyPrefs(prefs,target.prefs);
    if(!creationDest.exists()&&!creationDest.mkdirs())throw new IOException("Não foi possível criar Minhas Criações");
    for(String id:addedCreationIds){File source=new File(creationStage,id+".plc"),targetFile=new File(creationDest,id+".plc");try{java.nio.file.Files.move(source.toPath(),targetFile.toPath(),java.nio.file.StandardCopyOption.ATOMIC_MOVE);}catch(IOException ex){throw new IOException("Não foi possível mesclar composição "+id,ex);}}
+   if(!scoreDest.exists()&&!scoreDest.mkdirs())throw new IOException("Não foi possível criar biblioteca de partituras geradas");
+   for(String id:addedScoreIds){
+    File source=new File(scoreStage,id+CreationScoreStore.EXT),targetFile=new File(scoreDest,id+CreationScoreStore.EXT);
+    try{java.nio.file.Files.move(source.toPath(),targetFile.toPath(),java.nio.file.StandardCopyOption.ATOMIC_MOVE);}
+    catch(IOException ex){throw new IOException("Não foi possível mesclar partitura "+id,ex);}
+   }
    File marker=new File(root,JOURNAL);
    if(!marker.delete())throw new IOException("Não foi possível finalizar restauração");
    // The swap is already committed; stale rollback files are safe to retry
