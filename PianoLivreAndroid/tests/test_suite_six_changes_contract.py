@@ -105,7 +105,7 @@ class SixChangesSuiteContracts(unittest.TestCase):
                     if isinstance(node,ast.Assign)
                     and any(isinstance(target,ast.Name) and target.id=="stages"
                             for target in node.targets))
-        match=re.search(r"for stage in \\(([^)]*)\\):\\s*\\n\\s*names\\.append\\('piano-prompt03-",workflow)
+        match=re.search(r"for stage in \(([^)]*)\):\s*\n\s*names\.append\('piano-prompt03-",workflow)
         self.assertIsNotNone(match,"Missing mandatory MIDI evidence loop")
         expected=list(ast.literal_eval("("+match.group(1)+")"))
         self.assertEqual(expected,stages,"Visual gate and MIDI fixture disagree on required screenshots")
