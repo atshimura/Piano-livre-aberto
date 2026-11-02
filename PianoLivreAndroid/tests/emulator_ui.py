@@ -73,14 +73,19 @@ def current_study_layout():
     return json.loads(rows[-1].split("STUDY_CHROME_LAYOUT ",1)[1]) if rows else None
 
 def reveal_study_controls():
+    """Legacy helper name: permanent Study chrome needs no tap to reappear.
+
+    Never call UIAutomator during continuous playback (it waits for idle and
+    cannot obtain a hierarchy from an animating WebView). Use native layout
+    telemetry to prove that both bars and the transport remain visible.
+    """
     layout=current_study_layout()
-    if layout and not layout["headerVisible"]:box=layout["bounds"]
-    else:
-        root=dump()
-        views=[n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
-        assert views,"Study WebView missing"
-        box=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
-    adb("shell","input","tap",str(box[2]-12),str(box[3]-12));time.sleep(.6)
+    assert layout and layout["headerVisible"] and layout["modesVisible"],         "Study upper bars must remain visible without a reveal gesture"
+    box=layout["bounds"]
+    transport=layout["transportBounds"]
+    assert box[2]>box[0] and box[3]>box[1], "Study notation has no viewport"
+    assert transport[3]>transport[1] and box[3]==transport[1],         "Permanent Study transport must remain immediately below notation"
+    return layout
 
 def study_renderer(temporal, score_title=None):
     """Debug-only renderer fixture; no manual production selector exists."""
@@ -117,7 +122,7 @@ def responsive_evidence(name):
     adb("shell","input","tap",str(box[0]+2),str((box[1]+box[3])//2))
     for state in ("normal","playing","restored"):
         if state=="playing":tap_text(["Iniciar"])
-        if state=="restored":reveal_study_controls()
+        if state=="restored":reveal_study_controls()  # Assert persistence; never tap the moving score.
         time.sleep(.8)
         if state!="normal":
             # UiAutomator waits for accessibility idle and cannot dump a live animation.
@@ -400,9 +405,9 @@ if __name__=="__main__":
     # Chord calibration must be discoverable, with no magic millisecond default.
     home_scroll_to_top();tap_text(["Opções e configurações"],exact=True)
     time.sleep(.5)
-    options=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Calibrar acordes MIDI" in text for text in options), "Calibrar acordes option missing"
-    tap_text(["Calibrar acordes MIDI"])
+    # The options menu is scrollable on compact screens. Locate the actual
+    # calibration action rather than requiring it in the initial viewport.
+    tap_text(["Calibrar acordes MIDI"],scroll=True)
     time.sleep(.5)
     options=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Calibrar tocando acordes" in text for text in options), "Physical calibration flow missing"
