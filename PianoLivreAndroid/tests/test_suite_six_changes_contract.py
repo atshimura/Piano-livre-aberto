@@ -55,6 +55,15 @@ class SixChangesSuiteContracts(unittest.TestCase):
         self.assertIn('tap_text(["Calibrar acordes MIDI"],scroll=True)',ui)
 
 
+    def test_library_selftest_checks_empty_before_adding_creation(self):
+        native=source("app/src/main/java/br/org/pianolivre/LibrarySelfTest.java")
+        # The empty-store precondition was previously checked AFTER an
+        # intentional addCreation + toggleFavorite, crashing the emulator.
+        self.assertLess(native.index('"empty metadata is read-only"'),
+                        native.index('store.addCreation(creationId)'))
+        self.assertIn('store.snapshot().addedCreations.size()==1',native)
+        self.assertIn('linked created score and favorite survive backup/restore',native)
+
     def test_creation_shortcuts_and_note_actions_still_covered(self):
         nav=source("tests/emulator_creation_navigation.py")
         creation=source("app/src/main/java/br/org/pianolivre/MusicCreationScreen.java")
