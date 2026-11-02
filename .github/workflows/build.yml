@@ -178,7 +178,7 @@ jobs:
           java -cp build/score-tests MidiProtocolEpochTest
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java tests/MidiTakeRecorderTest.java
           java -cp build/score-tests MidiTakeRecorderTest
-          javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java tests/CreationProjectStoreTest.java
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java tests/CreationProjectStoreTest.java
           java -cp build/score-tests CreationProjectStoreTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java app/src/main/java/br/org/pianolivre/MidiFileImport.java app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java app/src/main/java/br/org/pianolivre/MidiStandardFileWriter.java tests/MidiStandardFileWriterTest.java
           java -cp build/score-tests MidiStandardFileWriterTest
@@ -192,8 +192,8 @@ jobs:
           java -Xmx128m -cp build/score-tests br.org.pianolivre.CreationLimitsTest
       - name: Criação C2-A/B/C/D — corpus e persistência dirigidos (JVM + JavaScript)
         run: |
-          mkdir -p build/c2-release
-          javac -encoding UTF-8 -d build/c2-release \
+          mkdir -p build/score-tests
+          javac -encoding UTF-8 -d build/score-tests \
             app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
             app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
             app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
@@ -205,10 +205,10 @@ jobs:
             tests/CreationScoreReviewTest.java \
             tests/CreationScoreStoreTest.java \
             tests/CreationC2DCorpusTest.java
-          java -cp build/c2-release br.org.pianolivre.CreationScoreTranscriberTest
-          java -cp build/c2-release br.org.pianolivre.CreationScoreReviewTest
-          java -cp build/c2-release br.org.pianolivre.CreationScoreStoreTest
-          java -cp build/c2-release br.org.pianolivre.CreationC2DCorpusTest
+          java -cp build/score-tests br.org.pianolivre.CreationScoreTranscriberTest
+          java -cp build/score-tests br.org.pianolivre.CreationScoreReviewTest
+          java -cp build/score-tests br.org.pianolivre.CreationScoreStoreTest
+          java -cp build/score-tests br.org.pianolivre.CreationC2DCorpusTest
           node tests/CreationNotePickerTest.js
       - name: Test Laboratory scale and arpeggio sequences (JVM)
         run: |
