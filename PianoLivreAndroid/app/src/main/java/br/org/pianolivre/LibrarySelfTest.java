@@ -20,12 +20,14 @@ final class LibrarySelfTest {
    LibraryStore store=new LibraryStore(prefs,0),other=new LibraryStore(prefs,1);
    String asset="scores/exercicio.mxl",imported=LibrarySearch.key(shared.getAbsolutePath());
    String creationId="123e4567-e89b-12d3-a456-426614174000";
+   // Reading a fresh profile must not create metadata. Assert this BEFORE
+   // exercising explicit additions and favorites, which intentionally persist.
+   check(store.snapshot().favorites.isEmpty()&&!prefs.contains("user_0_library"),"empty metadata is read-only");
    check(!store.hasCreation(creationId),"creation not automatically added");
    store.addCreation(creationId);store.addCreation(creationId);
    check(store.hasCreation(creationId)&&store.snapshot().addedCreations.size()==1,"explicit addition idempotent");
    check(!other.hasCreation(creationId),"creation catalog is profile-isolated");
    store.toggleFavorite("creation-score:"+creationId);
-   check(store.snapshot().favorites.isEmpty()&&!prefs.contains("user_0_library"),"empty metadata is read-only");
    store.toggleFavorite(asset);store.toggleFavorite(imported);
    check(store.snapshot().favorites.contains(imported)&&other.snapshot().favorites.isEmpty(),"portable identity and profile isolation");
    String id=store.create("Estudos");store.toggleMember(id,asset);store.rename(id,"Leitura");
