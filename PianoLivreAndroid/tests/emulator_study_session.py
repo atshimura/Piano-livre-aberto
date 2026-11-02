@@ -11,6 +11,42 @@ PACKAGE="br.org.pianolivre.opensource/br.org.pianolivre.MainActivity"
 def labels():
     return [value for n in dump().iter("node") for value in (n.attrib.get("text",""),n.attrib.get("content-desc","")) if value]
 
+def study_position_values(values):
+    """Read every exposed position label, not just the first, potentially stale one."""
+    positions=[]
+    for value in values:
+        match=re.search(r"\bposição\s+(-?\d+(?:[.,]\d+)?)", value, flags=re.I)
+        if match:
+            positions.append(float(match.group(1).replace(",", ".")))
+    return positions
+
+def wait_for_rewind(seconds=45):
+    """Require observed beat 0 despite slow UIAutomator updates on resized emulators.
+
+    A tap acknowledged by adb is not proof that the Android view has updated.
+    In the failing run the final diagnostic snapshot showed position 0.0, but
+    the earlier bounded samples had already exhausted their count.
+    """
+    deadline=time.monotonic()+seconds
+    seen=[]
+    while True:
+        visible=labels()
+        seen=study_position_values(visible)
+        if any(abs(position)<0.05 for position in seen):
+            return
+        if time.monotonic()>=deadline:
+            break
+        time.sleep(.25)
+    # One last authoritative snapshot closes the race between the final
+    # unsuccessful sample and the error diagnostics. Do not accept nonzero.
+    final_labels=labels()
+    final_positions=study_position_values(final_labels)
+    if any(abs(position)<0.05 for position in final_positions):
+        return
+    raise AssertionError("STUDY_POSITION_RESIDUAL: rewind did not return to beat 0; " +
+                         "seen="+repr(seen)+" final="+repr(final_positions)+
+                         " labels="+repr(final_labels[:40]))
+
 def expect(label,reason):
     assert any(label in v for v in labels()),reason
 
@@ -346,15 +382,7 @@ def exercise(title,slug):
     screenshot("piano-entrega-b-"+slug+"-guide.png") # Historical artifact slot now shows guide-free Study.
     tap_text(["Contínuo"],exact=True,scroll=True)
     tap_text(["Início"],scroll=True)
-    rewound=False
-    for _ in range(20):
-        position_label=next((value for value in labels() if "posição" in value.casefold()),"")
-        match=re.search(r"posição\s+(-?\d+(?:\.\d+)?)",position_label,flags=re.I)
-        if match and abs(float(match.group(1)))<0.05:
-            rewound=True
-            break
-        time.sleep(.25)
-    assert rewound, "STUDY_POSITION_RESIDUAL: rewind did not return to beat 0; labels="+repr(labels()[:40])
+    wait_for_rewind()
     # The short fixture is only 16 beats; slow it through the visible tempo
     # SeekBar so the pause control remains available during emulator UI latency.
     root=dump()

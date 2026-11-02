@@ -109,8 +109,21 @@ except BaseException:
     finally:
         raise
 finally:
-    adb("shell", "am", "force-stop", PACKAGE)
-    adb("shell", "wm", "size", "reset")
-    adb("shell", "wm", "density", "reset")
-    adb("shell", "settings", "put", "system", "font_scale",
-        old_font if old_font not in ("", "null") else "1.0")
+    # A previous CI run printed all functional PASS markers and then stalled
+    # for the remainder of the runner's 20-minute limit. Bound each mandatory
+    # device-reset command; report failure instead of hanging indefinitely.
+    cleanup_commands = [
+        ("shell", "am", "force-stop", PACKAGE),
+        ("shell", "wm", "size", "reset"),
+        ("shell", "wm", "density", "reset"),
+        ("shell", "settings", "put", "system", "font_scale",
+         old_font if old_font not in ("", "null") else "1.0"),
+    ]
+    for command in cleanup_commands:
+        print("CREATION_UI_CLEANUP " + " ".join(command[:4]), flush=True)
+        result=subprocess.run(["adb", *command], stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, text=True, timeout=20)
+        if result.returncode:
+            raise AssertionError("CREATION_UI_CLEANUP_FAILED " +
+                                 repr(command) + ": " + result.stdout[-1500:])
+    print("CREATION_UI_CLEANUP_PASS", flush=True)
