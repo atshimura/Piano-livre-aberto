@@ -31,24 +31,24 @@ def capture_home_viewports():
             art=next(i for i in items if i['kind']=='home-art')
             shortcuts=[i for i in items if i['kind']=='home-banner-action']
             cards=[i for i in items if i['kind']=='home-score']
-            filter_item=next(i for i in items if i['kind']=='home-filter')
             search_item=next(i for i in items if i['kind']=='home-library-search')
+            collections_item=next(i for i in items if i['kind']=='home-library-collections')
+            import_item=next(i for i in items if i['kind']=='home-library-import')
             toolbar_item=next(i for i in items if i['kind']=='home-library-toolbar')
-            actions_item=next(i for i in items if i['kind']=='home-library-actions')
-            assert toolbar_item['y']<=search_item['y'] and toolbar_item['y']<=filter_item['y'],('R toolbar alignment',name)
-            assert search_item['y']==filter_item['y'],('R search and category not on the same row',name)
-            assert search_item['x']+search_item['width']<=filter_item['x'],('R search overlaps category',name)
-            assert filter_item['x']+filter_item['width']<=actions_item['x'],('R category overlaps actions',name)
-            assert actions_item['x']+actions_item['width']<=toolbar_item['x']+toolbar_item['width']+1,('R actions overflow toolbar',name)
-            assert search_item['width']>0 and filter_item['width']>0,('R empty search/category',name)
-            if toolbar_item['width']/density>=650:
-                assert search_item['width']>filter_item['width'] and search_item['width']>actions_item['width'],('R search must be largest on wide display',name)
-            buttons=[label for label in actions_item['labels'] if label['text'] in ('+', '＋  Importar', '▱', '▱  Coleções')]
-            assert len(buttons)==2,('R stacked actions missing',name,actions_item)
-            assert buttons[0]['y']+buttons[0]['height']<=buttons[1]['y'],('R actions not stacked',name,buttons)
-            assert all(button['height']/density>=44 for button in buttons),('R undersized touch targets',name,buttons)
-
-            assert filter_item['labels'] and all(t['sizeSp']>=16 for t in filter_item['labels']),('Library filter is too small',name,filter_item)
+            ordered=[collections_item,import_item,search_item]
+            assert all(item['width']>0 and item['height']>0 for item in ordered),('Missing toolbar action size',name)
+            assert len({item['y'] for item in ordered})==1,('Toolbar not on one row',name,ordered)
+            assert max(item['width'] for item in ordered)-min(item['width'] for item in ordered)<=2,('Toolbar controls not equal width',name,ordered)
+            assert len({item['height'] for item in ordered})==1,('Toolbar controls not equal height',name,ordered)
+            assert all(item['height']/density>=44 for item in ordered),('Toolbar touch targets below 44dp',name,ordered)
+            assert collections_item['x']+collections_item['width']<=import_item['x'],('Collections overlap Import',name)
+            assert import_item['x']+import_item['width']<=search_item['x'],('Import overlaps Search',name)
+            assert search_item['x']+search_item['width']<=toolbar_item['x']+toolbar_item['width']+1,('Toolbar overflow',name)
+            assert all(item['y']>=toolbar_item['y'] for item in ordered),('Toolbar alignment wrong',name)
+            assert collections_item['labels'] and all(t['sizeSp']>=13 for t in collections_item['labels']),('Collections font shrunk',name)
+            assert import_item['labels'] and all(t['sizeSp']>=13 for t in import_item['labels']),('Import font shrunk',name)
+            assert search_item['labels'] and all(t['sizeSp']>=14 for t in search_item['labels']),('Search font shrunk',name)
+            assert not any(i['kind']=='home-filter' for i in items),('Removed Category selector returned',name)
             assert abs(hero['height']/density-old_height*.7)<=1,('Banner must shrink 30%',name,hero)
             assert art['width']/density>old_art,('Artwork did not grow',name,art)
             assert len(shortcuts)==2 and len(cards)==10,('Banner actions or scores missing',name,len(shortcuts),len(cards))
@@ -81,7 +81,7 @@ def capture_home_viewports():
             adb('shell','input','keyevent','4')
             tap_text(['Biblioteca Musical'],exact=True,scroll=True);time.sleep(.8)
             root=dump();labels=[n.attrib.get('text','')+' '+n.attrib.get('content-desc','') for n in root.iter('node')]
-            for essential in ('Buscar título ou arquivo','Categoria','Importar partitura','Coleções','10 de 10 partituras'):
+            for essential in ('Buscar por título ou nome de arquivo','Importar partitura','Coleções','10 de 10 partituras'):
                 assert any(essential.casefold() in value.casefold() for value in labels),('Library control missing',name,essential)
             screenshot('piano-home-refined-'+name+'-library.png')
             scroll=next(n for n in root.iter('node') if n.attrib.get('scrollable')=='true' and 'Horizontal' not in n.attrib.get('class',''))
