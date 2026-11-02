@@ -454,7 +454,9 @@ if __name__=="__main__":
     # temporary profile then legitimately restores that Study view instead
     # of Home; return through the visible, accessible back action before
     # exercising Home's library search. Never assume a cold-start screen.
-    post_delete=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in dump().iter("node")]
+    post_delete=[label for n in dump().iter("node")
+                 for label in (n.attrib.get("text",""),n.attrib.get("content-desc",""))
+                 if label]
     if not any("Biblioteca Musical" in label for label in post_delete):
         if any("Voltar à composição ou à biblioteca" in label for label in post_delete):
             tap_text(["Voltar à composição ou à biblioteca"],exact=True)
