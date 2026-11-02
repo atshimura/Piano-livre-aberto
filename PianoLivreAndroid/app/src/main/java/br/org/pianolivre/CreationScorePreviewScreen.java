@@ -274,6 +274,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         Spinner mode=new Spinner(activity);mode.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,
             new String[]{"Sugestão musical","Separação por altura"}));
         mode.setSelection(o.staffMode==CreationScoreTranscriber.StaffMode.SUGGESTED?0:1);
+        mode.setContentDescription("Modo de divisão entre pautas");
         attach(settings,mode,48,7);
         TextView note=label("Nota-limite MIDI: "+o.splitPitch,13,false,0xff57708A);
         attach(settings,note,-2,3);
@@ -283,6 +284,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
             public void onStartTrackingTouch(SeekBar b){}
             public void onStopTrackingTouch(SeekBar b){}
         });
+        threshold.setContentDescription("Nota-limite MIDI para separar as pautas");
         attach(settings,threshold,48,7);
         attach(settings,button("Aplicar distribuição",false,()->{
             CreationScoreTranscriber.StaffMode choice=mode.getSelectedItemPosition()==0?
@@ -300,6 +302,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
             CreationScoreTranscriber.WrittenNote n=notes.get(i);
             CheckBox select=new CheckBox(activity);
             select.setText(noteLabel(n,o));select.setTextSize(13);select.setTextColor(0xff172A44);
+            select.setContentDescription("Nota "+(i+1)+" de "+notes.size()+": "+noteLabel(n,o));
             select.setChecked(review.selection().contains(n.sourceId));
             noteBoxes.put(n.sourceId,select);
             select.setOnCheckedChangeListener((v,checked)->{if(refreshingSelection)return;
@@ -307,7 +310,9 @@ final class CreationScorePreviewScreen extends LinearLayout {
             });attach(list,select,48,1);
             Button chord=button("Marcar acorde desta nota",false,()->{
                 review.selectChord(n.sourceId);render(true);
-            });chord.setTextSize(11);attach(list,chord,40,5);
+            });chord.setTextSize(11);
+            chord.setContentDescription("Marcar acorde que contém a nota "+(i+1)+": "+noteLabel(n,o));
+            attach(list,chord,40,5);
         }
         Button previous=button("← Anteriores",false,()->{offset=Math.max(0,offset-12);render(true);});
         Button next=button("Próximas →",false,()->{offset+=12;render(true);});
@@ -316,9 +321,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
         attach(list,button("Selecionar intervalo de compassos",false,this::chooseMeasures),48,7);
         attach(list,button("Desmarcar seleção",false,()->{review.clearSelection();render(true);}),48,0);
         attach(contents,list,-2,9);
-        actions(contents,
-            button("Pauta superior (Sol)",true,()->mutate(()->review.moveSelection(1),true)),
-            button("Pauta inferior (Fá)",false,()->mutate(()->review.moveSelection(2),true)));
+        Button upper=button("Pauta superior (Sol)",true,()->mutate(()->review.moveSelection(1),true));
+        Button lower=button("Pauta inferior (Fá)",false,()->mutate(()->review.moveSelection(2),true));
+        upper.setEnabled(review.selectedCount()>0);lower.setEnabled(review.selectedCount()>0);
+        actions(contents,upper,lower);
         Button undo=button("Desfazer",false,()->mutate(()->review.undo(),true));
         Button redo=button("Refazer",false,()->mutate(()->review.redo(),true));
         undo.setEnabled(review.canUndo());redo.setEnabled(review.canRedo());
