@@ -4,6 +4,7 @@ on:
     branches:
       - feat/criacao-c2-b-previa-ajustes
       - feat/criacao-c2-c-persistencia-backup-estudar
+      - feat/criacao-c2-d-validacao-entrega
 
 concurrency:
   group: c2-only-${{ github.ref }}
@@ -39,12 +40,15 @@ jobs:
             app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
             app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
             app/src/main/java/br/org/pianolivre/SessionFiles.java \
+            app/src/main/java/br/org/pianolivre/Score.java \
             tests/CreationScoreTranscriberTest.java \
             tests/CreationScoreReviewTest.java \
-            tests/CreationScoreStoreTest.java
+            tests/CreationScoreStoreTest.java \
+            tests/CreationC2DCorpusTest.java
           java -cp build/c2-basic br.org.pianolivre.CreationScoreTranscriberTest
           java -cp build/c2-basic br.org.pianolivre.CreationScoreReviewTest
           java -cp build/c2-basic br.org.pianolivre.CreationScoreStoreTest
+          java -cp build/c2-basic br.org.pianolivre.CreationC2DCorpusTest
       - name: Teste basico do toque na partitura
         working-directory: PianoLivreAndroid
         run: node tests/CreationNotePickerTest.js
@@ -53,7 +57,7 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
 
   backup-smoke:
-    if: github.ref == 'refs/heads/feat/criacao-c2-c-persistencia-backup-estudar'
+    if: contains(fromJSON('["refs/heads/feat/criacao-c2-c-persistencia-backup-estudar","refs/heads/feat/criacao-c2-d-validacao-entrega"]'), github.ref)
     needs: [c2-basic]
     runs-on: ubuntu-latest
     timeout-minutes: 35
