@@ -104,6 +104,11 @@ def main():
     find("Transformar em partitura")
     find("Partitura salva")
     screenshot("02-previa-osmd")
+    click("Divisão entre pautas")
+    find("Selecionar notas e acordes")
+    find("Nota 1 de 4")
+    screenshot("02b-ajustes-pautas-acessibilidade")
+    click("Concluir ajustes")
     click("Estudar esta partitura")
     find("MODO")
     find("MÃOS")
@@ -120,7 +125,7 @@ def main():
     screenshot("05-paisagem")
     (DEST / "memory.txt").write_text(adb("shell", "dumpsys", "meminfo", PACKAGE),
                                       encoding="utf-8")
-    print("CREATION_C2_D_UI_PASS screenshots=5 actions=preview,study,back,landscape"
+    print("CREATION_C2_D_UI_PASS screenshots=6 actions=preview,split,study,back,landscape"
           " synthetic=true emulator=true")
     adb("shell", "pm", "clear", PACKAGE)
 
