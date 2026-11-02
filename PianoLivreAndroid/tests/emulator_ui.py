@@ -177,7 +177,11 @@ def wait_for_text(target, timeout=8):
     deadline=time.monotonic()+timeout
     last=[]
     while time.monotonic()<deadline:
-        last=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in dump().iter("node")]
+        # Visible labels and accessibility descriptions are independent.
+        # The responsive Library search has a short visual hint but a full
+        # accessible name; never discard the latter when text is nonempty.
+        last=[value for n in dump().iter("node")
+              for value in (n.attrib.get("text",""),n.attrib.get("content-desc","")) if value]
         if any(target.casefold() in value.casefold() for value in last):return last
         time.sleep(.25)
     raise AssertionError("Timed out waiting for UI text "+repr(target)+"; visible="+repr(last[:50]))
