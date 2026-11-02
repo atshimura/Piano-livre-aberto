@@ -156,11 +156,16 @@ final class CreationScorePreviewScreen extends LinearLayout {
         worker.execute(()->{
             try{
                 CreationScoreStore storage=new CreationScoreStore(activity.getFilesDir());
-                CreationScoreStore.Saved prior=storage.has(project.id)?storage.read(project.id):null;
+                CreationScoreStore.Saved prior=null;String recoverWarning="";
+                if(storage.has(project.id))try{prior=storage.read(project.id);}
+                catch(Exception oldError){recoverWarning="A partitura salva não pôde ser validada. Uma nova prévia será gerada, sem apagar a gravação nem a partitura anterior."; }
                 CreationScoreReview session=new CreationScoreReview(project.events,project.segments,
                    project.title,prior==null?CreationScoreTranscriber.Options.defaults():prior.options);
                 final boolean previouslySaved=prior!=null;
-                post(()->{if(closed||id!=generation)return;review=session;saved=previouslySaved;busy=false;render(false);});
+                final String warning=recoverWarning;
+                post(()->{if(closed||id!=generation)return;review=session;saved=previouslySaved;busy=false;render(false);
+                   if(!warning.isEmpty())activity.message(warning);
+                });
             }catch(Exception ex){post(()->failure(id,ex));}
         });
     }
