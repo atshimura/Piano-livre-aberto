@@ -67,6 +67,11 @@ class SixChangesSuiteContracts(unittest.TestCase):
                         native.index('store.addCreation(creationId)'))
         self.assertIn('store.snapshot().addedCreations.size()==1',native)
         self.assertIn('linked created score and favorite survive backup/restore',native)
+        # Free Reading now returns to the current Library scroll offset.
+        ui=source("tests/emulator_ui.py")
+        self.assertIn('wait_for_text("Partitura da biblioteca")',ui)
+        self.assertNotIn('tap_text(["← Biblioteca"],exact=True);wait_for_text("Estudar Ode à Alegria")',ui)
+
 
     def test_creation_shortcuts_and_note_actions_still_covered(self):
         nav=source("tests/emulator_creation_navigation.py")
