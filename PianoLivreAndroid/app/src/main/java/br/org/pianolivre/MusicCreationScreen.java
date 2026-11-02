@@ -82,6 +82,9 @@ final class MusicCreationScreen extends LinearLayout {
    int cell=dp(Math.max(142,Math.round(142*scale)));
    int columns=width<=0?1:Math.max(1,Math.min(buttons.length,(width+gap)/(cell+gap)));
    if(columns==prev[0])return;
+   // Buttons belong to existing child rows; detach before reparenting them.
+   for(Button button:buttons)if(button.getParent() instanceof android.view.ViewGroup)
+    ((android.view.ViewGroup)button.getParent()).removeView(button);
    prev[0]=columns;group.removeAllViews();
    for(int start=0;start<buttons.length;start+=columns){
     LinearLayout row=horizontal();LayoutParams rp=new LayoutParams(-1,dp(56));

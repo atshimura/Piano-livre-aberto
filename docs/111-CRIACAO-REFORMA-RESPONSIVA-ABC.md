@@ -35,3 +35,7 @@ O workflow de testes básicos da branch executa testes de contrato Python, compi
 ## Correção de regressão identificada na suíte de publicação 0.9.62
 
 O teste Android de gravação C1 encontrou um defeito funcional: durante a revisão de gravação vazia, os botões Salvar/Exportar ainda não existiam na árvore de views porque o agrupamento responsivo só adicionava os botões após o primeiro layout. Corrigido com **montagem imediata em coluna** e redistribuição posterior pela largura do contêiner na thread UI, usando `post` para não modificar a hierarquia no meio do ciclo de layout. Aplicado também aos comandos e campos da prévia C2. A fixture `CreationSelfTest` exige explicitamente a presença imediata das ações e mantém a asserção de que uma gravação vazia não pode ser salva ou exportada.
+
+## Correção adicional no teste funcional da candidata 0.9.62
+
+O segundo percurso Android chegou à entrada Criação e encontrou `IllegalStateException: The specified child already has a parent` durante mudança de colunas. A reestruturação com controles pré-inicializados passa a **desanexar cada Button/View de seu pai anterior** antes de montar novas linhas; vale para o painel Criação e a prévia de partitura. Adicionada regressão nos contratos para impedir retorno do erro. Os resultados completos da nova revisão devem ser coletados pelo SHA da própria correção; nenhum APK foi publicado com a falha.

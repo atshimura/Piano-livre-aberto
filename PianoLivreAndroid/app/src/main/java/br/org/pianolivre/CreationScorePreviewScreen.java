@@ -142,7 +142,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
    int gap=dp(8);float scale=getResources().getConfiguration().fontScale;
    int cell=dp(Math.max(140,Math.round(140*scale)));
    int cols=width<=0?1:Math.max(1,Math.min(buttons.length,(width+gap)/(cell+gap)));
-   if(cols==prev[0])return;prev[0]=cols;group.removeAllViews();
+   if(cols==prev[0])return;
+   for(Button button:buttons)if(button.getParent() instanceof android.view.ViewGroup)
+    ((android.view.ViewGroup)button.getParent()).removeView(button);
+   prev[0]=cols;group.removeAllViews();
    for(int start=0;start<buttons.length;start+=cols){
     LinearLayout row=horizontal();LayoutParams rp=new LayoutParams(-1,dp(56));
     rp.bottomMargin=dp(start+cols<buttons.length?6:0);group.addView(row,rp);
@@ -167,7 +170,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
    int gap=dp(8);float scale=getResources().getConfiguration().fontScale;
    int cell=dp(Math.max(168,Math.round(168*scale)));
    int cols=width<=0?1:Math.max(1,Math.min(fields.length,(width+gap)/(cell+gap)));
-   if(cols==prev[0])return;prev[0]=cols;group.removeAllViews();
+   if(cols==prev[0])return;
+   for(View field:fields)if(field.getParent() instanceof android.view.ViewGroup)
+    ((android.view.ViewGroup)field.getParent()).removeView(field);
+   prev[0]=cols;group.removeAllViews();
    for(int start=0;start<fields.length;start+=cols){
     LinearLayout row=horizontal();row.setGravity(Gravity.TOP);
     LayoutParams rp=new LayoutParams(-1,-2);rp.bottomMargin=dp(8);group.addView(row,rp);
