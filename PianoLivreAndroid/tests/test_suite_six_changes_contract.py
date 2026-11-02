@@ -108,7 +108,12 @@ class SixChangesSuiteContracts(unittest.TestCase):
         match=re.search(r"for stage in \(([^)]*)\):\s*\n\s*names\.append\('piano-prompt03-",workflow)
         self.assertIsNotNone(match,"Missing mandatory MIDI evidence loop")
         expected=list(ast.literal_eval("("+match.group(1)+")"))
-        self.assertEqual(expected,stages,"Visual gate and MIDI fixture disagree on required screenshots")
+        # Diagnostics is a mandatory screenshot captured inside study-connected,
+        # not an additional state in the fixture's stage/acknowledgement loop.
+        # Keep the gate's complete requirements, including diagnostics.
+        self.assertEqual(expected,stages+["diagnostics"],
+                         "Visual gate must include every MIDI stage and its diagnostics capture")
+        self.assertIn("screenshot('piano-prompt03-'+label+'-diagnostics.png')",midi)
         self.assertIn("study-playing",stages)
         self.assertIn("study-note-tap",stages)
         self.assertNotIn("study-hidden",stages)
