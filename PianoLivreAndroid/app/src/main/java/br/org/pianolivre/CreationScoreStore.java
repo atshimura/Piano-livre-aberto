@@ -85,7 +85,7 @@ public final class CreationScoreStore {
   if(music.length<40||music.length>MAX_SCORE_BYTES-4096)throw new IOException("Partitura muito grande para salvar");
   ByteArrayOutputStream buffer=new ByteArrayOutputStream();DataOutputStream data=new DataOutputStream(buffer);
   data.writeInt(MAGIC);data.writeInt(FORMAT);data.writeUTF(id(p.id));data.writeInt(p.profileId);
-  data.writeUTF(fingerprint(p));
+  data.writeUTF(fingerprint(p));data.writeUTF(p.title);
   data.writeInt(o.bpm);data.writeInt(o.beats);data.writeInt(o.beatType);data.writeInt(o.grid);
   data.writeInt(o.staffMode.ordinal());data.writeInt(o.splitPitch);
   if(o.staffOverrides.size()>MAX_OVERRIDES)throw new IOException("Muitos ajustes de pautas");
@@ -102,7 +102,8 @@ public final class CreationScoreStore {
   if(!MessageDigest.isEqual(hash(body),digest))throw new IOException("Integridade da partitura incorreta");
   DataInputStream in=new DataInputStream(new ByteArrayInputStream(body));
   if(in.readInt()!=MAGIC||in.readInt()!=FORMAT)throw new IOException("Formato de partitura desconhecido");
-  String projectId=id(in.readUTF());int profile=in.readInt();String expected=in.readUTF();
+  String projectId=id(in.readUTF());int profile=in.readInt();String expected=in.readUTF();String savedTitle=in.readUTF();
+  if(savedTitle.length()>255)throw new IOException("Título da transcrição inválido");
   if(!projectId.equals(id(p.id))||profile!=p.profileId||!expected.equals(fingerprint(p)))
    throw new IOException("Partitura não corresponde à gravação ou ao perfil");
   int bpm=in.readInt(),beats=in.readInt(),type=in.readInt(),grid=in.readInt(),mode=in.readInt(),split=in.readInt();
@@ -118,7 +119,7 @@ public final class CreationScoreStore {
    CreationScoreTranscriber.StaffMode.values()[mode],split,overrides);
   // Exact regeneration guards against stale/corrupted XML, missing attacks and
   // edits to project source after a snapshot was generated.
-  if(!xml.equals(CreationScoreTranscriber.transcribe(p.events,p.segments,o,p.title).xml))
+  if(!xml.equals(CreationScoreTranscriber.transcribe(p.events,p.segments,o,savedTitle).xml))
    throw new IOException("A partitura não corresponde aos eventos gravados");
   return new Saved(projectId,profile,o,xml);
  }
