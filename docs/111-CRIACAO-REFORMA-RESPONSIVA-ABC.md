@@ -31,3 +31,7 @@
 ## Testes e limites da entrega
 
 O workflow de testes básicos da branch executa testes de contrato Python, compilação Java Android e teste de estado da tela Estudar **sem `assemble`**; verifica que não foi criado APK. Testes visuais de fluxo em emulador ou aparelhos reais ficam para a validação conjunta posterior, com autorização específica. Não declarar efeito visual, desempenho ou acessibilidade real comprovados apenas pela revisão do código.
+
+## Correção de regressão identificada na suíte de publicação 0.9.62
+
+O teste Android de gravação C1 encontrou um defeito funcional: durante a revisão de gravação vazia, os botões Salvar/Exportar ainda não existiam na árvore de views porque o agrupamento responsivo só adicionava os botões após o primeiro layout. Corrigido com **montagem imediata em coluna** e redistribuição posterior pela largura do contêiner na thread UI, usando `post` para não modificar a hierarquia no meio do ciclo de layout. Aplicado também aos comandos e campos da prévia C2. A fixture `CreationSelfTest` exige explicitamente a presença imediata das ações e mantém a asserção de que uma gravação vazia não pode ser salva ou exportada.

@@ -14,9 +14,10 @@ def section(source, start, end):
 class CreationResponsiveContracts(unittest.TestCase):
     def test_grouping_uses_actual_container_and_preserves_font(self):
         self.assertIn('private LinearLayout responsiveActions(LinearLayout parent,int bottom,Button... buttons)',CREATION)
-        self.assertIn('int width=r-l;if(width<=0)return',CREATION)
+        self.assertIn('reflow.accept(0)',CREATION)
+        self.assertIn('group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());})',CREATION)
         self.assertIn('getResources().getConfiguration().fontScale',CREATION)
-        self.assertIn('int columns=Math.max(1,Math.min(buttons.length,',CREATION)
+        self.assertIn('int columns=width<=0?1:Math.max(1,Math.min(buttons.length,',CREATION)
         self.assertIn('button.setSingleLine(false);button.setMaxLines(2)',CREATION)
         self.assertIn('b.setTextSize(14)',CREATION)
         self.assertIn('b.setMinHeight(dp(48))',CREATION)
@@ -51,7 +52,8 @@ class CreationResponsiveContracts(unittest.TestCase):
 
     def test_block_c_preview_commands_and_note_rows(self):
         self.assertIn('private void actions(LinearLayout parent,Button... buttons)',SCORE)
-        self.assertIn('int width=r-l;if(width<=0)return',SCORE)
+        self.assertEqual(SCORE.count('reflow.accept(0)'),2)
+        self.assertIn('group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());})',SCORE)
         self.assertIn('button.setSingleLine(false);button.setMaxLines(2)',SCORE)
         self.assertIn('b.setTextSize(13)',SCORE)
         self.assertIn('b.setMinHeight(dp(48))',SCORE)

@@ -138,11 +138,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
  private void actions(LinearLayout parent,Button... buttons){
   LinearLayout group=vertical();group.setTag("creation-score-responsive-actions");attach(parent,group,-2,8);
   final int[] prev={-1};
-  group.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
-   int width=r-l;if(width<=0)return;int gap=dp(8);
-   float scale=getResources().getConfiguration().fontScale;
+  java.util.function.IntConsumer reflow=width->{
+   int gap=dp(8);float scale=getResources().getConfiguration().fontScale;
    int cell=dp(Math.max(140,Math.round(140*scale)));
-   int cols=Math.max(1,Math.min(buttons.length,(width+gap)/(cell+gap)));
+   int cols=width<=0?1:Math.max(1,Math.min(buttons.length,(width+gap)/(cell+gap)));
    if(cols==prev[0])return;prev[0]=cols;group.removeAllViews();
    for(int start=0;start<buttons.length;start+=cols){
     LinearLayout row=horizontal();LayoutParams rp=new LayoutParams(-1,dp(56));
@@ -153,6 +152,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
      LayoutParams cp=new LayoutParams(0,-1,1);cp.rightMargin=dp(i<end-1?8:0);row.addView(button,cp);
     }
    }
+  };
+  reflow.accept(0);
+  group.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
+   if(r>l)group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());});
   });
  }
 
@@ -160,11 +163,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
   if(labels.length!=fields.length)throw new IllegalArgumentException("Field count mismatch");
   LinearLayout group=vertical();group.setTag("creation-score-responsive-fields");attach(parent,group,-2,8);
   final int[] prev={-1};
-  group.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
-   int width=r-l;if(width<=0)return;int gap=dp(8);
-   float scale=getResources().getConfiguration().fontScale;
+  java.util.function.IntConsumer reflow=width->{
+   int gap=dp(8);float scale=getResources().getConfiguration().fontScale;
    int cell=dp(Math.max(168,Math.round(168*scale)));
-   int cols=Math.max(1,Math.min(fields.length,(width+gap)/(cell+gap)));
+   int cols=width<=0?1:Math.max(1,Math.min(fields.length,(width+gap)/(cell+gap)));
    if(cols==prev[0])return;prev[0]=cols;group.removeAllViews();
    for(int start=0;start<fields.length;start+=cols){
     LinearLayout row=horizontal();row.setGravity(Gravity.TOP);
@@ -176,6 +178,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
      LayoutParams cp=new LayoutParams(0,-2,1);cp.rightMargin=dp(i<end-1?8:0);row.addView(field,cp);
     }
    }
+  };
+  reflow.accept(0);
+  group.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
+   if(r>l)group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());});
   });
  }
     private void shutdown(){

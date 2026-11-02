@@ -77,11 +77,10 @@ final class MusicCreationScreen extends LinearLayout {
  private LinearLayout responsiveActions(LinearLayout parent,int bottom,Button... buttons){
   LinearLayout group=column();group.setTag("creation-responsive-actions");attach(parent,group,-2,bottom);
   final int[] prev={-1};
-  group.addOnLayoutChangeListener((view,l,t,r,b,ol,ot,or,ob)->{
-   int width=r-l;if(width<=0)return;
+  java.util.function.IntConsumer reflow=width->{
    int gap=dp(8);float scale=getResources().getConfiguration().fontScale;
    int cell=dp(Math.max(142,Math.round(142*scale)));
-   int columns=Math.max(1,Math.min(buttons.length,(width+gap)/(cell+gap)));
+   int columns=width<=0?1:Math.max(1,Math.min(buttons.length,(width+gap)/(cell+gap)));
    if(columns==prev[0])return;
    prev[0]=columns;group.removeAllViews();
    for(int start=0;start<buttons.length;start+=columns){
@@ -94,6 +93,12 @@ final class MusicCreationScreen extends LinearLayout {
      row.addView(button,cp);
     }
    }
+  };
+  // Buttons must exist before the first layout, especially during synthetic
+  // and real MIDI recording state changes.
+  reflow.accept(0);
+  group.addOnLayoutChangeListener((view,l,t,r,b,ol,ot,or,ob)->{
+   if(r>l)group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());});
   });
   return group;
  }
