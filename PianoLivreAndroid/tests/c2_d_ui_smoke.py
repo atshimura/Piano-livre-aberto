@@ -137,10 +137,17 @@ def main():
     find("Visualizar e ajustar partitura", clickable=True)
     find("Na Biblioteca Musical")
     screenshot("04-retorno-criacao")
-    adb("shell", "input", "keyevent", "KEYCODE_BACK")  # Creation home
-    time.sleep(.5)
-    adb("shell", "input", "keyevent", "KEYCODE_BACK")  # Library home
-    time.sleep(.8)
+    # Creation has nested project/list/home pages. Android BACK is not a
+    # guaranteed shortcut from Details to the global Library; follow actual
+    # accessible controls and assert each navigation boundary.
+    click("Voltar")  # Project Details -> Minhas Criações or Criação home
+    if not nodes("← Biblioteca", clickable=True):
+        find("Minhas Criações")
+        click("Voltar")  # Minhas Criações -> Criação home
+    find("Criação Musical")
+    find("← Biblioteca", clickable=True)
+    click("← Biblioteca")  # Criação home -> Biblioteca Musical
+    find("Biblioteca Musical")
     title=find("Estudar C2-D partitura de teste",clickable=True)
     x,y=center(title)
     adb("shell","input","tap",str(x),str(y))
