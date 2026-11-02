@@ -1,5 +1,9 @@
 # Documentação do Piano Livre aberto
 
+## Auditoria da suíte 0.9.61
+
+- [106 — Revisão integral dos testes, atualização Home/Estudar, release e preservação de dados](106-AUDITORIA-SUITE-0961.md).
+
 ## Release candidata 0.9.61
 
 - [0.9.61-open-beta — Criação C2 completa, testes, assinatura e publicação](releases/0.9.61-open-beta.md). Publicação autorizada, condicionada à integração protegida na main e checks completos do commit de distribuição; nenhuma Release será declarada antes da existência efetiva no GitHub.

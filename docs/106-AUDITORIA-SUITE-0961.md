@@ -16,7 +16,7 @@ Data: 02/11/2026. Referência: PR #100; build aprovado no SHA `9556426`; suíte 
 
 ## Correção de compatibilidade encontrada
 
-A versão 0.9.60 deliberadamente abre na Home sem carregar a partitura salva. O início explícito subsequente usava `loadScore(reset=true)` com fator de velocidade padrão 100%; o salvamento da sessão poderia substituir a preferência de 80% do perfil. A `MainActivity` passa a hidratar **apenas o estado em memória** de velocidade, mão e modo do perfil ativo ao iniciar na Home, sem abrir Estudar nem sobrescrever a partitura, cursor ou backup. O teste real exige 80% ao escolher música, não apenas valor XML.
+A versão 0.9.60 deliberadamente abre na Home sem carregar a partitura salva. O início explícito subsequente usava `loadScore(reset=true)` com fator de velocidade padrão 100%; o salvamento da sessão poderia substituir a preferência de 80% do perfil. A `MainActivity` passa a hidratar **apenas o estado em memória** de velocidade, mão, modo e preferência legada de teclado do perfil ativo ao iniciar na Home, sem abrir Estudar nem sobrescrever a partitura, cursor ou backup. O teste real exige 80% ao escolher música, não apenas valor XML.
 
 ## Critérios ainda obrigatórios
 
@@ -26,3 +26,9 @@ A versão 0.9.60 deliberadamente abre na Home sem carregar a partitura salva. O 
 - Testes físicos Realme 7 5G, Lenovo Tab M9 e Yamaha P-45 pendentes.
 
 Os testes de `KeyboardGuide` em JVM permanecem pertinentes aos componentes MIDI compartilhados, embora o guia **visual** tenha sido removido da tela Estudar; rótulos de arquivos de evidência históricos não significam que o guia visual voltou.
+
+## Evidência dirigida (não substitui o gate completo)
+
+- [Workflow isolado #41463656522](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41463656522): SUCESSO; cinco pré-verificações, compilação debug/release, `CREATION_C2_D_UI_PASS` e `PUBLIC_RELEASE_UPGRADE_UI_PASS` no APK não depurável, inclusive retomada dos 80% após navegação Home → Estudar.
+- Verificação de manutenção: o campo legado `user_7_keyboard` também deve permanecer intacto após o primeiro Estudar, sem reaparecer na interface.
+- A suíte completa na PR #100 e os upgrades reais assinados da `main` ainda exigem execução própria.

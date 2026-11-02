@@ -101,7 +101,8 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
     assert not any("Ocultar teclado" in label or "Teclado guia" in label for label in labels), "Legacy guide returned in Study"
     active=ET.fromstring(run('adb','shell','cat',private+'/shared_prefs/piano_data.xml'))
     values_after={n.attrib['name']:n.attrib.get('value',n.text) for n in active}
-    assert values_after['user_7_tempo']==seeded['user_7_tempo'], "Opening Study overwrote persisted 80% tempo"
+    for key in ('user_7_tempo','user_7_hand','user_7_mode','user_7_keyboard'):
+        assert values_after[key]==seeded[key], "Opening Study overwrote persisted "+key
     result={"result":"PUBLIC_APK_UPDATE_PRESERVED_DATA_PASS",
       "previousVersion":previous_version,"previousVersionCode":previous_code,
       "newVersion":new_version,"newVersionCode":new_code,"package":PACKAGE,
