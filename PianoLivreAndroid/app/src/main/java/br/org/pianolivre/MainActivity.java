@@ -1065,7 +1065,7 @@ public class MainActivity extends Activity {
  void message(String m){if(isFinishing()||isDestroyed())return;lastMessageDialog=new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
  @Override public void onBackPressed(){
   if(screens!=null&&screens.isLabOpen()){screens.backFromLab();return;}
-  if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.showHome();return;}
+  if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.backFromStudy();return;}
   super.onBackPressed();
  }
  @Override public void onWindowFocusChanged(boolean hasFocus){
