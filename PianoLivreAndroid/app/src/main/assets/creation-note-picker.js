@@ -33,6 +33,7 @@
   if(!Array.isArray(original))return {matched:0,ambiguous:0,missing:heads.length};
   let matched=0,ambiguous=0,missing=0;
   heads.forEach(h=>{
+   h.id=null; // Never retain a previous mapping after re-quantization or an ambiguous match.
    // A written tie fragment may start after the source Note On.
    const at=Math.round(h.beat*960);
    const matches=original.filter(n=>n&&typeof n.id==="string"&&n.staff===h.staff
