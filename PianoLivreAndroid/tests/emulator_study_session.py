@@ -69,34 +69,7 @@ def library_search_field(root):
       if node.attrib.get("class")=="android.widget.EditText" and _bounds(node) is not None]
     if len(fields)==1:return fields[0]
     return next((node for node in fields
-      if "Buscar título" in (node.attrib.get("hint","")+node.attrib.get("content-desc",""))),None)
-
-def library_filter_spinner(root):
-    """Find the catalog filter by its row, never by Spinner order.
-
-    The fixed header also contains a profile Spinner. Upgrade fixtures make
-    that Spinner display `Upgrade A/B`, so selecting the first Spinner opens
-    the profile menu instead of changing the catalog filter. A nonempty search
-    field has no hint, so row matching uses the EditText position.
-    """
-    explicit=next((node for node in root.iter("node")
-      if node.attrib.get("class")=="android.widget.Spinner" and
-         node.attrib.get("content-desc")=="Filtrar biblioteca"),None)
-    if explicit is not None:return explicit
-    search=library_search_field(root)
-    search_bounds=_bounds(search) if search is not None else None
-    if search_bounds is None:
-        return None
-    search_y=(search_bounds[1]+search_bounds[3])//2
-    candidates=[]
-    for node in root.iter("node"):
-        if node.attrib.get("class")!="android.widget.Spinner":continue
-        bounds=_bounds(node)
-        if bounds is not None:
-            candidates.append((abs((bounds[1]+bounds[3])//2-search_y),node))
-    if not candidates:return None
-    distance,node=min(candidates,key=lambda pair:pair[0])
-    return node if distance<=max(24,(search_bounds[3]-search_bounds[1])//2+8) else None
+      if "Buscar" in (node.attrib.get("hint","")+node.attrib.get("content-desc",""))),None)
 
 def library_result_count(text):
     match=re.fullmatch(r"\s*(\d+)\s+de\s+(\d+)\s+partituras\s*",text)
@@ -106,39 +79,18 @@ def adb_search_text(text):
     return text.replace(" ","%s")
 
 def verify_library_filter_locator():
+    """Source-level regression for the simplified row with no category Spinner."""
     assert adb_search_text("Estudo livre 01")=="Estudo%slivre%s01", \
-        "LIBRARY_SEARCH_ENCODING_REGRESSION: every space must use Android input %s token"
-    # Regression fixture: profile Spinner intentionally comes first in the
-    # Android hierarchy; the search-row Spinner is the catalog filter.
-    fixture='''<hierarchy>
+        "LIBRARY_SEARCH_ENCODING_REGRESSION: Android spaces must use %s"
+    fixture=ET.fromstring('''<hierarchy>
       <node class="android.widget.Spinner" text="Upgrade B" bounds="[20,10][120,44]"/>
-      <node class="android.widget.EditText" hint="Buscar título ou arquivo" bounds="[20,100][300,140]"/>
-      <node class="android.widget.Spinner" text="Todas" bounds="[310,102][455,138]"/>
-    </hierarchy>'''
-    found=library_filter_spinner(ET.fromstring(fixture))
-    residual='''<hierarchy>
-      <node class="android.widget.Spinner" text="Upgrade B" bounds="[20,10][120,44]"/>
-      <node class="android.widget.EditText" text="Gymnopédie" bounds="[20,100][300,140]"/>
-      <node class="android.widget.Spinner" text="Todas" bounds="[310,102][455,138]"/>
-    </hierarchy>'''
-    residual_root=ET.fromstring(residual)
-    assert library_search_field(residual_root) is not None, \
-        "LIBRARY_SEARCH_MISSING: populated EditText must remain discoverable without its hint"
-    residual_filter=library_filter_spinner(residual_root)
-    assert residual_filter is not None and residual_filter.attrib.get("text")=="Todas", \
-        "FILTER_CONTROL_MISSING: populated title search must still locate its row filter"
-    assert found is not None and found.attrib.get("text")=="Todas", \
-        "FILTER_CONTROL_MISSING: locator did not distinguish profile Spinner from catalog filter"
-    stacked=ET.fromstring('''<hierarchy><node class="android.widget.Spinner" text="Upgrade B" bounds="[20,10][120,44]"/><node class="android.widget.EditText" hint="Buscar título ou arquivo" bounds="[20,100][300,148]"/><node class="android.widget.Spinner" content-desc="Filtrar biblioteca" text="Todas as categorias" bounds="[20,170][300,218]"/></hierarchy>''')
-    assert library_filter_spinner(stacked).attrib.get("text")=="Todas as categorias", \
-        "FILTER_CONTROL_MISSING: stacked Home controls must use the semantic filter label"
-    blank=library_filter_spinner(ET.fromstring(fixture.replace('text="Todas"','text=""')))
-    assert blank is not None and blank.attrib.get("text")=="", \
-        "FILTER_CONTROL_MISSING: locator must still identify the filter when Android exposes no selected text"
-    assert library_result_count("10 de 10 partituras")== (10,10), \
-        "LIBRARY_COUNT_PARSER_REGRESSION: positive two-digit counts must not become zero"
-    assert library_result_count("0 de 10 partituras")== (0,10), \
-        "LIBRARY_COUNT_PARSER_REGRESSION: exact empty counts must remain detectable"
+      <node class="android.widget.EditText" content-desc="Buscar por título ou nome de arquivo" bounds="[310,100][455,144]"/>
+    </hierarchy>''')
+    assert library_search_field(fixture) is not None, "LIBRARY_SEARCH_MISSING"
+    assert not any(n.attrib.get("content-desc")=="Filtrar biblioteca" for n in fixture.iter("node")), \
+        "REMOVED_CATEGORY_RETURNED"
+    assert library_result_count("10 de 10 partituras")== (10,10)
+    assert library_result_count("0 de 10 partituras")== (0,10)
 
 def wait_for_library(expected="Estudo livre 01",seconds=20):
     """Wait for a stable library screen and classify common UI-state failures."""
@@ -172,7 +124,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
                 time.sleep(.35)
                 last=labels()
         if (any("BIBLIOTECA MUSICAL" in value for value in last)
-                or any("Buscar título" in value for value in last)
+                or any("Buscar" in value for value in last)
                 or any(title in value for title in titles for value in last)):
             break
         # Dismiss only a positively identified profile/filter popup. While the
@@ -219,7 +171,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         raise AssertionError("LIBRARY_SEARCH_MISSING: library has no accessible title EditText; labels="+
                              repr(labels()[:40]))
     current=search.attrib.get("text","")
-    if current and current not in ("Buscar título ou arquivo","⌕  Buscar título ou arquivo"):
+    if current and current not in ("Buscar","⌕  Buscar","⌕  Buscar partituras..."):
         search=focus_library_search_field()
         bounds=_bounds(search)
         adb("shell","input","keyevent","123")
@@ -232,67 +184,13 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     # preview can be exposed only after those actions finish.
     inline_home = inline_home or any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in labels())
 
-    # A home-embedded library preview is validated through its real search result.
-    # Standalone library mode still requires full count and filter checks.
-    if not inline_home:
-        # Distinguish a zero result count from positive counts such as "10 de 10".
-        # Do not infer that an item is missing just because its card is below the
-        # viewport; the short exercise is eighth in this catalog.
-        for _ in range(40):
-            last=labels()
-            if any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last):
-                inline_home=True
-                break
-            if not (any("BIBLIOTECA MUSICAL" in value for value in last)
-                    or any("Buscar título" in value for value in last)
-                    or any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last)):
-                raise AssertionError("NAVIGATION_FAILED: left the library while waiting; labels="+repr(last[:40]))
-            result=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
-            if result is not None:break
-            time.sleep(.25)
-        if not inline_home:
-            if result is None:
-                raise AssertionError("LIBRARY_NOT_LOADED: library shell appeared without a valid result count; labels="+repr(last[:40]))
-            if result[0]<len(titles):
-                raise AssertionError("CATALOG_FILTER_ACTIVE: after clearing residual search the visible result count "+
-                                     str(result[0])+" is below packaged catalog size "+str(len(titles))+
-                                     "; labels="+repr(last[:40]))
-
-            root=dump()
-            selected=library_filter_spinner(root)
-            if selected is None:
-                raise AssertionError("FILTER_CONTROL_MISSING: catalog filter beside the search row is not accessible; labels="+
-                                     repr(last[:40]))
-            if selected.attrib.get("text","").strip()!="Todas":
-                bounds=_bounds(selected)
-                adb("shell","input","tap",str((bounds[0]+bounds[2])//2),str((bounds[1]+bounds[3])//2))
-                time.sleep(.2)
-                options=labels()
-                if "Todas" not in options:
-                    raise AssertionError("FILTER_CONTROL_MISMATCH: search-row Spinner did not open catalog options; labels="+
-                                         repr(options[:40]))
-                tap_text(["Todas"],exact=True)
-                # Android may expose the Spinner popup as the whole hierarchy briefly
-                # after selection. Wait for the search row to return before typing;
-                # dismiss a still-open options popup explicitly, without sending Back
-                # while a library/navigation transition is underway.
-                root=None
-                for _ in range(24):
-                    candidate=dump()
-                    candidate_search=library_search_field(candidate)
-                    if candidate_search is not None:
-                        root=candidate
-                        break
-                    popup_labels=labels()
-                    if "Todas" in popup_labels and "Favoritos" in popup_labels:
-                        adb("shell","input","keyevent","4")
-                    time.sleep(.25)
-                if root is None:
-                    evidence=dump()
-                    Path("piano-library-filter-failure.xml").write_bytes(ET.tostring(evidence,encoding="utf-8"))
-                    screenshot("piano-library-filter-failure.png")
-                    raise AssertionError("FILTER_CONTROL_MISSING: selected Todas but library search row did not return; labels="+
-                                         repr(labels()[:40]))
+    # No category selector remains; the local catalog is browsed through
+    # the Search field and filter scopes are available in Collections.
+    count=next((library_result_count(value) for value in labels() if library_result_count(value) is not None),None)
+    if count is not None and count[1]<len(titles):
+        raise AssertionError("LIBRARY_NOT_LOADED: packaged catalog disappeared")
+    assert not any(node.attrib.get("content-desc","")=="Filtrar biblioteca" for node in dump().iter("node")), \
+        "REMOVED_CATEGORY_RETURNED: obsolete filter selector visible"
 
     # Search is the library's supported navigation for scores outside the
     # first viewport. It also proves that positive results are not mislabeled
@@ -304,7 +202,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     search=focus_library_search_field()
     search_bounds=_bounds(search)
     current=search.attrib.get("text","")
-    if current in ("Buscar título ou arquivo","⌕  Buscar título ou arquivo"):current=""
+    if current in ("Buscar","⌕  Buscar","⌕  Buscar partituras..."):current=""
     adb("shell","input","keyevent","123")
     for _ in range(len(current)):
         adb("shell","input","keyevent","67")
@@ -312,19 +210,21 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     if not inline_home:
         for _ in range(40):
             last=labels()
-            if not (any("BIBLIOTECA MUSICAL" in value for value in last)
-                or any("Buscar título" in value for value in last)
-                or any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last)):
-                raise AssertionError("NAVIGATION_FAILED: left the library while clearing search; labels="+repr(last[:40]))
+            if not any("BIBLIOTECA MUSICAL" in value or "Buscar" in value for value in last):
+                raise AssertionError("NAVIGATION_FAILED: left library while clearing search; labels="+repr(last[:40]))
             count=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
             if count is not None:break
             time.sleep(.25)
         if count is None:
-            raise AssertionError("LIBRARY_NOT_LOADED: all-title count did not appear after clearing search; labels="+repr(last[:40]))
+            raise AssertionError("LIBRARY_NOT_LOADED: all-title count did not appear")
         if count[0]<len(titles) or count[1]<len(titles):
-            raise AssertionError("SCORE_HIDDEN_BY_FILTER: selecting Todas did not reveal the packaged catalog; count="+
-                                 repr(count)+" packaged="+str(len(titles)))
-
+            # User scopes live in Collections now. Reset to the complete catalog.
+            home_scroll_to_top()
+            tap_text(["Coleções"],exact=True,scroll=True)
+            tap_text(["Todas as partituras"],exact=True)
+            root=dump()
+            search=library_search_field(root)
+            if search is None:raise AssertionError("LIBRARY_SEARCH_MISSING after resetting Collections")
     # Closing the keyboard can move the taller controls. Reacquire the actual
     # focused field instead of tapping coordinates from the previous layout.
     focus_library_search_field()
@@ -337,12 +237,12 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         # scrollable screen as the full catalog. The home banner therefore remains
         # in the accessibility tree while its embedded library search is active.
         if not (any("BIBLIOTECA MUSICAL" in value for value in last)
-                or any("Buscar título" in value for value in last)
+                or any("Buscar" in value for value in last)
                 or (inline_home and any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last))):
             raise AssertionError("NAVIGATION_FAILED: left the library while searching; labels="+repr(last[:40]))
         searched=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
         if searched is not None and searched[0]==0:
-            raise AssertionError("SCORE_NOT_VISIBLE: filter is Todas and title search found no match; score="+
+            raise AssertionError("SCORE_NOT_VISIBLE: title search found no match; score="+
                                  repr(expected)+" result="+repr(searched)+" labels="+repr(last[:40]))
         time.sleep(.25)
     raise AssertionError("LIBRARY_NOT_LOADED: title search did not settle for "+repr(expected)+"; labels="+repr(last[:40]))
