@@ -22,7 +22,8 @@ jobs:
           python3 tests/test_creation_library_contract.py
           python3 -m py_compile tests/emulator_study_layout.py
           python3 tests/test_workflow_contract_audit.py
-          python3 -m py_compile tests/home_layout_checks.py tests/emulator_ui.py tests/emulator_ui_fast.py tests/emulator_study_session.py tests/emulator_release.py tests/emulator_public_upgrade.py
+          python3 tests/test_suite_six_changes_contract.py
+          python3 -m py_compile tests/home_layout_checks.py tests/emulator_ui.py tests/emulator_ui_fast.py tests/emulator_study_session.py tests/emulator_release.py tests/emulator_public_upgrade.py tests/emulator_midi_interfaces.py tests/emulator_creation_navigation.py tests/c2_d_ui_smoke.py
           python3 scripts/verify_public_snapshot.py
       - uses: actions/setup-java@v4
         with:

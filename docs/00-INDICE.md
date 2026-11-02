@@ -8,6 +8,7 @@
 - [110 — Estudar: barras superiores permanentemente visíveis](110-ESTUDAR-BARRAS-SEMPRE-VISIVEIS.md). Alteração 4.
 - [111 — Criação: agrupamento responsivo de botões e campos, blocos A/B/C](111-CRIACAO-REFORMA-RESPONSIVA-ABC.md). Alteração 5.
 - [112 — Criação: adicionar partitura gerada à Biblioteca e estudar pelo fluxo comum](112-CRIACAO-ADICIONAR-A-BIBLIOTECA.md). Alteração 6.
+- [113 — Atualização dos testes completos após seis mudanças](113-ATUALIZACAO-SUITE-SEIS-MUDANCAS.md). CI e fixtures ajustados.
 
 ## Auditoria da suíte 0.9.61
 

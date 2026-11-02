@@ -40,6 +40,14 @@ jobs:
         run: python3 tests/test_study_position_labels.py
       - name: Audit full-suite workflow references and current Home contracts
         run: python3 tests/test_workflow_contract_audit.py
+      - name: Guard six approved UI and navigation changes before expensive tests
+        run: |
+          python3 tests/test_home_banner_contract.py
+          python3 tests/test_study_compact_chrome_contract.py
+          python3 tests/test_creation_responsive_contract.py
+          python3 tests/test_creation_library_contract.py
+          python3 tests/test_suite_six_changes_contract.py
+          python3 -m py_compile tests/emulator_midi_interfaces.py tests/emulator_study_layout.py tests/emulator_ui.py tests/emulator_creation_navigation.py tests/c2_d_ui_smoke.py
       - name: Adaptive Study profile and complete corpus (desktop Chromium)
         env:
           PIANO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
