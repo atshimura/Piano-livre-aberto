@@ -70,7 +70,8 @@ class PianoScreens {
  void build(){
   a.root=column();a.root.setBackgroundColor(pale);a.setContentView(a.root);
   header=row();header.setBackgroundColor(navy);header.setPadding(d(13),0,d(13),0);
-  a.root.addView(header,lp(-1,54));
+  // Compact Study chrome reserves more vertical space for the musical staves.
+  a.root.addView(header,lp(-1,44));
   a.status=text("",10,Color.WHITE,false);
   a.profiles=new Spinner(a);
   buildStudyHeader();
@@ -400,23 +401,23 @@ class PianoScreens {
  }
  void buildStudio(){
   studio=column();studio.setBackgroundColor(pale);studio.setVisibility(View.GONE);
-  LinearLayout controls=row();controls.setPadding(d(12),0,d(12),0);controls.setBackgroundColor(0xffF1F5FC);
+  LinearLayout controls=row();controls.setPadding(d(9),0,d(9),0);controls.setBackgroundColor(0xffF1F5FC);
   controls.setGravity(Gravity.CENTER);
   controls.addView(text("MODO",10,muted,true),lp(40,-1));
   String[] modes={"Espera","Contínuo","Demonstração"};
   for(int i=0;i<3;i++){final int idx=i;modeButtons[i]=compact(modes[i],false,()->{
     a.stopPlayback();a.finishStudyWindow();a.mode=idx;android.util.Log.i("PianoLivreUI","mode="+idx);
     if(idx==0)a.prepareWaiting();updateSelections();a.saveSession();a.beginStudyWindow();
-  });LinearLayout.LayoutParams p=lp(i==2?112:82,44);p.rightMargin=d(4);controls.addView(modeButtons[i],p);}
+  });LinearLayout.LayoutParams p=lp(i==2?105:76,38);p.rightMargin=d(3);controls.addView(modeButtons[i],p);}
   modeButtons[0].setOnLongClickListener(v->{a.showChordSettings();return true;});
-  addGap(controls,13);controls.addView(text("MÃOS",10,muted,true),lp(40,-1));
+  addGap(controls,8);controls.addView(text("MÃOS",10,muted,true),lp(40,-1));
   String[] hands={"Ambas","Esquerda","Direita"};
   for(int i=0;i<3;i++){final int idx=i==0?0:i==1?2:1;handButtons[idx]=compact(hands[i],false,()->{
    a.selectHand(idx);updateSelections();
-  });LinearLayout.LayoutParams p=lp(82,44);p.rightMargin=d(4);controls.addView(handButtons[idx],p);}
+  });LinearLayout.LayoutParams p=lp(76,38);p.rightMargin=d(3);controls.addView(handButtons[idx],p);}
   studyControlsBar=new HorizontalScrollView(a);studyControlsBar.setHorizontalScrollBarEnabled(true);
   studyControlsBar.setFillViewport(true);
-  studio.removeView(controls);studio.addView(studyControlsBar,lp(-1,46));studyControlsBar.addView(controls,new android.widget.HorizontalScrollView.LayoutParams(-2,d(46)));
+  studio.removeView(controls);studio.addView(studyControlsBar,lp(-1,40));studyControlsBar.addView(controls,new android.widget.HorizontalScrollView.LayoutParams(-2,d(40)));
   FrameLayout notationArea=new FrameLayout(a);
   legacyFallback=new PianoView(a);legacyFallback.allowKeyboard=false;
   legacyFallback.setOnTouchListener((view,event)->{
@@ -464,19 +465,19 @@ class PianoScreens {
   feedbackPlacement.setMargins(d(8),d(8),d(16),d(8));
   notationArea.addView(waitFeedback,feedbackPlacement);
   studio.addView(notationArea,new LinearLayout.LayoutParams(-1,0,1));
-  LinearLayout bottom=row();bottom.setPadding(d(9),d(3),d(9),d(3));bottom.setBackgroundColor(Color.WHITE);
+  LinearLayout bottom=row();bottom.setPadding(d(8),d(2),d(8),d(2));bottom.setBackgroundColor(Color.WHITE);
   boolean compactStudy=a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density<650;
-  studio.addView(bottom,lp(-1,54));
-  Button rewind=compact(compactStudy?"|◀":"|◀ Início",false,()->a.seekPrevious());rewind.setContentDescription("Início");bottom.addView(rewind,lp(compactStudy?44:76,44));addGap(bottom,6);
+  studio.addView(bottom,lp(-1,44));
+  Button rewind=compact(compactStudy?"|◀":"|◀ Início",false,()->a.seekPrevious());rewind.setContentDescription("Início");bottom.addView(rewind,lp(compactStudy?40:70,40));addGap(bottom,5);
   playback=compact("▶  Iniciar",true,()->{a.toggle();updateSelections();});
   playback.setBackground(bg(studyBlue,12,0));
   playback.setOnLongClickListener(v->{if(a.mode==0){a.configureWaitPreparation();return true;}return false;});
-  bottom.addView(playback,lp(compactStudy?82:100,44));addGap(bottom,6);
-  Button stop=compact(compactStudy?"■":"■ Parar",false,()->{a.stopPlayback();updateSelections();});stop.setContentDescription("Parar");bottom.addView(stop,lp(compactStudy?44:68,44));addGap(bottom,10);
+  bottom.addView(playback,lp(compactStudy?76:92,40));addGap(bottom,5);
+  Button stop=compact(compactStudy?"■":"■ Parar",false,()->{a.stopPlayback();updateSelections();});stop.setContentDescription("Parar");bottom.addView(stop,lp(compactStudy?40:62,40));addGap(bottom,8);
   TextView speed=text("VELOCIDADE",10,muted,true);if(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density>=650)bottom.addView(speed,lp(77,-1));
   a.tempoBar=new SeekBar(a);a.tempoBar.setMax(175);a.tempoBar.setProgress(75);
   a.tempoBar.setContentDescription("Velocidade de reprodução");
-  bottom.addView(a.tempoBar,new LinearLayout.LayoutParams(0,d(44),1));
+  bottom.addView(a.tempoBar,new LinearLayout.LayoutParams(0,d(40),1));
   tempoLabel=text("100%",12,ink,true);tempoLabel.setGravity(Gravity.CENTER);bottom.addView(tempoLabel,lp(compactStudy?42:52,-1));
   a.tempoBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
    public void onProgressChanged(SeekBar s,int progress,boolean by){a.tempoFactor=(progress+25)/100.0;tempoLabel.setText((progress+25)+"%");a.updateInfo();}
@@ -492,7 +493,7 @@ class PianoScreens {
     updateSelections();
   });
   loopButton.setOnLongClickListener(v->{loopMenu();return true;});
-  bottom.addView(loopButton,lp(compactStudy?74:86,44));
+  bottom.addView(loopButton,lp(compactStudy?72:80,40));
   updateSelections();
  }
  void revealStudyControls(){
@@ -541,17 +542,32 @@ class PianoScreens {
   header.setPadding(d(8),0,d(8),0);
   header.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xff0D2C55,0xff082445}));
   Button back=compact(compact?"←":"← Biblioteca",false,()->backFromStudy());back.setContentDescription("Voltar à composição ou à biblioteca");
-  back.setTextColor(Color.WHITE);back.setBackgroundColor(Color.TRANSPARENT);header.addView(back,lp(compact?44:115,44));addGap(header,8);
+  back.setTextColor(Color.WHITE);back.setBackgroundColor(Color.TRANSPARENT);header.addView(back,lp(compact?40:106,40));addGap(header,6);
   back.setTextSize(compact?22:13);
-  songTitle=text("Selecione uma partitura",compact?15:20,Color.WHITE,true);songTitle.setSingleLine(!compact);songTitle.setMaxLines(compact?2:1);songTitle.setEllipsize(TextUtils.TruncateAt.END);
-  header.addView(songTitle,new LinearLayout.LayoutParams(0,-1,1));addGap(header,8);
-  a.info=text("",11,0xffDCE8FA,false);a.info.setSingleLine(true);a.info.setEllipsize(TextUtils.TruncateAt.END);
+  // The full score title and tempo/speed/position share ONE line, even on
+  // compact devices. Ellipsize the title first; retain live musical metadata.
+  songTitle=text("Selecione uma partitura",compact?15:20,Color.WHITE,true);
+  songTitle.setSingleLine(true);songTitle.setMaxLines(1);
+  songTitle.setEllipsize(TextUtils.TruncateAt.END);
+  header.addView(songTitle,new LinearLayout.LayoutParams(0,-1,compact?1f:1f));
+  addGap(header,compact?4:6);
+  a.info=text("",compact?15:11,0xffDCE8FA,false);
+  a.info.setSingleLine(true);a.info.setMaxLines(1);
+  a.info.setEllipsize(TextUtils.TruncateAt.END);
   a.info.setContentDescription("Andamento real, velocidade e posição; não é zoom");
-  if(!compact){
-   Button free=compact("♫ Partitura Livre",false,()->showFree());free.setContentDescription("Partitura Livre");free.setTextColor(Color.WHITE);free.setBackground(bg(0xff253F64,12,0));header.addView(free,lp(144,44));addGap(header,10);
-   header.addView(a.info,lp(220,44));addGap(header,8);
-   a.profiles.setBackground(bg(0xffEDF4FA,12,0));header.addView(a.profiles,lp(125,44));addGap(header,8);
+  if(compact){
+   // Dynamic widths give the BPM/speed/position at least as much horizontal
+   // room as the title; both remain readable without wrapping to row two.
+   header.addView(a.info,new LinearLayout.LayoutParams(0,-1,1.6f));
+  }else{
+   Button free=compact("♫ Partitura Livre",false,()->showFree());
+   free.setContentDescription("Partitura Livre");free.setTextColor(Color.WHITE);
+   free.setBackground(bg(0xff253F64,12,0));
+   header.addView(free,lp(134,40));addGap(header,7);
+   header.addView(a.info,lp(210,40));addGap(header,7);
+   a.profiles.setBackground(bg(0xffEDF4FA,12,0));header.addView(a.profiles,lp(116,40));addGap(header,6);
   }
+  addGap(header,6);
   Button options=compact(compact?"⋮":"⚙",false,()->{
    if(!compact){options();return;}
    new AlertDialog.Builder(a).setTitle("Estudar · "+a.currentName).setItems(new String[]{"Partitura Livre","Perfil","Opções",a.info.getText().toString()},(dlg,i)->{
@@ -560,15 +576,23 @@ class PianoScreens {
      new AlertDialog.Builder(a).setTitle("Selecionar perfil").setItems(names,(pd,index)->{if(index<a.profiles.getCount())a.selectProfileFromSpinner(index,a.profileStore().list());else a.manageProfile();}).show();
     }else if(i==2)options();
    }).show();
-  });options.setContentDescription("Opções de estudo");options.setTextColor(Color.WHITE);options.setTextSize(20);options.setBackground(bg(0xff253F64,12,0));header.addView(options,lp(44,44));addGap(header,8);
-  studyMidiIndicator=compact("USB-MIDI",false,()->a.selectMidi());studyMidiIndicator.setSingleLine(true);studyMidiIndicator.setEllipsize(TextUtils.TruncateAt.END);header.addView(studyMidiIndicator,lp(compact?98:150,44));
+  });
+  options.setContentDescription("Opções de estudo");options.setTextColor(Color.WHITE);
+  options.setTextSize(20);options.setBackground(bg(0xff253F64,12,0));
+  header.addView(options,lp(40,40));addGap(header,6);
+  studyMidiIndicator=compact("USB-MIDI",false,()->a.selectMidi());
+  studyMidiIndicator.setSingleLine(true);
+  studyMidiIndicator.setEllipsize(TextUtils.TruncateAt.END);
+  header.addView(studyMidiIndicator,lp(compact?90:138,40));
  }
  void updateStudyInfo(String info){
   if(songTitle==null||a.score==null)return;
   String title=a.currentName==null||a.currentName.isEmpty()?a.score.title:a.currentName;
-  boolean compact=a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density<900;
-  String display=title+(compact?"\n"+info:"");
-  if(!TextUtils.equals(songTitle.getText(),display))songTitle.setText(display);
+  if(!TextUtils.equals(songTitle.getText(),title))songTitle.setText(title);
+  if(a.info!=null){
+   if(!TextUtils.equals(a.info.getText(),info))a.info.setText(info);
+   a.info.setContentDescription("Andamento real, velocidade e posição: "+info);
+  }
   String description=title+" · "+info;
   if(!TextUtils.equals(songTitle.getContentDescription(),description))songTitle.setContentDescription(description);
  }
