@@ -53,6 +53,10 @@ class SixChangesSuiteContracts(unittest.TestCase):
         self.assertIn('transport[3]>transport[1]',helper)
         self.assertIn('if state=="restored":reveal_study_controls()',ui)
         self.assertIn('tap_text(["Calibrar acordes MIDI"],scroll=True)',ui)
+        accessible_wait=ui.split("def wait_for_text(",1)[1].split("def focus_library_search_field(",1)[0]
+        self.assertIn('for value in (n.attrib.get("text",""),n.attrib.get("content-desc",""))',accessible_wait)
+        self.assertNotIn(' or n.attrib.get("content-desc","")',accessible_wait)
+
 
 
     def test_library_selftest_checks_empty_before_adding_creation(self):
