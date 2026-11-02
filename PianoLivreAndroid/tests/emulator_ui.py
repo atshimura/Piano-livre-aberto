@@ -184,7 +184,7 @@ def focus_library_search_field(timeout=12):
     while time.monotonic()<deadline:
         root=dump()
         fields=[n for n in root.iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-        search=next((n for n in fields if "buscar título" in (n.attrib.get("hint","")+n.attrib.get("text","")+n.attrib.get("content-desc","")).casefold()),None)
+        search=next((n for n in fields if "buscar por título ou nome de arquivo" in n.attrib.get("content-desc","").casefold()),None)
         if search is None and len(fields)==1:search=fields[0]
         if search is not None:
             bounds=[int(x) for x in re.findall(r"\d+",search.attrib.get("bounds",""))]
@@ -201,7 +201,7 @@ def focus_library_search_field(timeout=12):
                     if focused is not None:return focused
                     state=adb("shell","dumpsys","input_method")
                     if re.search(r"(?:mInputShown|mIsInputViewShown|isInputViewShown)=true",state):
-                        return next((n for n in focused_fields if "buscar título" in (n.attrib.get("hint","")+n.attrib.get("text","")+n.attrib.get("content-desc","")).casefold()),search)
+                        return next((n for n in focused_fields if "buscar por título ou nome de arquivo" in n.attrib.get("content-desc","").casefold()),search)
                 time.sleep(.25)
         time.sleep(.2)
     raise AssertionError("LIBRARY_SEARCH_FOCUS_FAILED: field did not settle/focus; labels="+repr(last[:40]))
@@ -459,7 +459,7 @@ if __name__=="__main__":
         wait_for_text("Biblioteca Musical")
     tap_text(["Biblioteca Musical"],exact=True)
     print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
-    wait_for_text("Buscar título ou arquivo")
+    wait_for_text("Buscar por título ou nome de arquivo")
     focus_library_search_field()
     adb("shell","input","text","gymnopedie")
     dismiss_keyboard()

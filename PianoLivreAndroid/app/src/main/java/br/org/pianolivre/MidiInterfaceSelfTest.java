@@ -14,7 +14,7 @@ final class MidiInterfaceSelfTest {
  private MidiConnection.Completion pending;private FakePorts first,current,oldOutput;
  private String source;private double disconnectedBeat;
  private static final String LONG_NAME="SIMULADO · Instrumento MIDI com nome muito longo para validar acessibilidade e diagnóstico";
- private static final String[] STAGES={"home-disconnected","home-opening","home-connected","study-connected","study-hidden","study-restored","study-disconnected","study-unnamed","study-switched","home-reconnected","home-background-return"};
+ private static final String[] STAGES={"home-disconnected","home-opening","home-connected","study-connected","study-playing","study-note-tap","study-disconnected","study-unnamed","study-switched","home-reconnected","home-background-return"};
  static final class FakePorts implements MidiConnection.Ports {
   final boolean rx,tx;int closed;final List<String> sent=new ArrayList<>();
   FakePorts(boolean rx,boolean tx){this.rx=rx;this.tx=tx;}
@@ -47,14 +47,14 @@ final class MidiInterfaceSelfTest {
     a.screens.modeButtons[1].performClick();a.selectHand(2);a.tempoBar.setProgress(0);a.loopStart=0;a.loopEnd=8;a.position=0;
     a.screens.followScore(0,false);
     source=a.score.sourceXml;a.screens.updateSelections();a.updateInfo();break;
-   case 4:a.toggle();check(a.running&&!a.screens.chrome.visible(),"start hides bars");break;
-   case 5:check(a.running&&a.screens.chrome.visible(),"real score tap restores without pausing");break;
+   case 4:a.toggle();check(a.running&&a.screens.chrome.visible(),"playback preserves both study top bars");break;
+   case 5:check(a.running&&a.screens.chrome.visible(),"note tap preserves both study top bars without pausing");break;
    case 6:
     disconnectedBeat=a.position;a.onMidiMessage(0x90,60,90);a.onMidiMessage(0xB0,64,127);
     a.midiConnection.disconnect("Instrumento simulado desconectado · sessão pausada");
     check(!a.running&&!a.waitStarted&&a.position==disconnectedBeat,"disconnect pauses without rewind");
     check(first.closed==1&&a.downKeys.isEmpty()&&!a.sustainDown&&a.performance.soundingVoices()==0,"disconnect clears held notes/pedal and closes resources");
-    check(a.screens.chrome.visible(),"disconnect restores controls");break;
+    check(a.screens.chrome.visible(),"disconnect preserves visible controls");break;
    case 7:connect(101,"",true,false);check(a.midiConnection.snapshot().connected(),"unnamed input-only connection is real state");break;
    case 8:
     connect(102,"SIMULADO · Saída de teste",false,true);oldOutput=current;a.testMidiOutput();
@@ -75,7 +75,7 @@ final class MidiInterfaceSelfTest {
    check(a.mode==1&&a.currentHand==2&&a.tempoFactor==.25&&a.loopStart==0&&a.loopEnd==8,"UI/connection transitions preserve study settings");
    check(source.equals(a.score.sourceXml),"source MusicXML unchanged");
   }
-  // Layout frames, not a pedagogical hide timer. A slow render is polled explicitly.
+  // Study bars are permanently visible: poll the score render, not a hide/reveal timer.
   a.root.postOnAnimation(()->a.root.postOnAnimation(()->ready(index,0)));
  }
  private void ready(int index,int attempt){

@@ -39,7 +39,7 @@ def visible_note_tap():
     tap_text(['Parar'])
     return dict(before=before,after=after,note=taps[-1])
 
-def restored_note_tap(proof,label):
+def rewound_note_tap(proof,label):
     # Reuse the original graphical target: returning to the same beat/height
     # must restore the same coordinate system, rather than accepting a new one.
     target=proof['firstNoteViewport'];assert target
@@ -67,7 +67,7 @@ try:
         assert braces[-1]['occludingMasks']==0,'Staff-band masks cover the grand-staff brace'
         proof=records('POC_OSMD_READY ')[-1]
         responsive_evidence('prompt02-'+label)
-        normal_tap=restored_note_tap(proof,label)
+        normal_tap=rewound_note_tap(proof,label)
         before=json.loads(Path('piano-prompt02-before-'+label+'.json').read_text())
         after=json.loads(Path('piano-03d-prompt02-'+label+'.json').read_text())
         assert after[0]['heightPx']>before['heightPx'],'No measured gain over Prompt 1 in '+label

@@ -105,6 +105,8 @@ def wait_log(marker, timeout=45):
 
 def main():
     ensure_emulator()
+    rotation=adb("shell","settings","get","system","accelerometer_rotation").strip()
+    orientation=adb("shell","settings","get","system","user_rotation").strip()
     adb("install", "-r", "app/build/outputs/apk/debug/app-debug.apk", timeout=90)
     adb("shell", "pm", "clear", PACKAGE)
     adb("logcat", "-c")
@@ -126,6 +128,9 @@ def main():
     click("Concluir ajustes")
     # Sixth change: generated scores must be explicitly placed in the Library.
     click("Adicionar à Biblioteca")
+    # The app displays a success dialog before the new library state.
+    find("Partitura adicionada à Biblioteca Musical.")
+    click("OK")
     find("Na Biblioteca Musical")
     screenshot("03-adicionada-a-biblioteca")
     click("Voltar à composição")
@@ -136,7 +141,7 @@ def main():
     time.sleep(.5)
     adb("shell", "input", "keyevent", "KEYCODE_BACK")  # Library home
     time.sleep(.8)
-    title=find("C2-D partitura de teste")
+    title=find("Estudar C2-D partitura de teste",clickable=True)
     x,y=center(title)
     adb("shell","input","tap",str(x),str(y))
     find("MODO")
@@ -156,6 +161,8 @@ def main():
     print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape"
           " synthetic=true emulator=true")
     adb("shell", "pm", "clear", PACKAGE)
+    adb("shell","settings","put","system","user_rotation",orientation if orientation not in ("","null") else "0")
+    adb("shell","settings","put","system","accelerometer_rotation",rotation if rotation not in ("","null") else "1")
 
 if __name__ == "__main__":
     # The full suite continues with upgrade/release tests in this SAME AVD.
