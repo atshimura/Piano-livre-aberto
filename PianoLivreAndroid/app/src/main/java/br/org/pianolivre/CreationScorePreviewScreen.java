@@ -125,7 +125,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         bg.setStroke(dp(1),0xffDDE7F2);c.setBackground(bg);return c;
     }
     private Button button(String s,boolean primary,Runnable run){
-        Button b=new Button(activity);b.setText(s);b.setTextSize(13);b.setAllCaps(false);
+        Button b=new Button(activity);b.setText(s);b.setContentDescription(s);b.setTextSize(13);b.setAllCaps(false);
         b.setTextColor(primary?Color.WHITE:0xff172A44);
         GradientDrawable bg=new GradientDrawable();
         bg.setColor(primary?0xff286BCB:0xffEEF4FA);bg.setCornerRadius(dp(10));b.setBackground(bg);
