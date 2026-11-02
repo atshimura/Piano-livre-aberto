@@ -43,13 +43,23 @@ def center(node):
     return (x1 + x2) // 2, (y1 + y2) // 2
 
 def scroll():
-    output = adb("shell", "wm", "size")
-    match = re.search(r"(\d+)x(\d+)", output)
-    if not match:
-        raise AssertionError("Missing emulator dimensions")
-    w, h = int(match.group(1)), int(match.group(2))
-    adb("shell", "input", "swipe", str(w // 2), str(h * 4 // 5),
-        str(w // 2), str(h // 4), "380")
+    # wm size is the *natural* portrait size. The Piano Livre Activity is
+    # fixed to landscape, so use actual accessibility window bounds instead.
+    bounds = []
+    for node in dump().iter("node"):
+        found = re.search(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",
+                          node.attrib.get("bounds", ""))
+        if found:
+            x1, y1, x2, y2 = [int(value) for value in found.groups()]
+            if x2 > x1 and y2 > y1:
+                bounds.append((x1, y1, x2, y2))
+    if not bounds:
+        raise AssertionError("No visible emulator window bounds")
+    x1, y1, x2, y2 = max(bounds, key=lambda b: (b[2]-b[0])*(b[3]-b[1]))
+    x = (x1 + x2) // 2
+    h = y2 - y1
+    adb("shell", "input", "swipe", str(x), str(y1 + h * 4 // 5),
+        str(x), str(y1 + h // 4), "380")
 
 def find(fragment, clickable=False, max_scroll=7):
     for step in range(max_scroll + 1):
