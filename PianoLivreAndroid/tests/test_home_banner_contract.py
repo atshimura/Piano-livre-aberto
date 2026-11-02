@@ -55,6 +55,41 @@ class BannerShortcutsTest(unittest.TestCase):
         self.assertIn("else if(i==1)showHelp()",b)
         self.assertIn("else if(i==8)a.manageProfile()",b)
 
+    def test_library_toolbar_equal_three_controls_and_order(self):
+        s=self.src
+        start=s.index(" void buildLibraryPanel(){")
+        end=s.index(" void focusLibrary(){",start)
+        toolbar=s[start:end]
+        self.assertEqual(toolbar.count('new LinearLayout.LayoutParams(0,d(44),1)'),3)
+        self.assertLess(toolbar.index('toolbar.addView(collections,'),toolbar.index('toolbar.addView(importButton,'))
+        self.assertLess(toolbar.index('toolbar.addView(importButton,'),toolbar.index('toolbar.addView(librarySearch,'))
+        self.assertIn('home-library-collections',toolbar)
+        self.assertIn('home-library-import',toolbar)
+        self.assertIn('home-library-search',toolbar)
+        self.assertIn('int toolbarGap=availableDp<300?4:8',toolbar)
+        self.assertIn('boolean tight=availableDp<390||fontScale>1.30f',toolbar)
+
+    def test_typography_not_shrunk_and_category_removed(self):
+        s=self.src
+        self.assertIn('collections.setTextSize(13)',s)
+        self.assertIn('importButton.setTextSize(13)',s)
+        self.assertIn('librarySearch.setTextSize(availableDp<320?14:16)',s)
+        self.assertIn('librarySearch.setHint(tight?',s)
+        self.assertNotIn('Spinner libraryFilter',s)
+        self.assertNotIn('home-filter',s)
+        self.assertNotIn('Filtrar biblioteca',s)
+
+    def test_collections_preserves_filters_and_persistence(self):
+        s=self.src
+        self.assertIn('"Todas as partituras","Favoritos","Ver coleção"',s)
+        self.assertIn('void chooseLibraryCollection()',s)
+        self.assertIn('selectedLibraryFilter=which==0?"":"*"',s)
+        self.assertIn('metadata.collections.get(selectedLibraryFilter)',s)
+        self.assertIn('metadata.favorites.contains(key)',s)
+        self.assertIn('libraryUser!=a.user',s)
+        self.assertIn('new LibraryStore(a.prefs,a.user).create(name)',s)
+        self.assertIn('new LibraryStore(a.prefs,a.user).delete(selected.id)',s)
+
     def test_existing_emulator_routes_updated(self):
         for name in ("emulator_ui.py","emulator_ui_fast.py","emulator_release.py",
                      "emulator_public_upgrade.py","emulator_study_session.py"):
