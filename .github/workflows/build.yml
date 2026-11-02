@@ -172,7 +172,7 @@ jobs:
           java -cp build/score-tests StudyInfoTextTest
       - name: Test local library search (JVM)
         run: |
-          javac -d build/score-tests app/src/main/java/br/org/pianolivre/LibrarySearch.java tests/LibrarySearchTest.java
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/LibrarySearch.java app/src/main/java/br/org/pianolivre/SessionFiles.java tests/LibrarySearchTest.java
           java -cp build/score-tests LibrarySearchTest
       - name: Test home MIDI indicator labels (JVM)
         run: |

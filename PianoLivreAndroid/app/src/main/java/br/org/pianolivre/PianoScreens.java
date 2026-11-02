@@ -113,6 +113,13 @@ class PianoScreens {
   if(tag instanceof String&&((String)tag).startsWith("home-")){
    JSONObject item=new JSONObject();item.put("kind",tag);int[] xy=new int[2];view.getLocationOnScreen(xy);
    item.put("x",xy[0]);item.put("y",xy[1]);item.put("width",view.getWidth());item.put("height",view.getHeight());
+   // Direct Button/EditText controls are TextViews, not ViewGroups:
+   // expose their measured font size without inventing a nested 'labels'.
+   if(view instanceof TextView){
+    TextView textView=(TextView)view;
+    item.put("text",textView.getText().toString());
+    item.put("sizeSp",textView.getTextSize()/a.getResources().getDisplayMetrics().scaledDensity);
+   }
    if(view instanceof android.view.ViewGroup){org.json.JSONArray labels=new org.json.JSONArray();collectHomeText((android.view.ViewGroup)view,labels);item.put("labels",labels);}
    items.put(item);
   }

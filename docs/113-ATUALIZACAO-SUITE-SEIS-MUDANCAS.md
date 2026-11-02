@@ -20,3 +20,9 @@
 ## Preservações e limites
 
 Não foi desabilitado teste de reconhecimento MIDI, notação, MusicXML, importação, backup, histórico, segurança, assinatura ou versões antigas. A suíte completa exige APKs e emulador; **sua execução permanece pendente**, bem como testes físicos no Realme 7 5G, Lenovo Tab M9 e Yamaha P-45. Não confundir testes básicos aprovados com validação funcional Android completa.
+
+## Correções motivadas pela primeira execução do PR #101
+
+- O preflight de Chromium, MIDI, estudos e biblioteca progrediu até o passo JVM de `LibrarySearchTest`, que falhou por omitir `SessionFiles.java` na linha `javac` do workflow completo. Corrigido mantendo as asserções de chaves portáteis.
+- O primeiro `ui-fast` encontrou `KeyError: labels` no teste de tipografia dos botões da Biblioteca. O coletor de métricas é agora explícito: elementos `TextView` individuais (Button e EditText) exportam `sizeSp` diretamente; apenas contêineres têm `labels`. O teste passa a comparar os valores nativos medidos sem dispensar a verificação da fonte.
+- O resultado anterior do PR não conta como gate aprovado; repetir os workflows completos no commit de correção antes de integrar.
