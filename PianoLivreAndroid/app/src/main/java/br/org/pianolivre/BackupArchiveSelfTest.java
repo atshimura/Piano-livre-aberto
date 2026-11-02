@@ -73,6 +73,29 @@ public final class BackupArchiveSelfTest {
    ok(!new File(imported,"stale.xml").exists(),"old files removed");
    ok(!new File(root,"restore-pending.json").exists(),"journal removed after success");
    ok(projects.get(backed.id).title.equals("Backup test")&&projects.get(newer.id).title.equals("Created later"),"v4 merge preserves projects created after backup");
+   // Restore an actually missing sidecar from v4, then prove collision is nondestructive.
+   savedScores.delete(backed.id);
+   ok(!savedScores.has(backed.id),"removed score before restore");
+   BackupArchive.restore(prefs,root,original);
+   ok(savedScores.has(backed.id)&&savedScores.read(backed.id).xml.equals(derived),
+      "v4 restores missing score from validated source");
+   CreationScoreTranscriber.Options alternative=new CreationScoreTranscriber.Options(
+      120,4,4,16,CreationScoreTranscriber.StaffMode.SUGGESTED,60,null);
+   String changed=CreationScoreTranscriber.transcribe(
+      projects.get(backed.id).events,projects.get(backed.id).segments,alternative,projects.get(backed.id).title).xml;
+   savedScores.save(backed.id,0,alternative,changed);
+   boolean scoreCollision=false;
+   try{BackupArchive.restore(prefs,root,original);}catch(Exception expected){scoreCollision=true;}
+   ok(scoreCollision&&savedScores.read(backed.id).options.bpm==120,
+      "v4 score collision preserves newer local interpretation");
+   savedScores.save(backed.id,0,settings,derived);
+   JSONObject corruptedScore=new JSONObject(original.toString());
+   corruptedScore.getJSONArray("creationScores").getJSONObject(0).put(
+      "content",Base64.encodeToString(bytes("invalid derivative"),Base64.NO_WRAP));
+   boolean rejectedScore=false;try{BackupArchive.restore(prefs,root,corruptedScore);}
+   catch(Exception expected){rejectedScore=true;}
+   ok(rejectedScore&&savedScores.read(backed.id).xml.equals(derived),
+      "v4 altered derivative checksum rejected before mutations");
    JSONObject legacyV3=new JSONObject(original.toString());legacyV3.put("version",3).remove("creationScores");
    BackupArchive.restore(prefs,root,legacyV3);
    ok(savedScores.has(backed.id)&&savedScores.read(backed.id).options.grid==16,"legacy v3 keeps local generated score");
