@@ -321,7 +321,7 @@ a.handler.postDelayed(this,100);}};ticker.run();
   row.setBackground(shape(white,14,0xffE0E9F4));
   attach(target,row,72,8);
  }
- private void showDetails(String id){if("list".equals(page))listScrollY=scroll.getScrollY();detailsBack="home".equals(page)?"home":"list";page="details";selectedId=id;base("Abrindo composição…",this::showList);disk.execute(()->{try{CreationProjectStore.Project project=store.get(id);post(()->{if("details".equals(page)&&id.equals(selectedId))renderDetails(project);});}catch(IOException error){post(()->{a.message("Não foi possível abrir a composição: "+error.getMessage());showList();});}});}
+ void showDetails(String id){if("list".equals(page))listScrollY=scroll.getScrollY();detailsBack="home".equals(page)?"home":"list";page="details";selectedId=id;base("Abrindo composição…",this::showList);disk.execute(()->{try{CreationProjectStore.Project project=store.get(id);post(()->{if("details".equals(page)&&id.equals(selectedId))renderDetails(project);});}catch(IOException error){post(()->{a.message("Não foi possível abrir a composição: "+error.getMessage());showList();});}});}
  private void renderDetails(CreationProjectStore.Project p){
   String id=p.id;
   try{
@@ -372,10 +372,14 @@ a.handler.postDelayed(this,100);}};ticker.run();
     updatePlaybackControls();
    }
    if(!p.recoverable){
+    boolean hasScore=new CreationScoreStore(a.getFilesDir()).has(id);
     LinearLayout scoreCard=card();label(scoreCard,"Partitura",17,true,6);
-    attach(scoreCard,mutedText("Gerar e ajustar uma prévia MusicXML em duas pautas, sem modificar a gravação original.",13),-2,8);
-    attach(scoreCard,button("Gerar partitura",true,()->CreationScorePreviewScreen.open(a,p)),50,5);
-    attach(scoreCard,mutedText("Prévia temporária: salvar e Estudar serão acrescentados na C2-C.",12),-2,0);
+    attach(scoreCard,mutedText(hasScore?
+      "Partitura vinculada à gravação original. Ajuste ou pratique sem alterar o MIDI.":
+      "Transforme a gravação em partitura com duas pautas.",13),-2,8);
+    attach(scoreCard,button(hasScore?"Visualizar e ajustar partitura":"Gerar partitura",
+      true,()->CreationScorePreviewScreen.open(a,p)),50,5);
+    if(hasScore)attach(scoreCard,button("Estudar esta partitura",false,()->a.loadCreationScore(id)),48,5);
     attach(body,scoreCard,-2,12);
    }
    Button rename=button("Renomear",false,()->rename(p));

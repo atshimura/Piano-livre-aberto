@@ -1,5 +1,7 @@
 > **Arquivo de referência técnica transferido para a edição aberta.** Parte das afirmações sobre versão, CI, aplicativo privado ou certificados descreve apenas o histórico de desenvolvimento. Para a situação vigente no repositório público, consulte [AGENTS.md](../AGENTS.md), [build e testes](06-BUILD-TESTES.md) e [estado](07-ESTADO-E-ROADMAP.md). Links para execuções privadas podem estar inacessíveis a terceiros.
 
+> **Atualização de implementação C2-C (02/11/2026, ainda fora da main):** [docs/104](104-CRIACAO-C2-C-PERSISTENCIA-BACKUP-ESTUDAR.md). O backup novo é v4, inclui `creationScores` com os derivados versionados `.pls`, verifica checksum, proprietário e identidade MIDI da composição, e usa preflight/staging/journal `addedScores` para rollback. Restaura backups v1–v3 sem apagar partituras derivadas já existentes. A C1 `.plc` permanece canônica e imutável. Os parágrafos históricos abaixo descrevem versões anteriores.
+
 # 05 — Dados, perfis, importação e backup
 
 **Estado técnico verificado na branch da beta privada 0.9.11, 15/10/2026.** Base: `MainActivity.java`, `BackupArchive.java`, `BackupArchiveSelfTest.java`, [doc 16](16-BACKUP-MIDI-CONSISTENCIA.md) e [teste de atualização](25-CONTINUIDADE-0.9.9-0.9.11.md). Este documento distingue funcionalidades implementadas de requisitos futuros.

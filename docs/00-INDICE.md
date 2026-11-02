@@ -1,5 +1,14 @@
 # Documentação do Piano Livre aberto
 
+## Criação C2 — Implementações técnicas
+
+- [102 — Motor MIDI → MusicXML (C2-A)](102-CRIACAO-C2-A-MOTOR-IMPLEMENTACAO.md)
+- [103 — Prévia e ajustes musicais e de pautas (C2-B)](103-CRIACAO-C2-B-PREVIA-AJUSTES.md)
+- [104 — Salvamento atômico, backup v4 e Estudar (C2-C)](104-CRIACAO-C2-C-PERSISTENCIA-BACKUP-ESTUDAR.md)
+
+**Estado:** implementações versionadas em branches técnicas; a `main` e APKs públicos não contêm C2 enquanto a integração protegida estiver pendente. A C2-D continua planejada.
+
+
 ## Correção de inicialização 0.9.60
 
 - [Release candidata 0.9.60 — abertura sempre na Tela Inicial](releases/0.9.60-open-beta.md): diagnóstico e correção do redirecionamento indevido ao Estudar, testes de reabertura sem apagar sessão e autorização de publicação versionada. [Issue #92](https://github.com/atshimura/Piano-livre-aberto/issues/92).

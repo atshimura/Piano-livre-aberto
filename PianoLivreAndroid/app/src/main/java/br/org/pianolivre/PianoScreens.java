@@ -573,7 +573,7 @@ class PianoScreens {
   boolean compact=a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density<900;
   header.setPadding(d(8),0,d(8),0);
   header.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xff0D2C55,0xff082445}));
-  Button back=compact(compact?"←":"← Biblioteca",false,()->showHome());back.setContentDescription("← Biblioteca");
+  Button back=compact(compact?"←":"← Biblioteca",false,()->backFromStudy());back.setContentDescription("Voltar à composição ou à biblioteca");
   back.setTextColor(Color.WHITE);back.setBackgroundColor(Color.TRANSPARENT);header.addView(back,lp(compact?44:115,44));addGap(header,8);
   back.setTextSize(compact?22:13);
   songTitle=text("Selecione uma partitura",compact?15:20,Color.WHITE,true);songTitle.setSingleLine(!compact);songTitle.setMaxLines(compact?2:1);songTitle.setEllipsize(TextUtils.TruncateAt.END);
@@ -690,6 +690,11 @@ class PianoScreens {
   if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
   if(creation!=null)creation.setVisibility(View.GONE);
   library.setVisibility(View.VISIBLE);refreshLibrary();updateMidiIndicator();
+ }
+ void backFromStudy(){
+  if(a.currentFile!=null&&a.currentFile.startsWith("creation-score:")){
+   String id=a.currentFile.substring(15);showCreation();if(creation!=null)creation.showDetails(id);
+  }else showHome();
  }
  void showStudy(){
   if(a.score==null)return;

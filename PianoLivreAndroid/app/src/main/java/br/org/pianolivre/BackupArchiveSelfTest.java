@@ -49,10 +49,16 @@ public final class BackupArchiveSelfTest {
   try{
    CreationProjectStore projects=new CreationProjectStore(root);MidiTakeRecorder take=new MidiTakeRecorder();take.start(1,1_000_000_000L);take.accept(0x90,60,88,1_100_000_000L,1);take.accept(0x80,60,0,1_300_000_000L,1);take.stop(1_400_000_000L);
    CreationProjectStore.Project backed=projects.save("Backup test",0,1,take.durationNs(),take.events(),take.segments());
+   CreationScoreStore savedScores=new CreationScoreStore(root);
+   CreationScoreTranscriber.Options settings=CreationScoreTranscriber.Options.defaults();
+   String derived=CreationScoreTranscriber.transcribe(backed.events,backed.segments,settings,backed.title).xml;
+   savedScores.save(backed.id,backed.profileId,settings,derived);
    JSONObject original=BackupArchive.create(prefs,root);
-   ok(original.getInt("version")==3,"v3");ok(original.getJSONArray("imported").length()==1,"saved one file");
-   ok(original.getJSONArray("creations").length()==1,"v3 includes saved projects");
-   // Capture v3 with a project, then add later local work before restoring the older archive.
+   ok(original.getInt("version")==4,"v4");ok(original.getJSONArray("imported").length()==1,"saved one file");
+   ok(original.getJSONArray("creations").length()==1,"v4 includes saved projects");
+   ok(original.getJSONArray("creationScores").length()==1,"v4 includes derived score");
+   ok(savedScores.read(backed.id).options.grid==16,"v4 saved rhythmic settings");
+   // Capture v4 with a project and score, then add local work before restoring.
    CreationProjectStore.Project newer=projects.save("Created later",0,2,take.durationNs(),take.events(),take.segments());
    prefs.edit().putInt("user_0_mode",0).commit();
    write(note,bytes("overwritten"));
@@ -66,8 +72,35 @@ public final class BackupArchiveSelfTest {
    ok(Arrays.equals(read(note),bytes("<music>teste</music>")),"file bytes recovered");
    ok(!new File(imported,"stale.xml").exists(),"old files removed");
    ok(!new File(root,"restore-pending.json").exists(),"journal removed after success");
-   ok(projects.get(backed.id).title.equals("Backup test")&&projects.get(newer.id).title.equals("Created later"),"v3 merge preserves projects created after backup");
-   JSONObject legacyV2=new JSONObject(original.toString());legacyV2.put("version",2).remove("creations");BackupArchive.restore(prefs,root,legacyV2);
+   ok(projects.get(backed.id).title.equals("Backup test")&&projects.get(newer.id).title.equals("Created later"),"v4 merge preserves projects created after backup");
+   // Restore an actually missing sidecar from v4, then prove collision is nondestructive.
+   savedScores.delete(backed.id);
+   ok(!savedScores.has(backed.id),"removed score before restore");
+   BackupArchive.restore(prefs,root,original);
+   ok(savedScores.has(backed.id)&&savedScores.read(backed.id).xml.equals(derived),
+      "v4 restores missing score from validated source");
+   CreationScoreTranscriber.Options alternative=new CreationScoreTranscriber.Options(
+      120,4,4,16,CreationScoreTranscriber.StaffMode.SUGGESTED,60,null);
+   String changed=CreationScoreTranscriber.transcribe(
+      projects.get(backed.id).events,projects.get(backed.id).segments,alternative,projects.get(backed.id).title).xml;
+   savedScores.save(backed.id,0,alternative,changed);
+   boolean scoreCollision=false;
+   try{BackupArchive.restore(prefs,root,original);}catch(Exception expected){scoreCollision=true;}
+   ok(scoreCollision&&savedScores.read(backed.id).options.bpm==120,
+      "v4 score collision preserves newer local interpretation");
+   savedScores.save(backed.id,0,settings,derived);
+   JSONObject corruptedScore=new JSONObject(original.toString());
+   corruptedScore.getJSONArray("creationScores").getJSONObject(0).put(
+      "content",Base64.encodeToString(bytes("invalid derivative"),Base64.NO_WRAP));
+   boolean rejectedScore=false;try{BackupArchive.restore(prefs,root,corruptedScore);}
+   catch(Exception expected){rejectedScore=true;}
+   ok(rejectedScore&&savedScores.read(backed.id).xml.equals(derived),
+      "v4 altered derivative checksum rejected before mutations");
+   JSONObject legacyV3=new JSONObject(original.toString());legacyV3.put("version",3).remove("creationScores");
+   BackupArchive.restore(prefs,root,legacyV3);
+   ok(savedScores.has(backed.id)&&savedScores.read(backed.id).options.grid==16,"legacy v3 keeps local generated score");
+   JSONObject legacyV2=new JSONObject(original.toString());legacyV2.put("version",2);legacyV2.remove("creations");legacyV2.remove("creationScores");
+   BackupArchive.restore(prefs,root,legacyV2);
    ok(projects.get(backed.id)!=null&&projects.get(newer.id)!=null,"legacy v2 restore preserves newer compositions");
    projects.rename(backed.id,"Edited after backup",3);
    boolean rejected=false;try{BackupArchive.restore(prefs,root,original);}catch(Exception ex){rejected=true;}
@@ -160,7 +193,7 @@ public final class BackupArchiveSelfTest {
    final boolean[] closed={false};ByteArrayOutputStream destination=new ByteArrayOutputStream(){@Override public void close()throws IOException{closed[0]=true;super.close();}};
    BackupArchive.export(prefs,root,()->destination);
    JSONObject exported=new JSONObject(new String(destination.toByteArray(),StandardCharsets.UTF_8));
-   ok(closed[0]&&exported.getInt("version")==3&&exported.getJSONArray("imported").length()==5&&exported.getJSONArray("creations").length()==2,"prepared archive written completely with compositions and destination closed");
+   ok(closed[0]&&exported.getInt("version")==4&&exported.getJSONArray("imported").length()==5&&exported.getJSONArray("creations").length()==2,"prepared archive written completely with compositions and destination closed");
    return count;
   }finally{
    rm(root);prefs.edit().clear().commit();

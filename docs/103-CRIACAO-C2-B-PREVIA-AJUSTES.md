@@ -1,5 +1,7 @@
 # 103 — Criação C2-B: prévia e ajustes de partitura
 
+> **Continuação:** [C2-C — persistência, backup e Estudar](104-CRIACAO-C2-C-PERSISTENCIA-BACKUP-ESTUDAR.md). O relatório abaixo descreve a entrega histórica C2-B, quando os botões Salvar/Estudar ainda estavam desabilitados; o código subsequente da branch C2-C passa a habilitá-los após validação e armazenamento seguro.
+
 **Data:** 01/11/2026. **Estado técnico:** implementação C2-B em branch com **compilação Android de depuração e testes básicos aprovados**; integração em `main` ainda pendente. **Branch:** `feat/criacao-c2-b-previa-ajustes`, derivada da C2-A. **Issue:** [#95](https://github.com/atshimura/Piano-livre-aberto/issues/95). Contrato: [plano C2 no PR #96](https://github.com/atshimura/Piano-livre-aberto/pull/96).
 
 ## Entrega de código e experiência de usuário

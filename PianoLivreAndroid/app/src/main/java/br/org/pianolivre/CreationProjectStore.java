@@ -65,7 +65,27 @@ public final class CreationProjectStore {
  public synchronized Project moveToTrash(String id,long editedAt)throws IOException{Project p=get(id);Project n=copy(p,p.title,editedAt,true,p.recoverable);writeAtomic(n,true);return n;}
  public synchronized Project restore(String id,long editedAt)throws IOException{Project p=get(id);Project n=copy(p,p.title,editedAt,false,p.recoverable);writeAtomic(n,true);return n;}
  public synchronized Project finalizeRecovery(String id,long editedAt)throws IOException{Project p=get(id);if(!p.recoverable||p.trash)throw new IOException("Este projeto não é recuperável");Project n=copy(p,p.title,editedAt,false,false);writeAtomic(n,true);return n;}
- public synchronized void deletePermanently(String id)throws IOException{File f=file(id);if(!f.isFile())throw new FileNotFoundException("Composição não encontrada");if(!read(f).trash)throw new IOException("A composição precisa estar na Lixeira");if(!f.delete())throw new IOException("Não foi possível excluir a composição");}
+ public synchronized void deletePermanently(String id)throws IOException{
+  File f=file(id);if(!f.isFile())throw new FileNotFoundException("Composição não encontrada");
+  if(!read(f).trash)throw new IOException("A composição precisa estar na Lixeira");
+  // Quarantine the derived score while the original project still exists.
+  // If deleting the .plc fails, restore its derived score without data loss.
+  File scoreDir=new File(root.getParentFile(),CreationScoreStore.DIRECTORY);
+  File score=new File(scoreDir,id.toLowerCase(Locale.ROOT)+CreationScoreStore.EXT);
+  File pending=new File(scoreDir,id.toLowerCase(Locale.ROOT)+".deleting");
+  boolean moved=false;
+  if(score.isFile()){
+   try{Files.move(score.toPath(),pending.toPath(),StandardCopyOption.ATOMIC_MOVE);}
+   catch(IOException ex){throw new IOException("Não foi possível preparar exclusão da partitura",ex);}
+   moved=true;
+  }
+  if(!f.delete()){
+   if(moved)try{Files.move(pending.toPath(),score.toPath(),StandardCopyOption.ATOMIC_MOVE);}
+    catch(IOException rollback){throw new IOException("Falha ao excluir a gravação e restaurar a partitura",rollback);}
+   throw new IOException("Não foi possível excluir a composição");
+  }
+  if(moved&&!pending.delete())throw new IOException("Composição excluída; limpeza da partitura pendente");
+ }
  private Project copy(Project p,String title,long edited,boolean trash,boolean recoverable){return new Project(p.id,title,p.profileId,p.createdAt,edited,p.durationNs,trash,recoverable,new ArrayList<>(p.events),new ArrayList<>(p.segments),p.instrument);}
  private List<Project> listAll()throws IOException{File[] files=root.listFiles((d,n)->n.endsWith(".plc"));ArrayList<Project> out=new ArrayList<>();if(files==null)return out;for(File f:files){try{out.add(read(f,false));}catch(IOException invalid){/* Invalid data is never surfaced as a saved project. */}}return out;}
  private File file(String id)throws IOException{if(id==null||!id.matches("[0-9a-fA-F-]{36}"))throw new IOException("Identificador inválido");return new File(root,id.toLowerCase(Locale.ROOT)+".plc");}

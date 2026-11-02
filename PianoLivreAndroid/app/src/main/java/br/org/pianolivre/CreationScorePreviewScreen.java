@@ -41,6 +41,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private int generation,offset;
     private boolean splitView;
     private CreationScoreReview review;
+    private boolean saved;
     private TextView selectionCount;
     private final java.util.Map<String,CheckBox> noteBoxes=new java.util.HashMap<>();
     private boolean refreshingSelection;
@@ -69,7 +70,12 @@ final class CreationScorePreviewScreen extends LinearLayout {
         Window w=d.getWindow();
         if(w!=null){w.setBackgroundDrawableResource(android.R.color.transparent);
             w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);}
-        d.setOnDismissListener(x->view.shutdown());
+        d.setOnDismissListener(x->{
+            view.shutdown();
+            if(activity.screens!=null&&activity.screens.creation!=null
+                &&activity.screens.creation.getVisibility()==View.VISIBLE)
+                activity.screens.creation.showDetails(project.id);
+        });
         d.setOnKeyListener((dialog,key,event)->{
             if(key==android.view.KeyEvent.KEYCODE_BACK){
                 if(event.getAction()==android.view.KeyEvent.ACTION_UP){
@@ -140,7 +146,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private void confirmClose(){
         if(review!=null&&review.isDirty()){
             new AlertDialog.Builder(activity).setTitle("Descartar ajustes?")
-                .setMessage("A prévia é temporária. Os ajustes não serão salvos, mas a gravação MIDI original continuará intacta.")
+                .setMessage("Os últimos ajustes ainda não foram salvos. A partitura salva anteriormente e a gravação original serão mantidas.")
                 .setPositiveButton("Descartar",(d,w)->window.dismiss())
                 .setNegativeButton("Continuar",null).show();
         }else window.dismiss();
@@ -149,8 +155,17 @@ final class CreationScorePreviewScreen extends LinearLayout {
         final int id=++generation;busy=true;
         worker.execute(()->{
             try{
-                CreationScoreReview session=new CreationScoreReview(project.events,project.segments,project.title);
-                post(()->{if(closed||id!=generation)return;review=session;busy=false;render(false);});
+                CreationScoreStore storage=new CreationScoreStore(activity.getFilesDir());
+                CreationScoreStore.Saved prior=null;String recoverWarning="";
+                if(storage.has(project.id))try{prior=storage.read(project.id);}
+                catch(Exception oldError){recoverWarning="A partitura salva não pôde ser validada. Uma nova prévia será gerada, sem apagar a gravação nem a partitura anterior."; }
+                CreationScoreReview session=new CreationScoreReview(project.events,project.segments,
+                   project.title,prior==null?CreationScoreTranscriber.Options.defaults():prior.options);
+                final boolean previouslySaved=prior!=null;
+                final String warning=recoverWarning;
+                post(()->{if(closed||id!=generation)return;review=session;saved=previouslySaved;busy=false;render(false);
+                   if(!warning.isEmpty())activity.message(warning);
+                });
             }catch(Exception ex){post(()->failure(id,ex));}
         });
     }
@@ -194,10 +209,14 @@ final class CreationScorePreviewScreen extends LinearLayout {
             actions(contents,button("Ajustar ritmo",false,this::editRhythm),
                     button("Divisão entre pautas",true,()->render(true)));
             actions(contents,button("Voltar à composição",false,this::confirmClose),
-                    button("Salvar partitura — C2-C",false,()->{}));
-            View save=contents.getChildAt(contents.getChildCount()-1);
-            if(save instanceof LinearLayout)((LinearLayout)save).getChildAt(1).setEnabled(false);
-            addText("Salvar e abrir no Estudar serão implementados no C2-C; esta revisão não é persistida.",12,false,3);
+                    button(saved?"Partitura salva ✓":"Salvar partitura",true,this::saveCurrent));
+            if(saved){
+                attach(contents,button("Estudar esta partitura",true,()->{
+                    if(closed||busy)return;
+                    String id=project.id;window.dismiss();activity.loadCreationScore(id);
+                }),48,8);
+                addText("Partitura salva neste projeto e incluída no backup v4.",12,false,3);
+            }else addText("Salve para reabrir esta versão e estudá-la depois.",12,false,3);
         }
     }
     private void editRhythm(){
@@ -224,12 +243,27 @@ final class CreationScorePreviewScreen extends LinearLayout {
                 }catch(Exception ex){activity.message("Andamento inválido: "+ex.getMessage());}
             }).setNegativeButton("Cancelar",null).show();
     }
+    private void saveCurrent(){
+        if(closed||busy||review==null)return;
+        busy=true;final int id=++generation;
+        CreationScoreTranscriber.Options options=review.options();
+        String xml=review.result().xml;
+        clear();addText("Salvando partitura com segurança…",14,false,10);
+        worker.execute(()->{
+            try{
+                new CreationScoreStore(activity.getFilesDir()).save(project.id,project.profileId,options,xml);
+                post(()->{if(closed||id!=generation)return;busy=false;saved=true;
+                    review.markSaved();render(false);});
+            }catch(Exception error){post(()->{if(closed||id!=generation)return;busy=false;
+                activity.message("Partitura não salva: "+error.getMessage());render(false);});}
+        });
+    }
     private interface Change {void execute()throws Exception;}
     private void mutate(Change action,boolean remainSplit){
         if(busy||closed)return;
         busy=true;final int id=++generation;clear();addText("Recalculando interpretação…",14,false,9);
         worker.execute(()->{
-            try{action.execute();post(()->{if(closed||id!=generation)return;busy=false;render(remainSplit);});}
+            try{action.execute();post(()->{if(closed||id!=generation)return;busy=false;saved=false;render(remainSplit);});}
             catch(Exception ex){post(()->{if(closed||id!=generation)return;busy=false;
                 activity.message("Ajuste não aplicado: "+ex.getMessage());render(remainSplit);});}
         });
