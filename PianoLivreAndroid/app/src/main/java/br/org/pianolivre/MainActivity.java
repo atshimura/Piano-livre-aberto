@@ -173,6 +173,9 @@ public class MainActivity extends Activity {
   tempoFactor=Double.isFinite(savedTempo)?Math.max(.25,Math.min(2.0,savedTempo)):1.0;
   currentHand=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"hand",0)));
   mode=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"mode",0)));
+  // Legacy keyboard preference remains stored even though Study no longer
+  // renders the visual keyboard guide. Keep it when opening a new score.
+  scoreView.showKeyboard=prefs.getBoolean(studyPrefix+"keyboard",false);
   String previous=prefs.getString("user_"+user+"_file","");
   boolean contextSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("engraving_context_selftest",false);
