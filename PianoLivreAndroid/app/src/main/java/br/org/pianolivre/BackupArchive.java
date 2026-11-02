@@ -200,7 +200,8 @@ public final class BackupArchive {
   JSONArray generated=new JSONArray();long scoreTotal=0;
   CreationScoreStore scoreStore=new CreationScoreStore(root);
   Map<String,CreationProjectStore.Project> projectById=new HashMap<>();
-  for(CreationProjectStore.Project p:store.snapshotAll())projectById.put(p.id.toLowerCase(Locale.ROOT),p);
+  // snapshotAll() is metadata-only: score hashes need the FULL canonical MIDI events.
+  for(CreationProjectStore.Project p:store.snapshotAll())projectById.put(p.id.toLowerCase(Locale.ROOT),store.get(p.id));
   for(String id:scoreStore.ids()){
    CreationProjectStore.Project owner=projectById.get(id);if(owner==null)throw new IOException("Partitura sem composição correspondente: "+id);
    if(!owners.contains(owner.profileId))throw new IOException("Partitura vinculada a perfil ausente");
