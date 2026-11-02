@@ -6,6 +6,7 @@
 - [108 — Cabeçalho da Biblioteca: Coleções, Importar e Busca iguais e responsivos, sem Categoria](108-CABECALHO-BIBLIOTECA-MINIMALISTA.md). Alteração 2.
 - [109 — Estudar: cabeçalho e controles verticais compactos, informações da música em uma linha](109-ESTUDAR-CONTROLES-COMPACTOS.md). Alteração 3.
 - [110 — Estudar: barras superiores permanentemente visíveis](110-ESTUDAR-BARRAS-SEMPRE-VISIVEIS.md). Alteração 4.
+- [111 — Criação: agrupamento responsivo de botões e campos, blocos A/B/C](111-CRIACAO-REFORMA-RESPONSIVA-ABC.md). Alteração 5.
 
 ## Auditoria da suíte 0.9.61
 

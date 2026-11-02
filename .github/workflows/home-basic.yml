@@ -18,6 +18,7 @@ jobs:
         run: |
           python3 tests/test_home_banner_contract.py
           python3 tests/test_study_compact_chrome_contract.py
+          python3 tests/test_creation_responsive_contract.py
           python3 -m py_compile tests/emulator_study_layout.py
           python3 tests/test_workflow_contract_audit.py
           python3 -m py_compile tests/home_layout_checks.py tests/emulator_ui.py tests/emulator_ui_fast.py tests/emulator_study_session.py tests/emulator_release.py tests/emulator_public_upgrade.py
