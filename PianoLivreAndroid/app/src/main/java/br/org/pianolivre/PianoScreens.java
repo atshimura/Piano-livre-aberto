@@ -23,8 +23,8 @@ class PianoScreens {
  Button[] modeButtons=new Button[3],handButtons=new Button[3];
  Button playback,loopButton;
  boolean editingLoop=false;
- EditText librarySearch;Spinner libraryFilter;TextView libraryResult;
- String libraryQuery="",selectedLibraryFilter="";int libraryUser=-1;boolean libraryFiltersDirty=true;
+ EditText librarySearch;TextView libraryResult;
+ String libraryQuery="",selectedLibraryFilter="";int libraryUser=-1;
  NotationView notation,freeNotation;
  MusicLabScreen lab;
  MusicLabDiscoveryScreen discovery;
@@ -186,54 +186,54 @@ class PianoScreens {
  }
  void buildLibraryPanel(){
   boolean shortScreen=shortLandscape();
-  libraryPanel=column();libraryPanel.setPadding(d(16),d(14),d(16),d(14));
+  libraryPanel=column();libraryPanel.setPadding(d(16),d(10),d(16),d(10));
   libraryPanel.setBackground(bg(Color.WHITE,20,0xffE1EAF4));libraryPanel.setElevation(d(1));
   LinearLayout.LayoutParams panelLp=lp(-1,-2);panelLp.topMargin=d(shortScreen?7:13);
   libraryInner.addView(libraryPanel,panelLp);
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
   float fontScale=Math.max(1f,a.getResources().getConfiguration().fontScale);
-  // R: one toolbar strip on every screen; only the search consumes extra width.
-  // The existing outer 20dp and panel 16dp padding on each side total 72dp.
+  // Compact responsive row: three equally weighted 44dp targets.
+  // Button text stays 13sp; search keeps the established 14/16sp typography.
+  // No category selector is rendered. Collection/favorite browsing remains
+  // available through the Collections dialog, without changing stored data.
   int availableDp=Math.max(1,widthDp-72);
-  boolean iconActions=availableDp<380||fontScale>1.30f;
-  int actionsWidth=iconActions?52:Math.min(134,Math.max(110,Math.round(118*fontScale)));
-  int categoryWidth=availableDp<280?100:availableDp<380?120:148;
-  int toolbarGap=availableDp<300?5:8;
+  boolean tight=availableDp<390||fontScale>1.30f;
+  int toolbarGap=availableDp<300?4:8;
   LinearLayout section=row();section.addView(text("♫",25,blue,true),lp(35,44));
   TextView title=text("Biblioteca Musical",availableDp<310?20:26,0xff102344,true);
   title.setSingleLine(true);title.setEllipsize(TextUtils.TruncateAt.END);
-  section.addView(title,new LinearLayout.LayoutParams(0,d(48),1));
-  libraryPanel.addView(section,lp(-1,48));
+  section.addView(title,new LinearLayout.LayoutParams(0,d(44),1));
+  libraryPanel.addView(section,lp(-1,44));
   LinearLayout toolbar=row();toolbar.setTag("home-library-toolbar");
+  Button collections=compact(tight?"Coleções":"▱  Coleções",false,()->manageCollections());
+  collections.setTextSize(13);collections.setSingleLine(true);
+  collections.setEllipsize(TextUtils.TruncateAt.END);
+  collections.setContentDescription("Coleções");
+  collections.setTag("home-library-collections");
+  collections.setTextColor(0xff203D87);
+  collections.setBackground(bg(0xffE9EEFF,12,0xffBCCAFF));
+  toolbar.addView(collections,new LinearLayout.LayoutParams(0,d(44),1));
+  addGap(toolbar,toolbarGap);
+  Button importButton=compact(tight?"Importar":"↑  Importar",false,()->a.importScore());
+  importButton.setTextSize(13);importButton.setSingleLine(true);
+  importButton.setEllipsize(TextUtils.TruncateAt.END);
+  importButton.setContentDescription("Importar partitura");
+  importButton.setTag("home-library-import");
+  importButton.setTextColor(0xff136547);
+  importButton.setBackground(bg(0xffE5F8EB,12,0xffACE2BC));
+  toolbar.addView(importButton,new LinearLayout.LayoutParams(0,d(44),1));
+  addGap(toolbar,toolbarGap);
   librarySearch=new EditText(a);librarySearch.setSingleLine(true);
   librarySearch.setTextSize(availableDp<320?14:16);
-  librarySearch.setHint(availableDp<320?"⌕  Buscar":"⌕  Buscar título ou arquivo");
+  librarySearch.setHint(tight?"⌕  Buscar":"⌕  Buscar partituras...");
   librarySearch.setContentDescription("Buscar por título ou nome de arquivo");
-  librarySearch.setPadding(d(availableDp<320?5:10),0,d(availableDp<320?5:10),0);
+  librarySearch.setPadding(d(tight?5:10),0,d(tight?5:10),0);
   librarySearch.setBackground(bg(0xffF6F9FD,12,0xffD9E5F1));
   librarySearch.setTag("home-library-search");
-  // Weighted width: grows on tablets, while category/action columns stay bounded.
-  toolbar.addView(librarySearch,new LinearLayout.LayoutParams(0,d(48),1));
-  addGap(toolbar,toolbarGap);
-  libraryFilter=new Spinner(a);libraryFilter.setContentDescription("Filtrar biblioteca");
-  libraryFilter.setMinimumHeight(d(48));libraryFilter.setTag("home-filter");
-  libraryFilter.setBackground(new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{bg(0xffF6F9FD,12,0xffD9E5F1),libraryFilter.getBackground()}));
-  toolbar.addView(libraryFilter,lp(categoryWidth,48));
-  addGap(toolbar,toolbarGap);
-  LinearLayout actions=column();actions.setTag("home-library-actions");
-  Button importButton=compact(iconActions?"+":"＋  Importar",false,()->a.importScore());
-  importButton.setContentDescription("Importar partitura");
-  importButton.setTextSize(iconActions?19:13);
-  actions.addView(importButton,lp(-1,44));
-  View actionGap=new View(a);actions.addView(actionGap,lp(1,4));
-  Button collections=compact(iconActions?"▱":"▱  Coleções",false,()->manageCollections());
-  collections.setContentDescription("Coleções");
-  collections.setTextSize(iconActions?21:13);
-  actions.addView(collections,lp(-1,44));
-  toolbar.addView(actions,lp(actionsWidth,92));
-  LinearLayout.LayoutParams toolbarLp=lp(-1,92);toolbarLp.topMargin=d(6);
+  toolbar.addView(librarySearch,new LinearLayout.LayoutParams(0,d(44),1));
+  LinearLayout.LayoutParams toolbarLp=lp(-1,44);toolbarLp.topMargin=d(4);
   libraryPanel.addView(toolbar,toolbarLp);
-  libraryResult=text("",13,muted,false);libraryPanel.addView(libraryResult,lp(-1,32));
+  libraryResult=text("",13,muted,false);libraryPanel.addView(libraryResult,lp(-1,24));
   librarySearch.addTextChangedListener(new android.text.TextWatcher(){
    public void beforeTextChanged(CharSequence t,int start,int count,int after){}
    public void onTextChanged(CharSequence t,int start,int before,int count){}
@@ -261,7 +261,10 @@ class PianoScreens {
  void refreshLibrary(){
   if(grid==null)return;grid.removeAllViews();
   final LibraryStore.Snapshot metadata;
-  try{metadata=new LibraryStore(a.prefs,a.user).snapshot();refreshLibraryFilters(metadata);}
+  try{metadata=new LibraryStore(a.prefs,a.user).snapshot();
+   if(libraryUser!=a.user){libraryUser=a.user;selectedLibraryFilter="";}
+   if(!selectedLibraryFilter.isEmpty()&&!selectedLibraryFilter.equals("*")&&!metadata.collections.containsKey(selectedLibraryFilter))selectedLibraryFilter="";
+  }
   catch(RuntimeException ex){grid.addView(text("Não foi possível ler a organização da biblioteca. Os dados não foram alterados.",13,ink,false),lp(-1,-2));return;}
   int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);boolean shortScreen=shortLandscape();
   int columns=LibraryGridLayout.columnsForWidthDp((int)(widthDp/a.getResources().getConfiguration().fontScale));
@@ -279,8 +282,13 @@ class PianoScreens {
    LibraryStore.Collection collection=metadata.collections.get(selectedLibraryFilter);
    return collection!=null&&!collection.scores.contains(key);
   });
-  libraryResult.setText(entries.size()+" de "+total+" partituras");
-  if(entries.isEmpty())grid.addView(text(total==0?"Sua biblioteca está vazia. Importe uma partitura para começar.":"Nenhuma partitura encontrada. Ajuste a busca ou escolha Todas as categorias.",13,muted,false),lp(-1,54));
+  String scope=selectedLibraryFilter.equals("*")?" · Favoritos":"";
+  if(!selectedLibraryFilter.isEmpty()&&!selectedLibraryFilter.equals("*")){
+   LibraryStore.Collection selected=metadata.collections.get(selectedLibraryFilter);
+   if(selected!=null)scope=" · Coleção: "+selected.name;
+  }
+  libraryResult.setText(entries.size()+" de "+total+" partituras"+scope);
+  if(entries.isEmpty())grid.addView(text(total==0?"Sua biblioteca está vazia. Importe uma partitura para começar.":"Nenhuma partitura encontrada. Ajuste a busca ou escolha Todas as partituras em Coleções.",13,muted,false),lp(-1,54));
   for(int i=0;i<entries.size();i+=columns){
    int cardHeight=shortScreen?184:208;LinearLayout row=row();grid.addView(row,lp(-1,cardHeight+12));
    for(int k=0;k<columns;k++){
@@ -320,53 +328,48 @@ class PianoScreens {
   if(key.endsWith("lago-dos-cisnes.mxl"))return R.drawable.home_score_swan;
   return R.drawable.home_score_placeholder;
  }
- void refreshLibraryFilters(LibraryStore.Snapshot metadata){
-  if(libraryUser!=a.user){libraryUser=a.user;selectedLibraryFilter="";libraryFiltersDirty=true;}
-  if(!libraryFiltersDirty)return;libraryFiltersDirty=false;
-  java.util.List<String> ids=new java.util.ArrayList<>(),names=new java.util.ArrayList<>();
-  ids.add("");names.add("Todas as categorias");ids.add("*");names.add("Favoritos");
-  for(LibraryStore.Collection c:metadata.collections.values()){ids.add(c.id);names.add("Coleção: "+c.name);}
-  int selected=ids.indexOf(selectedLibraryFilter);if(selected<0){selected=0;selectedLibraryFilter="";}
-  libraryFilter.setOnItemSelectedListener(null);
-  ArrayAdapter<String> filterAdapter=new ArrayAdapter<>(a,android.R.layout.simple_spinner_item,names){
-   @Override public View getView(int position,View convertView,android.view.ViewGroup parent){
-    TextView item=(TextView)super.getView(position,convertView,parent);
-    item.setTextSize(16);item.setSingleLine(true);item.setEllipsize(TextUtils.TruncateAt.END);
-    // Fit "Categoria" inside the fixed-width selector; keep the full
-    // selected value in accessibility and the unmodified dropdown options.
-    if(position==0)item.setText("Categoria");
-    item.setContentDescription(names.get(position));item.setPadding(d(7),0,d(4),0);
-    return item;
-   }
-  };filterAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-  libraryFilter.setAdapter(filterAdapter);libraryFilter.setSelection(selected);
-  libraryFilter.setOnItemSelectedListener(new MainActivity.Listener(index->{
-   if(index>=0&&index<ids.size()&&!selectedLibraryFilter.equals(ids.get(index))){selectedLibraryFilter=ids.get(index);refreshLibrary();}
-  }));
- }
  void libraryAction(Runnable action){
-  try{action.run();libraryFiltersDirty=true;refreshLibrary();}catch(RuntimeException ex){a.message(ex.getMessage());}
+  try{action.run();refreshLibrary();}catch(RuntimeException ex){a.message(ex.getMessage());}
  }
  void collectionName(String title,String initial,java.util.function.Consumer<String> action){
   EditText name=new EditText(a);name.setSingleLine(true);name.setText(initial);
   new AlertDialog.Builder(a).setTitle(title).setView(name).setPositiveButton("Salvar",(d,w)->libraryAction(()->action.accept(name.getText().toString())))
    .setNegativeButton("Cancelar",null).show();
  }
+ void chooseLibraryCollection(){
+  try{
+   java.util.List<LibraryStore.Collection> list=new java.util.ArrayList<>(new LibraryStore(a.prefs,a.user).snapshot().collections.values());
+   if(list.isEmpty()){
+    new AlertDialog.Builder(a).setTitle("Ver coleção").setMessage("Nenhuma coleção criada.")
+     .setPositiveButton("Fechar",null).show();return;
+   }
+   String[] names=new String[list.size()];
+   for(int i=0;i<names.length;i++)names[i]=list.get(i).name;
+   new AlertDialog.Builder(a).setTitle("Ver coleção").setItems(names,(dialog,index)->{
+    selectedLibraryFilter=list.get(index).id;refreshLibrary();focusLibrary();
+   }).show();
+  }catch(RuntimeException ex){a.message(ex.getMessage());}
+ }
  void manageCollections(){
-  new AlertDialog.Builder(a).setTitle("Coleções").setItems(new String[]{"Nova coleção","Renomear coleção","Excluir coleção"},(dialog,which)->{
-   if(which==0){collectionName("Nova coleção","",name->new LibraryStore(a.prefs,a.user).create(name));return;}
-   try{
-    java.util.List<LibraryStore.Collection> list=new java.util.ArrayList<>(new LibraryStore(a.prefs,a.user).snapshot().collections.values());
-    if(list.isEmpty()){a.message("Crie uma coleção primeiro. Para organizar uma partitura, mantenha seu cartão pressionado.");return;}
-    String[] names=new String[list.size()];for(int i=0;i<names.length;i++)names[i]=list.get(i).name;
-    new AlertDialog.Builder(a).setTitle(which==1?"Renomear coleção":"Excluir coleção").setItems(names,(d,index)->{
-     LibraryStore.Collection selected=list.get(index);
-     if(which==1)collectionName("Renomear coleção",selected.name,name->new LibraryStore(a.prefs,a.user).rename(selected.id,name));
-     else new AlertDialog.Builder(a).setTitle("Excluir coleção?").setMessage("As partituras continuarão na biblioteca.")
-      .setPositiveButton("Excluir",(dd,w)->libraryAction(()->new LibraryStore(a.prefs,a.user).delete(selected.id))).setNegativeButton("Cancelar",null).show();
-    }).show();
-   }catch(RuntimeException ex){a.message(ex.getMessage());}
-  }).show();
+  new AlertDialog.Builder(a).setTitle("Coleções")
+   .setItems(new String[]{"Todas as partituras","Favoritos","Ver coleção","Nova coleção","Renomear coleção","Excluir coleção"},(dialog,which)->{
+    if(which==0||which==1){
+     selectedLibraryFilter=which==0?"":"*";refreshLibrary();focusLibrary();return;
+    }
+    if(which==2){chooseLibraryCollection();return;}
+    if(which==3){collectionName("Nova coleção","",name->new LibraryStore(a.prefs,a.user).create(name));return;}
+    try{
+     java.util.List<LibraryStore.Collection> list=new java.util.ArrayList<>(new LibraryStore(a.prefs,a.user).snapshot().collections.values());
+     if(list.isEmpty()){a.message("Crie uma coleção primeiro. Para organizar uma partitura, mantenha seu cartão pressionado.");return;}
+     String[] names=new String[list.size()];for(int i=0;i<names.length;i++)names[i]=list.get(i).name;
+     new AlertDialog.Builder(a).setTitle(which==4?"Renomear coleção":"Excluir coleção").setItems(names,(d,index)->{
+      LibraryStore.Collection selected=list.get(index);
+      if(which==4)collectionName("Renomear coleção",selected.name,name->new LibraryStore(a.prefs,a.user).rename(selected.id,name));
+      else new AlertDialog.Builder(a).setTitle("Excluir coleção?").setMessage("As partituras continuarão na biblioteca.")
+       .setPositiveButton("Excluir",(dd,w)->libraryAction(()->new LibraryStore(a.prefs,a.user).delete(selected.id))).setNegativeButton("Cancelar",null).show();
+     }).show();
+    }catch(RuntimeException ex){a.message(ex.getMessage());}
+   }).show();
  }
  void organizeScore(String title,String scoreKey){
   try{
