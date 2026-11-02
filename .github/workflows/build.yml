@@ -36,6 +36,10 @@ jobs:
       - name: Android SDK 35
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Fail fast on Study transport-label parsing before Android/Chromium
+        run: python3 tests/test_study_position_labels.py
+      - name: Audit full-suite workflow references and current Home contracts
+        run: python3 tests/test_workflow_contract_audit.py
       - name: Adaptive Study profile and complete corpus (desktop Chromium)
         env:
           PIANO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -170,6 +174,26 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/StudyChromeState.java tests/StudyChromeStateTest.java
           java -cp build/score-tests StudyChromeStateTest
+      - name: Criação C2-A/B/C/D — corpus e persistência dirigidos (JVM + JavaScript)
+        run: |
+          mkdir -p build/score-tests
+          javac -encoding UTF-8 -d build/score-tests \
+            app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
+            app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
+            app/src/main/java/br/org/pianolivre/SessionFiles.java \
+            app/src/main/java/br/org/pianolivre/Score.java \
+            tests/CreationScoreTranscriberTest.java \
+            tests/CreationScoreReviewTest.java \
+            tests/CreationScoreStoreTest.java \
+            tests/CreationC2DCorpusTest.java
+          java -cp build/score-tests br.org.pianolivre.CreationScoreTranscriberTest
+          java -cp build/score-tests br.org.pianolivre.CreationScoreReviewTest
+          java -cp build/score-tests br.org.pianolivre.CreationScoreStoreTest
+          java -cp build/score-tests br.org.pianolivre.CreationC2DCorpusTest
+          node tests/CreationNotePickerTest.js
       - name: Test shared MIDI connection lifecycle and async races (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiConnection.java app/src/main/java/br/org/pianolivre/HomeMidiIndicator.java tests/MidiConnectionTest.java
@@ -178,7 +202,7 @@ jobs:
           java -cp build/score-tests MidiProtocolEpochTest
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java tests/MidiTakeRecorderTest.java
           java -cp build/score-tests MidiTakeRecorderTest
-          javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java tests/CreationProjectStoreTest.java
+          javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java tests/CreationProjectStoreTest.java
           java -cp build/score-tests CreationProjectStoreTest
           javac -cp build/score-tests -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java app/src/main/java/br/org/pianolivre/MidiFileImport.java app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java app/src/main/java/br/org/pianolivre/CreationProjectStore.java app/src/main/java/br/org/pianolivre/MidiStandardFileWriter.java tests/MidiStandardFileWriterTest.java
           java -cp build/score-tests MidiStandardFileWriterTest
@@ -344,7 +368,7 @@ jobs:
     needs: build
     # One-time, version-scoped release authorized by the maintainer; never on PRs.
     # Exact-version authorization and build/emulator gates remain enforced by the publisher.
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-0.9.60]')))
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-0.9.61]')))
     runs-on: ubuntu-latest
     timeout-minutes: 100
     permissions:

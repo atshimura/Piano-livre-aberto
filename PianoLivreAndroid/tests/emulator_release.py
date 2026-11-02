@@ -5,7 +5,7 @@ No hardware claims.
 """
 import json,pathlib,subprocess,time,tempfile
 from upgrade_fixture import synthetic_upgrade_preferences
-from emulator_ui import adb,dump,tap_text,screenshot,assert_running
+from emulator_ui import adb,dump,tap_text,screenshot,assert_running,wait_for_text,home_scroll_to_top
 PACKAGE='br.org.pianolivre.opensource'
 apk='app/build/outputs/apk/release/app-release.apk'
 adb('shell','am','force-stop',PACKAGE)
@@ -23,17 +23,24 @@ adb('install','-r',apk)
 flags=['creation_export_selftest','creation_selftest','creation_reopen_selftest','home_layout_selftest','discovery_layout_selftest','discovery_selftest','backup_selftest','profiles_selftest','library_selftest','history_selftest','midifile_selftest','xml_input_selftest','upgrade_selftest','midi_selftest','midi_connection_selftest','midi_import_ui_selftest','study_temporal_selftest','study_failure_selftest','study_native_failure_selftest']
 args=['shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity']
 for flag in flags:args.extend(['--ez',flag,'true'])
-adb(*args);time.sleep(3);assert_running()
+adb(*args);assert_running()
+# Since 0.9.60 every cold start MUST present Home, even for a saved score.
+# A 100%/80% speed label is a Study control and must NOT be required on Home.
+wait_for_text('Bem-vindo ao',timeout=30)
+home=[n.attrib.get('text','') for n in dump().iter('node')]
+assert not any(t in ('Espera','Contínuo','Demonstração') for t in home), 'Release unexpectedly reopened Study on cold launch'
+assert any('Upgrade B' in t for t in home), 'Release lost active profile ID 7 on Home'
+assert not any('Teclado guia' in t or 'Ocultar teclado' in t for t in home), 'Removed guide returned on Home'
+screenshot('piano-release-home.png')
+# Enter through the public user action and verify the saved tempo is usable,
+# rather than merely checking that the XML value survived installation.
+home_scroll_to_top()
+tap_text(['Começar pela Ode à Alegria'],scroll=True)
+wait_for_text('Espera',timeout=30)
+wait_for_text('80%',timeout=30)
 labels=[n.attrib.get('text','') for n in dump().iter('node')]
-assert not any('Teclado guia' in text or 'Ocultar teclado' in text for text in labels),'Removed guide returned from legacy preference'
-if not any('Upgrade B' in text for text in labels):
-    tap_text(['Opções de estudo']);tap_text(['Perfil'],exact=True)
-    labels=[n.attrib.get('text','') for n in dump().iter('node')]
-    assert any('Upgrade B' in text for text in labels),'Release profile ID 7 missing'
-    adb('shell','input','keyevent','4')
-    labels=[n.attrib.get('text','') for n in dump().iter('node')]
-# The profile picker above proves ID 7 even in compact headers.
-assert any('80%' in text for text in labels),'Release launch did not retain speed preference'
+assert any('80%' in t for t in labels),'Saved speed did not restore on first explicit Study opening'
+assert not any('Teclado guia' in t or 'Ocultar teclado' in t for t in labels),'Removed guide returned in Study'
 probe=subprocess.run(['adb','shell','run-as',PACKAGE,'id'],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
 assert probe.returncode!=0 and 'not debuggable' in probe.stdout.lower(),'Distribution APK still allows run-as debugging'
 pid=adb('shell','pidof',PACKAGE).strip();assert pid.isdigit()

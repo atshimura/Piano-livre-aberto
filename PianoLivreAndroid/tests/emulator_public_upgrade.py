@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Install the actual previous public release, seed synthetic user data, then update in place."""
 import argparse, hashlib, html, json, pathlib, re, subprocess, tempfile, time, urllib.request, xml.etree.ElementTree as ET
-from emulator_ui import adb, dump, tap_text, assert_running
+from emulator_ui import adb, dump, tap_text, assert_running, wait_for_text, home_scroll_to_top
 from upgrade_fixture import synthetic_upgrade_preferences
 
 PACKAGE = "br.org.pianolivre.opensource"
@@ -71,20 +71,16 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
 
     run("adb","install","-r",str(NEW_APK))
     run("adb","shell","am","start","-W","-n",ACTIVITY)
-    for _ in range(30):
-        assert_running()
-        labels=[n.attrib.get("text","") for n in dump().iter("node")]
-        if any("80%" in label for label in labels): break
-        time.sleep(.5)
-    else: raise AssertionError("Updated public app did not restore saved tempo")
-    assert not any("Ocultar teclado" in label or "Teclado guia" in label for label in labels),"Legacy preference reintroduced removed guide"
+    wait_for_text("Bem-vindo ao",timeout=30)
+    assert_running()
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    if not any("Upgrade B" in label for label in labels):
-        tap_text(["Opções de estudo"]);tap_text(["Perfil"],exact=True)
-        assert any("Upgrade B" in n.attrib.get("text","") for n in dump().iter("node")),"Public release update lost profile ID 7"
-        adb("shell","input","keyevent","4")
-    assert any("80%" in label for label in labels),"Public release update lost saved tempo"
-    assert any("Espera"==label for label in labels),"Updated Study lost mode controls"
+    assert not any(t in ("Espera","Contínuo","Demonstração") for t in labels), "Public upgrade reopened Study without explicit user choice"
+    assert any("Upgrade B" in t for t in labels), "Public release update lost active profile ID 7 on Home"
+    assert not any("Ocultar teclado" in t or "Teclado guia" in t for t in labels), "Legacy guide returned on Home"
+
+    # Verify the exact imported score and all saved preferences BEFORE the
+    # user opens a different score. Explicit selection is allowed to change
+    # current file, cursor and loop; this must not be misread as data loss.
     after=run("adb","shell","sha256sum",private+"/files/imported/upgrade.mxl").split()[0]
     assert after==before,"Public release update changed the imported MusicXML file"
     restored=ET.fromstring(run('adb','shell','cat',private+'/shared_prefs/piano_data.xml'))
@@ -94,6 +90,19 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
         assert json.loads(values[key])==json.loads(seeded[key]),'Public upgrade changed '+key
     for key in ('active_profile','user_7_file','user_7_mode','user_7_hand','user_7_keyboard','user_7_tempo','user_7_position'):
         assert values[key]==seeded[key],'Public upgrade changed '+key
+
+    # Now exercise the real UI: Home -> Study must use the remembered speed.
+    home_scroll_to_top()
+    tap_text(["Começar pela Ode à Alegria"],scroll=True)
+    wait_for_text("Espera",timeout=30)
+    wait_for_text("80%",timeout=30)
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert any("80%" in label for label in labels), "Public upgrade lost tempo on first explicit Study opening"
+    assert not any("Ocultar teclado" in label or "Teclado guia" in label for label in labels), "Legacy guide returned in Study"
+    active=ET.fromstring(run('adb','shell','cat',private+'/shared_prefs/piano_data.xml'))
+    values_after={n.attrib['name']:n.attrib.get('value',n.text) for n in active}
+    for key in ('user_7_tempo','user_7_hand','user_7_mode','user_7_keyboard'):
+        assert values_after[key]==seeded[key], "Opening Study overwrote persisted "+key
     result={"result":"PUBLIC_APK_UPDATE_PRESERVED_DATA_PASS",
       "previousVersion":previous_version,"previousVersionCode":previous_code,
       "newVersion":new_version,"newVersionCode":new_code,"package":PACKAGE,

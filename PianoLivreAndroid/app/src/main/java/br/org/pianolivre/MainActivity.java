@@ -162,7 +162,21 @@ public class MainActivity extends Activity {
    prefs=getSharedPreferences(getIntent().getBooleanExtra("midi_connection_selftest",false)?"piano_midi_connection_selftest":"piano_midi_selftest",MODE_PRIVATE);prefs.edit().clear().commit();
   }
   midiManager=(MidiManager)getSystemService(MIDI_SERVICE);try{catalog=new JSONArray(readAsset("catalog.json"));}catch(Exception e){catalog=new JSONArray();}
-  buildUi();loadProfiles();String previous=prefs.getString("user_"+user+"_file","");
+  buildUi();loadProfiles();
+  // Since 0.9.60 the launcher opens Home, not Study. Restore the active
+  // profile's in-memory study preferences independently of score loading;
+  // otherwise the first explicit selection overwrites saved 80% tempo with
+  // the default 100% when loadScore(reset=true) calls saveSession().
+  String studyPrefix="user_"+user+"_";
+  double savedTempo=Double.longBitsToDouble(prefs.getLong(studyPrefix+"tempo",
+   Double.doubleToLongBits(1.0)));
+  tempoFactor=Double.isFinite(savedTempo)?Math.max(.25,Math.min(2.0,savedTempo)):1.0;
+  currentHand=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"hand",0)));
+  mode=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"mode",0)));
+  // Legacy keyboard preference remains stored even though Study no longer
+  // renders the visual keyboard guide. Keep it when opening a new score.
+  scoreView.showKeyboard=prefs.getBoolean(studyPrefix+"keyboard",false);
+  String previous=prefs.getString("user_"+user+"_file","");
   boolean contextSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("engraving_context_selftest",false);
   boolean complexEngravingSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
@@ -226,6 +240,8 @@ public class MainActivity extends Activity {
   if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0&&getIntent().getBooleanExtra("creation_export_selftest",false))handler.post(()->CreationSelfTest.export(this));
   if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("discovery_selftest",false))handler.post(()->{android.util.Log.i("PianoLivreDiscovery","DISCOVERY_UI_SELFTEST_BEGIN");MusicLabDiscoverySelfTest.run(this);});
+  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
+     &&getIntent().getBooleanExtra("creation_c2_d_smoke",false))handler.post(()->CreationC2DProbe.run(this));
  }
  private String readAsset(String asset)throws IOException{try(InputStream in=getAssets().open(asset)){return new String(all(in),StandardCharsets.UTF_8);}}
  private byte[] all(InputStream in)throws IOException{ByteArrayOutputStream o=new ByteArrayOutputStream();byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)o.write(b,0,n);return o.toByteArray();}
@@ -236,7 +252,23 @@ public class MainActivity extends Activity {
  void chooseScore(){screens.showHome();}
  void loadScore(String path,boolean reset){loadScore(path,reset,false);}
  void openFreeScore(String path){loadScore(path,true,true);}
- void loadScore(String path,boolean reset,boolean free){stopPlayback();finishStudyWindow();writtenRepeats.reset();try{path=SessionFiles.resolve(getFilesDir(),path);}catch(IllegalArgumentException ex){message(ex.getMessage());return;}try(InputStream input=path.startsWith("scores/")?getAssets().open(path):new FileInputStream(path)){score=Score.read(input,path);currentFile=path;currentName=score.title;
+ void loadCreationScore(String id){loadScore("creation-score:"+id,true,false);}
+ void loadScore(String path,boolean reset,boolean free){
+  stopPlayback();finishStudyWindow();writtenRepeats.reset();
+  try{path=SessionFiles.resolve(getFilesDir(),path);}catch(IllegalArgumentException ex){message(ex.getMessage());return;}
+  CreationProjectStore.Project original=null;CreationScoreStore.Saved saved=null;
+  try{
+   if(path.startsWith("creation-score:")){
+    String id=path.substring(15);original=new CreationProjectStore(getFilesDir()).get(id);
+    if(original.profileId!=user||original.trash||original.recoverable)
+     throw new IOException("Partitura não disponível para o perfil ativo");
+    saved=new CreationScoreStore(getFilesDir()).read(id);
+   }
+   try(InputStream input=saved!=null
+       ?new ByteArrayInputStream(saved.xml.getBytes(StandardCharsets.UTF_8))
+       :path.startsWith("scores/")?getAssets().open(path):new FileInputStream(path)){
+    score=Score.read(input,path);
+    currentFile=path;currentName=original!=null?original.title:score.title;
   route=PerformanceRoute.build(score);
   routeCursor=route.supported()?new PerformanceRoute.Cursor(route):null;
   routeHasMarkers=false;
@@ -280,7 +312,8 @@ public class MainActivity extends Activity {
   if(routeHasMarkers&&!route.supported())
    message("Atenção: não é possível determinar com segurança todos os retornos: "+
      String.join(", ",route.warnings)+". A reprodução desta partitura será linear.");
- }catch(Exception e){message("Não foi possível importar: "+e.getMessage());}}
+  }
+ }catch(Exception e){message("Não foi possível abrir a partitura: "+e.getMessage());}}
  void chooseMidiHands(MidiFileImport.Result midi,String name,List<Integer> tracks,int index,Map<Integer,Integer> hands){
   if(index<tracks.size()){
    int track=tracks.get(index);long count=midi.notes.stream().filter(n->n.track==track).count();
@@ -1048,7 +1081,7 @@ public class MainActivity extends Activity {
  void message(String m){if(isFinishing()||isDestroyed())return;lastMessageDialog=new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
  @Override public void onBackPressed(){
   if(screens!=null&&screens.isLabOpen()){screens.backFromLab();return;}
-  if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.showHome();return;}
+  if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.backFromStudy();return;}
   super.onBackPressed();
  }
  @Override public void onWindowFocusChanged(boolean hasFocus){

@@ -60,7 +60,7 @@ final class MusicCreationScreen extends LinearLayout {
  private void label(LinearLayout target,String s,int size,boolean bold,int bottom){attach(target,text(s,size,bold),-2,bottom);}
  private Button button(String s,boolean primary,Runnable action){
   Button b=new Button(a){@Override public void setEnabled(boolean enabled){super.setEnabled(enabled);setAlpha(enabled?1f:.45f);}};
-  b.setText(s);b.setAllCaps(false);b.setTextSize(14);b.setSingleLine(true);b.setEllipsize(TextUtils.TruncateAt.END);
+  b.setText(s);b.setContentDescription(s);b.setAllCaps(false);b.setTextSize(14);b.setSingleLine(true);b.setEllipsize(TextUtils.TruncateAt.END);
   b.setTypeface(null,android.graphics.Typeface.BOLD);b.setTextColor(primary?white:ink);
   b.setMinHeight(dp(48));b.setMinimumHeight(dp(48));b.setPadding(dp(9),0,dp(9),0);
   b.setOnClickListener(v->{if(!busy)action.run();});
@@ -321,7 +321,7 @@ a.handler.postDelayed(this,100);}};ticker.run();
   row.setBackground(shape(white,14,0xffE0E9F4));
   attach(target,row,72,8);
  }
- private void showDetails(String id){if("list".equals(page))listScrollY=scroll.getScrollY();detailsBack="home".equals(page)?"home":"list";page="details";selectedId=id;base("Abrindo composição…",this::showList);disk.execute(()->{try{CreationProjectStore.Project project=store.get(id);post(()->{if("details".equals(page)&&id.equals(selectedId))renderDetails(project);});}catch(IOException error){post(()->{a.message("Não foi possível abrir a composição: "+error.getMessage());showList();});}});}
+ void showDetails(String id){if("list".equals(page))listScrollY=scroll.getScrollY();detailsBack="home".equals(page)?"home":"list";page="details";selectedId=id;base("Abrindo composição…",this::showList);disk.execute(()->{try{CreationProjectStore.Project project=store.get(id);post(()->{if("details".equals(page)&&id.equals(selectedId))renderDetails(project);});}catch(IOException error){post(()->{a.message("Não foi possível abrir a composição: "+error.getMessage());showList();});}});}
  private void renderDetails(CreationProjectStore.Project p){
   String id=p.id;
   try{
@@ -370,6 +370,19 @@ a.handler.postDelayed(this,100);}};ticker.run();
     attach(playerCard,trim,-2,0);
     attach(body,playerCard,-2,12);
     updatePlaybackControls();
+   }
+   // A stored score follows a trashed project, but it cannot be opened or studied
+   // until the original recording is explicitly restored.
+   if(!p.recoverable&&!p.trash){
+    boolean hasScore=new CreationScoreStore(a.getFilesDir()).has(id);
+    LinearLayout scoreCard=card();label(scoreCard,"Partitura",17,true,6);
+    attach(scoreCard,mutedText(hasScore?
+      "Partitura vinculada à gravação original. Ajuste ou pratique sem alterar o MIDI.":
+      "Transforme a gravação em partitura com duas pautas.",13),-2,8);
+    attach(scoreCard,button(hasScore?"Visualizar e ajustar partitura":"Gerar partitura",
+      true,()->CreationScorePreviewScreen.open(a,p)),50,5);
+    if(hasScore)attach(scoreCard,button("Estudar esta partitura",false,()->a.loadCreationScore(id)),48,5);
+    attach(body,scoreCard,-2,12);
    }
    Button rename=button("Renomear",false,()->rename(p));
    if(!p.trash){

@@ -1,5 +1,25 @@
 # Documentação do Piano Livre aberto
 
+## Auditoria da suíte 0.9.61
+
+- [106 — Revisão integral dos testes, atualização Home/Estudar, release e preservação de dados](106-AUDITORIA-SUITE-0961.md).
+
+## Release candidata 0.9.61
+
+- [0.9.61-open-beta — Criação C2 completa, testes, assinatura e publicação](releases/0.9.61-open-beta.md). Publicação autorizada, condicionada à integração protegida na main e checks completos do commit de distribuição; nenhuma Release será declarada antes da existência efetiva no GitHub.
+
+
+## Criação C2 — Implementações técnicas
+
+- [101 — Contrato original de Criação C2](101-CRIACAO-C2-PLANO-EXECUCAO.md)
+- [102 — Motor MIDI → MusicXML (C2-A)](102-CRIACAO-C2-A-MOTOR-IMPLEMENTACAO.md)
+- [103 — Prévia e ajustes musicais e de pautas (C2-B)](103-CRIACAO-C2-B-PREVIA-AJUSTES.md)
+- [104 — Salvamento atômico, backup v4 e Estudar (C2-C)](104-CRIACAO-C2-C-PERSISTENCIA-BACKUP-ESTUDAR.md)
+- [105 — Corpus, regressão dirigida e evidências (C2-D)](105-CRIACAO-C2-D-VALIDACAO-ENTREGA.md)
+
+**Estado:** implementações versionadas em branches técnicas; a `main` e APKs públicos não contêm C2 enquanto a integração protegida estiver pendente. A C2-C está integrada à branch técnica C2-A/B (PR #98); a C2-D está implementada em branch de validação, ainda sem merge para main.
+
+
 ## Correção de inicialização 0.9.60
 
 - [Release candidata 0.9.60 — abertura sempre na Tela Inicial](releases/0.9.60-open-beta.md): diagnóstico e correção do redirecionamento indevido ao Estudar, testes de reabertura sem apagar sessão e autorização de publicação versionada. [Issue #92](https://github.com/atshimura/Piano-livre-aberto/issues/92).

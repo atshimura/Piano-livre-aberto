@@ -6,6 +6,7 @@ public final class SessionFiles {
  public static String portable(String path){
   if(path==null)throw new IllegalArgumentException("Caminho de partitura inválido");if(path.isEmpty())return path;
   String prefix,name;
+  if(path.startsWith("creation-score:")){String id=path.substring(15);if(!id.matches("[0-9a-fA-F-]{36}"))throw new IllegalArgumentException("Identificador de partitura inválido");return "creation-score:"+id.toLowerCase(java.util.Locale.ROOT);}
   if(path.startsWith("scores/")){prefix="scores/";name=path.substring(7);}
   else if(path.startsWith("imported/")){prefix="imported/";name=path.substring(9);}
   else if(path.startsWith("/")&&path.contains("/imported/")){prefix="imported/";name=path.substring(path.lastIndexOf("/imported/")+10);}

@@ -28,6 +28,7 @@
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
 <script src="temporal-notation.js"></script>
 <script src="optical-time-map.js"></script>
+<script src="creation-note-picker.js"></script>
 <script src="study-note-tip.js"></script>
 <script src="engraving-audit.js"></script>
 <script src="study-profile.js"></script>
@@ -40,6 +41,7 @@
 (function(){
  'use strict';
  let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
+ let creationPicker=null,creationSource=[],creationSelected=[];
  let studyProfile=null,studyAnalysis=null,studyVerticalAdaptation={status:'not-evaluated'};
  let studyDynamicAdjustments=[],studyWordSourceNumbers=[],studyWindow=null,studyWindowRows=[],studyWindowGlobal=null;
  let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
@@ -898,6 +900,7 @@
  }
  function render(xml,start,layout,nativeEvents){
   clearTimeout(renderTimer);
+  if(creationPicker){creationPicker.dispose();creationPicker=null;}
   const ticket=++generation;
   cancelOptical();cancelOpticalWait();
   hideOpticalTip();
@@ -1224,8 +1227,27 @@
    });
   }catch(e){inform('Erro de partitura: '+e.message);if(window.AndroidNotation)AndroidNotation.onError(e.message);}
  }
+ function bindCreationSelection(){
+  if(creationPicker){creationPicker.dispose();creationPicker=null;}
+  if(!loaded||!freeLayout||!osmd||!window.CreationNotePicker||!creationSource.length)return;
+  const svg=document.querySelector('#score svg');
+  creationPicker=CreationNotePicker.bind(svg,osmd.graphic,creationSource,creationSelected,function(id){
+   if(window.AndroidNotation&&AndroidNotation.onCreationNoteTapped)AndroidNotation.onCreationNoteTapped(id);
+  });
+  console.log('C2_NOTE_PICKER '+JSON.stringify({matched:creationPicker.matched,
+   ambiguous:creationPicker.ambiguous,missing:creationPicker.missing}));
+ }
  window.PianoNotation={
    load:render,
+   creationBind:function(notes,selected){
+    creationSource=Array.isArray(notes)?notes:[];
+    creationSelected=Array.isArray(selected)?selected:[];
+    bindCreationSelection();
+   },
+   creationSelect:function(selected){
+    creationSelected=Array.isArray(selected)?selected:[];
+    if(creationPicker)creationPicker.select(creationSelected);
+   },
    analysis:function(){return {context:opticalContextState?{measure:opticalContextMeasure+1,railWidthCss:opticalContextState.railWidthCss,sourceMeasures:opticalContextState.active.map(function(a){return {clef:a.clef&&a.clef.sourceMeasure,key:a.key&&a.key.sourceMeasure,time:a.time&&a.time.sourceMeasure};})}:null,windowPlan:studyWindow?{windows:studyWindow.windows,current:studyWindow.current,fullScale:studyWindow.fullScale}:null,profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,layoutAdaptation:studyVerticalAdaptation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
    seek:function(beat,animated,bpm,playing){
     if(freeLayout)return;seekBeat=beat;
@@ -1316,6 +1338,7 @@
       prepareStudyWindow(resizedSvg);
       opticalSeek(seekBeat,opticalPlayback.bpm,opticalPlayback.playing);
      }else if(!freeLayout)atBeat(seekBeat,false);
+     else if(creationSource.length)bindCreationSelection();
     }catch(e){console.log('POC_RESIZE_ERROR',e.message)}},220);
    }
  };

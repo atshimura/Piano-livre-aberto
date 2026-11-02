@@ -22,7 +22,7 @@ import org.json.JSONArray;
  */
 @SuppressLint("SetJavaScriptEnabled")
 public final class NotationView extends WebView {
- public interface Listener { void onRendered(); void onError(String message); default void onStudyTap(){} default void onPresentation(String message){} default void onLoopSelected(double start,double end){} }
+ public interface Listener { void onRendered(); void onError(String message); default void onStudyTap(){} default void onPresentation(String message){} default void onLoopSelected(double start,double end){} default void onCreationNoteTapped(String sourceId){} }
  private final Listener callback;
  private boolean htmlReady=false;
  private boolean scoreRendered=false;
@@ -43,6 +43,32 @@ public final class NotationView extends WebView {
  private long resizeSequence=0;
  private int studyHand=0;
  private final int originalLayerType;
+ private final java.util.Set<String> creationSourceIds=new java.util.HashSet<>();
+ private String creationSourceJson="[]",creationSelectionJson="[]";
+ /** C2-B only: bind graphical noteheads to stable MIDI Note On identities. */
+ public void setCreationSourceNotes(java.util.List<CreationScoreTranscriber.WrittenNote> notes){
+  creationSourceIds.clear();org.json.JSONArray result=new org.json.JSONArray();
+  if(notes!=null)for(CreationScoreTranscriber.WrittenNote n:notes){
+   if(n==null||n.sourceId==null||!creationSourceIds.add(n.sourceId))continue;
+   org.json.JSONObject item=new org.json.JSONObject();
+   try{item.put("id",n.sourceId);item.put("pitch",n.pitch);item.put("staff",n.staff);
+       item.put("start",n.startTick);item.put("end",n.endTick);result.put(item);}
+   catch(org.json.JSONException ex){android.util.Log.w("PianoLivreNotation","C2_MAP_SKIP",ex);}
+  }
+  creationSourceJson=result.toString();creationSelectionJson="[]";
+ }
+ public void setCreationSelected(java.util.Set<String> ids){
+  org.json.JSONArray a=new org.json.JSONArray();
+  if(ids!=null)for(String id:ids)if(creationSourceIds.contains(id))a.put(id);
+  creationSelectionJson=a.toString();
+  if(!disposed&&scoreRendered&&freeLayout)evaluateJavascript(
+   "if(PianoNotation.creationSelect)PianoNotation.creationSelect("+creationSelectionJson+")",null);
+ }
+ private void sendCreationSource(){
+  if(!disposed&&freeLayout&&scoreRendered&&!creationSourceIds.isEmpty())
+   evaluateJavascript("if(PianoNotation.creationBind)PianoNotation.creationBind("+
+    creationSourceJson+","+creationSelectionJson+")",null);
+ }
  public NotationView(Context c,Listener listener){
   super(c);
   callback=listener;
@@ -90,6 +116,7 @@ public final class NotationView extends WebView {
     rendererFailed=false;scoreRendered=true;Log.i("PianoLivreNotation","RENDERED_CALLBACK");
     setVisibility(View.VISIBLE);
     sendStudyHand();
+    sendCreationSource();
     callback.onRendered();
     sendPendingWaitPreparation();
    });}
@@ -108,6 +135,9 @@ public final class NotationView extends WebView {
     engravingProof=false;rendererFailed=true;
     Log.e("PianoLivreNotation","RENDER_ERROR "+error);
     callback.onError(error);
+   });}
+   @JavascriptInterface public void onCreationNoteTapped(String id){post(()->{
+    if(!disposed&&freeLayout&&scoreRendered&&id!=null&&creationSourceIds.contains(id))callback.onCreationNoteTapped(id);
    });}
    @JavascriptInterface public void onLoopSelected(double start,double end){post(()->{
     if(!disposed&&!freeLayout&&scoreRendered)callback.onLoopSelected(start,end);

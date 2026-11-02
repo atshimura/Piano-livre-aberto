@@ -94,7 +94,9 @@ jobs:
   ui-fast:
     needs: debug-apk
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Includes two phone/tablet creation journeys and emulator teardown.
+    # One prior runner stalled during teardown after functional PASS markers.
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: PianoLivreAndroid
@@ -274,6 +276,9 @@ jobs:
             python3 tests/emulator_notation06.py
             python3 tests/emulator_responsive.py
             python3 tests/emulator_study_session.py
+            # The C2-D smoke test requires a disposable debug installation.
+            # Exercise it BEFORE replacing the package with a non-debug release.
+            python3 tests/c2_d_ui_smoke.py
             python3 tests/emulator_release.py
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py; fi
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py --previous 0.9.52; fi
@@ -325,6 +330,7 @@ jobs:
               "piano-osmd-polyphony-both-staves.png",
               "piano-osmd-polyphony-guide-open.png",
               "piano-osmd-polyphony-guide-restored.png",
+              "piano-release-home.png",
               "piano-release.png",
               "piano-home-phone.png",
               "piano-home-tablet.png",
@@ -404,11 +410,13 @@ jobs:
             PianoLivreAndroid/piano-screen.png
             PianoLivreAndroid/piano-library.png
             PianoLivreAndroid/piano-creation-*.png
+            PianoLivreAndroid/build/c2-d-evidence/*
             PianoLivreAndroid/piano-c1-*
             PianoLivreAndroid/piano-home-phone.png
             PianoLivreAndroid/piano-home-tablet.png
             PianoLivreAndroid/piano-laboratorio.png
             PianoLivreAndroid/piano-midi-import.png
+            PianoLivreAndroid/piano-release-home.png
             PianoLivreAndroid/piano-release.png
             PianoLivreAndroid/piano-release.json
             PianoLivreAndroid/piano-song.png

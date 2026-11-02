@@ -4,12 +4,48 @@ The emulator cannot replace a physical USB-MIDI piano or physical legibility.
 """
 import json,re,time,xml.etree.ElementTree as ET
 from pathlib import Path
-from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard,home_scroll_to_top,focus_library_search_field,reveal_study_controls,assert_study_controls
+from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard,home_scroll_to_top,focus_library_search_field,reveal_study_controls,assert_study_controls,wait_for_text
 
 PACKAGE="br.org.pianolivre.opensource/br.org.pianolivre.MainActivity"
 
 def labels():
     return [value for n in dump().iter("node") for value in (n.attrib.get("text",""),n.attrib.get("content-desc","")) if value]
+
+def study_position_values(values):
+    """Read every exposed position label, not just the first, potentially stale one."""
+    positions=[]
+    for value in values:
+        match=re.search(r"\bposição\s+(-?\d+(?:[.,]\d+)?)", value, flags=re.I)
+        if match:
+            positions.append(float(match.group(1).replace(",", ".")))
+    return positions
+
+def wait_for_rewind(seconds=45):
+    """Require observed beat 0 despite slow UIAutomator updates on resized emulators.
+
+    A tap acknowledged by adb is not proof that the Android view has updated.
+    In the failing run the final diagnostic snapshot showed position 0.0, but
+    the earlier bounded samples had already exhausted their count.
+    """
+    deadline=time.monotonic()+seconds
+    seen=[]
+    while True:
+        visible=labels()
+        seen=study_position_values(visible)
+        if any(abs(position)<0.05 for position in seen):
+            return
+        if time.monotonic()>=deadline:
+            break
+        time.sleep(.25)
+    # One last authoritative snapshot closes the race between the final
+    # unsuccessful sample and the error diagnostics. Do not accept nonzero.
+    final_labels=labels()
+    final_positions=study_position_values(final_labels)
+    if any(abs(position)<0.05 for position in final_positions):
+        return
+    raise AssertionError("STUDY_POSITION_RESIDUAL: rewind did not return to beat 0; " +
+                         "seen="+repr(seen)+" final="+repr(final_positions)+
+                         " labels="+repr(final_labels[:40]))
 
 def expect(label,reason):
     assert any(label in v for v in labels()),reason
@@ -346,15 +382,7 @@ def exercise(title,slug):
     screenshot("piano-entrega-b-"+slug+"-guide.png") # Historical artifact slot now shows guide-free Study.
     tap_text(["Contínuo"],exact=True,scroll=True)
     tap_text(["Início"],scroll=True)
-    rewound=False
-    for _ in range(20):
-        position_label=next((value for value in labels() if "posição" in value.casefold()),"")
-        match=re.search(r"posição\s+(-?\d+(?:\.\d+)?)",position_label,flags=re.I)
-        if match and abs(float(match.group(1)))<0.05:
-            rewound=True
-            break
-        time.sleep(.25)
-    assert rewound, "STUDY_POSITION_RESIDUAL: rewind did not return to beat 0; labels="+repr(labels()[:40])
+    wait_for_rewind()
     # The short fixture is only 16 beats; slow it through the visible tempo
     # SeekBar so the pause control remains available during emulator UI latency.
     root=dump()
@@ -437,6 +465,14 @@ def exercise(title,slug):
     assert_running()
     expect(title,"return from background lost the selected study")
     screenshot("piano-entrega-b-"+slug+"-resumed.png")
+    # Background/foreground intentionally preserves Study. Returning to the
+    # library requires the actual accessible Back control; a warm resume must
+    # never be mistaken for an automatic transition to Home.
+    tap_text(["Voltar à composição ou à biblioteca"],exact=True)
+    wait_for_text("Biblioteca Musical",timeout=30)
+    returned=labels()
+    assert not any(value=="Espera" for value in returned), \
+        "STUDY_BACK_NAVIGATION_FAILED: Study remained open after its Back action; labels="+repr(returned[:40])
     library(title)
     return {"score":title,"modes":["Espera","Contínuo","Demonstração (without output)"],
             "hands":["Direita","Esquerda","Ambas"],

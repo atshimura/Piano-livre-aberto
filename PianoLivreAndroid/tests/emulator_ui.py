@@ -450,10 +450,21 @@ if __name__=="__main__":
     tap_text(["Opções e configurações"],exact=True);tap_text(["Gerenciar perfil"],scroll=True);tap_text(["Excluir perfil"]);tap_text(["Excluir"],exact=True)
     after_delete=[n.attrib.get("text","") for n in dump().iter("node")]
     assert not any("Perfil_Teste" in t for t in after_delete), "Deleted profile remains selected"
-    if any("← Biblioteca" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in dump().iter("node")):
-        # Deleting the temporary profile restores home, which owns its own
-        # welcome action instead of the in-study score toolbar.
-        tap_text(["← Biblioteca"],exact=True);wait_for_text("Começar pela Ode à Alegria")
+    # The surviving profile may have a saved Study score. Deleting the
+    # temporary profile then legitimately restores that Study view instead
+    # of Home; return through the visible, accessible back action before
+    # exercising Home's library search. Never assume a cold-start screen.
+    post_delete=[label for n in dump().iter("node")
+                 for label in (n.attrib.get("text",""),n.attrib.get("content-desc",""))
+                 if label]
+    if not any("Biblioteca Musical" in label for label in post_delete):
+        if any("Voltar à composição ou à biblioteca" in label for label in post_delete):
+            tap_text(["Voltar à composição ou à biblioteca"],exact=True)
+        elif any("← Biblioteca" in label for label in post_delete):
+            tap_text(["← Biblioteca"],exact=True)
+        else:
+            raise AssertionError("Profile deletion left an unexpected screen: "+repr(post_delete[:40]))
+        wait_for_text("Biblioteca Musical")
     tap_text(["Biblioteca Musical"],exact=True)
     print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
     wait_for_text("Buscar título ou arquivo")
