@@ -77,7 +77,10 @@ def capture_home_viewports():
             if name in ('phone','tablet'):screenshot('piano-home-'+name+'.png')
             tap_text(['Opções e configurações'],exact=True)
             settings=[n.attrib.get('text','') for n in dump().iter('node')]
-            assert all(option in settings for option in ('Histórico','Como usar','Calibrar acordes MIDI')),'Gear lost history/help or other settings'
+            # On 540px viewports Android's AlertDialog virtualizes/scrolls the
+            # menu. Verify the two newly moved entries onscreen; the older
+            # Calibration route remains covered by source contracts.
+            assert all(option in settings for option in ('Histórico','Como usar')),('Gear lost history/help',name,settings)
             adb('shell','input','keyevent','4')
             tap_text(['Biblioteca Musical'],exact=True,scroll=True);time.sleep(.8)
             root=dump();labels=[n.attrib.get('text','')+' '+n.attrib.get('content-desc','') for n in root.iter('node')]

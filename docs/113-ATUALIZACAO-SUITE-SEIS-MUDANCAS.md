@@ -26,3 +26,7 @@ Não foi desabilitado teste de reconhecimento MIDI, notação, MusicXML, importa
 - O preflight de Chromium, MIDI, estudos e biblioteca progrediu até o passo JVM de `LibrarySearchTest`, que falhou por omitir `SessionFiles.java` na linha `javac` do workflow completo. Corrigido mantendo as asserções de chaves portáteis.
 - O primeiro `ui-fast` encontrou `KeyError: labels` no teste de tipografia dos botões da Biblioteca. O coletor de métricas é agora explícito: elementos `TextView` individuais (Button e EditText) exportam `sizeSp` diretamente; apenas contêineres têm `labels`. O teste passa a comparar os valores nativos medidos sem dispensar a verificação da fonte.
 - O resultado anterior do PR não conta como gate aprovado; repetir os workflows completos no commit de correção antes de integrar.
+
+## Ajuste do teste real de cabeçalho no emulador
+
+No Pixel 3 720×540, o menu da engrenagem pode rolar verticalmente e UIAutomator só expõe entradas visíveis. O teste do layout confirmou que encontrou a engrenagem, mas falhou exigindo também a entrada legada **Calibrar acordes MIDI** simultaneamente com Histórico/Como usar. A asserção dinâmica verifica as duas novas entradas (no início do menu) e os contratos Java conservam a obrigatoriedade da opção de calibração sem depender da altura de tela. A funcionalidade não foi retirada do aplicativo.

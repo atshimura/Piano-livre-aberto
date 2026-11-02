@@ -105,7 +105,8 @@ class BannerShortcutsTest(unittest.TestCase):
         self.assertIn("assert len(shortcuts)==2",l)
         self.assertIn("not equal width",l)
         self.assertIn("not equal height",l)
-        self.assertIn("('Histórico','Como usar','Calibrar acordes MIDI')",l)
+        self.assertIn("('Histórico','Como usar')",l)
+        self.assertIn('"Calibrar acordes MIDI"',self.settings)
         self.assertNotIn("len(shortcuts)==3",l)
 
 if __name__=="__main__":

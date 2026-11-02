@@ -15,7 +15,8 @@ class SixChangesSuiteContracts(unittest.TestCase):
         self.assertIn('btn("Biblioteca Musical"',screen)
         self.assertIn('btn("Laboratório Musical"',screen)
         self.assertIn("len(shortcuts)==2",checks)
-        self.assertIn("('Histórico','Como usar','Calibrar acordes MIDI')",checks)
+        self.assertIn("('Histórico','Como usar')",checks)
+        self.assertIn('"Calibrar acordes MIDI"',screen)
 
     def test_library_three_controls_and_accessible_search(self):
         checks=source("tests/home_layout_checks.py")
