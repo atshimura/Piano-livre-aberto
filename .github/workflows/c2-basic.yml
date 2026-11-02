@@ -1,0 +1,43 @@
+name: Piano Livre C2 - somente testes basicos
+on:
+  push:
+    branches:
+      - feat/criacao-c2-b-previa-ajustes
+
+permissions:
+  contents: read
+
+jobs:
+  c2-basic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Preparar SDK Android 35
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Testes JVM exclusivos C2-A e C2-B (sem suite)
+        working-directory: PianoLivreAndroid
+        run: |
+          mkdir -p build/c2-basic
+          javac -encoding UTF-8 -d build/c2-basic \
+            app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
+            tests/CreationScoreTranscriberTest.java \
+            tests/CreationScoreReviewTest.java
+          java -cp build/c2-basic br.org.pianolivre.CreationScoreTranscriberTest
+          java -cp build/c2-basic br.org.pianolivre.CreationScoreReviewTest
+      - name: Teste basico do toque na partitura
+        working-directory: PianoLivreAndroid
+        run: node tests/CreationNotePickerTest.js
+      - name: Compilar apenas APK de depuracao (sem suite Android/emulador)
+        working-directory: PianoLivreAndroid
+        run: gradle --no-daemon :app:assembleDebug
