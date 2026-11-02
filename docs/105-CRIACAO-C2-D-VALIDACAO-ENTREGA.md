@@ -7,9 +7,10 @@
 ## Implementação
 
 - CreationC2DCorpusTest.java: regressão dirigida para 2/4, 3/4, 4/4 e 6/8, precisões 1/8, 1/16 e 1/32, acordes, vozes, cruzamentos de pautas, pedal, nota igual em canais diferentes, durações longas, overrides e undo/redo. Compara MusicXML gerado com o parser Score.read (contagem, alturas, ataques e compassos). Verifica original intocado, determinismo, IDs inválidos e um corpus sintético de 320 notas.
-- MusicCreationScreen: não exibe botões de edição/Estudar para uma composição na Lixeira; após restauração, o vínculo da partitura permanece.
+- MusicCreationScreen: não exibe botões de edição/Estudar para uma composição na Lixeira; após restauração, o vínculo da partitura permanece. Preserva o rótulo acessível completo de botões que são abreviados na tela pequena.
+- CreationScorePreviewScreen: controles de nota/acorde recebem identificação acessível exclusiva, divisão/altura têm descrições e movimentos de pauta só são habilitados com notas selecionadas.
 - CreationC2DProbe: fixture exclusivamente de depuração, por intenção explícita creation_c2_d_smoke, que recusa dispositivos MIDI físicos. Cria uma composição sintética, salva derivação v4 e verifica que os bytes C1 não mudaram, antes de abrir seus detalhes.
-- tests/c2_d_ui_smoke.py: um percurso isolado no Android emulado: detalhes → prévia OSMD → Estudar → voltar à Criação → paisagem. Registra PNG, XML da UI e memória, somente com dados sintéticos, e recusa dispositivos físicos.
+- tests/c2_d_ui_smoke.py: um percurso isolado no Android emulado: detalhes → prévia OSMD → ajustes de pauta → Estudar → voltar à Criação → paisagem. Registra PNG, XML da UI e memória, somente com dados sintéticos, e recusa dispositivos físicos.
 - Workflow c2-basic.yml: testa o parser Score junto ao motor C2, o seletor JS, compila APK debug, executa autoteste isolado de backup e, na branch C2-D, realiza um único percurso visual em perfis virtuais de telefone e tablet, com artefatos de sete dias. Não executa emulator-suite ou build.yml.
 
 ## Critérios e limitações
