@@ -1,57 +1,41 @@
-# 103 — Criação C2-B: prévia de partitura e ajustes temporários
+# 103 — Criação C2-B: prévia e ajustes de partitura
 
-**Data:** 01/11/2026. **Estado:** implementação parcial em branch funcional `feat/criacao-c2-b-previa-ajustes`, dependente da [C2-A](102-CRIACAO-C2-A-MOTOR-IMPLEMENTACAO.md); **não integrada na `main` e não disponível em APK**. **Issue:** [#95](https://github.com/atshimura/Piano-livre-aberto/issues/95). Contrato: [plano 101 no PR #96](https://github.com/atshimura/Piano-livre-aberto/pull/96). Este documento registra código real e limites, não substitui testes no Android.
+**Data:** 01/11/2026. **Estado técnico:** implementação C2-B em branch com **compilação Android de depuração e testes básicos aprovados**; integração em `main` ainda pendente. **Branch:** `feat/criacao-c2-b-previa-ajustes`, derivada da C2-A. **Issue:** [#95](https://github.com/atshimura/Piano-livre-aberto/issues/95). Contrato: [plano C2 no PR #96](https://github.com/atshimura/Piano-livre-aberto/pull/96).
 
-## O que existe na branch
+## Entrega de código e experiência de usuário
 
-- **`CreationScoreReview.java`**: sessão de revisão **em memória**, cópia imutável das listas C1, derivação `CreationScoreTranscriber`, parâmetros 100 BPM/4/4/1/16 ajustáveis, corte por altura/sugestão, IDs de nota preservados, seleção individual/chord/intervalo de compassos, movimentação para pauta superior/inferior, histórico limitado de 48 ações, desfazer/refazer e restaurar sugestão. Ao falhar a geração, a edição não substitui o estado anterior.
-- **`CreationScorePreviewScreen.java`**: prévia no app a partir de uma composição salva; diálogo de tela ampla, renderização do MusicXML **offline** via parser `Score.read` e `NotationView`/OSMD existente, cálculo e leitura em executor de um thread, mensagens de erro e cancelamento sem tocar nos dados. Controles de BPM, compasso 2/4–6/8, grade 1/8–1/32, duas pautas, limite por altura e seleção textual acessível de notas, acordes e compassos com paginação. Navegação Voltar/Back confirma descarte de ajustes não salvos.
-- **`MusicCreationScreen.java`**: nova seção “Partitura” com **Gerar partitura** nos detalhes de gravação **salva e não recuperável**; não aparece para arquivos na Lixeira. Criação C1 e exportação MIDI anteriores não são modificadas.
-- **`CreationScoreReviewTest.java`**: cenários dirigidos para IDs, alteração de pauta, acordes, compasso, quantização, desfazer/refazer, seleção, restauração e preservação do original. Não há alterações no workflow CI, no certificado, na versão ou no formato de dados.
+1. Em **Criação → Minhas Criações → composição salva**, o novo botão **Gerar partitura** inicia uma transcrição MIDI **temporária**, sem conexão com piano, fora da thread de UI. Arquivos na Lixeira ou recuperáveis não ativam esse fluxo.
+2. Uma prévia de duas pautas usa o MusicXML do motor `CreationScoreTranscriber` (C2-A), validado na leitura por `Score.read`, e o `NotationView`/OSMD offline existente. Ajustes opcionais: 100 BPM/4/4/1/16 iniciais, andamento, compasso 2/4–6/8, precisão 1/8–1/32, sugestão de pautas e corte por altura.
+3. **`CreationScoreReview.java`** mantém seleção por identidades estáveis de ataques Note On. Permite mover **nota, acorde, múltiplas notas ou intervalo inclusivo de compassos** para pauta superior/inferior; Desfazer/Refazer (48 ações), Restaurar sugestão e cancelar. A mudança não altera a altura, a duração MIDI original ou os arquivos C1.
+4. **Seleção diretamente na partitura:** `creation-note-picker.js` extrai coordenadas dos cabeçotes do OSMD e associa cada um ao `sourceId` canônico por pauta, altura e tempo de execução musical. `notation.html` e `NotationView.java` estabelecem um bridge JS→Java com **lista permitida de IDs**, e `CreationScorePreviewScreen.java` sincroniza toque, realce SVG e checkboxes. Suporta ligaduras cruzando compassos. **Não adivinha** quando há uníssonos simultâneos indistinguíveis: nesse caso a seleção acessível pela lista permanece disponível.
+5. O botão **Salvar partitura — C2-C** permanece desabilitado, com explicação visível. **C2-B não grava derivados, nem altera `.plc`, nem abre a composição no Estudar**. Persistência segura, backup versionado e Estudar são escopo C2-C. A janela informa que ajustes não salvos são descartados; botão Voltar/Back pergunta confirmação. A reprodução original e a exportação MIDI C1 continuam inalteradas.
 
-## Diferenças deliberadas do escopo completo C2-B
+## Validação básica real no commit GitHub
 
-1. **Seleção pelo desenho SVG/OSMD ainda não implementada.** O OSMD atual não oferece uma associação segura dos cabeçotes tocados ao `sourceId` original depois de quantização, polifonia e ligaduras. Por segurança e acessibilidade, a edição é feita pela lista de notas que acompanha a pauta, com opções de acorde, grupo e intervalo de compassos. É uma entrega **parcial da UX C2-B**. Criar bridge de hit-test com mapeamento comprovado nota-fonte → notação e teste de toque real antes de liberar o toque direto no cabeçote.
-2. **Não é possível Salvar ou Estudar a partitura ainda.** Esses botões não afirmam sucesso: “Salvar partitura — C2-C” permanece **desabilitado**; a prévia e os ajustes desaparecem ao fechar o diálogo. Persistência, sidecar, backup v4 com preflight/rollback e Estudar pertencem ao C2-C. A gravação C1 original nunca muda.
-3. **Não houve confirmação de geometria OSMD em Android real ou emulador.** `Score.read` é chamado no worker de geração, mas não se executou o APK Android nesta etapa.
-4. Controles por slider, reinicialização do diálogo e redimensionamento estão sujeitos à futura revisão de usabilidade em celular/tablet; a seleção por lista evita afirmar equivalência com toque no cabeçote.
-5. A C2-A ainda tem limitações declaradas (limites de 8000 notas/1024 compassos, redução de rubato, sem quiálteras inferidas) e não foi integrada à main. A C2-B depende dela como base de branch.
+[**Workflow C2 — somente testes básicos #41365891175**](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41365891175) concluído **success** em **02/11/2026 00:13 UTC**, no SHA `89b2cb3f5a0c430ba58ed65409a6fa94252f0aee` (o código acima de seleção já estava presente; alterações documentais posteriores não mudam esse código). Executou somente:
 
-## Testes básicos dirigidos efetivamente realizados
+| Prova executada | Resultado |
+| --- | --- |
+| `javac` de `MidiTakeRecorder` + `CreationScoreTranscriber` + `CreationScoreReview` e dois testes do próprio repositório | Compilação Java aprovada |
+| `CreationScoreTranscriberTest` | `CREATION_C2_A_BASIC_PASS checks=47` |
+| `CreationScoreReviewTest` | `CREATION_C2_B_BASIC_PASS checks=27` |
+| `node tests/CreationNotePickerTest.js` | `CREATION_C2_B_NOTEHEAD_BASIC_PASS checks=14` |
+| `gradle --no-daemon :app:assembleDebug` | `BUILD SUCCESSFUL in 28s` |
 
-**Resultados locais:**
-- `CREATION_C2_A_BASIC_PASS checks=48` — recompilação da cópia local do motor da C2-A e do teste de regressão respectivo via `javac` JDK 21.
-- `CREATION_C2_B_BASIC_PASS checks=27` — `CreationScoreReviewTest.java` (mesmo corpo do teste commitado na branch) com uma **cópia local equivalente** de `CreationScoreReview`, de `CreationScoreTranscriber` e do contrato `MidiTakeRecorder` reconstruído localmente, compilados em JVM JDK 21. Inclui desfazer/refazer, corte por altura, seleção e preservação da fonte. Resultado não demonstra compilação do exato conjunto de arquivos Android do SHA GitHub.
-- Inspeção lexical dos quatro arquivos alterados (`CreationScoreReview`, `CreationScorePreviewScreen`, `MusicCreationScreen`, teste): chaves equilibradas e nenhuma string/comentário aberto no texto verificado.
+Total: **88 verificações dirigidas** (47+27+14), além da compilação Android. **O resultado 47 da C2-A é o número efetivamente registrado na CI com fontes reais**; textos anteriores mencionaram 48 em teste de cópia local. A referência definitiva é o log acima. O `notation.html` foi adicionalmente analisado como JavaScript sintaticamente válido usando o código da branch.
 
-**Não realizados:** suíte completa, workflow GitHub, gradle Android, testes em emulador, teste de toque de notas OSMD, validação real de `Score.read`/OSMD, teste físico Yamaha/Realme/Lenovo, APK/release. Portanto, **não afirmar que a UI foi validada ou que o C2-B está concluído para integração**.
+A compilação foi **sem assinatura permanente nem publicação**. A suíte completa, suíte de emulador, testes de toque físico, realismo de geometria OSMD, teste físico Realme 7 5G/Lenovo Tab M9/Yamaha P-45 e Release **NÃO foram executados**. Passar no `assembleDebug` prova compilação, não renderização ou qualidade visual no aparelho.
 
-### Comandos básicos reprodutíveis com arquivos reais, em ambiente Android de desenvolvimento
+### Regra de testes e proteção da `main`
 
-```sh
-cd PianoLivreAndroid
-mkdir -p build/c2-basic
-javac -encoding UTF-8 -d build/c2-basic \
-  app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
-  app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
-  app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
-  tests/CreationScoreTranscriberTest.java \
-  tests/CreationScoreReviewTest.java
-java -cp build/c2-basic br.org.pianolivre.CreationScoreTranscriberTest
-java -cp build/c2-basic br.org.pianolivre.CreationScoreReviewTest
-```
+Em 01/11/2026 o usuário determinou: **somente testes básicos, nunca executar suíte completa a cada implementação**. Foi criado `.github/workflows/c2-basic.yml` em branch de desenvolvimento, acionado apenas por `push` nela, com JVM C2 e `assembleDebug`. A CI geral `build.yml` e `emulator.yml` **não foram modificadas nem enfraquecidas**; nenhum workflow de suíte completa foi executado nesta entrega.
 
-**Importante:** os comandos acima usam os fontes reais e devem ser executados antes de considerar revisão de código aprovada; esta seção não declara que eles foram executados contra o checkout real.
+Um PR diretamente à `main` dispara hoje a suíte ampla, contrariando a determinação do usuário, e a `main` tem gates protegidos. Portanto a integração em `main` continua pendente de política de CI compatível, sem contorno da proteção. A C2-A também ainda não foi integrada em `main`. A C2-B pode ser revisada separadamente em PR tendo a branch C2-A como base, sem acionar a suíte completa, desde que os gatilhos sejam conferidos.
 
-## Política de CI e integração
+## Limitações e próxima etapa
 
-O usuário determinou **somente testes básicos em cada implementação; nunca rodar a suíte completa**. A CI do repositório dispara testes amplos automaticamente em qualquer PR de Java: `.github/workflows/build.yml` e `classify_pr_risk.py` (`tier=full`) em `emulator.yml`. **Não abrir PR funcional nesta entrega**, pois isso dispararia o job proibido. **Não** desabilitar o workflow, alterar o classificador ou falsificar checks sem uma decisão apropriada de proteção. A `main` permanece no SHA anterior e a Release 0.9.60 não pode absorver C2-A/B sem autorização/integração.
+- Mapeamento direto no OSMD foi implementado e testado com **fixtures JavaScript**; toque/escala visual em Android real precisa ser validado pelo usuário quando houver oportunidade. A seleção por lista é alternativa segura para notas sobrepostas.
+- Notação derivada pode ser aproximada para rubato, quiálteras e vozes musicais complexas; limites C2-A documentados em [102](102-CRIACAO-C2-A-MOTOR-IMPLEMENTACAO.md).
+- **C2-C:** versão derivada não destrutiva vinculada ao projeto/perfil, armazenamento atômico, inclusão explícita no backup e restauração compatível, abertura da própria partitura no Estudar. Nada do trabalho C2-B deve autorizar salvar derivados sem essa camada.
 
-## Próximas ações técnicas
-
-1. Em ambiente com Android SDK, executar apenas compilação básica/assembleDebug e testes de `CreationScoreReviewTest` com arquivos reais; corrigir incompatibilidades de API e testar `Score.read` com MusicXML derivado. Sem suíte completa.
-2. Para concluir integralmente C2-B, implementar seleção direta na pauta com hit-test estável, comprovando tocabilidade e preservação do ID original, sem sacrificar a acessibilidade textual.
-3. Resolver a incompatibilidade processual entre a nova regra de testes e gates de PR antes de abrir PR/merge, respeitando a proteção de `main`.
-4. C2-C: armazenamento derivado versionado + backup integral com compatibilidade/rollback + Estudar. Não publicar a funcionalidade parcialmente.
-
-**Regra de produto:** nada do fluxo acima altera a fonte MIDI original, mesmo quando o usuário escolhe outra pauta, tempo ou compasso. Nenhuma dependência externa, serviço pago ou telemetria incorporada.
+**Resultado:** código C2-B implantado e compilado na branch; **não ainda distribuído em APK público ou integrado à `main`**.
