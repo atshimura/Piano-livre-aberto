@@ -207,22 +207,18 @@ def focus_library_search_field(timeout=12):
     raise AssertionError("LIBRARY_SEARCH_FOCUS_FAILED: field did not settle/focus; labels="+repr(last[:40]))
 
 def assert_collection_filter_option(name, present=True):
-    """Inspect the Spinner's real dropdown; closed spinners expose only selection."""
+    """Collections remain accessible through Collections > Ver coleção."""
     home_scroll_to_top()
-    tap_text(["Biblioteca Musical"],exact=True)
-    wait_for_text("Categoria")
-    tap_text(["Categoria"],exact=True,scroll=True)
-    assert any(n.attrib.get("text")=="Todas as categorias" for n in dump().iter("node")), "Full category option missing in dropdown"
-    target="Coleção: "+name
-    if present:
-        wait_for_text(target)
-    else:
-        time.sleep(.35)
+    tap_text(["Coleções"],exact=True,scroll=True)
+    tap_text(["Ver coleção"],exact=True)
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    found=any(value==target for value in labels)
-    adb("shell","input","keyevent","4")
+    found=any(value==name for value in labels)
     if found!=present:
-        raise AssertionError("Collection filter option presence mismatch for "+repr(target)+"; options="+repr(labels))
+        raise AssertionError("Collection browse mismatch for "+repr(name)+"; options="+repr(labels))
+    if not present and "Nenhuma coleção criada." in labels:
+        tap_text(["Fechar"],exact=True)
+    else:
+        adb("shell","input","keyevent","4")
 
 def return_to_library_if_study_was_restored():
     """Cold starts must display Home, not silently load the previous Study."""
@@ -325,17 +321,13 @@ if __name__=="__main__":
     assert not any("piano conectado" in n.casefold() or "toque aqui para testar" in n.casefold() for n in names), "Redundant connection text leaked into the home header"
     print("PASS: library visible at startup",flush=True)
     home_responsive_screenshots()
-    # The category spinner can be below the fold on short landscape displays.
-    # Exercise it through the same scroll view while retaining the top-of-home
-    # screenshots above as the visual evidence for each viewport.
+    # Category was removed, but the Collections menu retains its options.
     home=dump()
-    category_accessible=any(n.attrib.get("text","")=="Categoria" for n in home.iter("node"))
-    if not category_accessible:
-        tap_text(["Categoria"],exact=True,scroll=True)
-        category_accessible=True
-        adb("shell","input","keyevent","4")
-        home_scroll_to_top()
-    assert category_accessible, "Initial library filter label missing"
+    assert not any(n.attrib.get("content-desc","")=="Filtrar biblioteca" for n in home.iter("node")), "Removed Category selector returned"
+    tap_text(["Coleções"],exact=True,scroll=True)
+    options=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert all(label in options for label in ("Todas as partituras","Favoritos","Ver coleção","Nova coleção")), "Collections lost browsing/filter commands"
+    adb("shell","input","keyevent","4")
     tap_text(["USB-MIDI"],exact=True)
     midi_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     if any("Mostrar diagnóstico" in t for t in midi_labels):tap_text(["Mostrar diagnóstico"],scroll=True)
@@ -362,7 +354,7 @@ if __name__=="__main__":
     time.sleep(.5)
     adb("shell","input","keyevent","4")
     # Returning from the system picker may preserve the library's prior scroll
-    # offset; expose the real filter row again before tapping it.
+    # offset; expose the three-control toolbar again before tapping it.
     home_scroll_to_top()
     tap_text(["Coleções"],scroll=True)
     tap_text(["Nova coleção"],exact=True)
