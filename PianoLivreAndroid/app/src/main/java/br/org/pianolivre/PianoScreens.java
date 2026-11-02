@@ -501,10 +501,14 @@ class PianoScreens {
  }
  void applyStudyChrome(){
   if(!isStudyOpen())return;
-  int visibility=chrome.visible()?View.VISIBLE:View.GONE;
-  if(header.getVisibility()==visibility&&studyControlsBar.getVisibility()==visibility){recordStudyLayout();return;}
-  header.setVisibility(visibility);studyControlsBar.setVisibility(visibility);
-  if(notation!=null)notation.post(()->notation.resizeToFit());
+  // Study controls are permanently visible: playback, waiting and note taps
+  // must not shrink or expand the notation viewport.
+  boolean needsReveal=header.getVisibility()!=View.VISIBLE||studyControlsBar.getVisibility()!=View.VISIBLE;
+  if(needsReveal){
+   header.setVisibility(View.VISIBLE);studyControlsBar.setVisibility(View.VISIBLE);
+   if(notation!=null)notation.post(()->notation.resizeToFit());
+  }
+  recordStudyLayout();
   android.util.Log.i("PianoLivreUI","STUDY_CHROME visible="+chrome.visible()+" beat="+a.position);
   if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0)try{
    JSONObject state=new JSONObject();state.put("visible",chrome.visible());state.put("beat",a.position);

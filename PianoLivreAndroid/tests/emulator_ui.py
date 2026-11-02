@@ -108,7 +108,7 @@ def assert_study_controls():
     assert "Espera" in labels and "Contínuo" in labels,"Mode controls missing"
 
 def responsive_evidence(name):
-    """Measure real normal/playing/revealed WebView bounds and uniform staff fit."""
+    """Measure stable notation geometry with persistent top bars in all states."""
     result=[]
     normal_transport=None
     tap_text(["Parar"]);tap_text(["Contínuo"],exact=True,scroll=True);tap_text(["Início"])
@@ -123,14 +123,14 @@ def responsive_evidence(name):
             # UiAutomator waits for accessibility idle and cannot dump a live animation.
             # Read the actual native post-layout bounds; never pause/freeze the score.
             layout=current_study_layout()
-            assert layout and layout["headerVisible"]==(state=="restored") and layout["modesVisible"]==(state=="restored"),"Chrome hide/reveal failed"
+            assert layout and layout["headerVisible"] and layout["modesVisible"],"Study top bars disappeared"
             box=layout["bounds"]
             assert layout["transportBounds"][3]>layout["transportBounds"][1],"Permanent transport lost"
             assert layout["transportBounds"]==normal_transport,"Transport moved during chrome transition"
             assert box[3]==layout["transportBounds"][1],"Score overlaps the permanent transport"
         else:
             root=dump();labels=[n.attrib.get("text","") for n in root.iter("node")]
-            assert "Espera" in labels,"Chrome reveal failed"
+            assert "Espera" in labels,"Study mode controls absent"
             assert any("Parar" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in root.iter("node")),"Permanent transport lost"
             view=next(n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView")
             box=[int(v) for v in re.findall(r"\d+",view.attrib["bounds"])]
@@ -150,8 +150,8 @@ def responsive_evidence(name):
         assert abs(geometry["scale"]-geometry["availableHeight"]/geometry["rawHeight"])<.002
         screenshot("piano-03d-"+name+"-"+state+".png")
         result.append({"state":state,"heightPx":height,"heightDp":height/density,"geometry":geometry})
-    assert result[1]["heightPx"]>result[0]["heightPx"],"Execution gained no score area"
-    assert result[0]["heightPx"]==result[-1]["heightPx"],"Reveal did not restore height"
+    assert result[1]["heightPx"]==result[0]["heightPx"],"Playback changed the score viewport when top bars must stay visible"
+    assert result[0]["heightPx"]==result[-1]["heightPx"],"Note tap changed viewport despite permanent bars"
     tap_text(["Parar"]);tap_text(["Início"]);tap_text(["Espera"],exact=True,scroll=True)
     Path("piano-03d-"+name+".json").write_text(json.dumps(result,indent=2),encoding="utf-8")
 

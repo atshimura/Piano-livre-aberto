@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real UI comparisons with the pinned Prompt 1 baseline and all three states."""
+"""Study geometry, visible top bars, note taps and music while playing."""
 import json,time,re
 from pathlib import Path
 from emulator_ui import adb,dump,tap_text,home_scroll_to_top,responsive_evidence,assert_study_controls,current_study_layout
@@ -8,29 +8,34 @@ report=[]
 def records(marker):
     pid=adb('shell','pidof',PACKAGE).strip()
     return [json.loads(line.split(marker,1)[1].split(' @',1)[0]) for line in adb('logcat','-d','--pid='+pid,'-v','brief').splitlines() if marker in line]
-def hidden_note_tap():
-    # Wait is deliberately motionless after preparation, without requiring USB.
+def visible_note_tap():
+    # Wait preparation is motionless without USB MIDI. Its upper bars must
+    # remain visible before and after a note tap; musical state is unchanged.
     adb('logcat','-c');tap_text(['Iniciar'])
     target=None
     for attempt in range(40):
         targets=records('STUDY_TOUCH_TARGET ')
         if targets:target=targets[-1];break
         time.sleep(.4)
-    assert target,'Real hidden-state graphical note target missing after Wait preparation'
+    assert target,'Graphical note target missing after Wait preparation'
     before=records('STUDY_CHROME_STATE ')[-1]
-    assert not before['visible'] and before['waitStarted']
-    layout=current_study_layout();assert layout and not layout['headerVisible']
+    assert before['visible'] and before['waitStarted'],'Wait auto-hid top bars'
+    layout=current_study_layout()
+    assert layout and layout['headerVisible'] and layout['modesVisible'],'Upper bars not permanently visible'
     box=layout['bounds']
     x=box[0]+round(target['x']*(box[2]-box[0])/target['webviewWidth'])
     y=box[1]+round(target['y']*(box[3]-box[1])/target['viewportHeight'])
     adb('shell','input','tap',str(x),str(y));time.sleep(.5)
     assert_study_controls()
     taps=records('POC_NOTE_TAP ')
-    assert taps and taps[-1]['mapped'] and taps[-1]['nativeMidi']==target['midi'],'Reveal consumed or changed the note hit'
+    assert taps and taps[-1]['mapped'] and taps[-1]['nativeMidi']==target['midi'],'Note tap changed its musical identity'
     after=records('STUDY_CHROME_STATE ')[-1]
-    assert after['visible']
+    assert after['visible'],'Note tap hid top bars'
+    after_layout=current_study_layout()
+    assert after_layout and after_layout['headerVisible'] and after_layout['modesVisible'],'Note tap hid controls'
+    assert after_layout['bounds']==layout['bounds'],'Note tap changed visible notation bounds'
     for key in ('beat','mode','hand','tempo','loopStart','loopEnd','midiGeneration','running','waitStarted','sourceHash'):
-        assert before[key]==after[key],('Reveal changed musical state',key,before,after)
+        assert before[key]==after[key],('Note tap changed musical state',key,before,after)
     tap_text(['Parar'])
     return dict(before=before,after=after,note=taps[-1])
 
@@ -55,7 +60,7 @@ try:
         adb('shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity');time.sleep(2)
         labels=[n.attrib.get('text','') for n in dump().iter('node')]
         if not any('Bem-vindo ao' in text for text in labels):tap_text(['Biblioteca'],scroll=True)
-        home_scroll_to_top();tap_text(['Começar pela Ode à Alegria'],scroll=True);time.sleep(3)
+        home_scroll_to_top();tap_text(['Ode à Alegria'],scroll=True);time.sleep(3)
         assert_study_controls()
         braces=records('POC_BRACE_FIT ')
         assert braces and braces[-1]['width']>0 and braces[-1]['left']>=3.5,'Grand-staff brace clipped at left edge'
@@ -67,7 +72,7 @@ try:
         after=json.loads(Path('piano-03d-prompt02-'+label+'.json').read_text())
         assert after[0]['heightPx']>before['heightPx'],'No measured gain over Prompt 1 in '+label
         report.append(dict(viewport=size,before=before,after=after,gainNormalPx=after[0]['heightPx']-before['heightPx'],gainPlayingPx=after[1]['heightPx']-before['heightPx'],restoredNoteTap=normal_tap))
-        report[-1]['hiddenNoteTap']=hidden_note_tap()
+        report[-1]['visibleNoteTap']=visible_note_tap()
         # The actual MIDI manager remains accessible, without pretending a USB device exists.
         tap_text(['USB-MIDI'],exact=True);time.sleep(.3);adb('shell','input','keyevent','4')
         tap_text(['Partitura Livre']);time.sleep(2)

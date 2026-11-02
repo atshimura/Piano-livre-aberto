@@ -55,6 +55,19 @@ class StudyChromeCompactContract(unittest.TestCase):
         self.assertIn('bottom.addView(loopButton,lp(compactStudy?72:80,40))',studio)
         self.assertIn('LinearLayout.LayoutParams(0,d(40),1)',studio)
 
+    def test_study_top_bars_remain_visible_while_playing(self):
+        chrome=(ROOT/"app/src/main/java/br/org/pianolivre/StudyChromeState.java").read_text(encoding="utf-8")
+        self.assertIn("public boolean update(boolean transportActive){return true;}",chrome)
+        self.assertIn("public boolean reveal(){return true;}",chrome)
+        self.assertIn("public boolean visible(){return true;}",chrome)
+        study=segment("applyStudyChrome","recordStudyLayout")
+        self.assertIn("header.setVisibility(View.VISIBLE)",study)
+        self.assertIn("studyControlsBar.setVisibility(View.VISIBLE)",study)
+        self.assertNotIn("View.GONE",study)
+        self.assertIn("recordStudyLayout()",study)
+        self.assertIn("state.put(\"visible\",chrome.visible())",study)
+        self.assertIn("if(notation!=null)notation.post(()->notation.resizeToFit())",study)
+
     def test_more_room_for_staves(self):
         self.assertEqual(54+46+54-(44+40+44),26)
         self.assertIn("studio.addView(notationArea,new LinearLayout.LayoutParams(-1,0,1))",SCREENS)
