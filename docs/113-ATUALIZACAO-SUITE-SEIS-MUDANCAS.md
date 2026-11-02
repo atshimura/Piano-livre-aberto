@@ -53,3 +53,9 @@ No Pixel 3 720×540, o menu da engrenagem pode rolar verticalmente e UIAutomator
 - A tela apresentava corretamente o campo `⌕ Buscar partituras...` e a descrição de acessibilidade completa, mas `wait_for_text` usava `text or content-desc`, descartando `content-desc` quando o elemento tinha texto visual. Corrigida a coleta para incluir **ambos**, preservando a exigência de identificação acessível do campo.
 - Foi ampliado o contrato estático para impedir a regressão `text or content-desc` em `wait_for_text`. A pesquisa real por títulos e limpeza de filtros continua na suíte, sem dispensa.
 - A correção é do teste. Não foi comprovada falha do aplicativo neste ponto. A integração depende de novos `build`/`emulator` integrais no SHA final.
+
+## Quarta falha — retorno da Partitura livre com rolagem preservada
+
+- [Execução #41522104138](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41522104138): asserções de backup, biblioteca, MIDI, atualização, Estudar e busca acessível evoluíram até `emulator_ui.py:429`; após voltar da Partitura livre, o teste exigia “Estudar Ode à Alegria” na hierarquia visível.
+- O catálogo estava carregado, mas rolado: apareciam Lago dos Cisnes e Canon em Ré. A rolagem preservada é válida, e não comprova falha do app. O teste agora exige conteúdo de cartões reais “Partitura da biblioteca” e ausência de comandos de Estudar ao voltar, sem pressupor qual título está visível.
+- Contrato estático registrado para impedir a volta da asserção ligada à posição de rolagem. A validação do histórico livre continua exigida e a suite inteira deverá passar no SHA atualizado.
