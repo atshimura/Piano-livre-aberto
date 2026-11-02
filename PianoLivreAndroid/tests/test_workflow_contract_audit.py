@@ -10,7 +10,10 @@ import unittest
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 def source(name):
-    return (ROOT/name).read_text(encoding="utf-8")
+    # Android test sources live below PianoLivreAndroid; Actions YAML lives
+    # at the repository root, one directory above.
+    base=ROOT.parent if name.startswith(".github/") else ROOT
+    return (base/name).read_text(encoding="utf-8")
 
 class FullSuiteContractAudit(unittest.TestCase):
     def test_all_direct_workflow_test_references_exist(self):
