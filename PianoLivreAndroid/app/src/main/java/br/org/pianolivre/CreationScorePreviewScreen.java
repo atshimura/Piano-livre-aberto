@@ -26,8 +26,8 @@ import java.util.concurrent.Executors;
 
 /**
  * C2-B modal, temporary MusicXML preview. Does not persist or modify a C1 take.
- * Head-tap mapping in OSMD is not yet stable; the accessible note list provides
- * the same source-note selection, with chord and measure-range shortcuts.
+ * OSMD head taps are matched conservatively to original MIDI attack IDs.
+ * Ambiguous graphical unisons are selected through the accessible note list.
  */
 final class CreationScorePreviewScreen extends LinearLayout {
     private final MainActivity activity;
