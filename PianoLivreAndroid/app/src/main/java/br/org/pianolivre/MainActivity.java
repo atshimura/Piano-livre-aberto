@@ -162,7 +162,18 @@ public class MainActivity extends Activity {
    prefs=getSharedPreferences(getIntent().getBooleanExtra("midi_connection_selftest",false)?"piano_midi_connection_selftest":"piano_midi_selftest",MODE_PRIVATE);prefs.edit().clear().commit();
   }
   midiManager=(MidiManager)getSystemService(MIDI_SERVICE);try{catalog=new JSONArray(readAsset("catalog.json"));}catch(Exception e){catalog=new JSONArray();}
-  buildUi();loadProfiles();String previous=prefs.getString("user_"+user+"_file","");
+  buildUi();loadProfiles();
+  // Since 0.9.60 the launcher opens Home, not Study. Restore the active
+  // profile's in-memory study preferences independently of score loading;
+  // otherwise the first explicit selection overwrites saved 80% tempo with
+  // the default 100% when loadScore(reset=true) calls saveSession().
+  String studyPrefix="user_"+user+"_";
+  double savedTempo=Double.longBitsToDouble(prefs.getLong(studyPrefix+"tempo",
+   Double.doubleToLongBits(1.0)));
+  tempoFactor=Double.isFinite(savedTempo)?Math.max(.25,Math.min(2.0,savedTempo)):1.0;
+  currentHand=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"hand",0)));
+  mode=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"mode",0)));
+  String previous=prefs.getString("user_"+user+"_file","");
   boolean contextSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("engraving_context_selftest",false);
   boolean complexEngravingSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0

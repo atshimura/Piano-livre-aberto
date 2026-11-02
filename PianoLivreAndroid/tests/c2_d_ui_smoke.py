@@ -145,6 +145,10 @@ def main():
     adb("shell", "pm", "clear", PACKAGE)
 
 if __name__ == "__main__":
+    # The full suite continues with upgrade/release tests in this SAME AVD.
+    # Restore system rotation settings instead of leaking test-specific state.
+    old_auto=adb("shell","settings","get","system","accelerometer_rotation").strip()
+    old_rotation=adb("shell","settings","get","system","user_rotation").strip()
     try:
         main()
     except Exception:
@@ -155,3 +159,8 @@ if __name__ == "__main__":
         except Exception:
             pass
         raise
+    finally:
+        if old_rotation in ("0","1","2","3"):
+            adb("shell","settings","put","system","user_rotation",old_rotation)
+        if old_auto in ("0","1"):
+            adb("shell","settings","put","system","accelerometer_rotation",old_auto)

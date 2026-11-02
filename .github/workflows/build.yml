@@ -38,6 +38,8 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
       - name: Fail fast on Study transport-label parsing before Android/Chromium
         run: python3 tests/test_study_position_labels.py
+      - name: Audit full-suite workflow references and current Home contracts
+        run: python3 tests/test_workflow_contract_audit.py
       - name: Adaptive Study profile and complete corpus (desktop Chromium)
         env:
           PIANO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
