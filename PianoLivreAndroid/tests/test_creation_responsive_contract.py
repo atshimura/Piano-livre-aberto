@@ -55,7 +55,7 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('button.setSingleLine(false);button.setMaxLines(2)',SCORE)
         self.assertIn('b.setTextSize(13)',SCORE)
         self.assertIn('b.setMinHeight(dp(48))',SCORE)
-        self.assertIn('actions(contents,back,save,study)',SCORE)
+        self.assertIn('actions(contents,back,save,add)',SCORE)
         self.assertIn('actions(contents,back,save)',SCORE)
         self.assertIn('creation-score-note-row',SCORE)
         self.assertIn('noteRow.addView(select,new LayoutParams(0,dp(52),1))',SCORE)
