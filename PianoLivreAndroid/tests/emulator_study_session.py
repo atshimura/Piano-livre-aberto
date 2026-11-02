@@ -4,7 +4,7 @@ The emulator cannot replace a physical USB-MIDI piano or physical legibility.
 """
 import json,re,time,xml.etree.ElementTree as ET
 from pathlib import Path
-from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard,home_scroll_to_top,focus_library_search_field,reveal_study_controls,assert_study_controls
+from emulator_ui import adb,dump,tap_text,screenshot,assert_running,dismiss_keyboard,home_scroll_to_top,focus_library_search_field,reveal_study_controls,assert_study_controls,wait_for_text
 
 PACKAGE="br.org.pianolivre.opensource/br.org.pianolivre.MainActivity"
 
@@ -465,6 +465,14 @@ def exercise(title,slug):
     assert_running()
     expect(title,"return from background lost the selected study")
     screenshot("piano-entrega-b-"+slug+"-resumed.png")
+    # Background/foreground intentionally preserves Study. Returning to the
+    # library requires the actual accessible Back control; a warm resume must
+    # never be mistaken for an automatic transition to Home.
+    tap_text(["Voltar à composição ou à biblioteca"],exact=True)
+    wait_for_text("Biblioteca Musical",timeout=30)
+    returned=labels()
+    assert not any(value=="Espera" for value in returned), \
+        "STUDY_BACK_NAVIGATION_FAILED: Study remained open after its Back action; labels="+repr(returned[:40])
     library(title)
     return {"score":title,"modes":["Espera","Contínuo","Demonstração (without output)"],
             "hands":["Direita","Esquerda","Ambas"],
