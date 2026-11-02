@@ -190,6 +190,26 @@ jobs:
           java -cp build/score-tests br.org.pianolivre.CreationSafetyRegressionTest
           javac -encoding UTF-8 -cp build/score-tests -d build/score-tests tests/CreationLimitsTest.java
           java -Xmx128m -cp build/score-tests br.org.pianolivre.CreationLimitsTest
+      - name: Criação C2-A/B/C/D — corpus e persistência dirigidos (JVM + JavaScript)
+        run: |
+          mkdir -p build/c2-release
+          javac -encoding UTF-8 -d build/c2-release \
+            app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
+            app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
+            app/src/main/java/br/org/pianolivre/SessionFiles.java \
+            app/src/main/java/br/org/pianolivre/Score.java \
+            tests/CreationScoreTranscriberTest.java \
+            tests/CreationScoreReviewTest.java \
+            tests/CreationScoreStoreTest.java \
+            tests/CreationC2DCorpusTest.java
+          java -cp build/c2-release br.org.pianolivre.CreationScoreTranscriberTest
+          java -cp build/c2-release br.org.pianolivre.CreationScoreReviewTest
+          java -cp build/c2-release br.org.pianolivre.CreationScoreStoreTest
+          java -cp build/c2-release br.org.pianolivre.CreationC2DCorpusTest
+          node tests/CreationNotePickerTest.js
       - name: Test Laboratory scale and arpeggio sequences (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MusicTheory.java app/src/main/java/br/org/pianolivre/MusicSequenceAnalyzer.java tests/MusicSequenceAnalyzerTest.java
@@ -344,7 +364,7 @@ jobs:
     needs: build
     # One-time, version-scoped release authorized by the maintainer; never on PRs.
     # Exact-version authorization and build/emulator gates remain enforced by the publisher.
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-0.9.60]')))
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-0.9.61]')))
     runs-on: ubuntu-latest
     timeout-minutes: 100
     permissions:
