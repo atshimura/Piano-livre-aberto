@@ -29,6 +29,19 @@ public final class CreationScoreStore {
   projects=new CreationProjectStore(root);directory=new File(root,DIRECTORY);
   if(!directory.exists()&&!directory.mkdirs())throw new IOException("Não foi possível preparar partituras geradas");
   if(!directory.isDirectory())throw new IOException("Diretório de partituras inválido");
+  // Finish or roll back an interrupted permanent deletion. Never discard a
+  // derived score while its original project still exists.
+  File[] interrupted=directory.listFiles((d,n)->n.matches("[0-9a-fA-F-]{36}\\.deleting"));
+  if(interrupted==null)throw new IOException("Partituras derivadas indisponíveis");
+  for(File pending:interrupted){
+   String id=pending.getName().substring(0,36);
+   File original=new File(new File(root,"creations"),id+".plc");
+   File restored=new File(directory,id+EXT);
+   if(original.isFile()&&!restored.exists()){
+    try{Files.move(pending.toPath(),restored.toPath(),StandardCopyOption.ATOMIC_MOVE);}
+    catch(IOException e){throw new IOException("Não foi possível recuperar partitura após interrupção",e);}
+   }else if(!pending.delete())throw new IOException("Não foi possível limpar exclusão interrompida");
+  }
  }
  private static String id(String id)throws IOException{
   if(id==null||!id.matches("[0-9a-fA-F-]{36}"))throw new IOException("Identificador de composição inválido");
