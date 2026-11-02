@@ -34,7 +34,7 @@ class FullSuiteContractAudit(unittest.TestCase):
     def test_public_upgrade_compares_saved_data_before_study(self):
         src=source("tests/emulator_public_upgrade.py")
         self.assertLess(src.index('wait_for_text("Bem-vindo ao"'),src.index('tap_text(["Ode à Alegria"]'))
-        self.assertLess(src.index('for key in (\'active_profile\''),src.index('tap_text(["Começar pela Ode à Alegria"]'))
+        self.assertLess(src.index('for key in (\'active_profile\''),src.index('tap_text(["Ode à Alegria"]'))
         self.assertIn('user_7_tempo',src)
         self.assertIn('certificate(signer,NEW_APK)==EXPECTED_CERT',src)
 
