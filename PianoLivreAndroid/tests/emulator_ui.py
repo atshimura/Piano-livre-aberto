@@ -426,7 +426,14 @@ if __name__=="__main__":
     # a seeded record from a previous test or emulator snapshot.
     home_scroll_to_top();tap_text(["Partitura livre"],exact=True,scroll=True)
     wait_for_text("← Biblioteca");time.sleep(1)
-    tap_text(["← Biblioteca"],exact=True);wait_for_text("Estudar Ode à Alegria")
+    tap_text(["← Biblioteca"],exact=True)
+    # The Library preserves its scroll offset when Free Reading closes.
+    # Do not require a particular title in the currently visible rows.
+    wait_for_text("Partitura da biblioteca")
+    assert not any(value in ("Espera","Contínuo","Demonstração")
+                   for n in dump().iter("node")
+                   for value in (n.attrib.get("text",""),n.attrib.get("content-desc",""))), \
+        "Free Reading return did not leave Study controls"
     home_scroll_to_top();tap_text(["Opções e configurações"],exact=True);tap_text(["Histórico"],exact=True)
     history_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Tempo na tela de estudo" in t for t in history_labels), "Native history totals missing"
