@@ -257,9 +257,8 @@ final class CreationScorePreviewScreen extends LinearLayout {
                 }else{
                     Button add=button("Adicionar à Biblioteca",true,()->{
                         if(closed||busy)return;busy=true;
-                        worker.execute(()->{
-                            boolean ok=activity.addCreationScoreToLibrary(project.id);
-                            post(()->{if(closed)return;busy=false;if(ok)render(false);});
+                        activity.addCreationScoreToLibrary(project.id,ok->{
+                            if(closed)return;busy=false;if(ok)render(false);
                         });
                     });
                     actions(contents,back,save,add);

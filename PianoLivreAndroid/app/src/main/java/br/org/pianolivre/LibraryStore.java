@@ -55,7 +55,7 @@ final class LibraryStore {
     if(id.isEmpty()||id.length()>80||id.equals("*")||name.isEmpty()||name.length()>120||!names.add(name.toLowerCase(Locale.ROOT))||collections.containsKey(id))throw new IllegalArgumentException("Coleção inválida ou duplicada");
     collections.put(id,new Collection(id,name,keys(item.getJSONArray("scores"))));
    }
-   Set<String> added=creationIds(root.optJSONArray("addedCreations")==null?new JSONArray():root.getJSONArray("addedCreations"));
+   Set<String> added=creationIds(root.has("addedCreations")?root.getJSONArray("addedCreations"):new JSONArray());
    return new Snapshot(favorites,collections,added);
   }catch(JSONException ex){throw new IllegalArgumentException("Organização da biblioteca inválida",ex);}
  }

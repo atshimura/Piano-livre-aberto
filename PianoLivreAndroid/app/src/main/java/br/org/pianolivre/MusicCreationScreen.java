@@ -414,11 +414,10 @@ a.handler.postDelayed(this,100);}};ticker.run();
     Button viewScore=button(hasScore?"Visualizar e ajustar partitura":"Gerar partitura",
       true,()->CreationScorePreviewScreen.open(a,p));
     if(hasScore&&!new LibraryStore(a.prefs,a.user).hasCreation(id)){
-     Button add=button("Adicionar à Biblioteca",false,()->disk.execute(()->{
-      // Verification and repository updates may read MusicXML; avoid UI freeze.
-      boolean success=a.addCreationScoreToLibrary(id);
-      if(success)post(()->{if("details".equals(page)&&id.equals(selectedId))showDetails(id);});
-     }));
+     Button add=button("Adicionar à Biblioteca",false,()->
+       a.addCreationScoreToLibrary(id,success->{
+        if(success&&"details".equals(page)&&id.equals(selectedId))showDetails(id);
+       }));
      responsiveActions(scoreCard,5,viewScore,add);
     }else{
      attach(scoreCard,viewScore,48,5);

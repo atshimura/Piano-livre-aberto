@@ -253,23 +253,34 @@ public class MainActivity extends Activity {
  void loadScore(String path,boolean reset){loadScore(path,reset,false);}
  void openFreeScore(String path){loadScore(path,true,true);}
  void loadCreationScore(String id){loadScore("creation-score:"+id,true,false);}
- boolean addCreationScoreToLibrary(String id){
-  try{
-   LibraryStore.validateCreationId(id);
-   CreationProjectStore.Project source=new CreationProjectStore(getFilesDir()).get(id);
-   if(source.profileId!=user||source.trash||source.recoverable)
-    throw new IOException("Composição indisponível para o perfil ativo");
-   // Verify ownership, fingerprint, XML integrity and the saved source BEFORE
-   // committing a lightweight per-profile library reference.
-   CreationScoreStore.Saved score=new CreationScoreStore(getFilesDir()).read(id);
-   if(score.profileId!=user)throw new IOException("Partitura de outro perfil");
-   new LibraryStore(prefs,user).addCreation(id);
-   if(screens!=null)screens.refreshLibrary();
-   message("Partitura adicionada à Biblioteca Musical.");
-   return true;
-  }catch(Exception ex){
-   message("Não foi possível adicionar à biblioteca: "+ex.getMessage());return false;
-  }
+ void addCreationScoreToLibrary(String id,java.util.function.Consumer<Boolean> onDone){
+  final int owner=user;
+  // Validate a potentially expensive MusicXML derivation away from the
+  // Android UI; commit the registration and update UI on the main thread.
+  new Thread(()->{
+   String problem=null;
+   try{
+    LibraryStore.validateCreationId(id);
+    CreationProjectStore.Project source=new CreationProjectStore(getFilesDir()).get(id);
+    if(source.profileId!=owner||source.trash||source.recoverable)
+     throw new IOException("Composição indisponível para o perfil ativo");
+    CreationScoreStore.Saved saved=new CreationScoreStore(getFilesDir()).read(id);
+    if(saved.profileId!=owner)throw new IOException("Partitura de outro perfil");
+   }catch(Exception error){problem=error.getMessage();}
+   final String failure=problem;
+   runOnUiThread(()->{
+    boolean added=false;
+    if(failure==null&&user==owner){
+     try{
+      new LibraryStore(prefs,owner).addCreation(id);
+      if(screens!=null)screens.refreshLibrary();
+      message("Partitura adicionada à Biblioteca Musical.");
+      added=true;
+     }catch(Exception ex){message("Não foi possível adicionar à biblioteca: "+ex.getMessage());}
+    }else message("Não foi possível adicionar à biblioteca: "+(failure==null?"Perfil ativo alterado":failure));
+    onDone.accept(added);
+   });
+  },"PianoLivre-AdicionarBiblioteca").start();
  }
  void loadScore(String path,boolean reset,boolean free){
   stopPlayback();finishStudyWindow();writtenRepeats.reset();

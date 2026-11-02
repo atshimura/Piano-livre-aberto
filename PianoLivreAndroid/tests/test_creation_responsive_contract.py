@@ -84,8 +84,8 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('store.saveRecoverable(',CREATION)
         self.assertIn('a.exportCreationTake(',CREATION)
         self.assertIn('a.exportCreationMidi(',CREATION)
-        self.assertIn('a.addCreationScoreToLibrary(id)',CREATION)
-        self.assertIn('activity.addCreationScoreToLibrary(project.id)',SCORE)
+        self.assertIn('a.addCreationScoreToLibrary(id,success->',CREATION)
+        self.assertIn('activity.addCreationScoreToLibrary(project.id,ok->',SCORE)
 
 if __name__=="__main__":
     unittest.main()
