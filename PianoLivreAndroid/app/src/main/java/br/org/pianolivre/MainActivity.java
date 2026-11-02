@@ -253,6 +253,24 @@ public class MainActivity extends Activity {
  void loadScore(String path,boolean reset){loadScore(path,reset,false);}
  void openFreeScore(String path){loadScore(path,true,true);}
  void loadCreationScore(String id){loadScore("creation-score:"+id,true,false);}
+ boolean addCreationScoreToLibrary(String id){
+  try{
+   LibraryStore.validateCreationId(id);
+   CreationProjectStore.Project source=new CreationProjectStore(getFilesDir()).get(id);
+   if(source.profileId!=user||source.trash||source.recoverable)
+    throw new IOException("Composição indisponível para o perfil ativo");
+   // Verify ownership, fingerprint, XML integrity and the saved source BEFORE
+   // committing a lightweight per-profile library reference.
+   CreationScoreStore.Saved score=new CreationScoreStore(getFilesDir()).read(id);
+   if(score.profileId!=user)throw new IOException("Partitura de outro perfil");
+   new LibraryStore(prefs,user).addCreation(id);
+   if(screens!=null)screens.refreshLibrary();
+   message("Partitura adicionada à Biblioteca Musical.");
+   return true;
+  }catch(Exception ex){
+   message("Não foi possível adicionar à biblioteca: "+ex.getMessage());return false;
+  }
+ }
  void loadScore(String path,boolean reset,boolean free){
   stopPlayback();finishStudyWindow();writtenRepeats.reset();
   try{path=SessionFiles.resolve(getFilesDir(),path);}catch(IllegalArgumentException ex){message(ex.getMessage());return;}

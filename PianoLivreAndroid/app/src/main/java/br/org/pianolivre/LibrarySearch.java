@@ -12,5 +12,5 @@ public final class LibrarySearch {
   String text=fold(title);for(String term:fold(query).trim().split("\\s+"))if(!text.contains(term))return false;return true;
  }
  /** Portable keys: bookmarks do not depend on /data/user/0 vs /data/data paths. */
- public static String key(String source){return source.startsWith("scores/")||source.startsWith("imported/")?source:"imported/"+new File(source).getName();}
+ public static String key(String source){return source.startsWith("scores/")||source.startsWith("imported/")||source.startsWith("creation-score:")?source:"imported/"+new File(source).getName();}
 }

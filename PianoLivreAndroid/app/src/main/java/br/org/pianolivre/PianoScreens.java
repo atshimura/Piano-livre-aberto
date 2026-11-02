@@ -275,6 +275,22 @@ class PianoScreens {
   }
   File dir=new File(a.getFilesDir(),"imported");File[] imports=dir.listFiles();
   if(imports!=null)for(File f:imports)if(f.isFile()&&!f.getName().endsWith(".source.mid"))entries.add(new String[]{f.getName(),f.getAbsolutePath()});
+  // Derived MusicXML is referenced by stable project ID, never copied into
+  // imported/. Keep metadata even when a project is temporarily in Trash,
+  // but only display valid, accessible scores owned by the active profile.
+  if(!metadata.addedCreations.isEmpty()){
+   try{
+    CreationProjectStore creations=new CreationProjectStore(a.getFilesDir());
+    CreationScoreStore scoreStore=new CreationScoreStore(a.getFilesDir());
+    for(String id:metadata.addedCreations)try{
+     CreationProjectStore.Project project=creations.get(id);
+     if(project.profileId==a.user&&!project.trash&&!project.recoverable&&scoreStore.has(id))
+      entries.add(new String[]{project.title,"creation-score:"+id});
+    }catch(Exception absentOrDeleted){android.util.Log.w("PianoLivreLibrary","Partitura vinculada indisponível na biblioteca",absentOrDeleted);}
+   }catch(Exception error){
+    grid.addView(text("Algumas partituras criadas não puderam ser listadas. Nenhum dado foi alterado.",13,ink,false),lp(-1,-2));
+   }
+  }
   int total=entries.size();
   entries.removeIf(entry->{
    String key=LibrarySearch.key(entry[1]);
@@ -305,7 +321,7 @@ class PianoScreens {
     title.addView(name,new LinearLayout.LayoutParams(0,d(48),1));title.addView(favorite,lp(44,44));card.addView(title,lp(-1,48));
     LinearLayout details=row();ImageView thumbnail=new ImageView(a);thumbnail.setImageResource(scoreThumbnail(entry[1]));
     thumbnail.setScaleType(ImageView.ScaleType.CENTER_CROP);thumbnail.setBackground(bg(0xffE8F1FA,10,0xffDAE6F2));details.addView(thumbnail,lp(shortScreen?68:82,shortScreen?48:62));addGap(details,12);
-    TextView source=text(entry[1].startsWith("scores/")?"Partitura da biblioteca":"Partitura importada",shortScreen?13:14,muted,false);source.setMaxLines(2);details.addView(source,new LinearLayout.LayoutParams(0,-2,1));card.addView(details,lp(-1,shortScreen?60:80));
+    TextView source=text(entry[1].startsWith("creation-score:")?"Partitura criada":entry[1].startsWith("scores/")?"Partitura da biblioteca":"Partitura importada",shortScreen?13:14,muted,false);source.setMaxLines(2);details.addView(source,new LinearLayout.LayoutParams(0,-2,1));card.addView(details,lp(-1,shortScreen?60:80));
     LinearLayout actions=row();Button study=compact("▶  Estudar",true,()->a.loadScore(entry[1],true));study.setTextSize(14);actions.addView(study,new LinearLayout.LayoutParams(0,d(44),1));addGap(actions,8);
     Button free=compact("Partitura livre",false,()->a.openFreeScore(entry[1]));free.setTextColor(blue);free.setContentDescription("Abrir "+entry[0]+" em Partitura Livre");
     free.setTextSize(14);actions.addView(free,new LinearLayout.LayoutParams(0,d(44),1));card.addView(actions,lp(-1,44));
@@ -687,9 +703,8 @@ class PianoScreens {
   library.setVisibility(View.VISIBLE);refreshLibrary();updateMidiIndicator();
  }
  void backFromStudy(){
-  if(a.currentFile!=null&&a.currentFile.startsWith("creation-score:")){
-   String id=a.currentFile.substring(15);showCreation();if(creation!=null)creation.showDetails(id);
-  }else showHome();
+  // All scores now enter Study through the Library; keep navigation uniform.
+  showHome();
  }
  void showStudy(){
   if(a.score==null)return;

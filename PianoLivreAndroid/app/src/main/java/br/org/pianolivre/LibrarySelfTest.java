@@ -19,6 +19,12 @@ final class LibrarySelfTest {
   try{
    LibraryStore store=new LibraryStore(prefs,0),other=new LibraryStore(prefs,1);
    String asset="scores/exercicio.mxl",imported=LibrarySearch.key(shared.getAbsolutePath());
+   String creationId="123e4567-e89b-12d3-a456-426614174000";
+   check(!store.hasCreation(creationId),"creation not automatically added");
+   store.addCreation(creationId);store.addCreation(creationId);
+   check(store.hasCreation(creationId)&&store.snapshot().addedCreations.size()==1,"explicit addition idempotent");
+   check(!other.hasCreation(creationId),"creation catalog is profile-isolated");
+   store.toggleFavorite("creation-score:"+creationId);
    check(store.snapshot().favorites.isEmpty()&&!prefs.contains("user_0_library"),"empty metadata is read-only");
    store.toggleFavorite(asset);store.toggleFavorite(imported);
    check(store.snapshot().favorites.contains(imported)&&other.snapshot().favorites.isEmpty(),"portable identity and profile isolation");
@@ -34,6 +40,7 @@ final class LibrarySelfTest {
    check(store.snapshot().collections.isEmpty()&&store.snapshot().favorites.contains(imported)&&shared.exists()&&shared.length()==content.length,"delete metadata keeps favorites and shared file");
    BackupArchive.restore(prefs,root,backup);store=new LibraryStore(prefs,0);
    check(store.snapshot().collections.get(id).scores.contains(asset)&&store.snapshot().favorites.contains(asset)&&Arrays.equals(content,java.nio.file.Files.readAllBytes(shared.toPath())),"organization and file bytes survive backup/restore");
+   check(store.hasCreation(creationId)&&store.snapshot().favorites.contains("creation-score:"+creationId),"linked created score and favorite survive backup/restore");
    before=prefs.getAll();JSONObject bad=new JSONObject(backup.toString());
    bad.getJSONObject("prefs").getJSONObject("user_0_library").put("value","{\"version\":1,\"favorites\":[\"imported/../secret\"],\"collections\":[]}");
    rejected=false;try{BackupArchive.restore(prefs,root,bad);}catch(Exception ex){rejected=true;}

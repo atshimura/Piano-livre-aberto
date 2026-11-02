@@ -409,13 +409,21 @@ a.handler.postDelayed(this,100);}};ticker.run();
     boolean hasScore=new CreationScoreStore(a.getFilesDir()).has(id);
     LinearLayout scoreCard=card();label(scoreCard,"Partitura",17,true,6);
     attach(scoreCard,mutedText(hasScore?
-      "Partitura vinculada à gravação original. Ajuste ou pratique sem alterar o MIDI.":
+      "Partitura vinculada à gravação original. Adicione à Biblioteca para estudar sem alterar o MIDI.":
       "Transforme a gravação em partitura com duas pautas.",13),-2,8);
     Button viewScore=button(hasScore?"Visualizar e ajustar partitura":"Gerar partitura",
       true,()->CreationScorePreviewScreen.open(a,p));
-    if(hasScore)responsiveActions(scoreCard,5,viewScore,
-      button("Estudar esta partitura",false,()->a.loadCreationScore(id)));
-    else attach(scoreCard,viewScore,48,5);
+    if(hasScore&&!new LibraryStore(a.prefs,a.user).hasCreation(id)){
+     Button add=button("Adicionar à Biblioteca",false,()->disk.execute(()->{
+      // Verification and repository updates may read MusicXML; avoid UI freeze.
+      boolean success=a.addCreationScoreToLibrary(id);
+      if(success)post(()->{if("details".equals(page)&&id.equals(selectedId))showDetails(id);});
+     }));
+     responsiveActions(scoreCard,5,viewScore,add);
+    }else{
+     attach(scoreCard,viewScore,48,5);
+     if(hasScore)attach(scoreCard,mutedText("✓ Na Biblioteca Musical",13),-2,4);
+    }
     attach(body,scoreCard,-2,12);
    }
    Button rename=button("Renomear",false,()->rename(p));

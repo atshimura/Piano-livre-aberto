@@ -5,6 +5,8 @@ public final class LibrarySearchTest {
   for(String[] c:cases)if(LibrarySearch.matches(c[0],c[1])!=Boolean.parseBoolean(c[2]))throw new AssertionError(c[0]);
   if(!LibrarySearch.key("/data/user/0/app/files/imported/teste.mxl").equals("imported/teste.mxl"))throw new AssertionError("portable key");
   if(!LibrarySearch.key("scores/exercicio.mxl").equals("scores/exercicio.mxl"))throw new AssertionError("asset key");
+  String created="creation-score:123e4567-e89b-12d3-a456-426614174000";
+  if(!LibrarySearch.key(created).equals(created))throw new AssertionError("created score must keep stable portable key");
   System.out.println("PASS LibrarySearchTest: accents, case, tokens, filenames, empty query and portable identity");
  }
 }

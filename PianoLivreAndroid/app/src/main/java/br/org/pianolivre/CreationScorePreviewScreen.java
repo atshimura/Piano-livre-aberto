@@ -250,15 +250,24 @@ final class CreationScorePreviewScreen extends LinearLayout {
             Button back=button("Voltar à composição",false,this::confirmClose);
             Button save=button(saved?"Partitura salva ✓":"Salvar partitura",true,this::saveCurrent);
             if(saved){
-                Button study=button("Estudar esta partitura",true,()->{
-                    if(closed||busy)return;
-                    String id=project.id;window.dismiss();activity.loadCreationScore(id);
-                });
-                actions(contents,back,save,study);
+                boolean added=new LibraryStore(activity.prefs,activity.user).hasCreation(project.id);
+                if(added){
+                    actions(contents,back,save);
+                    addText("✓ Na Biblioteca Musical · abra a Biblioteca para estudar.",13,false,4);
+                }else{
+                    Button add=button("Adicionar à Biblioteca",true,()->{
+                        if(closed||busy)return;busy=true;
+                        worker.execute(()->{
+                            boolean ok=activity.addCreationScoreToLibrary(project.id);
+                            post(()->{if(closed)return;busy=false;if(ok)render(false);});
+                        });
+                    });
+                    actions(contents,back,save,add);
+                }
                 addText("Partitura salva neste projeto e incluída no backup v4.",12,false,3);
             }else{
                 actions(contents,back,save);
-                addText("Salve para reabrir esta versão e estudá-la depois.",12,false,3);
+                addText("Salve a partitura antes de adicioná-la à Biblioteca Musical.",12,false,3);
             }
         }
     }

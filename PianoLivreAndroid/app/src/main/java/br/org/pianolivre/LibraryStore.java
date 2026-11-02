@@ -11,15 +11,31 @@ final class LibraryStore {
   Collection(String id,String name,Set<String> scores){this.id=id;this.name=name;this.scores=Collections.unmodifiableSet(scores);}
  }
  static final class Snapshot {
-  final Set<String> favorites;final Map<String,Collection> collections;
-  Snapshot(Set<String> f,Map<String,Collection> c){favorites=Collections.unmodifiableSet(f);collections=Collections.unmodifiableMap(c);}
+  final Set<String> favorites,addedCreations;final Map<String,Collection> collections;
+  Snapshot(Set<String> f,Map<String,Collection> c,Set<String> added){
+   favorites=Collections.unmodifiableSet(f);collections=Collections.unmodifiableMap(c);
+   addedCreations=Collections.unmodifiableSet(added);
+  }
  }
  private final SharedPreferences prefs;private final String key;
  LibraryStore(SharedPreferences prefs,int user){this.prefs=prefs;key="user_"+user+"_library";}
  static void validateScoreKey(String key){
+  if(key!=null&&key.startsWith("creation-score:")){validateCreationId(key.substring(15));return;}
   if(key==null||key.length()>264||key.indexOf('\u0000')>=0||!(key.startsWith("scores/")||key.startsWith("imported/")))throw new IllegalArgumentException("Partitura inválida");
   String name=key.substring(key.indexOf('/')+1);
   if(name.isEmpty()||name.equals(".")||name.equals("..")||name.indexOf('/')>=0||name.indexOf('\\')>=0)throw new IllegalArgumentException("Partitura inválida");
+ }
+ static void validateCreationId(String id){
+  if(id==null||!id.matches("[0-9a-fA-F-]{36}"))throw new IllegalArgumentException("Identificador de partitura gerada inválido");
+ }
+ private static Set<String> creationIds(JSONArray data)throws JSONException{
+  if(data.length()>CreationProjectStore.MAX_PROJECTS)throw new IllegalArgumentException("Muitas partituras geradas na biblioteca");
+  Set<String> ids=new LinkedHashSet<>();
+  for(int i=0;i<data.length();i++){
+   String id=data.getString(i);validateCreationId(id);
+   if(!ids.add(id.toLowerCase(Locale.ROOT)))throw new IllegalArgumentException("Partitura gerada duplicada");
+  }
+  return ids;
  }
  private static Set<String> keys(JSONArray array)throws JSONException{
   if(array.length()>256)throw new IllegalArgumentException("Muitas partituras na organização");
@@ -39,7 +55,8 @@ final class LibraryStore {
     if(id.isEmpty()||id.length()>80||id.equals("*")||name.isEmpty()||name.length()>120||!names.add(name.toLowerCase(Locale.ROOT))||collections.containsKey(id))throw new IllegalArgumentException("Coleção inválida ou duplicada");
     collections.put(id,new Collection(id,name,keys(item.getJSONArray("scores"))));
    }
-   return new Snapshot(favorites,collections);
+   Set<String> added=creationIds(root.optJSONArray("addedCreations")==null?new JSONArray():root.getJSONArray("addedCreations"));
+   return new Snapshot(favorites,collections,added);
   }catch(JSONException ex){throw new IllegalArgumentException("Organização da biblioteca inválida",ex);}
  }
  private JSONObject read(){
@@ -60,6 +77,18 @@ final class LibraryStore {
   if(!found)out.put(score);return out;
  }
  void toggleFavorite(String score){try{JSONObject obj=read();obj.put("favorites",toggled(obj.getJSONArray("favorites"),score));save(obj);}catch(JSONException ex){throw new IllegalArgumentException(ex);}}
+ boolean hasCreation(String projectId){validateCreationId(projectId);return snapshot().addedCreations.contains(projectId.toLowerCase(Locale.ROOT));}
+ void addCreation(String projectId){
+  validateCreationId(projectId);projectId=projectId.toLowerCase(Locale.ROOT);
+  try{
+   JSONObject obj=read();
+   JSONArray previous=obj.optJSONArray("addedCreations");
+   if(previous==null)previous=new JSONArray();
+   if(creationIds(previous).contains(projectId))return; // idempotent, no duplicates
+   JSONArray updated=new JSONArray(previous.toString());updated.put(projectId);
+   obj.put("addedCreations",updated);save(obj);
+  }catch(JSONException ex){throw new IllegalArgumentException(ex);}
+ }
  String create(String name){
   try{JSONObject obj=read();String id=UUID.randomUUID().toString();obj.getJSONArray("collections").put(new JSONObject().put("id",id).put("name",name.trim()).put("scores",new JSONArray()));save(obj);return id;}
   catch(JSONException ex){throw new IllegalArgumentException(ex);}
