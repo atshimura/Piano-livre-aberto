@@ -368,7 +368,7 @@ jobs:
               for suffix in ('', '-library', '-grid'):
                   names.append('piano-home-refined-' + viewport + suffix + '.png')
           for viewport in ('phone', 'tablet'):
-              for stage in ('home-disconnected','home-opening','home-connected','study-connected','study-hidden','study-restored','study-disconnected','study-unnamed','study-switched','home-reconnected','home-background-return','diagnostics'):
+              for stage in ('home-disconnected','home-opening','home-connected','study-connected','study-playing','study-note-tap','study-disconnected','study-unnamed','study-switched','home-reconnected','home-background-return','diagnostics'):
                   names.append('piano-prompt03-' + viewport + '-' + stage + '.png')
           for name in names:
               path = pathlib.Path(name)
