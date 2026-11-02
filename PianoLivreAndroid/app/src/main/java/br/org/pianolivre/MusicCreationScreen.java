@@ -72,6 +72,39 @@ final class MusicCreationScreen extends LinearLayout {
   row.addView(aButton,new LayoutParams(0,-1,1));View gap=new View(a);row.addView(gap,new LayoutParams(dp(8),dp(1)));
   row.addView(bButton,new LayoutParams(0,-1,1));return row;
  }
+
+ // Use measured container width, not whole-screen width, for nested columns.
+ private LinearLayout responsiveActions(LinearLayout parent,int bottom,Button... buttons){
+  LinearLayout group=column();group.setTag("creation-responsive-actions");attach(parent,group,-2,bottom);
+  final int[] prev={-1};
+  java.util.function.IntConsumer reflow=width->{
+   int gap=dp(8);float scale=getResources().getConfiguration().fontScale;
+   int cell=dp(Math.max(142,Math.round(142*scale)));
+   int columns=width<=0?1:Math.max(1,Math.min(buttons.length,(width+gap)/(cell+gap)));
+   if(columns==prev[0])return;
+   // Buttons belong to existing child rows; detach before reparenting them.
+   for(Button button:buttons)if(button.getParent() instanceof android.view.ViewGroup)
+    ((android.view.ViewGroup)button.getParent()).removeView(button);
+   prev[0]=columns;group.removeAllViews();
+   for(int start=0;start<buttons.length;start+=columns){
+    LinearLayout row=horizontal();LayoutParams rp=new LayoutParams(-1,dp(56));
+    rp.bottomMargin=dp(start+columns<buttons.length?6:0);group.addView(row,rp);
+    int end=Math.min(buttons.length,start+columns);
+    for(int i=start;i<end;i++){
+     Button button=buttons[i];button.setSingleLine(false);button.setMaxLines(2);
+     LayoutParams cp=new LayoutParams(0,-1,1);cp.rightMargin=dp(i<end-1?8:0);
+     row.addView(button,cp);
+    }
+   }
+  };
+  // Buttons must exist before the first layout, especially during synthetic
+  // and real MIDI recording state changes.
+  reflow.accept(0);
+  group.addOnLayoutChangeListener((view,l,t,r,b,ol,ot,or,ob)->{
+   if(r>l)group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());});
+  });
+  return group;
+ }
  private void header(String title,Runnable returnAction){
   bar.removeAllViews();bar.setBackgroundColor(navy);
   Button b=button("← Voltar",false,returnAction);b.setTextColor(white);
@@ -134,7 +167,7 @@ final class MusicCreationScreen extends LinearLayout {
   attach(left,connectionCard(),-2,12);
   Button record=button("＋  Nova gravação",true,()->showRecorder());
   Button list=button("Minhas Criações",false,()->showList());
-  if(wide()){attach(left,record,52,8);attach(left,list,52,12);}else actionRow(left,record,list,14);
+  responsiveActions(left,14,record,list);
   if(recoveryWarning!=null){
    TextView warning=mutedText(recoveryWarning,13);warning.setTextColor(0xff986425);
    attach(left,warning,-2,10);
@@ -174,9 +207,8 @@ final class MusicCreationScreen extends LinearLayout {
    LayoutParams lp=new LayoutParams(0,dp(52),1);lp.rightMargin=dp(5);captureActions.addView(control,lp);
   }
   attach(body,captureActions,52,9);
-  LinearLayout revisionActions=actionRow(body,save,preview,8);revisionActions.setTag("creation-review-actions");
+  LinearLayout revisionActions=responsiveActions(body,8,save,preview,export);revisionActions.setTag("creation-review-actions");
   attach(body,playbackStatus,-2,6);
-  attach(body,export,48,9);
   discard.setTextColor(0xff9D4444);attach(body,discard,48,0);
 
 
@@ -187,7 +219,7 @@ final class MusicCreationScreen extends LinearLayout {
     setShown(resume,paused||review&&player.state()==MidiTakePlayer.State.PAUSED);
     setShown(stop,recording||paused||player.state()!=MidiTakePlayer.State.STOPPED);
     setShown(revisionActions,review);
-    setShown(playbackStatus,review);setShown(export,review);setShown(discard,review||paused||recording);
+    setShown(playbackStatus,review);setShown(discard,review||paused||recording);
     discard.setEnabled(review||paused||recording);
     String label=captureLabel(current);if(!state.getText().toString().equals(label))state.setText(label);
     String clock=duration(take.elapsedNs(android.os.SystemClock.elapsedRealtimeNanos()));
@@ -247,8 +279,17 @@ a.handler.postDelayed(this,100);}};ticker.run();
   EditText search=new EditText(a);listSearch=search;search.setSingleLine(true);
   search.setTextSize(15);search.setHint("Buscar composição…");search.setContentDescription("Buscar composição");
   search.setPadding(dp(12),0,dp(12),0);search.setBackground(shape(white,13,0xffDCE7F2));
-  search.setText(query);attach(body,search,50,10);
-  LinearLayout filters=horizontal();attach(body,filters,48,12);
+  search.setText(query);
+  boolean wideList=getResources().getDisplayMetrics().widthPixels/getResources().getDisplayMetrics().density>=780
+     &&getResources().getConfiguration().fontScale<=1.25f;
+  LinearLayout filters=horizontal();
+  if(wideList){
+   LinearLayout toolbar=horizontal();toolbar.setTag("creation-project-toolbar");
+   toolbar.addView(search,new LayoutParams(0,dp(48),2));
+   View gap=new View(a);toolbar.addView(gap,new LayoutParams(dp(8),dp(1)));
+   toolbar.addView(filters,new LayoutParams(0,dp(48),3));attach(body,toolbar,48,12);
+  }else{attach(body,search,50,8);attach(body,filters,48,12);}
+
   Spinner categories=new Spinner(a);String[] names={"Todas","Salvas","Recuperáveis","Lixeira"};
   categories.setContentDescription("Filtrar composições");
   categories.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,names));
@@ -357,9 +398,8 @@ a.handler.postDelayed(this,100);}};ticker.run();
     Button pause=button("Pausar",false,()->player.pause());
     Button resume=button("Continuar",false,()->player.resume());
     Button stop=button("Parar",false,()->player.stop());
-    attach(playerCard,play,50,7);
-    LinearLayout controls=horizontal();
-    for(Button control:new Button[]{pause,resume,stop}){
+    LinearLayout controls=horizontal();controls.setTag("creation-detail-transport");
+    for(Button control:new Button[]{play,pause,resume,stop}){
      LayoutParams lp=new LayoutParams(0,dp(48),1);lp.rightMargin=dp(5);controls.addView(control,lp);
     }
     attach(playerCard,controls,48,8);
@@ -377,19 +417,28 @@ a.handler.postDelayed(this,100);}};ticker.run();
     boolean hasScore=new CreationScoreStore(a.getFilesDir()).has(id);
     LinearLayout scoreCard=card();label(scoreCard,"Partitura",17,true,6);
     attach(scoreCard,mutedText(hasScore?
-      "Partitura vinculada à gravação original. Ajuste ou pratique sem alterar o MIDI.":
+      "Partitura vinculada à gravação original. Adicione à Biblioteca para estudar sem alterar o MIDI.":
       "Transforme a gravação em partitura com duas pautas.",13),-2,8);
-    attach(scoreCard,button(hasScore?"Visualizar e ajustar partitura":"Gerar partitura",
-      true,()->CreationScorePreviewScreen.open(a,p)),50,5);
-    if(hasScore)attach(scoreCard,button("Estudar esta partitura",false,()->a.loadCreationScore(id)),48,5);
+    Button viewScore=button(hasScore?"Visualizar e ajustar partitura":"Gerar partitura",
+      true,()->CreationScorePreviewScreen.open(a,p));
+    if(hasScore&&!new LibraryStore(a.prefs,a.user).hasCreation(id)){
+     Button add=button("Adicionar à Biblioteca",false,()->
+       a.addCreationScoreToLibrary(id,success->{
+        if(success&&"details".equals(page)&&id.equals(selectedId))showDetails(id);
+       }));
+     responsiveActions(scoreCard,5,viewScore,add);
+    }else{
+     attach(scoreCard,viewScore,48,5);
+     if(hasScore)attach(scoreCard,mutedText("✓ Na Biblioteca Musical",13),-2,4);
+    }
     attach(body,scoreCard,-2,12);
    }
    Button rename=button("Renomear",false,()->rename(p));
+   Button infoButton=button("Informações da gravação  ▾",false,()->{});
    if(!p.trash){
     Button export=button("Exportar MIDI (.mid)",false,()->a.exportCreationMidi(id,p.title));
-    actionRow(body,rename,export,12);
-   }else attach(body,rename,48,12);
-   Button infoButton=button("Informações da gravação  ▾",false,()->{});
+    responsiveActions(body,12,rename,export,infoButton);
+   }else responsiveActions(body,12,rename,infoButton);
    LinearLayout infoCard=card();infoCard.setVisibility(View.GONE);
    label(infoCard,"Criada · "+new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",Locale.getDefault()).format(new Date(p.createdAt)),14,false,6);
    label(infoCard,"Última alteração · "+new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",Locale.getDefault()).format(new Date(p.editedAt)),14,false,6);
@@ -398,7 +447,7 @@ a.handler.postDelayed(this,100);}};ticker.run();
    label(infoCard,"Perfil · "+profileName(),14,false,6);
    if(!p.instrument.isEmpty())label(infoCard,"Instrumento observado · "+p.instrument,14,false,0);
    infoButton.setOnClickListener(v->{boolean open=infoCard.getVisibility()!=View.VISIBLE;setShown(infoCard,open);infoButton.setText(open?"Informações da gravação  ▴":"Informações da gravação  ▾");});
-   attach(body,infoButton,48,8);attach(body,infoCard,-2,12);
+   attach(body,infoCard,-2,12);
    if(!p.trash){
     Button trash=button("Mover para Lixeira",false,()->mutate(()->store.moveToTrash(id,System.currentTimeMillis())));
     trash.setTextColor(0xff9D4444);attach(body,trash,48,0);

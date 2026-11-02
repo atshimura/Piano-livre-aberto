@@ -40,6 +40,14 @@ jobs:
         run: python3 tests/test_study_position_labels.py
       - name: Audit full-suite workflow references and current Home contracts
         run: python3 tests/test_workflow_contract_audit.py
+      - name: Guard six approved UI and navigation changes before expensive tests
+        run: |
+          python3 tests/test_home_banner_contract.py
+          python3 tests/test_study_compact_chrome_contract.py
+          python3 tests/test_creation_responsive_contract.py
+          python3 tests/test_creation_library_contract.py
+          python3 tests/test_suite_six_changes_contract.py
+          python3 -m py_compile tests/emulator_midi_interfaces.py tests/emulator_study_layout.py tests/emulator_ui.py tests/emulator_creation_navigation.py tests/c2_d_ui_smoke.py
       - name: Adaptive Study profile and complete corpus (desktop Chromium)
         env:
           PIANO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -164,7 +172,7 @@ jobs:
           java -cp build/score-tests StudyInfoTextTest
       - name: Test local library search (JVM)
         run: |
-          javac -d build/score-tests app/src/main/java/br/org/pianolivre/LibrarySearch.java tests/LibrarySearchTest.java
+          javac -d build/score-tests app/src/main/java/br/org/pianolivre/LibrarySearch.java app/src/main/java/br/org/pianolivre/SessionFiles.java tests/LibrarySearchTest.java
           java -cp build/score-tests LibrarySearchTest
       - name: Test home MIDI indicator labels (JVM)
         run: |
@@ -366,9 +374,10 @@ jobs:
 
   public-beta:
     needs: build
-    # One-time, version-scoped release authorized by the maintainer; never on PRs.
-    # Exact-version authorization and build/emulator gates remain enforced by the publisher.
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-0.9.61]')))
+    # The user's 0.9.62 authorization is restricted by the checked-in
+    # publishApprovedVersion, publisher checks, immutable tag and exact SHA.
+    # Run on trusted main after protected PR integration, never on PRs.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 100
     permissions:

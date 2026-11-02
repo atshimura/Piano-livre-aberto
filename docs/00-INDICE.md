@@ -1,5 +1,16 @@
 # Documentação do Piano Livre aberto
 
+## Ajustes da candidata 0.9.62 — seis alterações aprovadas
+
+- [107 — Botões iguais de Biblioteca/Laboratório no banner e Histórico/Como usar nas configurações](107-HOME-BANNER-ATALHOS.md). Alteração 1.
+- [108 — Cabeçalho da Biblioteca: Coleções, Importar e Busca iguais e responsivos, sem Categoria](108-CABECALHO-BIBLIOTECA-MINIMALISTA.md). Alteração 2.
+- [109 — Estudar: cabeçalho e controles verticais compactos, informações da música em uma linha](109-ESTUDAR-CONTROLES-COMPACTOS.md). Alteração 3.
+- [110 — Estudar: barras superiores permanentemente visíveis](110-ESTUDAR-BARRAS-SEMPRE-VISIVEIS.md). Alteração 4.
+- [111 — Criação: agrupamento responsivo de botões e campos, blocos A/B/C](111-CRIACAO-REFORMA-RESPONSIVA-ABC.md). Alteração 5.
+- [112 — Criação: adicionar partitura gerada à Biblioteca e estudar pelo fluxo comum](112-CRIACAO-ADICIONAR-A-BIBLIOTECA.md). Alteração 6.
+- [113 — Atualização dos testes completos após seis mudanças](113-ATUALIZACAO-SUITE-SEIS-MUDANCAS.md). CI e fixtures ajustados.
+- [0.9.62-open-beta — Seis alterações, suíte integral e publicação autorizada](releases/0.9.62-open-beta.md). Só será considerada publicada após checks completos e comprovação da Release.
+
 ## Auditoria da suíte 0.9.61
 
 - [106 — Revisão integral dos testes, atualização Home/Estudar, release e preservação de dados](106-AUDITORIA-SUITE-0961.md).

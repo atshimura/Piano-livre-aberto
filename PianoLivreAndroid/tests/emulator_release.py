@@ -35,7 +35,7 @@ screenshot('piano-release-home.png')
 # Enter through the public user action and verify the saved tempo is usable,
 # rather than merely checking that the XML value survived installation.
 home_scroll_to_top()
-tap_text(['Começar pela Ode à Alegria'],scroll=True)
+tap_text(['Ode à Alegria'],scroll=True)
 wait_for_text('Espera',timeout=30)
 wait_for_text('80%',timeout=30)
 labels=[n.attrib.get('text','') for n in dump().iter('node')]

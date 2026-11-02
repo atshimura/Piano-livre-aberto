@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Four representative navigation frames; does not replace emulator_ui.py."""
 import time
-from emulator_ui import adb,dump,tap_text,screenshot,assert_study_controls,wait_for_text
+from emulator_ui import adb,dump,tap_text,screenshot,assert_study_controls,wait_for_text,DEFAULT_SCORE_TITLE
 P='br.org.pianolivre.opensource'
 adb('shell','wm','size','1280x720');adb('shell','wm','density','240')
 adb('shell','am','start','-W','-n',P+'/br.org.pianolivre.MainActivity')
 wait_for_text('Bem-vindo ao',timeout=30);screenshot('piano-fast-home.png')
-tap_text(['Começar pela Ode à Alegria'],scroll=True);time.sleep(3);assert_study_controls();screenshot('piano-fast-study.png')
+tap_text([DEFAULT_SCORE_TITLE],scroll=True);time.sleep(3);assert_study_controls();screenshot('piano-fast-study.png')
 tap_text(['Biblioteca'],scroll=True);tap_text(['Laboratório Musical'],exact=True,scroll=True)
 wait_for_text('toque uma nota',timeout=30);screenshot('piano-fast-discovery.png')
 def lab_tabs(active):
@@ -44,7 +44,7 @@ tap_text(['Voltar'],exact=True);wait_for_text('Bem-vindo ao',timeout=30);screens
 print('FAST_NAVIGATION_PASS captures=7 scope=home-study-discovery-creation-library-record-ready-shared-navigation',flush=True)
 
 # Regression: a saved study session must never hijack a fresh launcher start.
-tap_text(['Começar pela Ode à Alegria'],scroll=True)
+tap_text([DEFAULT_SCORE_TITLE],scroll=True)
 wait_for_text('Espera',timeout=30)
 before=adb('shell','run-as',P,'cat','shared_prefs/piano_data.xml')
 assert 'user_0_file' in before and 'ode-to-joy' in before, 'Study session was not persisted before cold start'
@@ -59,7 +59,7 @@ before_saved=[line.strip() for line in before.splitlines() if 'name="user_0_' in
 after_saved=[line.strip() for line in after.splitlines() if 'name="user_0_' in line]
 assert before_saved and sorted(before_saved)==sorted(after_saved), 'Saved study session changed when opening Home'
 screenshot('piano-fast-relaunch-home.png')
-tap_text(['Começar pela Ode à Alegria'],scroll=True)
+tap_text([DEFAULT_SCORE_TITLE],scroll=True)
 wait_for_text('Espera',timeout=30)
 assert_study_controls()
 print('STARTUP_HOME_REGRESSION_PASS previous_score=true saved_preferences_unchanged=true explicit_study=true',flush=True)

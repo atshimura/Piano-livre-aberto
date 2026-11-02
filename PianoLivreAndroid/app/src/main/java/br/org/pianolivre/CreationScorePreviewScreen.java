@@ -133,12 +133,63 @@ final class CreationScorePreviewScreen extends LinearLayout {
         b.setOnClickListener(v->{if(!busy&&!closed)run.run();});
         return b;
     }
-    private void actions(LinearLayout parent,Button left,Button right){
-        LinearLayout row=horizontal();
-        LayoutParams one=new LayoutParams(0,dp(48),1);one.rightMargin=dp(8);
-        row.addView(left,one);row.addView(right,new LayoutParams(0,dp(48),1));
-        attach(parent,row,48,8);
+
+ // Adaptive rows reserve real text size and respect the dialog's measured width.
+ private void actions(LinearLayout parent,Button... buttons){
+  LinearLayout group=vertical();group.setTag("creation-score-responsive-actions");attach(parent,group,-2,8);
+  final int[] prev={-1};
+  java.util.function.IntConsumer reflow=width->{
+   int gap=dp(8);float scale=getResources().getConfiguration().fontScale;
+   int cell=dp(Math.max(140,Math.round(140*scale)));
+   int cols=width<=0?1:Math.max(1,Math.min(buttons.length,(width+gap)/(cell+gap)));
+   if(cols==prev[0])return;
+   for(Button button:buttons)if(button.getParent() instanceof android.view.ViewGroup)
+    ((android.view.ViewGroup)button.getParent()).removeView(button);
+   prev[0]=cols;group.removeAllViews();
+   for(int start=0;start<buttons.length;start+=cols){
+    LinearLayout row=horizontal();LayoutParams rp=new LayoutParams(-1,dp(56));
+    rp.bottomMargin=dp(start+cols<buttons.length?6:0);group.addView(row,rp);
+    int end=Math.min(buttons.length,start+cols);
+    for(int i=start;i<end;i++){
+     Button button=buttons[i];button.setSingleLine(false);button.setMaxLines(2);
+     LayoutParams cp=new LayoutParams(0,-1,1);cp.rightMargin=dp(i<end-1?8:0);row.addView(button,cp);
     }
+   }
+  };
+  reflow.accept(0);
+  group.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
+   if(r>l)group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());});
+  });
+ }
+
+ private void responsiveFields(LinearLayout parent,String[] labels,View[] fields){
+  if(labels.length!=fields.length)throw new IllegalArgumentException("Field count mismatch");
+  LinearLayout group=vertical();group.setTag("creation-score-responsive-fields");attach(parent,group,-2,8);
+  final int[] prev={-1};
+  java.util.function.IntConsumer reflow=width->{
+   int gap=dp(8);float scale=getResources().getConfiguration().fontScale;
+   int cell=dp(Math.max(168,Math.round(168*scale)));
+   int cols=width<=0?1:Math.max(1,Math.min(fields.length,(width+gap)/(cell+gap)));
+   if(cols==prev[0])return;
+   for(View field:fields)if(field.getParent() instanceof android.view.ViewGroup)
+    ((android.view.ViewGroup)field.getParent()).removeView(field);
+   prev[0]=cols;group.removeAllViews();
+   for(int start=0;start<fields.length;start+=cols){
+    LinearLayout row=horizontal();row.setGravity(Gravity.TOP);
+    LayoutParams rp=new LayoutParams(-1,-2);rp.bottomMargin=dp(8);group.addView(row,rp);
+    int end=Math.min(fields.length,start+cols);
+    for(int i=start;i<end;i++){
+     LinearLayout field=vertical();TextView title=label(labels[i],14,true,0xff172A44);title.setMaxLines(2);
+     attach(field,title,-2,4);attach(field,fields[i],48,0);
+     LayoutParams cp=new LayoutParams(0,-2,1);cp.rightMargin=dp(i<end-1?8:0);row.addView(field,cp);
+    }
+   }
+  };
+  reflow.accept(0);
+  group.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
+   if(r>l)group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());});
+  });
+ }
     private void shutdown(){
         closed=true;generation++;if(notation!=null){notation.dispose();notation=null;}
         worker.shutdownNow();
@@ -208,15 +259,27 @@ final class CreationScorePreviewScreen extends LinearLayout {
         else{
             actions(contents,button("Ajustar ritmo",false,this::editRhythm),
                     button("Divisão entre pautas",true,()->render(true)));
-            actions(contents,button("Voltar à composição",false,this::confirmClose),
-                    button(saved?"Partitura salva ✓":"Salvar partitura",true,this::saveCurrent));
+            Button back=button("Voltar à composição",false,this::confirmClose);
+            Button save=button(saved?"Partitura salva ✓":"Salvar partitura",true,this::saveCurrent);
             if(saved){
-                attach(contents,button("Estudar esta partitura",true,()->{
-                    if(closed||busy)return;
-                    String id=project.id;window.dismiss();activity.loadCreationScore(id);
-                }),48,8);
+                boolean added=new LibraryStore(activity.prefs,activity.user).hasCreation(project.id);
+                if(added){
+                    actions(contents,back,save);
+                    addText("✓ Na Biblioteca Musical · abra a Biblioteca para estudar.",13,false,4);
+                }else{
+                    Button add=button("Adicionar à Biblioteca",true,()->{
+                        if(closed||busy)return;busy=true;
+                        activity.addCreationScoreToLibrary(project.id,ok->{
+                            if(closed)return;busy=false;if(ok)render(false);
+                        });
+                    });
+                    actions(contents,back,save,add);
+                }
                 addText("Partitura salva neste projeto e incluída no backup v4.",12,false,3);
-            }else addText("Salve para reabrir esta versão e estudá-la depois.",12,false,3);
+            }else{
+                actions(contents,back,save);
+                addText("Salve a partitura antes de adicioná-la à Biblioteca Musical.",12,false,3);
+            }
         }
     }
     private void editRhythm(){
@@ -224,15 +287,15 @@ final class CreationScorePreviewScreen extends LinearLayout {
         LinearLayout content=vertical();content.setPadding(dp(16),dp(6),dp(16),0);
         EditText tempo=new EditText(activity);tempo.setSingleLine(true);
         tempo.setInputType(InputType.TYPE_CLASS_NUMBER);tempo.setText(String.valueOf(o.bpm));
-        attach(content,label("Andamento (30 a 240 BPM)",14,true,0xff172A44),-2,4);attach(content,tempo,48,10);
+
         final String[] meters={"2/4","3/4","4/4","6/8"};
         Spinner meter=new Spinner(activity);meter.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,meters));
         meter.setSelection(o.beats==6?3:o.beats==4?2:o.beats==3?1:0);
-        attach(content,label("Compasso",14,true,0xff172A44),-2,4);attach(content,meter,48,10);
+
         final String[] grids={"1/8","1/16","1/32"};
         Spinner grid=new Spinner(activity);grid.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,grids));
         grid.setSelection(o.grid==8?0:o.grid==16?1:2);
-        attach(content,label("Precisão rítmica",14,true,0xff172A44),-2,4);attach(content,grid,48,6);
+        responsiveFields(content,new String[]{"Andamento (BPM)","Compasso","Precisão rítmica"},new View[]{tempo,meter,grid});
         new AlertDialog.Builder(activity).setTitle("Ajustar partitura").setView(content)
             .setPositiveButton("Atualizar",(d,w)->{
                 try{
@@ -307,19 +370,23 @@ final class CreationScorePreviewScreen extends LinearLayout {
             noteBoxes.put(n.sourceId,select);
             select.setOnCheckedChangeListener((v,checked)->{if(refreshingSelection)return;
                 review.toggle(n.sourceId);syncSelection();
-            });attach(list,select,48,1);
-            Button chord=button("Marcar acorde desta nota",false,()->{
+            });
+            LinearLayout noteRow=horizontal();noteRow.setTag("creation-score-note-row");
+            select.setMaxLines(2);select.setMinHeight(dp(48));
+            noteRow.addView(select,new LayoutParams(0,dp(52),1));
+            Button chord=button("Acorde",false,()->{
                 review.selectChord(n.sourceId);render(true);
-            });chord.setTextSize(11);
+            });
             chord.setContentDescription("Marcar acorde que contém a nota "+(i+1)+": "+noteLabel(n,o));
-            attach(list,chord,40,5);
+            LayoutParams chordLp=new LayoutParams(dp(106),dp(48));chordLp.leftMargin=dp(8);
+            noteRow.addView(chord,chordLp);attach(list,noteRow,52,4);
         }
         Button previous=button("← Anteriores",false,()->{offset=Math.max(0,offset-12);render(true);});
         Button next=button("Próximas →",false,()->{offset+=12;render(true);});
         previous.setEnabled(offset>0);next.setEnabled(max<notes.size());
         actions(list,previous,next);
-        attach(list,button("Selecionar intervalo de compassos",false,this::chooseMeasures),48,7);
-        attach(list,button("Desmarcar seleção",false,()->{review.clearSelection();render(true);}),48,0);
+        actions(list,button("Selecionar intervalo de compassos",false,this::chooseMeasures),
+                button("Desmarcar seleção",false,()->{review.clearSelection();render(true);}));
         attach(contents,list,-2,9);
         Button upper=button("Pauta superior (Sol)",true,()->mutate(()->review.moveSelection(1),true));
         Button lower=button("Pauta inferior (Fá)",false,()->mutate(()->review.moveSelection(2),true));
@@ -346,8 +413,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         EditText from=new EditText(activity);from.setInputType(InputType.TYPE_CLASS_NUMBER);from.setText("1");
         EditText to=new EditText(activity);to.setInputType(InputType.TYPE_CLASS_NUMBER);
         to.setText(String.valueOf(review.result().measures));
-        attach(panel,label("Do compasso",14,true,0xff172A44),-2,4);attach(panel,from,48,7);
-        attach(panel,label("Até o compasso (inclusive)",14,true,0xff172A44),-2,4);attach(panel,to,48,7);
+        responsiveFields(panel,new String[]{"Do compasso","Até o compasso (inclusive)"},new View[]{from,to});
         new AlertDialog.Builder(activity).setTitle("Selecionar compassos").setView(panel)
             .setPositiveButton("Marcar",(d,w)->{
                 try{review.selectMeasures(Integer.parseInt(from.getText().toString().trim()),

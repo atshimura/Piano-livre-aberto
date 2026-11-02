@@ -73,14 +73,19 @@ def current_study_layout():
     return json.loads(rows[-1].split("STUDY_CHROME_LAYOUT ",1)[1]) if rows else None
 
 def reveal_study_controls():
+    """Legacy helper name: permanent Study chrome needs no tap to reappear.
+
+    Never call UIAutomator during continuous playback (it waits for idle and
+    cannot obtain a hierarchy from an animating WebView). Use native layout
+    telemetry to prove that both bars and the transport remain visible.
+    """
     layout=current_study_layout()
-    if layout and not layout["headerVisible"]:box=layout["bounds"]
-    else:
-        root=dump()
-        views=[n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
-        assert views,"Study WebView missing"
-        box=[int(v) for v in re.findall(r"\d+",views[0].attrib["bounds"])]
-    adb("shell","input","tap",str(box[2]-12),str(box[3]-12));time.sleep(.6)
+    assert layout and layout["headerVisible"] and layout["modesVisible"],         "Study upper bars must remain visible without a reveal gesture"
+    box=layout["bounds"]
+    transport=layout["transportBounds"]
+    assert box[2]>box[0] and box[3]>box[1], "Study notation has no viewport"
+    assert transport[3]>transport[1] and box[3]==transport[1],         "Permanent Study transport must remain immediately below notation"
+    return layout
 
 def study_renderer(temporal, score_title=None):
     """Debug-only renderer fixture; no manual production selector exists."""
@@ -95,7 +100,7 @@ def study_renderer(temporal, score_title=None):
     # The default short fixture is Ode à Alegria; long-score checks must
     # deliberately reopen Gymnopédie after EACH force-stop. Otherwise they
     # accidentally prove a 19-head score while expecting 469 written heads.
-    tap_text([score_title] if score_title else ["Começar pela Ode à Alegria"],scroll=True)
+    tap_text([score_title] if score_title else [DEFAULT_SCORE_TITLE],scroll=True)
     wait_for_text("Espera",timeout=30)
     assert_study_controls()
     print("STUDY_RENDERER_FIXTURE "+(score_title or DEFAULT_SCORE_TITLE)+
@@ -108,7 +113,7 @@ def assert_study_controls():
     assert "Espera" in labels and "Contínuo" in labels,"Mode controls missing"
 
 def responsive_evidence(name):
-    """Measure real normal/playing/revealed WebView bounds and uniform staff fit."""
+    """Measure stable notation geometry with persistent top bars in all states."""
     result=[]
     normal_transport=None
     tap_text(["Parar"]);tap_text(["Contínuo"],exact=True,scroll=True);tap_text(["Início"])
@@ -117,20 +122,20 @@ def responsive_evidence(name):
     adb("shell","input","tap",str(box[0]+2),str((box[1]+box[3])//2))
     for state in ("normal","playing","restored"):
         if state=="playing":tap_text(["Iniciar"])
-        if state=="restored":reveal_study_controls()
+        if state=="restored":reveal_study_controls()  # Assert persistence; never tap the moving score.
         time.sleep(.8)
         if state!="normal":
             # UiAutomator waits for accessibility idle and cannot dump a live animation.
             # Read the actual native post-layout bounds; never pause/freeze the score.
             layout=current_study_layout()
-            assert layout and layout["headerVisible"]==(state=="restored") and layout["modesVisible"]==(state=="restored"),"Chrome hide/reveal failed"
+            assert layout and layout["headerVisible"] and layout["modesVisible"],"Study top bars disappeared"
             box=layout["bounds"]
             assert layout["transportBounds"][3]>layout["transportBounds"][1],"Permanent transport lost"
             assert layout["transportBounds"]==normal_transport,"Transport moved during chrome transition"
             assert box[3]==layout["transportBounds"][1],"Score overlaps the permanent transport"
         else:
             root=dump();labels=[n.attrib.get("text","") for n in root.iter("node")]
-            assert "Espera" in labels,"Chrome reveal failed"
+            assert "Espera" in labels,"Study mode controls absent"
             assert any("Parar" in (n.attrib.get("text","")+n.attrib.get("content-desc","")) for n in root.iter("node")),"Permanent transport lost"
             view=next(n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView")
             box=[int(v) for v in re.findall(r"\d+",view.attrib["bounds"])]
@@ -150,8 +155,8 @@ def responsive_evidence(name):
         assert abs(geometry["scale"]-geometry["availableHeight"]/geometry["rawHeight"])<.002
         screenshot("piano-03d-"+name+"-"+state+".png")
         result.append({"state":state,"heightPx":height,"heightDp":height/density,"geometry":geometry})
-    assert result[1]["heightPx"]>result[0]["heightPx"],"Execution gained no score area"
-    assert result[0]["heightPx"]==result[-1]["heightPx"],"Reveal did not restore height"
+    assert result[1]["heightPx"]==result[0]["heightPx"],"Playback changed the score viewport when top bars must stay visible"
+    assert result[0]["heightPx"]==result[-1]["heightPx"],"Note tap changed viewport despite permanent bars"
     tap_text(["Parar"]);tap_text(["Início"]);tap_text(["Espera"],exact=True,scroll=True)
     Path("piano-03d-"+name+".json").write_text(json.dumps(result,indent=2),encoding="utf-8")
 
@@ -172,7 +177,11 @@ def wait_for_text(target, timeout=8):
     deadline=time.monotonic()+timeout
     last=[]
     while time.monotonic()<deadline:
-        last=[n.attrib.get("text","") or n.attrib.get("content-desc","") for n in dump().iter("node")]
+        # Visible labels and accessibility descriptions are independent.
+        # The responsive Library search has a short visual hint but a full
+        # accessible name; never discard the latter when text is nonempty.
+        last=[value for n in dump().iter("node")
+              for value in (n.attrib.get("text",""),n.attrib.get("content-desc","")) if value]
         if any(target.casefold() in value.casefold() for value in last):return last
         time.sleep(.25)
     raise AssertionError("Timed out waiting for UI text "+repr(target)+"; visible="+repr(last[:50]))
@@ -184,7 +193,7 @@ def focus_library_search_field(timeout=12):
     while time.monotonic()<deadline:
         root=dump()
         fields=[n for n in root.iter("node") if n.attrib.get("class")=="android.widget.EditText"]
-        search=next((n for n in fields if "buscar título" in (n.attrib.get("hint","")+n.attrib.get("text","")+n.attrib.get("content-desc","")).casefold()),None)
+        search=next((n for n in fields if "buscar por título ou nome de arquivo" in n.attrib.get("content-desc","").casefold()),None)
         if search is None and len(fields)==1:search=fields[0]
         if search is not None:
             bounds=[int(x) for x in re.findall(r"\d+",search.attrib.get("bounds",""))]
@@ -201,28 +210,24 @@ def focus_library_search_field(timeout=12):
                     if focused is not None:return focused
                     state=adb("shell","dumpsys","input_method")
                     if re.search(r"(?:mInputShown|mIsInputViewShown|isInputViewShown)=true",state):
-                        return next((n for n in focused_fields if "buscar título" in (n.attrib.get("hint","")+n.attrib.get("text","")+n.attrib.get("content-desc","")).casefold()),search)
+                        return next((n for n in focused_fields if "buscar por título ou nome de arquivo" in n.attrib.get("content-desc","").casefold()),search)
                 time.sleep(.25)
         time.sleep(.2)
     raise AssertionError("LIBRARY_SEARCH_FOCUS_FAILED: field did not settle/focus; labels="+repr(last[:40]))
 
 def assert_collection_filter_option(name, present=True):
-    """Inspect the Spinner's real dropdown; closed spinners expose only selection."""
+    """Collections remain accessible through Collections > Ver coleção."""
     home_scroll_to_top()
-    tap_text(["Biblioteca Musical"],exact=True)
-    wait_for_text("Categoria")
-    tap_text(["Categoria"],exact=True,scroll=True)
-    assert any(n.attrib.get("text")=="Todas as categorias" for n in dump().iter("node")), "Full category option missing in dropdown"
-    target="Coleção: "+name
-    if present:
-        wait_for_text(target)
-    else:
-        time.sleep(.35)
+    tap_text(["Coleções"],exact=True,scroll=True)
+    tap_text(["Ver coleção"],exact=True)
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    found=any(value==target for value in labels)
-    adb("shell","input","keyevent","4")
+    found=any(value==name for value in labels)
     if found!=present:
-        raise AssertionError("Collection filter option presence mismatch for "+repr(target)+"; options="+repr(labels))
+        raise AssertionError("Collection browse mismatch for "+repr(name)+"; options="+repr(labels))
+    if not present and "Nenhuma coleção criada." in labels:
+        tap_text(["Fechar"],exact=True)
+    else:
+        adb("shell","input","keyevent","4")
 
 def return_to_library_if_study_was_restored():
     """Cold starts must display Home, not silently load the previous Study."""
@@ -325,24 +330,20 @@ if __name__=="__main__":
     assert not any("piano conectado" in n.casefold() or "toque aqui para testar" in n.casefold() for n in names), "Redundant connection text leaked into the home header"
     print("PASS: library visible at startup",flush=True)
     home_responsive_screenshots()
-    # The category spinner can be below the fold on short landscape displays.
-    # Exercise it through the same scroll view while retaining the top-of-home
-    # screenshots above as the visual evidence for each viewport.
+    # Category was removed, but the Collections menu retains its options.
     home=dump()
-    category_accessible=any(n.attrib.get("text","")=="Categoria" for n in home.iter("node"))
-    if not category_accessible:
-        tap_text(["Categoria"],exact=True,scroll=True)
-        category_accessible=True
-        adb("shell","input","keyevent","4")
-        home_scroll_to_top()
-    assert category_accessible, "Initial library filter label missing"
+    assert not any(n.attrib.get("content-desc","")=="Filtrar biblioteca" for n in home.iter("node")), "Removed Category selector returned"
+    tap_text(["Coleções"],exact=True,scroll=True)
+    options=[n.attrib.get("text","") for n in dump().iter("node")]
+    assert all(label in options for label in ("Todas as partituras","Favoritos","Ver coleção","Nova coleção")), "Collections lost browsing/filter commands"
+    adb("shell","input","keyevent","4")
     tap_text(["USB-MIDI"],exact=True)
     midi_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     if any("Mostrar diagnóstico" in t for t in midi_labels):tap_text(["Mostrar diagnóstico"],scroll=True)
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Mensagens recebidas" in t for t in labels), "MIDI management/diagnostics did not open"
     tap_text(["Fechar"])
-    tap_text(["Como usar"],scroll=True)
+    tap_text(["Opções e configurações"],exact=True);tap_text(["Como usar"],exact=True)
     help_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Escolha uma partitura" in t for t in help_labels), "Local help content missing"
     tap_text(["Entendi"],exact=True)
@@ -351,9 +352,9 @@ if __name__=="__main__":
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
     time.sleep(1.5);assert_running();return_to_library_if_study_was_restored()
-    tap_text(["Começar pela Ode à Alegria"],scroll=True)
+    tap_text([DEFAULT_SCORE_TITLE],scroll=True)
     time.sleep(2)
-    assert any("Ode à Alegria" in n.attrib.get("text","") for n in dump().iter("node")), "Welcome banner did not open Ode à Alegria in Study"
+    assert any("Ode à Alegria" in n.attrib.get("text","") for n in dump().iter("node")), "Library score selection did not open Ode à Alegria in Study"
     tap_text(["Biblioteca"])
     time.sleep(.4)
     print("PASS: welcome actions, offline help, and phone/tablet responsive captures",flush=True)
@@ -362,7 +363,7 @@ if __name__=="__main__":
     time.sleep(.5)
     adb("shell","input","keyevent","4")
     # Returning from the system picker may preserve the library's prior scroll
-    # offset; expose the real filter row again before tapping it.
+    # offset; expose the three-control toolbar again before tapping it.
     home_scroll_to_top()
     tap_text(["Coleções"],scroll=True)
     tap_text(["Nova coleção"],exact=True)
@@ -408,9 +409,9 @@ if __name__=="__main__":
     # Chord calibration must be discoverable, with no magic millisecond default.
     home_scroll_to_top();tap_text(["Opções e configurações"],exact=True)
     time.sleep(.5)
-    options=[n.attrib.get("text","") for n in dump().iter("node")]
-    assert any("Calibrar acordes MIDI" in text for text in options), "Calibrar acordes option missing"
-    tap_text(["Calibrar acordes MIDI"])
+    # The options menu is scrollable on compact screens. Locate the actual
+    # calibration action rather than requiring it in the initial viewport.
+    tap_text(["Calibrar acordes MIDI"],scroll=True)
     time.sleep(.5)
     options=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Calibrar tocando acordes" in text for text in options), "Physical calibration flow missing"
@@ -425,8 +426,15 @@ if __name__=="__main__":
     # a seeded record from a previous test or emulator snapshot.
     home_scroll_to_top();tap_text(["Partitura livre"],exact=True,scroll=True)
     wait_for_text("← Biblioteca");time.sleep(1)
-    tap_text(["← Biblioteca"],exact=True);wait_for_text("Estudar Ode à Alegria")
-    home_scroll_to_top();tap_text(["Histórico"],exact=True,scroll=True)
+    tap_text(["← Biblioteca"],exact=True)
+    # The Library preserves its scroll offset when Free Reading closes.
+    # Do not require a particular title in the currently visible rows.
+    wait_for_text("Partitura da biblioteca")
+    assert not any(value in ("Espera","Contínuo","Demonstração")
+                   for n in dump().iter("node")
+                   for value in (n.attrib.get("text",""),n.attrib.get("content-desc",""))), \
+        "Free Reading return did not leave Study controls"
+    home_scroll_to_top();tap_text(["Opções e configurações"],exact=True);tap_text(["Histórico"],exact=True)
     history_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Tempo na tela de estudo" in t for t in history_labels), "Native history totals missing"
     tap_text(["Períodos"],exact=True)
@@ -467,7 +475,7 @@ if __name__=="__main__":
         wait_for_text("Biblioteca Musical")
     tap_text(["Biblioteca Musical"],exact=True)
     print("PASS: profile creation, avatar, confirmed deletion and survivor selection",flush=True)
-    wait_for_text("Buscar título ou arquivo")
+    wait_for_text("Buscar por título ou nome de arquivo")
     focus_library_search_field()
     adb("shell","input","text","gymnopedie")
     dismiss_keyboard()

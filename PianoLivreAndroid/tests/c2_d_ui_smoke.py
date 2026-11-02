@@ -105,6 +105,8 @@ def wait_log(marker, timeout=45):
 
 def main():
     ensure_emulator()
+    rotation=adb("shell","settings","get","system","accelerometer_rotation").strip()
+    orientation=adb("shell","settings","get","system","user_rotation").strip()
     adb("install", "-r", "app/build/outputs/apk/debug/app-debug.apk", timeout=90)
     adb("shell", "pm", "clear", PACKAGE)
     adb("logcat", "-c")
@@ -124,25 +126,50 @@ def main():
     find("Nota 1 de 4")
     screenshot("02b-ajustes-pautas-acessibilidade")
     click("Concluir ajustes")
-    click("Estudar esta partitura")
+    # Sixth change: generated scores must be explicitly placed in the Library.
+    click("Adicionar à Biblioteca")
+    # The app displays a success dialog before the new library state.
+    find("Partitura adicionada à Biblioteca Musical.")
+    click("OK")
+    find("Na Biblioteca Musical")
+    screenshot("03-adicionada-a-biblioteca")
+    click("Voltar à composição")
+    find("Visualizar e ajustar partitura", clickable=True)
+    find("Na Biblioteca Musical")
+    screenshot("04-retorno-criacao")
+    # Creation has nested project/list/home pages. Android BACK is not a
+    # guaranteed shortcut from Details to the global Library; follow actual
+    # accessible controls and assert each navigation boundary.
+    click("Voltar")  # Project Details -> Minhas Criações or Criação home
+    if not nodes("← Biblioteca", clickable=True):
+        find("Minhas Criações")
+        click("Voltar")  # Minhas Criações -> Criação home
+    find("Criação Musical")
+    find("← Biblioteca", clickable=True)
+    click("← Biblioteca")  # Criação home -> Biblioteca Musical
+    find("Biblioteca Musical")
+    title=find("Estudar C2-D partitura de teste",clickable=True)
+    x,y=center(title)
+    adb("shell","input","tap",str(x),str(y))
     find("MODO")
     find("MÃOS")
-    screenshot("03-estudar")
+    screenshot("04b-estudar-pela-biblioteca")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     time.sleep(1.4)
-    find("Visualizar e ajustar partitura", clickable=True)
-    screenshot("04-retorno-criacao")
+    find("C2-D partitura de teste")
     # A second screenshot at landscape checks responsiveness, not real hardware.
     adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
     adb("shell", "settings", "put", "system", "user_rotation", "1")
     time.sleep(2.0)
-    find("Visualizar e ajustar partitura", clickable=True)
+    find("C2-D partitura de teste")
     screenshot("05-paisagem")
     (DEST / "memory.txt").write_text(adb("shell", "dumpsys", "meminfo", PACKAGE),
                                       encoding="utf-8")
-    print("CREATION_C2_D_UI_PASS screenshots=6 actions=preview,split,study,back,landscape"
+    print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape"
           " synthetic=true emulator=true")
     adb("shell", "pm", "clear", PACKAGE)
+    adb("shell","settings","put","system","user_rotation",orientation if orientation not in ("","null") else "0")
+    adb("shell","settings","put","system","accelerometer_rotation",rotation if rotation not in ("","null") else "1")
 
 if __name__ == "__main__":
     # The full suite continues with upgrade/release tests in this SAME AVD.

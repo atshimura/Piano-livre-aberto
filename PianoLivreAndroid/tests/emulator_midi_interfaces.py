@@ -2,9 +2,9 @@
 """Production connection owner + synthetic ports, real Android screens and captures."""
 import json,time,subprocess,struct
 from pathlib import Path
-from emulator_ui import adb,screenshot,dump,reveal_study_controls,current_study_layout
+from emulator_ui import adb,screenshot,dump,current_study_layout
 PACKAGE='br.org.pianolivre.opensource'
-stages=['home-disconnected','home-opening','home-connected','study-connected','study-hidden','study-restored','study-disconnected','study-unnamed','study-switched','home-reconnected','home-background-return']
+stages=['home-disconnected','home-opening','home-connected','study-connected','study-playing','study-note-tap','study-disconnected','study-unnamed','study-switched','home-reconnected','home-background-return']
 reports=[]
 def logs():
     try:pid=adb('shell','pidof',PACKAGE).strip()
@@ -57,24 +57,24 @@ def assert_staff_ink(record):
     assert bands>=10,('Incomplete painted grand staff',record['stage'],bands)
     record['paintedStaffBands']=bands
 try:
-    for label,size,normal,hidden in [('phone','1280x720',417,567),('tablet','1920x1080',777,927)]:
+    for label,size,min_score in [('phone','1280x720',417),('tablet','1920x1080',777)]:
         adb('shell','am','force-stop',PACKAGE);adb('shell','wm','size',size);adb('shell','wm','density','240')
         adb('shell','am','start','-W','-n',PACKAGE+'/br.org.pianolivre.MainActivity','--ez','midi_connection_selftest','true')
         measurements=[]
+        stable_score_bounds=None
         for stage in stages:
             record=wait_stage(stage)
             assert record['simulated'] is True
-            if stage=='study-restored':assert record['running'] and record['controlsVisible']
-            if stage=='study-hidden':
-                for attempt in range(40):
-                    layout=current_study_layout()
-                    if not layout['headerVisible'] and not layout['modesVisible'] and layout['bounds'][3]-layout['bounds'][1]>=hidden:break
-                    time.sleep(.1)
-                assert not layout['headerVisible'] and not layout['modesVisible']
-                assert layout['bounds'][3]-layout['bounds'][1]>=hidden,'Prompt 2 hidden score area regressed'
-            elif stage.startswith('study-'):
-                layout=current_study_layout();assert layout['headerVisible'] and layout['modesVisible']
-                assert layout['bounds'][3]-layout['bounds'][1]>=normal,'Prompt 2 normal score area regressed'
+            if stage.startswith('study-'):
+                layout=current_study_layout()
+                assert layout and layout['headerVisible'] and layout['modesVisible'],('Study bars disappeared',stage,layout)
+                assert record['controlsVisible'] is True,('Chrome state lost visible bars',stage,record)
+                height=layout['bounds'][3]-layout['bounds'][1]
+                assert height>=min_score,('Compact score area too small',stage,height,min_score)
+                if stable_score_bounds is None:stable_score_bounds=layout['bounds']
+                else:assert layout['bounds']==stable_score_bounds,('Study viewport changed across MIDI and playback',stage,stable_score_bounds,layout['bounds'])
+                if stage in ('study-playing','study-note-tap'):
+                    assert record['running'],('Expected running transport',stage)
             if stage in ('home-disconnected','home-opening','study-disconnected','study-unnamed'):assert record['label']=='USB-MIDI'
             else:assert record['label'].startswith('SIMULADO'),record
             # Continuous animation is inspected with native layout snapshots; stopped views use accessibility.
@@ -84,7 +84,11 @@ try:
             if stage.startswith('study-'):
                 rendered_frame(stage,record);assert_staff_ink(record)
             screenshot('piano-prompt03-'+label+'-'+stage+'.png');measurements.append(record)
-            if stage=='study-hidden':reveal_study_controls()
+            if stage=='study-playing':
+                # Real tap on the score should not reveal/hide control bars.
+                box=current_study_layout()['bounds']
+                adb('shell','input','tap',str(box[2]-14),str(box[3]-14))
+                time.sleep(.3)
             if stage=='study-connected':
                 # Actual management is reused for synthetic state too, with full metadata.
                 from emulator_ui import tap_text
