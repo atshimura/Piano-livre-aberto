@@ -371,7 +371,9 @@ a.handler.postDelayed(this,100);}};ticker.run();
     attach(body,playerCard,-2,12);
     updatePlaybackControls();
    }
-   if(!p.recoverable){
+   // A stored score follows a trashed project, but it cannot be opened or studied
+   // until the original recording is explicitly restored.
+   if(!p.recoverable&&!p.trash){
     boolean hasScore=new CreationScoreStore(a.getFilesDir()).has(id);
     LinearLayout scoreCard=card();label(scoreCard,"Partitura",17,true,6);
     attach(scoreCard,mutedText(hasScore?
