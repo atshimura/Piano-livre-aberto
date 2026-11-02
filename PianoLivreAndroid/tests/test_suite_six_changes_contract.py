@@ -93,6 +93,29 @@ class SixChangesSuiteContracts(unittest.TestCase):
         self.assertIn('find("MÃOS")',ui)
         self.assertNotIn('click("Estudar esta partitura")',ui)
 
+    def test_midi_visual_evidence_matches_current_fixture_stages(self):
+        # The evidence gate must require every screenshot produced by the
+        # actual MIDI fixture, not obsolete hidden/revealed chrome states.
+        import ast
+        import re
+        midi=source("tests/emulator_midi_interfaces.py")
+        workflow=source(".github/workflows/emulator.yml")
+        tree=ast.parse(midi)
+        stages=next(ast.literal_eval(node.value) for node in tree.body
+                    if isinstance(node,ast.Assign)
+                    and any(isinstance(target,ast.Name) and target.id=="stages"
+                            for target in node.targets))
+        match=re.search(r"for stage in \\(([^)]*)\\):\\s*\\n\\s*names\\.append\\('piano-prompt03-",workflow)
+        self.assertIsNotNone(match,"Missing mandatory MIDI evidence loop")
+        expected=list(ast.literal_eval("("+match.group(1)+")"))
+        self.assertEqual(expected,stages,"Visual gate and MIDI fixture disagree on required screenshots")
+        self.assertIn("study-playing",stages)
+        self.assertIn("study-note-tap",stages)
+        self.assertNotIn("study-hidden",stages)
+        self.assertNotIn("study-restored",stages)
+        self.assertIn("assert_staff_ink(record)",midi)
+        self.assertIn("layout['headerVisible'] and layout['modesVisible']",midi)
+
     def test_historical_baseline_is_not_candidate_ui(self):
         historical=source("tests/emulator_study_baseline.py")
         self.assertIn("Começar pela Ode à Alegria",historical)
