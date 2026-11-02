@@ -179,7 +179,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         addText(r.measures+" compassos · "+o.beats+"/"+o.beatType+" · "+o.bpm+" BPM · 1/"+o.grid,13,false,9);
         LinearLayout sheet=card();sheet.setPadding(dp(4),dp(4),dp(4),dp(4));
         NotationView view=new NotationView(activity,new NotationView.Listener(){
-            public void onRendered(){if(!closed&&notation==view)view.setCreationSelected(review.selection());}
+            public void onRendered(){if(!closed&&notation!=null)notation.setCreationSelected(review.selection());}
             public void onCreationNoteTapped(String id){tapGraphicalNote(id);}
             public void onError(String text){if(!closed)activity.message("Problema ao desenhar partitura: "+text);}
         });
