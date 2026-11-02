@@ -278,6 +278,7 @@ jobs:
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py; fi
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py --previous 0.9.52; fi
             if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/main" ]; then python3 tests/emulator_public_upgrade.py --previous 0.9.54; fi
+            python3 tests/c2_d_ui_smoke.py
             echo PUBLIC_ANDROID_EMULATOR_SMOKE_PASS
       - name: Upload temporary validation APK for this pull request
         if: success() && github.event_name == 'pull_request'
