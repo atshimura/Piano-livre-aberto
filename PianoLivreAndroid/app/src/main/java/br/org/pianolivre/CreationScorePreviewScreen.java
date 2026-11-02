@@ -42,6 +42,22 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private boolean splitView;
     private CreationScoreReview review;
     private TextView selectionCount;
+    private final java.util.Map<String,CheckBox> noteBoxes=new java.util.HashMap<>();
+    private boolean refreshingSelection;
+    private void syncSelection(){
+        if(review==null)return;
+        if(selectionCount!=null)selectionCount.setText(review.selectedCount()+" selecionada(s)");
+        if(notation!=null)notation.setCreationSelected(review.selection());
+        refreshingSelection=true;
+        try{for(java.util.Map.Entry<String,CheckBox> e:noteBoxes.entrySet())
+             e.getValue().setChecked(review.selection().contains(e.getKey()));}
+        finally{refreshingSelection=false;}
+    }
+    private void tapGraphicalNote(String sourceId){
+        if(closed||busy||review==null||!review.toggle(sourceId))return;
+        if(!splitView){render(true);return;}
+        syncSelection();
+    }
 
     static void open(MainActivity activity,CreationProjectStore.Project project) {
         if(project.trash||project.recoverable||project.events.isEmpty()||project.profileId!=activity.user){
@@ -143,7 +159,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         addText("Não foi possível gerar a partitura: "+ex.getMessage(),14,false,12);
         attach(contents,button("Fechar prévia",true,()->window.dismiss()),48,0);
     }
-    private void clear(){if(notation!=null){notation.dispose();notation=null;}contents.removeAllViews();}
+    private void clear(){noteBoxes.clear();selectionCount=null;if(notation!=null){notation.dispose();notation=null;}contents.removeAllViews();}
     private void render(boolean split){
         if(review==null||closed)return;
         splitView=split;final int id=++generation;busy=true;
@@ -163,13 +179,15 @@ final class CreationScorePreviewScreen extends LinearLayout {
         addText(r.measures+" compassos · "+o.beats+"/"+o.beatType+" · "+o.bpm+" BPM · 1/"+o.grid,13,false,9);
         LinearLayout sheet=card();sheet.setPadding(dp(4),dp(4),dp(4),dp(4));
         NotationView view=new NotationView(activity,new NotationView.Listener(){
-            public void onRendered(){}
+            public void onRendered(){if(!closed&&notation==view)view.setCreationSelected(review.selection());}
+            public void onCreationNoteTapped(String id){tapGraphicalNote(id);}
             public void onError(String text){if(!closed)activity.message("Problema ao desenhar partitura: "+text);}
         });
-        notation=view;attach(sheet,view,split?218:310,0);
+        notation=view;view.setCreationSourceNotes(r.notes);view.setCreationSelected(review.selection());
+        attach(sheet,view,split?218:310,0);
         attach(contents,sheet,split?238:330,11);
         view.post(()->{if(!closed&&notation==view)view.loadScore(score,0,true);});
-        addText("Prévia da escrita musical. O MIDI original não foi modificado.",12,false,9);
+        addText("Toque diretamente em uma nota da partitura para selecioná-la; notas sobrepostas ambíguas também podem ser selecionadas na lista. O MIDI original não muda.",12,false,9);
         if(!r.warnings.isEmpty())addText(r.warnings.size()+" avisos de interpretação MIDI — consulte a gravação original em caso de dúvida.",12,false,8);
         if(split)splitControls();
         else{
@@ -249,8 +267,9 @@ final class CreationScorePreviewScreen extends LinearLayout {
             CheckBox select=new CheckBox(activity);
             select.setText(noteLabel(n,o));select.setTextSize(13);select.setTextColor(0xff172A44);
             select.setChecked(review.selection().contains(n.sourceId));
-            select.setOnCheckedChangeListener((v,checked)->{
-                review.toggle(n.sourceId);selectionCount.setText(review.selectedCount()+" selecionada(s)");
+            noteBoxes.put(n.sourceId,select);
+            select.setOnCheckedChangeListener((v,checked)->{if(refreshingSelection)return;
+                review.toggle(n.sourceId);syncSelection();
             });attach(list,select,48,1);
             Button chord=button("Marcar acorde desta nota",false,()->{
                 review.selectChord(n.sourceId);render(true);
@@ -276,7 +295,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
                 .setPositiveButton("Restaurar",(d,w)->mutate(()->review.restoreSuggestion(),true))
                 .setNegativeButton("Cancelar",null).show()),
             button("Concluir ajustes",true,()->render(false)));
-        addText("A seleção de notas é acessível pela lista; o toque direto no cabeçote da pauta está previsto para refinamento posterior.",12,false,0);
+        addText("Toque nas notas da pauta ou marque na lista. Quando duas notas sobrepostas forem indistinguíveis, use a lista para escolher sem ambiguidade.",12,false,0);
     }
     private String noteLabel(CreationScoreTranscriber.WrittenNote n,CreationScoreTranscriber.Options o){
         String[] names={"Dó","Dó♯","Ré","Ré♯","Mi","Fá","Fá♯","Sol","Sol♯","Lá","Lá♯","Si"};
