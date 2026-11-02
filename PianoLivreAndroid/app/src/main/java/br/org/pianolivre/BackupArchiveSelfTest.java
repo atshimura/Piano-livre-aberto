@@ -76,7 +76,7 @@ public final class BackupArchiveSelfTest {
    JSONObject legacyV3=new JSONObject(original.toString());legacyV3.put("version",3).remove("creationScores");
    BackupArchive.restore(prefs,root,legacyV3);
    ok(savedScores.has(backed.id)&&savedScores.read(backed.id).options.grid==16,"legacy v3 keeps local generated score");
-   JSONObject legacyV2=new JSONObject(original.toString());legacyV2.put("version",2).remove("creations").remove("creationScores");
+   JSONObject legacyV2=new JSONObject(original.toString());legacyV2.put("version",2);legacyV2.remove("creations");legacyV2.remove("creationScores");
    BackupArchive.restore(prefs,root,legacyV2);
    ok(projects.get(backed.id)!=null&&projects.get(newer.id)!=null,"legacy v2 restore preserves newer compositions");
    projects.rename(backed.id,"Edited after backup",3);
