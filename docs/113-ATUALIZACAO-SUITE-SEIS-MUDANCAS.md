@@ -74,3 +74,10 @@ No Pixel 3 720×540, o menu da engrenagem pode rolar verticalmente e UIAutomator
 - Corrigida a lista obrigatória do workflow `.github/workflows/emulator.yml` para exigir as imagens atuais `study-playing` e `study-note-tap` para telefone e tablet, preservando a verificação de formato PNG, dimensões e todas as demais imagens obrigatórias.
 - Adicionado contrato estático que compara automaticamente os estágios declarados pelo teste MIDI com os estágios exigidos pelo verificador de imagens, exigindo também os estágios de reprodução e toque e as asserções reais de pintura/visibilidade. Não foi dispensada nenhuma evidência atual; os testes de produção permanecem intactos.
 - O HEAD alterado deve passar novamente por ambos os gates completos antes de qualquer integração/publicação.
+
+## Sétima falha — contrato confundia captura diagnóstica com estado MIDI
+
+- Na [execução #41538109358](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41538109358), o gate `build` falhou antes da compilação, no teste `test_midi_visual_evidence_matches_current_fixture_stages`: a lista de imagens obrigatórias continha `diagnostics`, mas a lista `stages` do fixture MIDI não. O gate Android da mesma revisão prosseguiu separadamente.
+- A auditoria do código demonstrou que `diagnostics` é uma **captura complementar obrigatória**, feita durante `study-connected` pelo próprio fixture, e não um estado que passe pelo laço de confirmação/acknowledgement. A lista de imagens do workflow está correta e deve continuar incluindo o PNG de diagnóstico.
+- Corrigido exclusivamente o contrato: exige agora que a sequência completa do workflow seja exatamente `stages + ["diagnostics"]` e que o fixture contenha explicitamente a captura de diagnóstico. Permanecem as verificações de imagem real, barras superiores sempre visíveis, reprodução, toque musical, telefone e tablet. Não foram suprimidas imagens nem alterado o aplicativo.
+- A integração e a publicação continuam condicionadas a novos `build` e `emulator` completos no HEAD final.
