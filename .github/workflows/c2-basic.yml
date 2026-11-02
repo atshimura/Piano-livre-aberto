@@ -5,6 +5,10 @@ on:
       - feat/criacao-c2-b-previa-ajustes
       - feat/criacao-c2-c-persistencia-backup-estudar
 
+concurrency:
+  group: c2-only-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
