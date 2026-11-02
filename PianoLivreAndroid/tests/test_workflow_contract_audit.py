@@ -16,7 +16,7 @@ class FullSuiteContractAudit(unittest.TestCase):
     def test_all_direct_workflow_test_references_exist(self):
         for wf in ("build.yml","emulator.yml","c2-basic.yml"):
             script=source(".github/workflows/"+wf)
-            names=set(re.findall(r"tests/[A-Za-z0-9_./-]+\\.(?:py|js|java|sh)",script))
+            names=set(re.findall(r"tests/[A-Za-z0-9_./-]+\.(?:py|js|java|sh)",script))
             self.assertTrue(names,wf+" has no test references")
             for name in names:
                 self.assertTrue((ROOT/name).is_file(), wf+" references missing "+name)
