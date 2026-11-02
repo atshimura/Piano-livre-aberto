@@ -354,8 +354,9 @@ def exercise(title,slug):
     tap_text(["Iniciar"],scroll=True)
     wait_new("POC_WAIT_COMPLETE",before,15)
     expect("Esperando","Wait did not arm after gradual preparation")
+    # Legacy helper now validates permanent native bars without tapping the score.
     reveal_study_controls()
-    expect(title,"revealing controls lost the Wait score")
+    expect(title,"permanent controls lost the Wait score")
     tap_text(["Parar"],scroll=True)
     # A warm background/foreground cycle may not create a second playback clock.
     adb("shell","input","keyevent","3")
