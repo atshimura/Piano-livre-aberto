@@ -60,7 +60,8 @@ class BannerShortcutsTest(unittest.TestCase):
         start=s.index(" void buildLibraryPanel(){")
         end=s.index(" void focusLibrary(){",start)
         toolbar=s[start:end]
-        self.assertEqual(toolbar.count('new LinearLayout.LayoutParams(0,d(44),1)'),3)
+        for control in ("collections","importButton","librarySearch"):
+            self.assertIn('toolbar.addView('+control+',new LinearLayout.LayoutParams(0,d(44),1))',toolbar)
         self.assertLess(toolbar.index('toolbar.addView(collections,'),toolbar.index('toolbar.addView(importButton,'))
         self.assertLess(toolbar.index('toolbar.addView(importButton,'),toolbar.index('toolbar.addView(librarySearch,'))
         self.assertIn('home-library-collections',toolbar)
