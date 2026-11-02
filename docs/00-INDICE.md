@@ -1,5 +1,10 @@
 # Documentação do Piano Livre aberto
 
+## Release candidata 0.9.61
+
+- [0.9.61-open-beta — Criação C2 completa, testes, assinatura e publicação](releases/0.9.61-open-beta.md). Publicação autorizada, condicionada à integração protegida na main e checks completos do commit de distribuição; nenhuma Release será declarada antes da existência efetiva no GitHub.
+
+
 ## Criação C2 — Implementações técnicas
 
 - [101 — Contrato original de Criação C2](101-CRIACAO-C2-PLANO-EXECUCAO.md)
