@@ -70,7 +70,12 @@ final class CreationScorePreviewScreen extends LinearLayout {
         Window w=d.getWindow();
         if(w!=null){w.setBackgroundDrawableResource(android.R.color.transparent);
             w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);}
-        d.setOnDismissListener(x->view.shutdown());
+        d.setOnDismissListener(x->{
+            view.shutdown();
+            if(activity.screens!=null&&activity.screens.creation!=null
+                &&activity.screens.creation.getVisibility()==View.VISIBLE)
+                activity.screens.creation.showDetails(project.id);
+        });
         d.setOnKeyListener((dialog,key,event)->{
             if(key==android.view.KeyEvent.KEYCODE_BACK){
                 if(event.getAction()==android.view.KeyEvent.ACTION_UP){
@@ -253,7 +258,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         if(busy||closed)return;
         busy=true;final int id=++generation;clear();addText("Recalculando interpretação…",14,false,9);
         worker.execute(()->{
-            try{action.execute();post(()->{if(closed||id!=generation)return;busy=false;render(remainSplit);});}
+            try{action.execute();post(()->{if(closed||id!=generation)return;busy=false;saved=false;render(remainSplit);});}
             catch(Exception ex){post(()->{if(closed||id!=generation)return;busy=false;
                 activity.message("Ajuste não aplicado: "+ex.getMessage());render(remainSplit);});}
         });
