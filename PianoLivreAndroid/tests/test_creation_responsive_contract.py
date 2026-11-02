@@ -86,6 +86,7 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('a.exportCreationMidi(',CREATION)
         self.assertIn('a.addCreationScoreToLibrary(id,success->',CREATION)
         self.assertIn('activity.addCreationScoreToLibrary(project.id,ok->',SCORE)
+        self.assertNotIn('button("Estudar esta partitura"',SCORE)
 
 if __name__=="__main__":
     unittest.main()

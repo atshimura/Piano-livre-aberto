@@ -7,6 +7,10 @@ public final class LibrarySearchTest {
   if(!LibrarySearch.key("scores/exercicio.mxl").equals("scores/exercicio.mxl"))throw new AssertionError("asset key");
   String created="creation-score:123e4567-e89b-12d3-a456-426614174000";
   if(!LibrarySearch.key(created).equals(created))throw new AssertionError("created score must keep stable portable key");
+  try{
+   if(!br.org.pianolivre.SessionFiles.portable(created).equals(created))throw new AssertionError("creation session portable");
+   if(!br.org.pianolivre.SessionFiles.resolve(new java.io.File("/tmp"),created).equals(created))throw new AssertionError("creation session resolve must keep virtual ID");
+  }catch(Exception ex){throw new AssertionError("creation route",ex);}
   System.out.println("PASS LibrarySearchTest: accents, case, tokens, filenames, empty query and portable identity");
  }
 }

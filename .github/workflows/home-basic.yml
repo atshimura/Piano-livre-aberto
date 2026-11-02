@@ -19,6 +19,7 @@ jobs:
           python3 tests/test_home_banner_contract.py
           python3 tests/test_study_compact_chrome_contract.py
           python3 tests/test_creation_responsive_contract.py
+          python3 tests/test_creation_library_contract.py
           python3 -m py_compile tests/emulator_study_layout.py
           python3 tests/test_workflow_contract_audit.py
           python3 -m py_compile tests/home_layout_checks.py tests/emulator_ui.py tests/emulator_ui_fast.py tests/emulator_study_session.py tests/emulator_release.py tests/emulator_public_upgrade.py
@@ -35,6 +36,11 @@ jobs:
           mkdir -p build/basic-study-state
           javac -d build/basic-study-state app/src/main/java/br/org/pianolivre/StudyChromeState.java tests/StudyChromeStateTest.java
           java -cp build/basic-study-state StudyChromeStateTest
+      - name: Test creation score portable keys without APK
+        run: |
+          mkdir -p build/basic-creation-library
+          javac -d build/basic-creation-library app/src/main/java/br/org/pianolivre/LibrarySearch.java app/src/main/java/br/org/pianolivre/SessionFiles.java tests/LibrarySearchTest.java
+          java -cp build/basic-creation-library LibrarySearchTest
       - name: Compile Java only; do not assemble APK
         run: gradle --no-daemon :app:compileDebugJavaWithJavac
       - name: Assert no APK was produced

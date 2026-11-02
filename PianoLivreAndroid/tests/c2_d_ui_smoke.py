@@ -124,23 +124,36 @@ def main():
     find("Nota 1 de 4")
     screenshot("02b-ajustes-pautas-acessibilidade")
     click("Concluir ajustes")
-    click("Estudar esta partitura")
+    # Sixth change: generated scores must be explicitly placed in the Library.
+    click("Adicionar à Biblioteca")
+    find("Na Biblioteca Musical")
+    screenshot("03-adicionada-a-biblioteca")
+    click("Voltar à composição")
+    find("Visualizar e ajustar partitura", clickable=True)
+    find("Na Biblioteca Musical")
+    screenshot("04-retorno-criacao")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")  # Creation home
+    time.sleep(.5)
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")  # Library home
+    time.sleep(.8)
+    title=find("C2-D partitura de teste")
+    x,y=center(title)
+    adb("shell","input","tap",str(x),str(y))
     find("MODO")
     find("MÃOS")
-    screenshot("03-estudar")
+    screenshot("04b-estudar-pela-biblioteca")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     time.sleep(1.4)
-    find("Visualizar e ajustar partitura", clickable=True)
-    screenshot("04-retorno-criacao")
+    find("C2-D partitura de teste")
     # A second screenshot at landscape checks responsiveness, not real hardware.
     adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
     adb("shell", "settings", "put", "system", "user_rotation", "1")
     time.sleep(2.0)
-    find("Visualizar e ajustar partitura", clickable=True)
+    find("C2-D partitura de teste")
     screenshot("05-paisagem")
     (DEST / "memory.txt").write_text(adb("shell", "dumpsys", "meminfo", PACKAGE),
                                       encoding="utf-8")
-    print("CREATION_C2_D_UI_PASS screenshots=6 actions=preview,split,study,back,landscape"
+    print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape"
           " synthetic=true emulator=true")
     adb("shell", "pm", "clear", PACKAGE)
 
