@@ -60,7 +60,7 @@ final class MusicCreationScreen extends LinearLayout {
  private void label(LinearLayout target,String s,int size,boolean bold,int bottom){attach(target,text(s,size,bold),-2,bottom);}
  private Button button(String s,boolean primary,Runnable action){
   Button b=new Button(a){@Override public void setEnabled(boolean enabled){super.setEnabled(enabled);setAlpha(enabled?1f:.45f);}};
-  b.setText(s);b.setAllCaps(false);b.setTextSize(14);b.setSingleLine(true);b.setEllipsize(TextUtils.TruncateAt.END);
+  b.setText(s);b.setContentDescription(s);b.setAllCaps(false);b.setTextSize(14);b.setSingleLine(true);b.setEllipsize(TextUtils.TruncateAt.END);
   b.setTypeface(null,android.graphics.Typeface.BOLD);b.setTextColor(primary?white:ink);
   b.setMinHeight(dp(48));b.setMinimumHeight(dp(48));b.setPadding(dp(9),0,dp(9),0);
   b.setOnClickListener(v->{if(!busy)action.run();});
@@ -371,7 +371,9 @@ a.handler.postDelayed(this,100);}};ticker.run();
     attach(body,playerCard,-2,12);
     updatePlaybackControls();
    }
-   if(!p.recoverable){
+   // A stored score follows a trashed project, but it cannot be opened or studied
+   // until the original recording is explicitly restored.
+   if(!p.recoverable&&!p.trash){
     boolean hasScore=new CreationScoreStore(a.getFilesDir()).has(id);
     LinearLayout scoreCard=card();label(scoreCard,"Partitura",17,true,6);
     attach(scoreCard,mutedText(hasScore?
