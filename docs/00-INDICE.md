@@ -1,5 +1,9 @@
 # Documentação do Piano Livre aberto
 
+## Ajustes após 0.9.61 — sem novo APK
+
+- [107 — Botões iguais de Biblioteca/Laboratório no banner e Histórico/Como usar nas configurações](107-HOME-BANNER-ATALHOS.md). Alteração 1 da próxima rodada.
+
 ## Auditoria da suíte 0.9.61
 
 - [106 — Revisão integral dos testes, atualização Home/Estudar, release e preservação de dados](106-AUDITORIA-SUITE-0961.md).

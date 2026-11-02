@@ -95,7 +95,7 @@ def study_renderer(temporal, score_title=None):
     # The default short fixture is Ode à Alegria; long-score checks must
     # deliberately reopen Gymnopédie after EACH force-stop. Otherwise they
     # accidentally prove a 19-head score while expecting 469 written heads.
-    tap_text([score_title] if score_title else ["Começar pela Ode à Alegria"],scroll=True)
+    tap_text([score_title] if score_title else [DEFAULT_SCORE_TITLE],scroll=True)
     wait_for_text("Espera",timeout=30)
     assert_study_controls()
     print("STUDY_RENDERER_FIXTURE "+(score_title or DEFAULT_SCORE_TITLE)+
@@ -342,7 +342,7 @@ if __name__=="__main__":
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Mensagens recebidas" in t for t in labels), "MIDI management/diagnostics did not open"
     tap_text(["Fechar"])
-    tap_text(["Como usar"],scroll=True)
+    tap_text(["Opções e configurações"],exact=True);tap_text(["Como usar"],exact=True)
     help_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Escolha uma partitura" in t for t in help_labels), "Local help content missing"
     tap_text(["Entendi"],exact=True)
@@ -351,9 +351,9 @@ if __name__=="__main__":
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
     time.sleep(1.5);assert_running();return_to_library_if_study_was_restored()
-    tap_text(["Começar pela Ode à Alegria"],scroll=True)
+    tap_text([DEFAULT_SCORE_TITLE],scroll=True)
     time.sleep(2)
-    assert any("Ode à Alegria" in n.attrib.get("text","") for n in dump().iter("node")), "Welcome banner did not open Ode à Alegria in Study"
+    assert any("Ode à Alegria" in n.attrib.get("text","") for n in dump().iter("node")), "Library score selection did not open Ode à Alegria in Study"
     tap_text(["Biblioteca"])
     time.sleep(.4)
     print("PASS: welcome actions, offline help, and phone/tablet responsive captures",flush=True)
@@ -426,7 +426,7 @@ if __name__=="__main__":
     home_scroll_to_top();tap_text(["Partitura livre"],exact=True,scroll=True)
     wait_for_text("← Biblioteca");time.sleep(1)
     tap_text(["← Biblioteca"],exact=True);wait_for_text("Estudar Ode à Alegria")
-    home_scroll_to_top();tap_text(["Histórico"],exact=True,scroll=True)
+    home_scroll_to_top();tap_text(["Opções e configurações"],exact=True);tap_text(["Histórico"],exact=True)
     history_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Tempo na tela de estudo" in t for t in history_labels), "Native history totals missing"
     tap_text(["Períodos"],exact=True)

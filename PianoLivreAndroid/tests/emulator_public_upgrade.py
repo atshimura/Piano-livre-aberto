@@ -93,7 +93,7 @@ with tempfile.TemporaryDirectory(prefix="piano-public-upgrade-") as temp:
 
     # Now exercise the real UI: Home -> Study must use the remembered speed.
     home_scroll_to_top()
-    tap_text(["Começar pela Ode à Alegria"],scroll=True)
+    tap_text(["Ode à Alegria"],scroll=True)
     wait_for_text("Espera",timeout=30)
     wait_for_text("80%",timeout=30)
     labels=[n.attrib.get("text","") for n in dump().iter("node")]

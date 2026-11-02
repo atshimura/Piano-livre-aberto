@@ -150,10 +150,10 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
     for _ in range(seconds*2):
         assert_running()
         last=labels()
-        inline_home = inline_home or any("Começar pela Ode à Alegria" in value for value in last)
+        inline_home = inline_home or any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last)
         # The new responsive home presents a library preview and search;
         # activate the real navigation card to load the full catalog list.
-        if (any("Começar pela Ode à Alegria" in value for value in last)
+        if (any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last)
                 and not any("← Biblioteca" in value for value in last)):
             tap_text(["Biblioteca Musical"],exact=True)
             time.sleep(.35)
@@ -164,7 +164,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
             last=labels()
             # Returning from Study lands on the home preview; its catalog
             # counter appears after activating the real Library navigation.
-            if (any("Começar pela Ode à Alegria" in value for value in last)
+            if (any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last)
                     and not any("← Biblioteca" in value for value in last)):
                 home_scroll_to_top()
                 # Tap the clickable card container by its accessible description.
@@ -188,7 +188,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
 
     # The return transition can reveal the home preview after the earlier
     # navigation tap; classify the final hierarchy before selecting assertions.
-    inline_home = inline_home or any("Começar pela Ode à Alegria" in value for value in last)
+    inline_home = inline_home or any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last)
 
     # Reopen standalone catalogs at their first rows. In the embedded Home,
     # the Library shortcut already positioned the search row; rewinding would
@@ -230,7 +230,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
 
     # Refresh the hierarchy after scrolling and clearing any prior search; the
     # preview can be exposed only after those actions finish.
-    inline_home = inline_home or any("Começar pela Ode à Alegria" in value for value in labels())
+    inline_home = inline_home or any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in labels())
 
     # A home-embedded library preview is validated through its real search result.
     # Standalone library mode still requires full count and filter checks.
@@ -240,12 +240,12 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         # viewport; the short exercise is eighth in this catalog.
         for _ in range(40):
             last=labels()
-            if any("Começar pela Ode à Alegria" in value for value in last):
+            if any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last):
                 inline_home=True
                 break
             if not (any("BIBLIOTECA MUSICAL" in value for value in last)
                     or any("Buscar título" in value for value in last)
-                    or any("Começar pela Ode à Alegria" in value for value in last)):
+                    or any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last)):
                 raise AssertionError("NAVIGATION_FAILED: left the library while waiting; labels="+repr(last[:40]))
             result=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
             if result is not None:break
@@ -314,7 +314,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
             last=labels()
             if not (any("BIBLIOTECA MUSICAL" in value for value in last)
                 or any("Buscar título" in value for value in last)
-                or any("Começar pela Ode à Alegria" in value for value in last)):
+                or any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last)):
                 raise AssertionError("NAVIGATION_FAILED: left the library while clearing search; labels="+repr(last[:40]))
             count=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
             if count is not None:break
@@ -338,7 +338,7 @@ def wait_for_library(expected="Estudo livre 01",seconds=20):
         # in the accessibility tree while its embedded library search is active.
         if not (any("BIBLIOTECA MUSICAL" in value for value in last)
                 or any("Buscar título" in value for value in last)
-                or (inline_home and any("Começar pela Ode à Alegria" in value for value in last))):
+                or (inline_home and any("Biblioteca Musical. Suas partituras para estudar e tocar" in value for value in last))):
             raise AssertionError("NAVIGATION_FAILED: left the library while searching; labels="+repr(last[:40]))
         searched=next((library_result_count(value) for value in last if library_result_count(value) is not None),None)
         if searched is not None and searched[0]==0:

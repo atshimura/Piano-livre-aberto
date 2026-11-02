@@ -90,7 +90,6 @@ class PianoScreens {
   libraryInner=column();libraryInner.setPadding(d(20),d(0),d(20),d(16));library.addView(libraryInner);
   buildHomeHeader();
   buildWelcomeBanner();
-  buildNavigationCards();
   buildLibraryPanel();
   TextView footer=text("Biblioteca local · estudo individual · funciona sem internet.",11,muted,false);
   footer.setPadding(d(8),d(12),0,d(4));libraryInner.addView(footer,lp(-1,-2));
@@ -166,63 +165,24 @@ class PianoScreens {
   TextView title=text("Bem-vindo ao Piano Livre!",compact?20:shortScreen?24:28,0xff102344,true);title.setMaxWidth(d(compact?Math.round(heroWidth*.82f):heroWidth));title.setLineSpacing(0,0.94f);copy.addView(title,lp(-1,-2));
   TextView description=text("Escolha uma música, pratique no seu ritmo e descubra o prazer de tocar.",compact?12:shortScreen?14:16,0xff455F7D,false);
   description.setPadding(0,d(3),0,d(7));copy.addView(description,lp(compact?Math.round(heroWidth*.66f):-1,-2));
-  LinearLayout actions=row();
-  Button start=btn("▶  Começar pela Ode à Alegria",true,()->a.loadScore("scores/ode-to-joy-ludwig-van-beethoven.mxl",true));
-  start.setContentDescription("Começar pela Ode à Alegria no modo Estudar");actions.addView(start,lp(compact?204:250,44));if(compact)start.setTextSize(11);
-  addGap(actions,8);
-  Button help=btn("▣  Como usar",false,()->showHelp());help.setContentDescription("Abrir ajuda local do Piano Livre");
-  LinearLayout.LayoutParams helpLp=lp(compact?104:138,44);if(compact)help.setTextSize(11);actions.addView(help,helpLp);
-  copy.addView(actions,lp(compact?-1:-2,-2));
-  LinearLayout.LayoutParams heroParams=lp(-1,heroHeight);heroParams.topMargin=d(12);libraryInner.addView(hero,heroParams);
- }
- void buildNavigationCards(){
-  int widthDp=(int)(a.getResources().getDisplayMetrics().widthPixels/a.getResources().getDisplayMetrics().density);
-  boolean shortScreen=shortLandscape();
-  float fontScale=Math.max(1f,a.getResources().getConfiguration().fontScale);
-  // Three equal-width cards in ONE row at every viewport. Adapt contents, not column count.
-  float cardWidthDp=Math.max(1f,(widthDp-40f-30f)/3f);
-  boolean compact=cardWidthDp<270f||fontScale>1.30f;
-  boolean tiny=cardWidthDp<125f||fontScale>1.65f;
-  int cardHeight=compact?(tiny?112:108)+Math.round(Math.max(0f,fontScale-1f)*48f):(shortScreen?96:108);
-  LinearLayout nav=row();nav.setTag("home-shortcuts-row");
-  LinearLayout.LayoutParams navLp=lp(-1,-2);navLp.topMargin=d(shortScreen?7:12);
-  libraryInner.addView(nav,navLp);
-  String[] titles={"Biblioteca Musical","Laboratório Musical","Histórico"};
-  String[] descriptions={"Suas partituras para estudar e tocar","Notas, escalas, acordes e exercícios","Acompanhe seu progresso"};
-  String[] icons={"♫","⚗","◴"};int[] colors={0xff2471D5,0xff128263,0xff6540CC};int[] tints={0xffE5F1FF,0xffE5F8F0,0xffF0EAFE};
-  for(int i=0;i<titles.length;i++){
-   final int index=i;
-   LinearLayout card=compact?column():row();card.setGravity(compact?Gravity.CENTER:Gravity.CENTER_VERTICAL);
-   GradientDrawable cardShape=bg(tints[i],17,new int[]{0xffC8DFFF,0xffCBEFDD,0xffDED4FB}[i]);
-   card.setBackground(new android.graphics.drawable.RippleDrawable(ColorStateList.valueOf(0x22345A80),cardShape,null));
-   card.setPadding(d(compact?5:14),d(compact?6:12),d(compact?5:12),d(compact?6:12));
-   card.setTag("home-shortcut");
-   LinearLayout.LayoutParams cardLp=new LinearLayout.LayoutParams(0,d(cardHeight),1);
-   cardLp.setMargins(d(3),d(2),d(7),d(2));nav.addView(card,cardLp);
-   int iconSize=compact?(tiny?40:46):(shortScreen?48:70);
-   TextView icon=text(icons[i],compact?(tiny?21:24):(shortScreen?28:34),colors[i],true);
-   icon.setGravity(Gravity.CENTER);icon.setBackground(bg(0x55ffffff,50,0));
-   card.addView(icon,lp(iconSize,iconSize));
-   if(compact){View gap=new View(a);card.addView(gap,lp(1,4));}else addGap(card,12);
-   LinearLayout labels=column();labels.setGravity(compact?Gravity.CENTER:Gravity.CENTER_VERTICAL);
-   String visibleTitle=tiny?(i==0?"Biblioteca":i==1?"Laboratório":"Histórico"):titles[i];
-   TextView title=text(visibleTitle,compact?(tiny?13:16):(shortScreen?16:18),ink,true);
-   title.setMaxLines(2);title.setContentDescription(titles[i]);title.setGravity(compact?Gravity.CENTER:Gravity.CENTER_VERTICAL);
-   labels.addView(title,lp(-1,-2));
-   if(!compact){
-    TextView sub=text(descriptions[i],shortScreen?12:14,muted,false);
-    sub.setMaxLines(3);labels.addView(sub,lp(-1,-2));
-   }
-   card.addView(labels,compact?lp(-1,-2):new LinearLayout.LayoutParams(0,-2,1));
-   if(!compact){
-    TextView arrow=text("›",shortScreen?18:27,colors[i],true);
-    arrow.setGravity(Gravity.CENTER);card.addView(arrow,lp(shortScreen?16:22,-1));
-   }
-   card.setElevation(d(1));card.setClickable(true);card.setFocusable(true);
-   // Full accessible labels and unchanged destinations, even when compact text hides descriptions.
-   card.setContentDescription(titles[i]+". "+descriptions[i]);
-   card.setOnClickListener(v->{if(index==0)focusLibrary();else if(index==1)showLab();else a.showHistory();});
+  // Compact same-size shortcuts: blue Library and green Laboratory.
+  LinearLayout actions=row();actions.setTag("home-banner-actions");
+  Button libraryAction=btn("Biblioteca Musical",true,()->focusLibrary());
+  libraryAction.setTag("home-banner-action");libraryAction.setContentDescription("Biblioteca Musical. Suas partituras para estudar e tocar");
+  libraryAction.setBackground(bg(blue,12,0));libraryAction.setTextColor(Color.WHITE);
+  Button labAction=btn("Laboratório Musical",true,()->showLab());
+  labAction.setTag("home-banner-action");labAction.setContentDescription("Laboratório Musical. Notas, escalas, acordes e exercícios");
+  labAction.setBackground(bg(0xff128263,12,0));labAction.setTextColor(Color.WHITE);
+  for(Button action:new Button[]{libraryAction,labAction}){
+   action.setTextSize(compact?11:13);action.setMinHeight(0);action.setMinimumHeight(0);
+   action.setPadding(d(compact?4:8),0,d(compact?4:8),0);
+   action.setAllCaps(false);action.setMaxLines(2);
   }
+  actions.addView(libraryAction,new LinearLayout.LayoutParams(0,d(44),1));
+  addGap(actions,8);
+  actions.addView(labAction,new LinearLayout.LayoutParams(0,d(44),1));
+  copy.addView(actions,lp(-1,-2));
+  LinearLayout.LayoutParams heroParams=lp(-1,heroHeight);heroParams.topMargin=d(12);libraryInner.addView(hero,heroParams);
  }
  void buildLibraryPanel(){
   boolean shortScreen=shortLandscape();
@@ -418,11 +378,15 @@ class PianoScreens {
  }
  void options(){
   new AlertDialog.Builder(a).setTitle("Ferramentas")
-   .setItems(new String[]{"Fazer backup","Restaurar backup","Importar MusicXML","Calibrar acordes MIDI","Preparação do Espera","Sobre esta versão","Gerenciar perfil"},(dialog,i)->{
-    if(i==0)a.exportBackup();else if(i==1)a.restoreBackup();else if(i==2)a.importScore();
-    else if(i==3)a.showChordSettings();
-    else if(i==4)a.configureWaitPreparation();
-    else if(i==6)a.manageProfile();
+   .setItems(new String[]{"Histórico","Como usar","Fazer backup","Restaurar backup","Importar MusicXML","Calibrar acordes MIDI","Preparação do Espera","Sobre esta versão","Gerenciar perfil"},(dialog,i)->{
+    if(i==0)a.showHistory();
+    else if(i==1)showHelp();
+    else if(i==2)a.exportBackup();
+    else if(i==3)a.restoreBackup();
+    else if(i==4)a.importScore();
+    else if(i==5)a.showChordSettings();
+    else if(i==6)a.configureWaitPreparation();
+    else if(i==8)a.manageProfile();
     else {
      String version="beta";
      try{version=a.getPackageManager().getPackageInfo(a.getPackageName(),0).versionName;}
