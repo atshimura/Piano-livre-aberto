@@ -2,6 +2,9 @@ package br.org.pianolivre;
 
 import android.content.pm.ApplicationInfo;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
 import java.io.File;
 import java.util.Arrays;
 
@@ -41,11 +44,38 @@ final class CreationC2DProbe {
    if(!scores.read(saved.id).xml.equals(xml))
     throw new IllegalStateException("Saved MusicXML did not roundtrip");
    activity.screens.showCreation();
-   activity.screens.creation.showDetails(saved.id);
-   Log.i("PianoLivreC2D","C2_D_FIXTURE_PASS synthetic=true stored=true originalUnchanged=true");
+   openWhenReady(activity,saved.id,0);
   }catch(Exception error){
    Log.e("PianoLivreC2D","C2_D_FIXTURE_FAILED",error);
    throw new IllegalStateException("C2-D fixture failed",error);
   }
  }
+ private static boolean hasButton(View view,String label){
+  if(view instanceof Button&&((Button)view).getText().toString().contains(label))return true;
+  if(view instanceof ViewGroup){
+   ViewGroup g=(ViewGroup)view;
+   for(int i=0;i<g.getChildCount();i++)if(hasButton(g.getChildAt(i),label))return true;
+  }
+  return false;
+ }
+ private static void openWhenReady(MainActivity activity,String id,int attempt){
+  if(attempt>150)throw new IllegalStateException("C2-D creation entry did not finish");
+  // C1's initial journal scan may post showHome asynchronously. It must finish
+  // before selecting the fixture, or that callback can overwrite Details.
+  if(!activity.screens.creation.debugIdle()){
+   activity.handler.postDelayed(()->openWhenReady(activity,id,attempt+1),100);
+   return;
+  }
+  activity.screens.creation.showDetails(id);
+  waitForDetails(activity,0);
+ }
+ private static void waitForDetails(MainActivity activity,int attempt){
+  if(hasButton(activity.screens.creation,"Visualizar e ajustar partitura")){
+   Log.i("PianoLivreC2D","C2_D_FIXTURE_PASS synthetic=true stored=true originalUnchanged=true details=true");
+   return;
+  }
+  if(attempt>150)throw new IllegalStateException("C2-D derived score actions not displayed");
+  activity.handler.postDelayed(()->waitForDetails(activity,attempt+1),100);
+ }
+
 }
