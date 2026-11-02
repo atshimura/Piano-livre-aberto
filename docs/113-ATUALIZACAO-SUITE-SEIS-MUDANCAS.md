@@ -46,3 +46,10 @@ No Pixel 3 720×540, o menu da engrenagem pode rolar verticalmente e UIAutomator
 - O próprio `LibrarySelfTest` adicionava uma criação e seu favorito, persistia ambos e **só então** exigia que a biblioteca e o arquivo de metadados estivessem vazios. Isso é contraditório. A asserção de leitura não-mutante foi movida para ANTES dos atos de escrita. Foram preservados os testes de inclusão idempotente, separação entre perfis, favoritos e backup.
 - Foi adicionado contrato estático para detectar inversão futura da ordem. **Sem alterar o comportamento do aplicativo nem excluir qualquer teste.**
 - Exigir novamente `build` e `emulator` completos no SHA final após esta correção antes de integrar a main e publicar.
+
+## Terceira falha comprovada — rótulo acessível da Busca
+
+- Run [#41519659971](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41519659971): ambos os testes do Estudar (telefone/tablet), MIDI, restaurações sintéticas anteriores, backup (51), Biblioteca (14), perfis, histórico e importação passaram. A falha posterior ocorreu em `emulator_ui.py:467`, `wait_for_text("Buscar por título ou nome de arquivo")`.
+- A tela apresentava corretamente o campo `⌕ Buscar partituras...` e a descrição de acessibilidade completa, mas `wait_for_text` usava `text or content-desc`, descartando `content-desc` quando o elemento tinha texto visual. Corrigida a coleta para incluir **ambos**, preservando a exigência de identificação acessível do campo.
+- Foi ampliado o contrato estático para impedir a regressão `text or content-desc` em `wait_for_text`. A pesquisa real por títulos e limpeza de filtros continua na suíte, sem dispensa.
+- A correção é do teste. Não foi comprovada falha do aplicativo neste ponto. A integração depende de novos `build`/`emulator` integrais no SHA final.
