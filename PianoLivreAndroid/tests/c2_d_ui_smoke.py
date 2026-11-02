@@ -42,7 +42,7 @@ def center(node):
         raise AssertionError("Invalid button bounds")
     return (x1 + x2) // 2, (y1 + y2) // 2
 
-def scroll():
+def scroll(direction=1):
     # wm size is the *natural* portrait size. The Piano Livre Activity is
     # fixed to landscape, so use actual accessibility window bounds instead.
     bounds = []
@@ -58,22 +58,27 @@ def scroll():
     x1, y1, x2, y2 = max(bounds, key=lambda b: (b[2]-b[0])*(b[3]-b[1]))
     x = (x1 + x2) // 2
     h = y2 - y1
-    adb("shell", "input", "swipe", str(x), str(y1 + h * 4 // 5),
-        str(x), str(y1 + h // 4), "380")
+    start, stop = (y1 + h * 4 // 5, y1 + h // 4) if direction > 0 else (y1 + h // 4, y1 + h * 4 // 5)
+    adb("shell", "input", "swipe", str(x), str(start), str(x), str(stop), "380")
 
 def find(fragment, clickable=False, max_scroll=7):
-    for step in range(max_scroll + 1):
-        candidates = nodes(fragment, clickable)
-        if candidates:
+    # Inspect from the current position, then search down AND back up.
+    # The Exportar MIDI button sits below the Partitura card; a downward-only
+    # lookup cannot find the earlier Visualizar button afterward.
+    for direction in (1, -1):
+        for step in range(max_scroll + 1):
+            candidates = nodes(fragment, clickable)
             valid = [node for node in candidates if node.attrib.get("bounds")
                      and not node.attrib["bounds"].startswith("[0,0][0,0]")]
             if valid:
                 return valid[0]
-        if step < max_scroll:
-            scroll()
-            time.sleep(0.5)
+            if step < max_scroll:
+                scroll(direction)
+                time.sleep(0.4)
+    visible = [(n.attrib.get("text", ""), n.attrib.get("content-desc", ""))
+               for n in dump().iter("node")]
     raise AssertionError("Missing visible " + ("button" if clickable else "text")
-                         + ": " + fragment)
+                         + ": " + fragment + "; window text=" + repr(visible[:25]))
 
 def click(fragment):
     node = find(fragment, clickable=True)
