@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feat/criacao-c2-b-previa-ajustes
+      - feat/criacao-c2-c-persistencia-backup-estudar
 
 permissions:
   contents: read
@@ -31,10 +32,14 @@ jobs:
             app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
             app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
             app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
+            app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
             tests/CreationScoreTranscriberTest.java \
-            tests/CreationScoreReviewTest.java
+            tests/CreationScoreReviewTest.java \
+            tests/CreationScoreStoreTest.java
           java -cp build/c2-basic br.org.pianolivre.CreationScoreTranscriberTest
           java -cp build/c2-basic br.org.pianolivre.CreationScoreReviewTest
+          java -cp build/c2-basic br.org.pianolivre.CreationScoreStoreTest
       - name: Teste basico do toque na partitura
         working-directory: PianoLivreAndroid
         run: node tests/CreationNotePickerTest.js
