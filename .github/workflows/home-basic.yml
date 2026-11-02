@@ -1,0 +1,36 @@
+name: Piano Livre - Home basic checks (no APK)
+on:
+  push:
+    branches: [feat/home-ajustes-acumulados]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  home-basic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: PianoLivreAndroid
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python source contracts and syntax (no Android runtime)
+        run: |
+          python3 tests/test_home_banner_contract.py
+          python3 tests/test_workflow_contract_audit.py
+          python3 -m py_compile tests/home_layout_checks.py tests/emulator_ui.py tests/emulator_ui_fast.py tests/emulator_study_session.py tests/emulator_release.py tests/emulator_public_upgrade.py
+          python3 scripts/verify_public_snapshot.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile Java only; do not assemble APK
+        run: gradle --no-daemon :app:compileDebugJavaWithJavac
+      - name: Assert no APK was produced
+        run: |
+          test ! -f app/build/outputs/apk/debug/app-debug.apk
+          test ! -f app/build/outputs/apk/release/app-release.apk
+          echo HOME_BASIC_NO_APK_PASS
