@@ -6,6 +6,8 @@ import java.util.*;
 /** In-memory, undoable interpretation. The source MIDI recording is immutable. */
 public final class CreationScoreReview {
     private static final int HISTORY_LIMIT=48;
+    private static final String[] NOTES={"Dó","Dó♯","Ré","Ré♯","Mi","Fá","Fá♯","Sol","Sol♯","Lá","Lá♯","Si"};
+    private static String noteName(int pitch){return NOTES[pitch%12]+(pitch/12-1);}
     private final List<MidiTakeRecorder.Event> events;
     private final List<MidiTakeRecorder.Segment> segments;
     private final String title;
@@ -210,7 +212,7 @@ public final class CreationScoreReview {
                     for(CreationScoreTranscriber.WrittenNote n:onsets.get(k)){
                         next.put(n.sourceId,new CreationScoreTranscriber.Timing(newStart,newEnd));
                         if(summary.length()<650)
-                            summary.append("Nota MIDI ").append(n.pitch)
+                            summary.append("Nota ").append(noteName(n.pitch))
                                 .append(" · compasso ").append(1+n.startTick/options.barTicks())
                                 .append(" · início ")
                                 .append(String.format(Locale.ROOT,"%.2f",n.startTick/960.0))
