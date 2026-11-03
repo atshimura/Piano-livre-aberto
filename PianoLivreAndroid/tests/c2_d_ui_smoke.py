@@ -150,7 +150,36 @@ def main():
     find("Selecionar notas e acordes")
     find("Nota 1 de 4")
     screenshot("02b-ajustes-pautas-acessibilidade")
+    # Implementation 3: reuse the single synthetic C2-D recording, with no
+    # additional fixture, emulator session, or change to the captured MIDI.
+    click("Selecionar intervalo de compassos")
+    find("Selecionar compassos")
+    click("Marcar")  # Default 1..N, includes all four source attacks
+    find("4 selecionada(s)")
+    click("Atribuir mão / voz")
+    find("Mão real atribuída pelo compositor")
+    click("Cancelar")  # Assignment UI must never silently change the MIDI
+    click("Uniformizar trecho")
+    find("Figura musical para o trecho")
+    click("Cancelar")
+    click("Uniformizar trecho")
+    click("Ver prévia")
+    find("Prévia — Semínima")
+    find("Notas afetadas:")
+    click("Cancelar")
+    click("Uniformizar trecho")
+    click("Ver prévia")
+    find("Prévia — Semínima")
+    click("Aplicar")
+    find("Selecionar notas e acordes")
+    click("Desfazer")
+    find("Selecionar notas e acordes")
+    click("Refazer")
+    find("Selecionar notas e acordes")
+    screenshot("02c-uniformizar-ritmo")
     click("Concluir ajustes")
+    click("Salvar partitura")
+    find("Partitura salva ✓")
     # Sixth change: generated scores must be explicitly placed in the Library.
     click("Adicionar à Biblioteca")
     # The app displays a success dialog before the new library state.
@@ -248,7 +277,7 @@ def main():
     (DEST / "memory.txt").write_text(adb("shell", "dumpsys", "meminfo", PACKAGE),
                                       encoding="utf-8")
     print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape,unlink,score-delete-cancel-confirm,original-midi-preserved"
-          " synthetic=true emulator=true")
+          " rhythm-uniformize=true synthetic=true emulator=true")
     adb("shell", "pm", "clear", PACKAGE)
     adb("shell","settings","put","system","user_rotation",orientation if orientation not in ("","null") else "0")
     adb("shell","settings","put","system","accelerometer_rotation",rotation if rotation not in ("","null") else "1")
