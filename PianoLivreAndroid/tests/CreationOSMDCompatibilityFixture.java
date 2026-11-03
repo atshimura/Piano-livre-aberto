@@ -18,6 +18,12 @@ public final class CreationOSMDCompatibilityFixture {
   Score score=Score.read(new ByteArrayInputStream(derived.xml.getBytes(StandardCharsets.UTF_8)),name+".musicxml");
   if(score.writtenEvents.isEmpty()||score.events.size()!=derived.notes.size())
    throw new AssertionError("Creation fixture notes lost at Score.read: "+name);
+  exportXml(dir,name,derived.xml,score.writtenEvents.size());
+ }
+ static void exportXml(Path dir,String name,String xml,int expected)throws Exception{
+  Score score=Score.read(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)),name+".musicxml");
+  if(score.writtenEvents.size()!=expected)
+   throw new AssertionError("MusicXML notes missing after native parse: "+name);
   StringBuilder values=new StringBuilder("[");
   for(Score.Event n:score.writtenEvents){
    if(values.length()>1)values.append(',');
@@ -33,7 +39,7 @@ public final class CreationOSMDCompatibilityFixture {
    values.append('}');
   }
   values.append(']');
-  Files.writeString(dir.resolve(name+".musicxml"),derived.xml,StandardCharsets.UTF_8);
+  Files.writeString(dir.resolve(name+".musicxml"),xml,StandardCharsets.UTF_8);
   Files.writeString(dir.resolve(name+".json"),values.toString(),StandardCharsets.UTF_8);
   System.out.println("IMPL4_FIXTURE "+name+" notes="+score.writtenEvents.size()+" measures="+score.measures);
  }
@@ -83,6 +89,25 @@ public final class CreationOSMDCompatibilityFixture {
   write(dir,"assigned",voices,4_100_000_000L,
     new CreationScoreTranscriber.Options(100,4,4,16,d.staffMode,60,null,
         CreationScoreTranscriber.Regularization.BALANCED,hands,explicitVoices,null,false));
-  System.out.println("IMPL4_CREATION_FIXTURES_PASS count=6");
+  // Regression #108: original Standard MIDI import into lower staff only.
+  // This is exactly the shape that once made OpticalTimeMap report
+  // "Optical timeline without events" in Study after a successful MIDI import.
+  byte[] track={0,(byte)0x90,60,80,(byte)0x83,0x60,(byte)0x80,60,0,0,(byte)0xff,0x2f,0};
+  ByteArrayOutputStream midiBytes=new ByteArrayOutputStream();
+  DataOutputStream midiOut=new DataOutputStream(midiBytes);
+  midiOut.writeBytes("MThd");midiOut.writeInt(6);midiOut.writeShort(0);
+  midiOut.writeShort(1);midiOut.writeShort(480);
+  midiOut.writeBytes("MTrk");midiOut.writeInt(track.length);midiOut.write(track);
+  byte[] source=midiBytes.toByteArray();
+  MidiFileImport.Result imported=MidiFileImport.read(new ByteArrayInputStream(source));
+  for(int assignedStaff:new int[]{1,2}){
+   String name="midi-single-staff"+assignedStaff;
+   String xml=new String(MidiFileImport.musicXml(imported,
+     Collections.singletonMap(0,assignedStaff),name),StandardCharsets.UTF_8);
+   exportXml(dir,name,xml,1);
+   if(!Arrays.equals(imported.original,source))
+    throw new AssertionError("MIDI original changed while writing "+name);
+  }
+  System.out.println("IMPL4_CREATION_FIXTURES_PASS count=8 (includes MIDI imported on either staff)");
  }
 }
