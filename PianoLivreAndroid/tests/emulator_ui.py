@@ -239,7 +239,7 @@ def long_press_library_card(title):
 def library_available_count():
     """Read the visible native counter rather than hard-coding catalog totals."""
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
-    matches=[re.match(r"^(\\d+) de (\\d+) partituras(?: · .*)?$",label) for label in labels]
+    matches=[re.match(r"^(\d+) de (\d+) partituras(?: · .*)?$",label) for label in labels]
     values=[(int(m.group(1)),int(m.group(2))) for m in matches if m]
     if len(values)!=1:
         raise AssertionError("Expected one visible Library counter; got "+repr(labels[:35]))
