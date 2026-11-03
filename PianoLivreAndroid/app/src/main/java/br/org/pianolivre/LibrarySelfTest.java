@@ -60,7 +60,7 @@ final class LibrarySelfTest {
    File midiSource=new File(folder,"meu.mxl.source.mid");
    try(FileOutputStream out=new FileOutputStream(midiSource)){out.write(content);}
    prefs.edit().putString("user_0_file",shared.getAbsolutePath()).putString("user_1_file",imported).commit();
-   ImportedScoreDeletion.delete(root,imported,()->LibraryStore.removeImportedEveryProfile(prefs,imported));
+   ImportedScoreDeletion.delete(root,imported,scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));
    check(!shared.exists()&&!midiSource.exists(),"imported score and matching MIDI source deleted");
    check(!store.snapshot().favorites.contains(imported)&&!other.snapshot().favorites.contains(imported),"all profiles detach imported favorite");
    check(!other.snapshot().collections.get(otherCollection).scores.contains(imported),"all profiles detach imported collection membership");
