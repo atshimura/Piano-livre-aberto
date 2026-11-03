@@ -27,21 +27,78 @@ public final class CreationScoreTranscriber {
     private static final int[] ALTERS = {0,1,0,1,0,0,1,0,1,0,1,0};
 
     public enum StaffMode { SUGGESTED, PITCH_THRESHOLD }
+    public enum Regularization { RIGOROUS, BALANCED, FLEXIBLE }
+
+    /** Explicit notation override; never changes Note On/Off in the source .plc. */
+    public static final class Timing {
+        public final long startTick,endTick;
+        public Timing(long start,long end){
+            if(start<0||end<=start||start%120!=0||end%120!=0||
+                end>(long)MAX_MEASURES*DIVISIONS*4)
+                throw new IllegalArgumentException("Posição rítmica inválida");
+            startTick=start;endTick=end;
+        }
+        @Override public boolean equals(Object o){
+            if(!(o instanceof Timing))return false;
+            Timing t=(Timing)o;return startTick==t.startTick&&endTick==t.endTick;
+        }
+        @Override public int hashCode(){return Long.hashCode(startTick)*31+Long.hashCode(endTick);}
+    }
 
     public static final class Options {
-        public final int bpm, beats, beatType, grid, splitPitch;
+        public final int bpm,beats,beatType,grid,splitPitch;
         public final StaffMode staffMode;
-        public final Map<String,Integer> staffOverrides;
-        public Options(int bpm,int beats,int beatType,int grid,StaffMode mode,int splitPitch,Map<String,Integer> overrides) {
+        public final Regularization regularization;
+        public final Map<String,Integer> staffOverrides,handOverrides,voiceOverrides;
+        public final Map<String,Timing> rhythmOverrides;
+        public final boolean legacyTiming;
+        public Options(int bpm,int beats,int beatType,int grid,StaffMode mode,int splitPitch,
+                       Map<String,Integer> staffOverrides){
+            this(bpm,beats,beatType,grid,mode,splitPitch,staffOverrides,
+                 Regularization.BALANCED,null,null,null,false);
+        }
+        public Options(int bpm,int beats,int beatType,int grid,StaffMode mode,int splitPitch,
+                       Map<String,Integer> staffOverrides,Regularization regularization,
+                       Map<String,Integer> hands,Map<String,Integer> voices,Map<String,Timing> rhythms,
+                       boolean legacyTiming){
             if(bpm<30||bpm>240||!((beats==2||beats==3||beats==4)&&beatType==4||beats==6&&beatType==8)
-                    ||!(grid==8||grid==16||grid==32)||mode==null||splitPitch<0||splitPitch>127)
+                    ||!(grid==8||grid==16||grid==32)||mode==null||splitPitch<0||splitPitch>127||regularization==null)
                 throw new IllegalArgumentException("Parâmetros de transcrição inválidos");
             this.bpm=bpm;this.beats=beats;this.beatType=beatType;this.grid=grid;
-            this.staffMode=mode;this.splitPitch=splitPitch;
-            this.staffOverrides=Collections.unmodifiableMap(new HashMap<>(overrides==null?Collections.emptyMap():overrides));
+            staffMode=mode;this.splitPitch=splitPitch;this.regularization=regularization;
+            this.legacyTiming=legacyTiming;
+            this.staffOverrides=immutable(staffOverrides);
+            handOverrides=immutable(hands);voiceOverrides=immutable(voices);
+            rhythmOverrides=Collections.unmodifiableMap(new HashMap<>(rhythms==null?Collections.emptyMap():rhythms));
+            if(this.staffOverrides.size()>MAX_NOTES||handOverrides.size()>MAX_NOTES||
+                voiceOverrides.size()>MAX_NOTES||rhythmOverrides.size()>MAX_NOTES)
+                throw new IllegalArgumentException("Muitos ajustes manuais");
             for(Map.Entry<String,Integer> e:this.staffOverrides.entrySet())
-                if(e.getKey()==null||e.getValue()==null||(e.getValue()!=1&&e.getValue()!=2))
+                if(e.getValue()==null||(e.getValue()!=1&&e.getValue()!=2))
                     throw new IllegalArgumentException("Pauta inválida");
+            for(Map.Entry<String,Integer> e:handOverrides.entrySet())
+                if(e.getValue()==null||(e.getValue()!=1&&e.getValue()!=2))
+                    throw new IllegalArgumentException("Mão inválida");
+            for(Map.Entry<String,Integer> e:voiceOverrides.entrySet())
+                if(e.getValue()==null||e.getValue()<1||e.getValue()>4)
+                    throw new IllegalArgumentException("Voz inválida");
+            for(Map.Entry<String,Timing> e:rhythmOverrides.entrySet())
+                if(e.getKey()==null||e.getKey().isEmpty()||e.getValue()==null)
+                    throw new IllegalArgumentException("Ajuste rítmico inválido");
+            for(String key:allKeys())if(key==null||key.isEmpty()||key.length()>110)
+                throw new IllegalArgumentException("ID de nota inválido");
+        }
+        private static Map<String,Integer> immutable(Map<String,Integer> map){
+            return Collections.unmodifiableMap(new HashMap<>(map==null?Collections.emptyMap():map));
+        }
+        private Set<String> allKeys(){
+            Set<String> keys=new HashSet<>(staffOverrides.keySet());keys.addAll(handOverrides.keySet());
+            keys.addAll(voiceOverrides.keySet());keys.addAll(rhythmOverrides.keySet());return keys;
+        }
+        /** Sidecars generated before Implementation 3 still regenerate with their old rhythm model. */
+        public static Options legacy(int bpm,int beats,int beatType,int grid,StaffMode mode,int split,Map<String,Integer> staff){
+            return new Options(bpm,beats,beatType,grid,mode,split,staff,
+                Regularization.BALANCED,null,null,null,true);
         }
         public static Options defaults(){return new Options(100,4,4,16,StaffMode.SUGGESTED,60,null);}
         int barTicks(){return DIVISIONS*beats*4/beatType;}
@@ -51,11 +108,14 @@ public final class CreationScoreTranscriber {
     /** Stable reference to the original MIDI Note On, independent of notation. */
     public static final class WrittenNote {
         public final String sourceId;
-        public final int pitch, velocity, channel, staff, voice;
+        public final int pitch, velocity, channel, staff, voice, hand;
+        public final String rhythmLane;
         public final long sourceStartNs, sourceEndNs, startTick, endTick;
         public final boolean syntheticRelease;
-        WrittenNote(String id,int pitch,int vel,int ch,int staff,int voice,long rs,long re,long s,long e,boolean synth){
+        WrittenNote(String id,int pitch,int vel,int ch,int staff,int voice,int hand,String lane,
+                    long rs,long re,long s,long e,boolean synth){
             sourceId=id;this.pitch=pitch;velocity=vel;channel=ch;this.staff=staff;this.voice=voice;
+            this.hand=hand;rhythmLane=lane;
             sourceStartNs=rs;sourceEndNs=re;startTick=s;endTick=e;syntheticRelease=synth;
         }
     }
@@ -79,12 +139,14 @@ public final class CreationScoreTranscriber {
         void close(MidiTakeRecorder.Event e,long mapped){rawEnd=e.timeNs;end=Math.max(start,mapped);synthetic=e.generated;}
     }
     private static final class Note {
-        final Attack a; final long start,end;int staff,voice;
+        final Attack a;long start,end;int staff,voice,hand,voiceHint;String lane;
         Note(Attack a,long start,long end){this.a=a;this.start=start;this.end=end;}
     }
     private static final class Group {
         final int staff;final long start,end;final List<Note> notes=new ArrayList<>();int voice;
-        Group(int staff,long start,long end){this.staff=staff;this.start=start;this.end=end;}
+        final String lane;
+        Group(int staff,long start,long end){this(staff,start,end,"");}
+        Group(int staff,long start,long end,String lane){this.staff=staff;this.start=start;this.end=end;this.lane=lane;}
     }
     private static final class Timeline {
         final long[] starts,ends,offsets;final long length;
@@ -149,13 +211,23 @@ public final class CreationScoreTranscriber {
         int grid=options.gridTicks();List<Note> notes=new ArrayList<>();long latest=0;
         for(Attack a:attacks){
             long start=quantize(a.start-zero,options.bpm,grid);
+            if(!options.legacyTiming&&options.regularization!=Regularization.RIGOROUS){
+                long raw=quantize(a.start-zero,options.bpm,120);
+                long beat=Math.round((double)raw/DIVISIONS)*DIVISIONS;
+                long tolerance=options.regularization==Regularization.FLEXIBLE?grid:grid/2;
+                if(Math.abs(raw-beat)<=tolerance)start=beat;
+            }
             long end=Math.max(start+grid,quantize(a.end-zero,options.bpm,grid));
             Note n=new Note(a,start,end);notes.add(n);latest=Math.max(latest,end);
         }
         int bar=options.barTicks();long count=(latest+bar-1)/bar;
         if(count<1||count>MAX_MEASURES)throw new IOException("Partitura muito longa para a transcrição inicial");
         Set<String> sourceIds=new HashSet<>();for(Note n:notes)sourceIds.add(n.a.id);
-        if(!sourceIds.containsAll(options.staffOverrides.keySet()))throw new IOException("Ajuste de pauta aponta para nota inexistente");
+        if(!sourceIds.containsAll(options.staffOverrides.keySet())||
+           !sourceIds.containsAll(options.handOverrides.keySet())||
+           !sourceIds.containsAll(options.voiceOverrides.keySet())||
+           !sourceIds.containsAll(options.rhythmOverrides.keySet()))
+            throw new IOException("Ajuste aponta para nota inexistente");
         // Heuristic is explicitly a notation suggestion, never physical hand detection.
         // Compact same-channel, same-onset clusters remain together on one staff.
         Map<String,List<Note>> simultaneous=new LinkedHashMap<>();
@@ -169,24 +241,66 @@ public final class CreationScoreTranscriber {
                 n.staff=forced!=null?forced:compact?groupStaff:n.a.pitch>=options.splitPitch?1:2;
             }
         }
+
+        // A notation staff is a suggestion, never proof of a physical hand.
+        // Explicit hand assignment wins; otherwise distinguish provisional
+        // voice groups by notation staff and MIDI channel, without labeling hand.
+        for(Note n:notes){
+            n.hand=options.handOverrides.getOrDefault(n.a.id,0);
+            n.voiceHint=options.voiceOverrides.getOrDefault(n.a.id,1);
+            n.lane=n.hand>0?"hand"+n.hand+":channel"+n.a.channel+":voice"+n.voiceHint
+                   :"unassigned-staff"+n.staff+":channel"+n.a.channel+":voice"+n.voiceHint;
+        }
+        if(!options.legacyTiming)interpretAttacks(notes,options,grid);
+        for(Note n:notes){
+            Timing fixed=options.rhythmOverrides.get(n.a.id);
+            if(fixed!=null){n.start=fixed.startTick;n.end=fixed.endTick;}
+        }
         Map<String,Group> groupMap=new LinkedHashMap<>();
-        for(Note n:notes){String key=n.staff+":"+n.start+":"+n.end;
-            Group g=groupMap.get(key);if(g==null){g=new Group(n.staff,n.start,n.end);groupMap.put(key,g);}g.notes.add(n);
+        for(Note n:notes){
+            String key=(options.legacyTiming?"":n.lane+":")+n.staff+":"+n.start+":"+n.end;
+            Group g=groupMap.get(key);
+            if(g==null){g=new Group(n.staff,n.start,n.end,n.lane);groupMap.put(key,g);}
+            g.notes.add(n);
         }
         List<Group> groups=new ArrayList<>(groupMap.values());
         groups.sort(Comparator.comparingLong((Group g)->g.start).thenComparing((Group g)->-g.end).thenComparingInt(g->g.staff));
         @SuppressWarnings("unchecked")
         List<List<Group>>[] voices=new List[]{new ArrayList<List<Group>>(),new ArrayList<List<Group>>()};
-        for(Group g:groups){int staff=g.staff-1;boolean assigned=false;
-            for(int i=0;i<voices[staff].size();i++){
-                List<Group> voice=voices[staff].get(i);
-                if(voice.get(voice.size()-1).end<=g.start){g.voice=i+1;voice.add(g);assigned=true;break;}
+        if(options.legacyTiming){
+            // Preserve exactly the original voice allocation for old PLS1 files.
+            for(Group g:groups){int staff=g.staff-1;boolean assigned=false;
+                for(int i=0;i<voices[staff].size();i++){
+                    List<Group> voice=voices[staff].get(i);
+                    if(voice.get(voice.size()-1).end<=g.start){g.voice=i+1;voice.add(g);assigned=true;break;}
+                }
+                if(!assigned){if(voices[staff].size()>=24)throw new IOException("Muitas vozes simultâneas para transcrever");
+                    g.voice=voices[staff].size()+1;List<Group> v=new ArrayList<>();v.add(g);voices[staff].add(v);
+                }
+                for(Note n:g.notes)n.voice=g.voice;
             }
-            if(!assigned){if(voices[staff].size()>=24)throw new IOException("Muitas vozes simultâneas para transcrever");
-                g.voice=voices[staff].size()+1;List<Group> v=new ArrayList<>();v.add(g);voices[staff].add(v);
+        }else{
+            @SuppressWarnings("unchecked")
+            Map<String,Integer>[] lanes=new Map[]{new LinkedHashMap<String,Integer>(),new LinkedHashMap<String,Integer>()};
+            for(Group g:groups){
+                int staff=g.staff-1;Integer voice=lanes[staff].get(g.lane);
+                if(voice==null){
+                    if(voices[staff].size()>=24)throw new IOException("Muitas vozes simultâneas para transcrever");
+                    voice=voices[staff].size()+1;lanes[staff].put(g.lane,voice);
+                    voices[staff].add(new ArrayList<Group>());
+                }
+                g.voice=voice;List<Group> list=voices[staff].get(voice-1);
+                if(!list.isEmpty()&&list.get(list.size()-1).end>g.start)
+                    throw new IOException("Ritmo sobreposto dentro da mesma voz; atribua vozes diferentes");
+                list.add(g);
+                for(Note n:g.notes)n.voice=voice;
             }
-            for(Note n:g.notes)n.voice=g.voice;
         }
+        // A manual rhythm adjustment must not create an impossible score.
+        long latestWritten=0;
+        for(Group g:groups)latestWritten=Math.max(latestWritten,g.end);
+        count=(latestWritten+bar-1)/bar;
+        if(count<1||count>MAX_MEASURES)throw new IOException("Partitura ultrapassa os limites musicais");
         StringBuilder xml=new StringBuilder(Math.min(1024*1024,(int)(notes.size()*150L+1000L)));
         xml.append("<?xml version=\"1.0\" encoding=\"utf-8\"?><score-partwise version=\"4.0\">");
         xml.append("<work><work-title>").append(escape(title)).append("</work-title></work><movement-title>")
@@ -227,9 +341,35 @@ public final class CreationScoreTranscriber {
         xml.append("</part></score-partwise>");
         List<WrittenNote> written=new ArrayList<>();
         for(Note n:notes)written.add(new WrittenNote(n.a.id,n.a.pitch,n.a.velocity,n.a.channel,n.staff,n.voice,
-                n.a.rawStart,n.a.rawEnd,n.start,n.end,n.a.synthetic));
+                n.hand,n.lane,n.a.rawStart,n.a.rawEnd,n.start,n.end,n.a.synthetic));
         written.sort(Comparator.comparingLong((WrittenNote n)->n.startTick).thenComparing(n->n.sourceId));
         return new Result(xml.toString(),written,warnings,(int)count);
+    }
+    /** Same-lane onset intervals are primary; Note Off only helps identify long
+     * rests or the last note. Simultaneous attacks in a lane remain one chord. */
+    private static void interpretAttacks(List<Note> notes,Options options,int grid){
+        Map<String,Map<Long,List<Note>>> lanes=new LinkedHashMap<>();
+        for(Note n:notes)lanes.computeIfAbsent(n.lane,k->new LinkedHashMap<>())
+            .computeIfAbsent(n.start,k->new ArrayList<>()).add(n);
+        for(Map<Long,List<Note>> lane:lanes.values()){
+            List<Long> onsets=new ArrayList<>(lane.keySet());Collections.sort(onsets);
+            for(int i=0;i<onsets.size();i++){
+                long start=onsets.get(i),next=i+1<onsets.size()?onsets.get(i+1):Long.MAX_VALUE;
+                long release=start+grid;
+                for(Note n:lane.get(start))release=Math.max(release,n.end);
+                long end;
+                if(next==Long.MAX_VALUE)end=release;
+                else{
+                    long gap=next-start;
+                    // A long silence after a released key is a possible rest,
+                    // not automatically a multi-beat sustained note.
+                    end=(gap>=2L*DIVISIONS&&release-start<=gap/3)
+                        ?Math.min(next,Math.max(start+grid,release)):next;
+                }
+                end=Math.max(start+grid,end);
+                for(Note n:lane.get(start))n.end=end;
+            }
+        }
     }
     private static long quantize(long ns,int bpm,int step){
         double ticks=(double)ns*bpm*DIVISIONS/60_000_000_000.0;
