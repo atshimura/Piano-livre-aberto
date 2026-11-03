@@ -1158,21 +1158,28 @@ public class MainActivity extends Activity {
  void showNotationFailure(NotationFailure failure,Runnable retry,Runnable abort){
   if(isFinishing()||isDestroyed())return;
   stopPlayback();finishStudyWindow();
+  // Keep the copy action in the dialog content: three long horizontal
+  // AlertDialog button labels do not all fit on some landscape Android devices.
+  Button copyDiagnostic=new Button(this);
+  copyDiagnostic.setText("Copiar diagnóstico");
+  copyDiagnostic.setContentDescription("Copiar diagnóstico");
+  copyDiagnostic.setAllCaps(false);
+  copyDiagnostic.setOnClickListener(v->{
+    android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+    if(clipboard!=null)clipboard.setPrimaryClip(ClipData.newPlainText("Erro de notação Piano Livre",failure.report()));
+    Toast.makeText(this,"Diagnóstico copiado; nenhum dado enviado",Toast.LENGTH_SHORT).show();
+  });
   AlertDialog dialog=new AlertDialog.Builder(this)
     .setTitle("Não foi possível exibir a partitura")
     .setMessage("O motor moderno OSMD encontrou um problema. A partitura e o MIDI original foram preservados.\n\n"+failure.report())
+    .setView(copyDiagnostic)
     .setPositiveButton("Tentar novamente",(d,w)->{if(retry!=null)retry.run();})
     .setNegativeButton("Voltar à Biblioteca",(d,w)->{
       stopPlayback();finishStudyWindow();
       if(abort!=null)abort.run();
       if(screens!=null)screens.showHome();
     })
-    .setNeutralButton("Copiar diagnóstico",null).setCancelable(false).create();
-  dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->{
-    android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
-    if(clipboard!=null)clipboard.setPrimaryClip(ClipData.newPlainText("Erro de notação Piano Livre",failure.report()));
-    android.widget.Toast.makeText(this,"Diagnóstico copiado; nenhum dado enviado",android.widget.Toast.LENGTH_SHORT).show();
-  }));
+    .setCancelable(false).create();
   dialog.show();lastMessageDialog=dialog;
  }
  void showNotationHistory(){
