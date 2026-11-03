@@ -22,7 +22,7 @@ import org.json.JSONArray;
  */
 @SuppressLint("SetJavaScriptEnabled")
 public final class NotationView extends WebView {
- public interface Listener { void onRendered(); void onError(String message); default void onStudyTap(){} default void onPresentation(String message){} default void onLoopSelected(double start,double end){} default void onCreationNoteTapped(String sourceId){} }
+ public interface Listener { void onRendered(); void onError(String message); default void onFailure(NotationFailure failure){onError(failure.report());} default void onStudyTap(){} default void onPresentation(String message){} default void onLoopSelected(double start,double end){} default void onCreationNoteTapped(String sourceId){} }
  private final Listener callback;
  private boolean htmlReady=false;
  private boolean scoreRendered=false;
@@ -35,9 +35,9 @@ public final class NotationView extends WebView {
  private boolean disposed=false;
  private long pendingWaitDeadline=0L;
  private boolean freeLayout=false;
- // OSMD is normal; failures automatically try temporal, then native schematic.
+ // OSMD is the only notation renderer. Study and Free are presentation modes.
  private boolean engravingProof=true;
- private boolean rendererFailed=false;
+ private boolean rendererFailed=false,failureRecorded=false;
  private boolean loadDispatched=false;
  private long scoreGeneration=0;
  private long resizeSequence=0;
@@ -102,7 +102,8 @@ public final class NotationView extends WebView {
       !req.getUrl().toString().startsWith("file:///android_asset/");
    }
    @Override public void onReceivedError(WebView view,WebResourceRequest req,WebResourceError error){
-    if(req.isForMainFrame())post(()->callback.onError("Falha ao abrir motor de partituras"));
+    if(req.isForMainFrame())post(()->reportFailure(scoreGeneration,"PL-NOT-WEBVIEW",
+        "Carregamento WebView","Falha ao abrir o motor OSMD"));
    }
   });
   addJavascriptInterface(new Object(){
@@ -111,30 +112,24 @@ public final class NotationView extends WebView {
     htmlReady=true;Log.i("PianoLivreNotation","BRIDGE_READY");
     if(pendingScore!=null)sendScore();
    });}
-   @JavascriptInterface public void onRendered(){post(()->{
-    if(disposed)return;
-    rendererFailed=false;scoreRendered=true;Log.i("PianoLivreNotation","RENDERED_CALLBACK");
+   @JavascriptInterface public void onRendered(long token){post(()->{
+    if(disposed||token!=scoreGeneration||failureRecorded)return;
+    rendererFailed=false;scoreRendered=true;Log.i("PianoLivreNotation","OSMD_RENDERED generation="+token);
     setVisibility(View.VISIBLE);
-    sendStudyHand();
-    sendCreationSource();
-    callback.onRendered();
+    sendStudyHand();sendCreationSource();callback.onRendered();
     sendPendingWaitPreparation();
    });}
-   @JavascriptInterface public void onPresentation(String message){post(()->{if(!disposed)callback.onPresentation(message);});}
-   @JavascriptInterface public void onStudyTap(){post(()->{if(!disposed&&!freeLayout)callback.onStudyTap();});}
-   @JavascriptInterface public void onError(String error){post(()->{
-    if(disposed)return;
-    scoreRendered=false;loadDispatched=false;scoreGeneration++;
-    if(!freeLayout&&engravingProof){
-     engravingProof=false;lastBeat=Double.NaN;
-     setLayerType(originalLayerType,null);
-     Log.w("PianoLivreNotation","AUTO_TEMPORAL_FALLBACK "+error);
-     callback.onPresentation("Visualização temporal ativa: a notação principal não pôde ser exibida.");
-     sendScore();return;
-    }
-    engravingProof=false;rendererFailed=true;
-    Log.e("PianoLivreNotation","RENDER_ERROR "+error);
-    callback.onError(error);
+   @JavascriptInterface public void onPresentation(String message){post(()->{
+    if(!disposed)callback.onPresentation(message);
+   });}
+   @JavascriptInterface public void onStudyTap(){post(()->{
+    if(!disposed&&!freeLayout)callback.onStudyTap();
+   });}
+   @JavascriptInterface public void onError(String message){post(()->{
+    reportFailure(scoreGeneration,"PL-NOT-UNKNOWN","JavaScript",message);
+   });}
+   @JavascriptInterface public void onFailure(long token,String code,String stage,String message){post(()->{
+    reportFailure(token,code,stage,message);
    });}
    @JavascriptInterface public void onCreationNoteTapped(String id){post(()->{
     if(!disposed&&freeLayout&&scoreRendered&&id!=null&&creationSourceIds.contains(id))callback.onCreationNoteTapped(id);
@@ -151,12 +146,7 @@ public final class NotationView extends WebView {
  }
  public void loadScore(Score score,double position,boolean traditional){
   scoreGeneration++;loadDispatched=false;
-  rendererFailed=false;freeLayout=traditional;engravingProof=!traditional;
-  if(!traditional&&getContext() instanceof MainActivity){
-   MainActivity activity=(MainActivity)getContext();
-   if((activity.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-       &&activity.getIntent().getBooleanExtra("study_temporal_selftest",false))engravingProof=false;
-  }
+  rendererFailed=false;failureRecorded=false;freeLayout=traditional;engravingProof=!traditional;
   if(getLayerType()!= (engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType))
    setLayerType(engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
   getSettings().setSupportZoom(traditional);
@@ -189,10 +179,12 @@ public final class NotationView extends WebView {
  private void dispatchScore(){
   if(disposed||pendingScore==null)return;
   String xml=pendingScore.sourceXml;
-  if(xml==null||xml.isEmpty()){callback.onError("A partitura não contém MusicXML");return;}
+  if(xml==null||xml.isEmpty()){
+   reportFailure(scoreGeneration,"PL-NOT-PARSE","Leitura MusicXML","A partitura está vazia");return;
+  }
   // Proper JSON quoting prevents XML text being interpreted as JavaScript.
   Log.i("PianoLivreNotation","LOAD_XML "+xml.length());
-  String layout=freeLayout?"'free'":(engravingProof?"'engraving-poc'":"'study'");
+  String layout=freeLayout?"'free'":"'engraving-poc'";
   String nativeEvents="null";
   if(engravingProof){
    java.util.List<Score.Event> graphicEvents=pendingScore.writtenEvents.isEmpty()
@@ -225,7 +217,36 @@ public final class NotationView extends WebView {
     nativeEvents=serialized.toString();
    }
   }
-  evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+layout+","+nativeEvents+")",null);
+  final long token=scoreGeneration;
+  evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+layout+","+nativeEvents+","+token+")",null);
+  postDelayed(()->{
+   if(!disposed&&token==scoreGeneration&&!scoreRendered&&!failureRecorded)
+    reportFailure(token,"PL-NOT-TIMEOUT","Tempo limite","O OSMD não concluiu o desenho em 30 segundos");
+  },30000);
+
+ }
+ private void reportFailure(long token,String code,String stage,String details){
+  if(disposed||token!=scoreGeneration||failureRecorded)return;
+  failureRecorded=true;rendererFailed=true;scoreRendered=false;loadDispatched=false;
+  setVisibility(View.INVISIBLE);
+  String version="desconhecida";
+  try{version=getContext().getPackageManager()
+    .getPackageInfo(getContext().getPackageName(),0).versionName;}catch(Exception ignored){}
+  String origin=freeLayout?"free":"study";
+  if(getContext() instanceof MainActivity){
+   MainActivity a=(MainActivity)getContext();
+   if(a.currentFile.startsWith("creation-score:"))origin="creation";
+  }
+  final Score current=pendingScore;
+  NotationFailure failure=new NotationFailure(code,stage,details,origin,
+      current==null?null:current.sourceXml,current==null?0:current.measures,
+      current==null?0:current.writtenEvents.size(),token,getWidth(),getHeight(),version);
+  Log.e("PianoLivreNotation","OSMD_FAILURE "+failure.code+" incident="+failure.id);
+  java.io.File dir=getContext().getFilesDir();
+  new Thread(()->{try{new NotationDiagnosticsStore(dir).add(failure);}
+       catch(Exception e){Log.w("PianoLivreNotation","Não foi possível gravar diagnóstico local",e);}
+      },"PianoLivre-NotationError").start();
+  callback.onFailure(failure);
  }
  /** Actual renderer state for diagnostics, never a user-selectable control. */
  public boolean isEngravingProof(){return engravingProof;}
