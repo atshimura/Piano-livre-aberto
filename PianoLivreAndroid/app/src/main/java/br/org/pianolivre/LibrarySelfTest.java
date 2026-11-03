@@ -76,6 +76,24 @@ final class LibrarySelfTest {
    try{LibraryStore.decode("{\"version\":1,\"favorites\":[],\"collections\":[],\"hiddenScores\":[\"imported/meu.mxl\"]}");}
    catch(IllegalArgumentException expected){invalidHidden=true;}
    check(invalidHidden,"imported files cannot be hidden as built-in scores");
+   // Simulate a crash just after the file transaction marker, before prefs
+   // cleanup. Recovery must prune both profiles before discarding the file.
+   String interruptedKey="imported/interrupted.mxl";
+   File interrupted=new File(folder,"interrupted.mxl");
+   try(FileOutputStream out=new FileOutputStream(interrupted)){out.write(content);}
+   store.toggleFavorite(interruptedKey);other.toggleFavorite(interruptedKey);
+   other.toggleMember(otherCollection,interruptedKey);
+   File stage=new File(root,"imported.delete-pending");
+   check(stage.mkdir(),"crash staging created");
+   try(FileOutputStream out=new FileOutputStream(new File(stage,"score-name"))){out.write("interrupted.mxl".getBytes(java.nio.charset.StandardCharsets.UTF_8));}
+   java.nio.file.Files.move(interrupted.toPath(),new File(stage,"interrupted.mxl").toPath());
+   try(FileOutputStream out=new FileOutputStream(new File(stage,"committed"))){out.write("ok".getBytes(java.nio.charset.StandardCharsets.UTF_8));}
+   ImportedScoreDeletion.recover(root,scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));
+   check(!interrupted.exists()&&!stage.exists(),"postcommit recovery completes physical deletion");
+   check(!store.snapshot().favorites.contains(interruptedKey)&&!other.snapshot().favorites.contains(interruptedKey),
+    "postcommit recovery completes metadata in all profiles");
+   check(!other.snapshot().collections.get(otherCollection).scores.contains(interruptedKey),
+    "postcommit recovery cleans collection memberships");
    return checks;
   }finally{prefs.edit().clear().commit();}
  }
