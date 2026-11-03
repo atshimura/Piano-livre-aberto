@@ -178,12 +178,19 @@ def main():
     find("Selecionar notas e acordes")
     screenshot("02c-uniformizar-ritmo")
     click("Concluir ajustes")
+    # IMPL4: the save path must complete a REAL OSMD Study-path render.
+    before_study_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     click("Salvar partitura")
     find("Partitura salva ✓")
+    assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>before_study_proof, (
+        "IMPL4 save was accepted without a successful OSMD Study proof")
     # Sixth change: generated scores must be explicitly placed in the Library.
+    before_library_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     click("Adicionar à Biblioteca")
-    # The app displays a success dialog before the new library state.
-    find("Partitura adicionada à Biblioteca Musical.")
+    # Library linking requires another OSMD Study proof, not only XML parsing.
+    find("Partitura compatível com Estudar e adicionada à Biblioteca Musical.")
+    assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>before_library_proof, (
+        "IMPL4 library linking bypassed OSMD compatibility proof")
     click("OK")
     find("Na Biblioteca Musical")
     screenshot("03-adicionada-a-biblioteca")
@@ -203,10 +210,17 @@ def main():
     click("← Biblioteca")  # Criação home -> Biblioteca Musical
     find("Biblioteca Musical")
     title=find("Estudar C2-D partitura de teste",clickable=True)
+    before_open_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     x,y=center(title)
     adb("shell","input","tap",str(x),str(y))
     find("MODO")
     find("MÃOS")
+    for _ in range(50):
+        if adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>before_open_proof:break
+        time.sleep(.3)
+    else:raise AssertionError("IMPL4 generated score did not render with OSMD in Estudar")
+    assert "AUTO_TEMPORAL_FALLBACK" not in adb("logcat","-d","-v","brief"), (
+        "IMPL4 old temporal renderer was activated")
     screenshot("04b-estudar-pela-biblioteca")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     time.sleep(1.4)
