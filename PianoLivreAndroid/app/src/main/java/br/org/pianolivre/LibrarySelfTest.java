@@ -51,10 +51,17 @@ final class LibrarySelfTest {
    store.setHidden(asset,true);
    check(store.snapshot().hiddenScores.contains(asset)&&!other.snapshot().hiddenScores.contains(asset),"bundled score hidden per profile");
    check(store.snapshot().favorites.contains(asset),"hiding preserves favorite");
+   // Old v1 JSON still decodes; new hiddenScores is saved in existing backup v4.
+   JSONObject hiddenBackup=BackupArchive.create(prefs,root);
+   store.setHidden(asset,false);
+   BackupArchive.restore(prefs,root,hiddenBackup);
+   check(store.snapshot().hiddenScores.contains(asset),"hidden state survives backup/restore");
    store.setHidden(asset,false);
    check(!store.snapshot().hiddenScores.contains(asset),"hidden built-in score can be restored");
+   store.toggleMember(id,"creation-score:"+creationId);
    store.removeCreation(creationId);
    check(!store.hasCreation(creationId)&&!store.snapshot().favorites.contains("creation-score:"+creationId),"unlinked creation cleans stale favorite");
+   check(!store.snapshot().collections.get(id).scores.contains("creation-score:"+creationId),"unlinked creation cleans stale collection");
    other.toggleFavorite(imported);String otherCollection=other.create("Outro");
    other.toggleMember(otherCollection,imported);
    File midiSource=new File(folder,"meu.mxl.source.mid");
@@ -65,6 +72,10 @@ final class LibrarySelfTest {
    check(!store.snapshot().favorites.contains(imported)&&!other.snapshot().favorites.contains(imported),"all profiles detach imported favorite");
    check(!other.snapshot().collections.get(otherCollection).scores.contains(imported),"all profiles detach imported collection membership");
    check(!prefs.contains("user_0_file")&&!prefs.contains("user_1_file"),"saved study references cleared across profiles");
+   boolean invalidHidden=false;
+   try{LibraryStore.decode("{\\"version\\":1,\\"favorites\\":[],\\"collections\\":[],\\"hiddenScores\\":[\\"imported/meu.mxl\\"]}");}
+   catch(IllegalArgumentException expected){invalidHidden=true;}
+   check(invalidHidden,"imported files cannot be hidden as built-in scores");
    return checks;
   }finally{prefs.edit().clear().commit();}
  }
