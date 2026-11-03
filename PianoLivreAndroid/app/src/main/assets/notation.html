@@ -943,6 +943,9 @@
       staff:osmd.EngravingRules.StaffDistance}));
     }
     // Keep OSMD at its default internal zoom; apply a CSS transform to the entire grand staff.
+    if(window.__testForceOSMD){window.__testForceOSMD=false;
+     throw new Error('Falha OSMD de renderização (teste sintético dirigido)');
+    }
     osmd.render();
     if(studyProof){
      let probe=document.querySelector('#score svg');

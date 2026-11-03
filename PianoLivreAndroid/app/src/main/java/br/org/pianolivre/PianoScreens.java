@@ -507,8 +507,7 @@ class PianoScreens {
     if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
        &&a.getIntent().getBooleanExtra("study_failure_selftest",false)){
      a.getIntent().removeExtra("study_failure_selftest");
-     String failTemporal=a.getIntent().getBooleanExtra("study_native_failure_selftest",false)?"window.TemporalNotation=null;":"";
-     notation.evaluateJavascript(failTemporal+"window.opensheetmusicdisplay=null;PianoNotation.load('<score-partwise/>',0,'engraving-poc',[])",null);
+     notation.debugForceOSMDFailure();
     }
     updateSelections();
     followScore(a.position,true);

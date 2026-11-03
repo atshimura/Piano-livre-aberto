@@ -257,6 +257,16 @@ public final class NotationView extends WebView {
   if(disposed||!htmlReady||!scoreRendered){if(callback!=null)callback.onReceiveValue("null");return;}
   evaluateJavascript("(function(){var a=Array.from(document.querySelectorAll('#score svg .vf-clef'));return JSON.stringify(a.map(function(n){return n.outerHTML}))})()",callback);
  }
+ void debugForceOSMDFailure(){
+  if(!(getContext() instanceof MainActivity))return;
+  MainActivity activity=(MainActivity)getContext();
+  if((activity.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)==0
+    ||pendingScore==null||!scoreRendered||freeLayout)return;
+  // Debug-only genuine OSMD render exception. No alternate renderer is loaded.
+  scoreRendered=false;setVisibility(View.INVISIBLE);
+  evaluateJavascript("window.__testForceOSMD=true;PianoNotation.load("+
+    JSONObject.quote(pendingScore.sourceXml)+",0,'engraving-poc',[],"+scoreGeneration+")",null);
+ }
  public boolean hasRendererFailure(){return rendererFailed;}
  public boolean isRendered(){return scoreRendered&&!rendererFailed&&!disposed;}
  private void sendStudyHand(){
