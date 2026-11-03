@@ -12,15 +12,19 @@ import org.json.JSONObject;
 /** Local, bounded and atomic; no upload, telemetry, or score contents. */
 public final class NotationDiagnosticsStore {
  private static final int MAX_EVENTS=50,MAX_BYTES=256*1024;
+ private static final Object IO_LOCK=new Object();
  private final File destination;
  public NotationDiagnosticsStore(File appFiles){destination=new File(appFiles,"notation-errors.json");}
- public synchronized JSONArray read()throws IOException{
+ public JSONArray read()throws IOException{
+  synchronized(IO_LOCK){
   if(!destination.isFile())return new JSONArray();
   if(destination.length()>MAX_BYTES)throw new IOException("Histórico de erros excedeu o limite");
   try{return new JSONArray(new String(Files.readAllBytes(destination.toPath()),StandardCharsets.UTF_8));}
   catch(org.json.JSONException e){throw new IOException("Histórico de erros corrompido",e);}
+  }
  }
- public synchronized void add(NotationFailure failure)throws IOException{
+ public void add(NotationFailure failure)throws IOException{
+  synchronized(IO_LOCK){
   JSONArray source;
   try{source=read();}catch(IOException corrupted){source=new JSONArray();}
   JSONArray next=new JSONArray();
@@ -35,6 +39,7 @@ public final class NotationDiagnosticsStore {
    next=smaller;
   }
   atomic(next.toString());
+  }
  }
  private void atomic(String value)throws IOException{
   File temp=new File(destination.getParentFile(),destination.getName()+".tmp");
@@ -45,8 +50,9 @@ public final class NotationDiagnosticsStore {
    Files.move(temp.toPath(),destination.toPath(),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
   }finally{temp.delete();}
  }
- public synchronized void clear()throws IOException{atomic("[]");}
- public synchronized String report()throws IOException{
+ public void clear()throws IOException{synchronized(IO_LOCK){atomic("[]");}}
+ public String report()throws IOException{
+  synchronized(IO_LOCK){
   JSONArray list=read();StringBuilder output=new StringBuilder("Piano Livre — incidentes de notação (sem partituras e sem MIDI)\n");
   for(int i=0;i<list.length();i++){
    JSONObject item=list.optJSONObject(i);if(item==null)continue;
@@ -58,5 +64,6 @@ public final class NotationDiagnosticsStore {
     .append("\nSHA-256 XML: ").append(item.optString("xmlSha256")).append("\n");
   }
   return output.toString();
+  }
  }
 }
