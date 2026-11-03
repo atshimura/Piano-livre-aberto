@@ -20,7 +20,7 @@ Na prévia, entre em **Divisão entre pautas**, selecione **notas**, um **acorde
 - Figura musical: **semibreve, mínima, semínima, colcheia, semicolcheia ou fusa**.
 - Escopo por mão: todas as selecionadas ou mão direita/esquerda **explicitamente atribuída**.
 - Escopo por voz musical: todas ou voz específica. O comando **Atribuir mão / voz** permite corrigir explicitamente o agrupamento sem deduzir mão pela altura.
-- Botão **Ver prévia**: recálculo MusicXML validado e comparação textual **antes → depois** das posições/notas afetadas, contagem de notas e linhas. **Aplicar** confirma; **Cancelar** não altera a partitura.
+- Botão **Ver prévia**: recálculo MusicXML validado e comparação textual **antes → depois** das posições e durações em tempos de semínima das notas afetadas, contagem de notas e linhas. **Aplicar** confirma; **Cancelar** não altera a partitura.
 - Seleções não contíguas são tratadas como **sequências independentes** dentro de cada linha. Um acorde parcialmente selecionado, uma figura que invada nota não selecionada, uma sobreposição com nota fixa ou a ultrapassagem do limite dos compassos escolhidos gera **aviso e recusa**, não movimento silencioso de outras notas. O comando reposiciona musicalmente a sequência — não troca apenas o símbolo gráfico.
 - **Desfazer/Refazer** tratam a uniformização como uma alteração atômica; **Restaurar ritmo automático** limpa somente os ajustes manuais de ritmo, sem limpar os ajustes de pauta/mão ou os eventos MIDI. A seleção visual direta e a alternativa textual/por compassos existentes foram reaproveitadas.
 

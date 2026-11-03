@@ -210,9 +210,15 @@ public final class CreationScoreReview {
                     for(CreationScoreTranscriber.WrittenNote n:onsets.get(k)){
                         next.put(n.sourceId,new CreationScoreTranscriber.Timing(newStart,newEnd));
                         if(summary.length()<650)
-                            summary.append("Nota ").append(n.pitch).append(": ")
-                                .append(n.startTick).append("–").append(n.endTick)
-                                .append(" → ").append(newStart).append("–").append(newEnd).append(" pulsos\n");
+                            summary.append("Nota MIDI ").append(n.pitch)
+                                .append(" · compasso ").append(1+n.startTick/options.barTicks())
+                                .append(" · início ")
+                                .append(String.format(Locale.ROOT,"%.2f",n.startTick/960.0))
+                                .append(" → ").append(String.format(Locale.ROOT,"%.2f",newStart/960.0))
+                                .append(" · duração ")
+                                .append(String.format(Locale.ROOT,"%.2f",(n.endTick-n.startTick)/960.0))
+                                .append(" → ").append(String.format(Locale.ROOT,"%.2f",duration/960.0))
+                                .append(" tempos\\n");
                         changed++;
                     }
                 }

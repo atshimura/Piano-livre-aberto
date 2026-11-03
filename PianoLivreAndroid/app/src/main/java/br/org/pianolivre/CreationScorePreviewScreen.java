@@ -481,7 +481,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
                     if(closed)return;
                     busy=false;
                     new AlertDialog.Builder(activity).setTitle("Prévia — "+figure)
-                        .setMessage("Antes → Depois (posições em pulsos MusicXML)\n\n"
+                        .setMessage("Antes → Depois (posições e durações em tempos de semínima)\n\n"
                             +plan.description+"\nNotas afetadas: "+plan.noteCount
                             +" · linhas rítmicas: "+plan.voiceCount
                             +"\nCompassos após o ajuste: "+plan.preview.measures
