@@ -263,8 +263,12 @@ def main():
     click("C2-D partitura de teste")
     find("Detalhes da composição")
     find("Visualizar e ajustar partitura",clickable=True)
+    # Re-linking the saved score must revalidate the OSMD Study path too.
+    before_relink_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     click("Adicionar à Biblioteca")
-    find("Partitura adicionada à Biblioteca Musical.")
+    find("Partitura compatível com Estudar e adicionada à Biblioteca Musical.")
+    assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>before_relink_proof, (
+        "IMPL4 re-linking a generated score bypassed OSMD Study proof")
     click("OK")
     find("Na Biblioteca Musical")
     find("Mover composição para a Lixeira")
