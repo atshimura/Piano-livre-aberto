@@ -21,6 +21,9 @@ jobs:
           python3 tests/test_creation_score_deletion_contract.py
           python3 tests/test_creation_library_contract.py
           python3 tests/test_creation_responsive_contract.py
+          python3 tests/test_library_removal_contract.py
+          python3 tests/test_suite_six_changes_contract.py
+          python3 tests/test_workflow_contract_audit.py
           python3 -m py_compile tests/c2_d_ui_smoke.py tests/emulator_ui.py tests/emulator_creation_navigation.py
       - uses: actions/setup-java@v4
         with:
@@ -50,6 +53,14 @@ jobs:
           java -cp build/rhythm-basic br.org.pianolivre.CreationScoreReviewTest
           java -cp build/rhythm-basic br.org.pianolivre.CreationScoreStoreTest
           java -cp build/rhythm-basic br.org.pianolivre.CreationC2DCorpusTest
+          javac -encoding UTF-8 -d build/rhythm-basic \
+            app/src/main/java/br/org/pianolivre/CreationScoreDeletion.java \
+            tests/CreationScoreDeletionTest.java
+          java -cp build/rhythm-basic CreationScoreDeletionTest
+          javac -encoding UTF-8 -cp build/rhythm-basic -d build/rhythm-basic \
+            app/src/main/java/br/org/pianolivre/ImportedScoreDeletion.java \
+            tests/ImportedScoreDeletionTest.java
+          java -cp build/rhythm-basic ImportedScoreDeletionTest
       - name: Compile Android Java only, without APK
         run: gradle --no-daemon :app:compileDebugJavaWithJavac
       - name: Verify no APK output
