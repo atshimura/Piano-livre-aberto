@@ -69,8 +69,9 @@ jobs:
           java -cp build/score-tests br.org.pianolivre.CreationOSMDCompatibilityFixture
           npm install --prefix build/study-browser --no-audit --no-fund playwright@1.49.1
           build/study-browser/node_modules/.bin/playwright install --with-deps chromium
-          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/StudyProfileBrowserTest.js
+          # Fail fast on real generated and imported MIDI before expensive broad profile cases.
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/CreationOSMDStudyBrowserTest.js
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/StudyProfileBrowserTest.js
           javac -encoding UTF-8 -d build/score-tests app/src/main/java/br/org/pianolivre/DiscoveryScoreBuilder.java tests/DiscoveryNotationFixtures.java
           java -cp build/score-tests br.org.pianolivre.DiscoveryNotationFixtures > build/discovery-fixtures.txt
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryNotationBrowserTest.js
