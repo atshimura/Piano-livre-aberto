@@ -420,10 +420,11 @@ if __name__=="__main__":
     tap_text([DEFAULT_SCORE_TITLE]);tap_text(["Biblioteca"])
     print("PASS: native MIDI hand selector, generated staff and UI deletion of synthetic XML + source MIDI",flush=True)
     screenshot("piano-screen.png")
+    home_scroll_to_top()
     home=dump()
     names=[n.attrib.get("text","") for n in home.iter("node")]
     assert any(DEFAULT_SCORE_TITLE in n for n in names), "Music library must be visible on launch: "+str(names[:30])
-    assert "USB-MIDI" in names, "Disconnected home MIDI control must use the USB-MIDI label"
+    assert "USB-MIDI" in names, "Disconnected home MIDI control must use the USB-MIDI label; visible labels: "+str(names[:60])
     assert not any("piano conectado" in n.casefold() or "toque aqui para testar" in n.casefold() for n in names), "Redundant connection text leaked into the home header"
     print("PASS: library visible at startup",flush=True)
     home_responsive_screenshots()
