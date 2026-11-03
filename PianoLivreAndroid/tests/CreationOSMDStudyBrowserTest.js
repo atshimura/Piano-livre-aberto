@@ -3,7 +3,9 @@
 const fs=require("fs"),path=require("path"),assert=require("assert");
 const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
 (async()=>{
- const browser=await chromium.launch({headless:true,args:["--no-sandbox","--allow-file-access-from-files"]});
+ let browser=null;
+ try{
+ browser=await chromium.launch({headless:true,args:["--no-sandbox","--allow-file-access-from-files"]});
  const page=await browser.newPage({viewport:{width:738,height:245}});
  const requests=[];
  await page.route(/^https?:/,route=>{requests.push(route.request().url());return route.abort();});
@@ -74,5 +76,7 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
     "The discontinued temporal engine cannot be loaded as a fallback");
  assert.equal(requests.length,0,"Offline only; network requests forbidden");
  console.log("IMPL4_OSMD_CREATION_STUDY_BROWSER_PASS cases="+checks+" forcedFailure="+failure.code);
- await browser.close();
+ }finally{
+   if(browser)await browser.close();
+ }
 })().catch(err=>{console.error(err);process.exitCode=1;});
