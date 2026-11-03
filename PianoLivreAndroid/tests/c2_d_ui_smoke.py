@@ -87,6 +87,13 @@ def click(fragment):
     adb("shell", "input", "tap", str(x), str(y))
     time.sleep(1.1)
 
+def click_dialog_item(fragment):
+    """AlertDialog text rows need not advertise clickable=true to UiAutomator."""
+    item=find(fragment,clickable=False,max_scroll=2)
+    x,y=center(item)
+    adb("shell","input","tap",str(x),str(y))
+    time.sleep(.7)
+
 def screenshot(name):
     (DEST / (name + ".png")).write_bytes(adb("exec-out", "screencap", "-p",
                                              timeout=35, binary=True))
@@ -189,8 +196,8 @@ def main():
     card=find("Estudar C2-D partitura de teste",clickable=True)
     x,y=center(card)
     adb("shell","input","swipe",str(x),str(y),str(x),str(y),"1100")
-    find("Excluir da biblioteca",clickable=True)
-    click("Excluir da biblioteca")
+    find("Excluir da biblioteca",clickable=False)
+    click_dialog_item("Excluir da biblioteca")
     find("A gravação original e a partitura salva continuarão")
     click("Excluir")
     find("Partitura removida da Biblioteca Musical.")
