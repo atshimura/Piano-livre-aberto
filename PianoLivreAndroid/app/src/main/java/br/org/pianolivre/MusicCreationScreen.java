@@ -366,6 +366,8 @@ a.handler.postDelayed(this,100);}};ticker.run();
  private void renderDetails(CreationProjectStore.Project p){
   String id=p.id;
   try{
+   // Do not offer Gerar partitura while an interrupted deletion is pending.
+   CreationScoreDeletion.recover(a.getFilesDir(),projectId->LibraryStore.removeCreationEveryProfile(a.prefs,projectId));
    base("Detalhes da composição",this::requestLeave);
    label(body,p.title,23,true,3);
    attach(body,mutedText(p.trash?"Na Lixeira":p.recoverable?"Trecho recuperável":"Composição salva",13),-2,12);
@@ -431,6 +433,11 @@ a.handler.postDelayed(this,100);}};ticker.run();
      attach(scoreCard,viewScore,48,5);
      if(hasScore)attach(scoreCard,mutedText("✓ Na Biblioteca Musical",13),-2,4);
     }
+    if(hasScore){
+     Button deleteScore=button("Excluir somente a partitura…",false,()->confirmDeleteOnlyScore(p));
+     deleteScore.setTextColor(0xff9D4444);
+     attach(scoreCard,deleteScore,48,10);
+    }
     attach(body,scoreCard,-2,12);
    }
    Button rename=button("Renomear",false,()->rename(p));
@@ -449,10 +456,40 @@ a.handler.postDelayed(this,100);}};ticker.run();
    infoButton.setOnClickListener(v->{boolean open=infoCard.getVisibility()!=View.VISIBLE;setShown(infoCard,open);infoButton.setText(open?"Informações da gravação  ▴":"Informações da gravação  ▾");});
    attach(body,infoCard,-2,12);
    if(!p.trash){
-    Button trash=button("Mover para Lixeira",false,()->mutate(()->store.moveToTrash(id,System.currentTimeMillis())));
+    Button trash=button("Mover composição para a Lixeira",false,()->mutate(()->store.moveToTrash(id,System.currentTimeMillis())));
     trash.setTextColor(0xff9D4444);attach(body,trash,48,0);
    }
   }catch(Exception ex){a.message("Não foi possível abrir a composição: "+ex.getMessage());showList();}
+ }
+ private void confirmDeleteOnlyScore(CreationProjectStore.Project project){
+  activeDialog=new AlertDialog.Builder(a).setTitle("Excluir somente a partitura?")
+   .setMessage("A partitura gerada e seus ajustes manuais serão excluídos definitivamente, incluindo seu vínculo com a Biblioteca Musical, Favoritos e Coleções. A gravação MIDI original será preservada. Você poderá gerar outra partitura a partir dela. Faça backup antes se quiser guardar os ajustes.")
+   .setPositiveButton("Excluir partitura",(dialog,which)->deleteOnlyScore(project.id,project.profileId))
+   .setNegativeButton("Cancelar",null).show();
+ }
+ private void deleteOnlyScore(String id,int owner){
+  if(busy)return;
+  player.stop();busy=true;
+  disk.execute(()->{
+   try{
+    CreationProjectStore.Project original=store.get(id);
+    if(owner!=a.user||original.profileId!=owner||original.trash||original.recoverable)
+     throw new IOException("Composição indisponível para exclusão neste perfil");
+    // Validate ownership, source fingerprint and derived MusicXML before deletion.
+    CreationScoreStore.Saved saved=new CreationScoreStore(a.getFilesDir()).read(id);
+    if(saved.profileId!=owner)throw new IOException("Partitura de outro perfil");
+    CreationScoreDeletion.delete(a.getFilesDir(),id,projectId->LibraryStore.removeCreationEveryProfile(a.prefs,projectId));
+    post(()->{
+     busy=false;
+     a.clearRemovedScoreInMemory("creation-score:"+id);
+     if(a.screens!=null)a.screens.refreshLibrary();
+     a.message("Partitura excluída. A gravação original foi preservada.");
+     showDetails(id);
+    });
+   }catch(Exception error){
+    post(()->{busy=false;a.message("Não foi possível excluir a partitura: "+error.getMessage());showDetails(id);});
+   }
+  });
  }
  private void updatePlaybackControls(){
   if(detailPlay==null)return;

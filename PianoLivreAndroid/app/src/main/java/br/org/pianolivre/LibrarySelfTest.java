@@ -94,6 +94,22 @@ final class LibrarySelfTest {
     "postcommit recovery completes metadata in all profiles");
    check(!other.snapshot().collections.get(otherCollection).scores.contains(interruptedKey),
     "postcommit recovery cleans collection memberships");
+   // Isolated synthetic score: deleting a derived .pls cannot alter the .plc.
+   File originalDir=new File(root,"creations"),scoresDir=new File(root,"creation-scores");
+   check(originalDir.mkdir()&&scoresDir.mkdir(),"synthetic creation directories prepared");
+   File originalMidi=new File(originalDir,creationId+".plc"),derivedScore=new File(scoresDir,creationId+".pls");
+   try(FileOutputStream out=new FileOutputStream(originalMidi)){out.write(content);}
+   try(FileOutputStream out=new FileOutputStream(derivedScore)){out.write(content);}
+   String createdKey="creation-score:"+creationId;
+   store.addCreation(creationId);store.toggleFavorite(createdKey);
+   other.toggleFavorite(createdKey);other.toggleMember(otherCollection,createdKey);
+   prefs.edit().putString("user_0_file",createdKey).putString("user_1_file",createdKey).commit();
+   CreationScoreDeletion.delete(root,creationId,projectId->LibraryStore.removeCreationEveryProfile(prefs,projectId));
+   check(originalMidi.isFile()&&Arrays.equals(content,java.nio.file.Files.readAllBytes(originalMidi.toPath())),"original MIDI bytes preserved after score deletion");
+   check(!derivedScore.exists()&&!store.hasCreation(creationId),"generated score removed, library link detached");
+   check(!store.snapshot().favorites.contains(createdKey)&&!other.snapshot().favorites.contains(createdKey),"generated score favorites cleaned across profiles");
+   check(!other.snapshot().collections.get(otherCollection).scores.contains(createdKey),"generated score collection membership cleaned");
+   check(!prefs.contains("user_0_file")&&!prefs.contains("user_1_file"),"study references cleared for deleted derivative");
    return checks;
   }finally{prefs.edit().clear().commit();}
  }

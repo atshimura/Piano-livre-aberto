@@ -51,6 +51,11 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('attach(body,trash,48,0)',details)
         self.assertIn('attach(body,warning,-2,12)',details)
         self.assertIn('finalizeRecovery(id,System.currentTimeMillis())',details)
+        self.assertIn('button("Excluir somente a partitura…"',details)
+        self.assertIn('button("Mover composição para a Lixeira"',details)
+        self.assertIn('setPositiveButton("Excluir partitura"',details)
+        self.assertIn('A gravação MIDI original será preservada.',details)
+        self.assertIn('CreationScoreDeletion.delete(a.getFilesDir()',details)
 
     def test_block_c_preview_commands_and_note_rows(self):
         self.assertIn('private void actions(LinearLayout parent,Button... buttons)',SCORE)

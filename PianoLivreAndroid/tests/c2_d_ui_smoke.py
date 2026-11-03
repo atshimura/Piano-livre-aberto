@@ -208,9 +208,46 @@ def main():
     prefs=ET.fromstring(adb("shell","run-as",PACKAGE,"cat","shared_prefs/piano_data.xml"))
     entry=prefs.find("./string[@name='user_0_library']")
     assert entry is not None and project_id not in json.loads(entry.text).get("addedCreations",[]), "Creation catalog entry survived unlink"
+    # Implementation 2: revisit the SAME C2-D project, re-add its score, then
+    # delete ONLY the derived .pls through Detalhes. No second fixture/AVD.
+    original_bytes=subprocess.run(["adb","exec-out","run-as",PACKAGE,"cat",
+        "files/creations/"+project_id+".plc"],check=True,stdout=subprocess.PIPE).stdout
+    click("Laboratório Musical")
+    find("Descobrir")
+    click("Criação")
+    find("Criação Musical")
+    click("Minhas Criações")
+    click("C2-D partitura de teste")
+    find("Detalhes da composição")
+    find("Visualizar e ajustar partitura",clickable=True)
+    click("Adicionar à Biblioteca")
+    find("Partitura adicionada à Biblioteca Musical.")
+    click("OK")
+    find("Na Biblioteca Musical")
+    find("Mover composição para a Lixeira")
+    click("Excluir somente a partitura…")
+    find("Excluir somente a partitura?")
+    find("A gravação MIDI original será preservada.")
+    click("Cancelar")
+    assert private_file_exists("files/creation-scores/"+project_id+".pls"), "Cancel deleted generated score"
+    click("Excluir somente a partitura…")
+    click("Excluir partitura")
+    find("Partitura excluída. A gravação original foi preservada.")
+    click("OK")
+    find("Gerar partitura",clickable=True)
+    assert not nodes("Excluir somente a partitura…"), "Delete-score control present without a saved score"
+    assert not private_file_exists("files/creation-scores/"+project_id+".pls"), "Generated .pls still exists after confirmed deletion"
+    assert private_file_exists("files/creations/"+project_id+".plc"), "Deleting score also deleted original MIDI project"
+    after_bytes=subprocess.run(["adb","exec-out","run-as",PACKAGE,"cat",
+        "files/creations/"+project_id+".plc"],check=True,stdout=subprocess.PIPE).stdout
+    assert after_bytes==original_bytes, "Original MIDI project content changed after score deletion"
+    assert not private_file_exists("files/creation-score.delete-pending"), "Completed score deletion left staging files"
+    prefs=ET.fromstring(adb("shell","run-as",PACKAGE,"cat","shared_prefs/piano_data.xml"))
+    entry=prefs.find("./string[@name='user_0_library']")
+    assert entry is not None and project_id not in json.loads(entry.text).get("addedCreations",[]), "Deleted score retained Library link"
     (DEST / "memory.txt").write_text(adb("shell", "dumpsys", "meminfo", PACKAGE),
                                       encoding="utf-8")
-    print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape,unlink-with-original-preserved"
+    print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape,unlink,score-delete-cancel-confirm,original-midi-preserved"
           " synthetic=true emulator=true")
     adb("shell", "pm", "clear", PACKAGE)
     adb("shell","settings","put","system","user_rotation",orientation if orientation not in ("","null") else "0")
