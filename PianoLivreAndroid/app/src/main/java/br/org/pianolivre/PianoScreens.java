@@ -298,10 +298,14 @@ class PianoScreens {
     grid.addView(text("Algumas partituras criadas não puderam ser listadas. Nenhum dado foi alterado.",13,ink,false),lp(-1,-2));
    }
   }
+  // Hidden built-in entries should not inflate the available-library count.
+  entries.removeIf(entry->{
+   String key=LibrarySearch.key(entry[1]);
+   return key.startsWith("scores/")&&metadata.hiddenScores.contains(key);
+  });
   int total=entries.size();
   entries.removeIf(entry->{
    String key=LibrarySearch.key(entry[1]);
-   if(key.startsWith("scores/")&&metadata.hiddenScores.contains(key))return true;
    if(!LibrarySearch.matches(entry[0]+" "+new File(entry[1]).getName(),libraryQuery))return true;
    if(selectedLibraryFilter.equals("*"))return !metadata.favorites.contains(key);
    LibraryStore.Collection collection=metadata.collections.get(selectedLibraryFilter);
