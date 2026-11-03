@@ -64,6 +64,7 @@ jobs:
             app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
             app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
             app/src/main/java/br/org/pianolivre/Score.java \
+            app/src/main/java/br/org/pianolivre/MidiFileImport.java \
             tests/CreationOSMDCompatibilityFixture.java
           java -cp build/score-tests br.org.pianolivre.CreationOSMDCompatibilityFixture
           npm install --prefix build/study-browser --no-audit --no-fund playwright@1.49.1
