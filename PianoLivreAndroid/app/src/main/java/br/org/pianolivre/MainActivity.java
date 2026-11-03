@@ -272,7 +272,9 @@ public class MainActivity extends Activity {
    final String failure=problem;final Score checked=parsed;
    runOnUiThread(()->{
     if(failure!=null||user!=owner){
-     message("Não foi possível adicionar à Biblioteca: "+(failure==null?"Perfil ativo alterado":failure));
+     reportNotationIssue("PL-NOT-STORAGE","Validação para Biblioteca",
+       failure==null?"Perfil ativo alterado":failure,null,
+       ()->addCreationScoreToLibrary(id,onDone));
      onDone.accept(false);return;
     }
     CreationStudyCompatibility.check(this,checked,compatible->{
@@ -354,7 +356,11 @@ public class MainActivity extends Activity {
    message("Atenção: não é possível determinar com segurança todos os retornos: "+
      String.join(", ",route.warnings)+". A reprodução desta partitura será linear.");
   }
- }catch(Exception e){message("Não foi possível abrir a partitura: "+e.getMessage());}}
+ }catch(Exception e){
+   final String retryPath=path;
+   reportNotationIssue("PL-NOT-PARSE","Leitura MusicXML",e.getMessage(),null,
+    ()->loadScore(retryPath,true,free));
+  }}
  void chooseMidiHands(MidiFileImport.Result midi,String name,List<Integer> tracks,int index,Map<Integer,Integer> hands){
   if(index<tracks.size()){
    int track=tracks.get(index);long count=midi.notes.stream().filter(n->n.track==track).count();
@@ -1134,6 +1140,18 @@ public class MainActivity extends Activity {
  private void clearCreationExport(){if(pendingCreationExportFile!=null&&pendingCreationExportFile.matches("creation-export-[a-f0-9-]{36}\\.mid"))new File(getCacheDir(),pendingCreationExportFile).delete();pendingCreationExportFile=pendingCreationExportSha=pendingCreationExportId=null;creationExportPreparing=false;}
  @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("creationExportId",pendingCreationExportId);state.putString("creationExportFile",pendingCreationExportFile);state.putString("creationExportSha",pendingCreationExportSha);}
  void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
+ void reportNotationIssue(String code,String stage,String details,String xml,Runnable retry){
+  String version="beta";
+  try{version=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
+  catch(Exception ignored){}
+  NotationFailure failure=new NotationFailure(code,stage,details,"creation",xml,
+    0,0,0,0,0,version);
+  new Thread(()->{
+   try{new NotationDiagnosticsStore(getFilesDir()).add(failure);}
+   catch(Exception e){android.util.Log.w("PianoLivreNotation","Falha ao registrar incidente",e);}
+  },"PianoLivre-NotationError").start();
+  showNotationFailure(failure,retry);
+ }
  void showNotationFailure(NotationFailure failure,Runnable retry){
   showNotationFailure(failure,retry,null);
  }
