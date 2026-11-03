@@ -3,6 +3,7 @@ package br.org.pianolivre;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.function.Consumer;
 
 /** Crash-recoverable removal of app-owned imported MusicXML and its optional MIDI source. */
 public final class ImportedScoreDeletion {
@@ -29,7 +30,8 @@ public final class ImportedScoreDeletion {
   }
  }
  /** Recover interrupted operations before Library is opened or backup is generated. */
- public static synchronized void recover(File root)throws IOException{
+ public static synchronized void recover(File root,Consumer<String> finishMetadata)throws IOException{
+  if(finishMetadata==null)throw new IOException("Recuperação de biblioteca sem metadados");
   File stage=new File(root,STAGE);
   if(!stage.exists())return;
   if(!stage.isDirectory()||Files.isSymbolicLink(stage.toPath()))throw new IOException("Exclusão anterior inválida");
@@ -49,6 +51,13 @@ public final class ImportedScoreDeletion {
   }
   File imported=new File(root,"imported");
   boolean committed=new File(stage,COMMITTED).isFile();
+  // The durable commit marker precedes the prefs update. If Android stopped
+  // between those steps, finish the idempotent metadata update before removing
+  // any staged bytes. A failure retains the staging directory for retry.
+  if(committed){
+   try{finishMetadata.accept("imported/"+filename);}
+   catch(RuntimeException failure){throw new IOException("Exclusão pendente: não foi possível concluir os metadados",failure);}
+  }
   for(String filenameToCheck:new String[]{filename,filename+".source.mid"}){
    File staged=new File(stage,filenameToCheck);
    if(!staged.exists())continue;
@@ -62,11 +71,11 @@ public final class ImportedScoreDeletion {
   }
   drop(new File(stage,COMMITTED));drop(manifest);drop(stage);
  }
- /** The callback must commit metadata atomically; failure restores staged files. */
- public static synchronized void delete(File root,String key,Runnable updateMetadata)throws IOException{
+ /** The callback must atomically and idempotently detach the supplied score key. */
+ public static synchronized void delete(File root,String key,Consumer<String> updateMetadata)throws IOException{
   if(updateMetadata==null)throw new IOException("Atualização da biblioteca ausente");
   String filename=name(key);
-  recover(root);
+  recover(root,updateMetadata);
   File imported=new File(root,"imported"),score=new File(imported,filename),source=new File(imported,filename+".source.mid");
   if(!imported.isDirectory()||!score.isFile()||Files.isSymbolicLink(score.toPath())||Files.isSymbolicLink(source.toPath()))
    throw new IOException("Partitura importada indisponível ou inválida");
@@ -78,15 +87,16 @@ public final class ImportedScoreDeletion {
    marker(new File(stage,NAME),filename);
    move(score,new File(stage,filename));
    if(source.exists())move(source,new File(stage,filename+".source.mid"));
-   updateMetadata.run();
+   // No preference is modified until the durable marker exists. Crash before:
+   // restore staged files. Crash after: finish metadata and delete bytes.
    marker(new File(stage,COMMITTED),"ok");committed=true;
+   updateMetadata.accept(key);
   }catch(Exception error){
    if(!committed){
-    try{recover(root);}catch(IOException rollback){error.addSuppressed(rollback);}
+    try{recover(root,updateMetadata);}catch(IOException rollback){error.addSuppressed(rollback);}
    }
-   throw new IOException("Exclusão cancelada; dados preservados quando possível",error);
+   throw new IOException(committed?"Exclusão pendente de finalização segura":"Exclusão cancelada; arquivos restaurados quando possível",error);
   }
-  // If cleanup fails, the durable committed marker lets next startup finish it.
-  recover(root);
+  recover(root,updateMetadata);
  }
 }
