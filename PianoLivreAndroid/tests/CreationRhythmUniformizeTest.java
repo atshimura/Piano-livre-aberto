@@ -66,7 +66,7 @@ public final class CreationRhythmUniformizeTest {
  static void uniformize()throws Exception{
   CreationScoreReview work=review();
   byte[] immutable=work.result().xml.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-  work.selectMeasures(1,2);
+  work.selectMeasures(1,work.result().measures);
   check(work.selectedCount()==4,"selection by measures");
   CreationScoreReview.Uniformization plan=work.previewUniformize(960,0,0);
   check(plan.noteCount==4&&plan.voiceCount>=1,"quarter-note preview plans all selected attacks");
