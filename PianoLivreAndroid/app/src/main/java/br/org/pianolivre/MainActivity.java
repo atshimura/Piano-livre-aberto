@@ -143,7 +143,7 @@ public class MainActivity extends Activity {
    try{android.util.Log.i("PianoLivreXmlInput","XML_INPUT_SELFTEST_PASS assertions="+XmlInputSelfTest.run());}
    catch(Exception ex){throw new IllegalStateException("XML input self-test failed",ex);}
   }
-  try{BackupArchive.recover(prefs,getFilesDir());ImportedScoreDeletion.recover(getFilesDir(),scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));}
+  try{BackupArchive.recover(prefs,getFilesDir());ImportedScoreDeletion.recover(getFilesDir(),scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));CreationScoreDeletion.recover(getFilesDir(),id->LibraryStore.removeCreationEveryProfile(prefs,id));}
   catch(Exception recovery){
    android.util.Log.e("PianoLivreBackup","Não foi possível recuperar restauração anterior",recovery);
    new AlertDialog.Builder(this).setTitle("Recuperação de dados")
@@ -397,6 +397,7 @@ public class MainActivity extends Activity {
      loadScore(dest.getAbsolutePath(),true);
     }
    }else if(request==EXPORT){
+    CreationScoreDeletion.recover(getFilesDir(),id->LibraryStore.removeCreationEveryProfile(prefs,id));
     if(screens!=null)screens.prepareCreationBackup();
     BackupArchive.export(prefs,getFilesDir(),()->getContentResolver().openOutputStream(uri));
     message("Backup exportado com verificação de integridade");
@@ -1089,6 +1090,7 @@ public class MainActivity extends Activity {
  JSONObject makeBackup()throws Exception{
   saveSession();
   ImportedScoreDeletion.recover(getFilesDir(),scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));
+  CreationScoreDeletion.recover(getFilesDir(),id->LibraryStore.removeCreationEveryProfile(prefs,id));
   if(screens!=null)screens.prepareCreationBackup();
   return BackupArchive.create(prefs,getFilesDir());
  }
