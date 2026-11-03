@@ -1,3 +1,4 @@
+- [118 — Implementação 3: execução, controles, preservação de dados e revisão da suíte completa](118-IMPLEMENTACAO-3-EXECUCAO-TESTES.md)
 - [117 — Implementação 3: interpretação por ataques, regularização rítmica e Uniformizar trecho (planejamento aprovado)](117-IMPLEMENTACAO-3-INTERPRETACAO-RITMICA-UNIFORMIZAR-TRECHO.md)
 - [116 — Implementação 2: excluir partitura gerada sem apagar composição MIDI; auditoria da suíte](116-IMPLEMENTACAO-2-EXCLUIR-PARTITURA-CRIACAO.md)
 - [115 — Implementação 1: auditoria e correções da suíte completa (sem executá-la)](115-IMPLEMENTACAO-1-AUDITORIA-SUITE.md)

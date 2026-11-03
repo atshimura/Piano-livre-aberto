@@ -1,6 +1,6 @@
 # 117 — Implementação 3: interpretação rítmica e Uniformizar trecho
 
-**Decisão de produto:** 03/11/2026. **Estado:** especificação aprovada para desenvolvimento posterior; **não implementada neste PR documental**.
+**Decisão de produto:** 03/11/2026. **Histórico:** este documento nasceu como especificação ainda não implementada no PR documental #104. **Desenvolvimento posterior:** ver [execução técnica 118](118-IMPLEMENTACAO-3-EXECUCAO-TESTES.md) e PR #105; a declaração de não implementação abaixo descreve apenas o estágio documental original.
 **Dependências:** Implementação 1 (#102), Implementação 2 (#103), base atual `feat/creation-score-separate-delete-20261103`; `main` protegida não é alterada.
 **Arquivos de referência:** `CreationScoreTranscriber.java`, `CreationScoreReview.java`, `CreationScorePreviewScreen.java`, `CreationScoreStore.java`, `docs/101-CRIACAO-C2-PLANO-EXECUCAO.md`.
 
@@ -73,6 +73,6 @@ Composto em 4/4, um trecho com quatro ataques de uma voz, separados aproximadame
 
 ## 6. Estado desta entrega
 
-**Somente planejamento e documentação** desta decisão aprovada. Nenhum algoritmo de reconhecimento por ataques, controle de regularização, botão Uniformizar trecho ou mudança de persistência está implementado ainda; nenhum APK, emulador, suíte completa ou teste físico foi executado nesta entrega.
+**Estado histórico do PR #104:** somente planejamento e documentação, sem código. **Estado subsequente:** PR técnico #105 implementa os recursos descritos, com validação básica dirigida e revisão dos roteiros de suíte (ver [118](118-IMPLEMENTACAO-3-EXECUCAO-TESTES.md)). Nenhum APK, emulador, suíte completa ou teste físico foi autorizado/realizado nesta implementação.
 
 **Próxima ação de implementação:** iniciar pelo motor de ataques/vozes e corpus de regressão; em seguida, parâmetros/edição `Uniformizar trecho`, UI, persistência retrocompatível, testes básicos e adaptação da suíte completa sem executá-la. Não integrar à `main` protegida sem os requisitos de publicação.
