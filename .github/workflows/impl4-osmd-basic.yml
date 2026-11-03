@@ -22,7 +22,12 @@ jobs:
           python3 tests/test_creation_score_deletion_contract.py
           python3 tests/test_creation_library_contract.py
           python3 -m py_compile tests/emulator_study_failure.py tests/c2_d_ui_smoke.py
-          node --check app/src/main/assets/notation.html || true
+          python3 tests/extract_inline_osmd.py
+          node --check build/impl4-inline.js
+          node tests/EngravingProofContractTest.js
+          node tests/StudyNoteTipTest.js
+          node tests/VerticalNavigationTest.js
+          node tests/OpticalTimeMapTest.js
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
