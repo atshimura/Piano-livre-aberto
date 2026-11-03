@@ -47,6 +47,7 @@ jobs:
           python3 tests/test_creation_responsive_contract.py
           python3 tests/test_creation_library_contract.py
           python3 tests/test_suite_six_changes_contract.py
+          python3 tests/test_creation_rhythm_contract.py
           python3 -m py_compile tests/emulator_midi_interfaces.py tests/emulator_study_layout.py tests/emulator_ui.py tests/emulator_creation_navigation.py tests/c2_d_ui_smoke.py
       - name: Adaptive Study profile and complete corpus (desktop Chromium)
         env:
@@ -194,9 +195,11 @@ jobs:
             app/src/main/java/br/org/pianolivre/SessionFiles.java \
             app/src/main/java/br/org/pianolivre/Score.java \
             tests/CreationScoreTranscriberTest.java \
+            tests/CreationRhythmUniformizeTest.java \
             tests/CreationScoreReviewTest.java \
             tests/CreationScoreStoreTest.java \
             tests/CreationC2DCorpusTest.java
+          java -cp build/score-tests br.org.pianolivre.CreationRhythmUniformizeTest
           java -cp build/score-tests br.org.pianolivre.CreationScoreTranscriberTest
           java -cp build/score-tests br.org.pianolivre.CreationScoreReviewTest
           java -cp build/score-tests br.org.pianolivre.CreationScoreStoreTest

@@ -1,0 +1,70 @@
+name: Piano Livre - Implementacao 3 ritmo e uniformizar (basico sem APK)
+on:
+  push:
+    branches: [feat/creation-rhythm-uniformize-20261103]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rhythm-basic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: PianoLivreAndroid
+    steps:
+      - uses: actions/checkout@v4
+      - name: Public audit and directed contracts
+        run: |
+          python3 scripts/verify_public_snapshot.py
+          python3 tests/test_creation_rhythm_contract.py
+          python3 tests/test_creation_score_deletion_contract.py
+          python3 tests/test_creation_library_contract.py
+          python3 tests/test_creation_responsive_contract.py
+          python3 tests/test_library_removal_contract.py
+          python3 tests/test_suite_six_changes_contract.py
+          python3 tests/test_workflow_contract_audit.py
+          python3 -m py_compile tests/c2_d_ui_smoke.py tests/emulator_ui.py tests/emulator_creation_navigation.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: JVM rhythm, old C2 A/B/C/D, new uniformization and recovery
+        run: |
+          mkdir -p build/rhythm-basic
+          javac -encoding UTF-8 -d build/rhythm-basic \
+            app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
+            app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
+            app/src/main/java/br/org/pianolivre/SessionFiles.java \
+            app/src/main/java/br/org/pianolivre/Score.java \
+            tests/CreationRhythmUniformizeTest.java \
+            tests/CreationScoreTranscriberTest.java \
+            tests/CreationScoreReviewTest.java \
+            tests/CreationScoreStoreTest.java \
+            tests/CreationC2DCorpusTest.java
+          java -cp build/rhythm-basic br.org.pianolivre.CreationRhythmUniformizeTest
+          java -cp build/rhythm-basic br.org.pianolivre.CreationScoreTranscriberTest
+          java -cp build/rhythm-basic br.org.pianolivre.CreationScoreReviewTest
+          java -cp build/rhythm-basic br.org.pianolivre.CreationScoreStoreTest
+          java -cp build/rhythm-basic br.org.pianolivre.CreationC2DCorpusTest
+          javac -encoding UTF-8 -d build/rhythm-basic \
+            app/src/main/java/br/org/pianolivre/CreationScoreDeletion.java \
+            tests/CreationScoreDeletionTest.java
+          java -cp build/rhythm-basic CreationScoreDeletionTest
+          javac -encoding UTF-8 -cp build/rhythm-basic -d build/rhythm-basic \
+            app/src/main/java/br/org/pianolivre/ImportedScoreDeletion.java \
+            tests/ImportedScoreDeletionTest.java
+          java -cp build/rhythm-basic ImportedScoreDeletionTest
+      - name: Compile Android Java only, without APK
+        run: gradle --no-daemon :app:compileDebugJavaWithJavac
+      - name: Verify no APK output
+        run: |
+          test ! -e app/build/outputs/apk/debug/app-debug.apk
+          test ! -e app/build/outputs/apk/release/app-release.apk
+          echo CREATION_RHYTHM_NO_APK_PASS

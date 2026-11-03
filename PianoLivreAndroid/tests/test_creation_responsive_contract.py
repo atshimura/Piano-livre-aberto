@@ -85,7 +85,11 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('responsiveFields(panel,new String[]{"Do compasso","Até o compasso (inclusive)"}',SCORE)
         self.assertIn('attach(field,fields[i],48,0)',SCORE)
         self.assertIn('title.setMaxLines(2)',SCORE)
-        self.assertIn('review.configure(bpm,beats,beatType,step)',SCORE)
+        self.assertIn('review.configure(bpm,beats,beatType,step,chosenRegularization)',SCORE)
+        self.assertIn('button("Uniformizar trecho"',SCORE)
+        self.assertIn('button("Atribuir mão / voz"',SCORE)
+        self.assertIn('previewUniformize(duration,hand,voice)',SCORE)
+        self.assertIn('applyUniformize(plan)',SCORE)
         self.assertIn('review.selectMeasures(',SCORE)
 
     def test_musical_data_logic_untouched_by_ui_reflow(self):
