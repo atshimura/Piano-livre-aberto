@@ -73,7 +73,7 @@ final class LibrarySelfTest {
    check(!other.snapshot().collections.get(otherCollection).scores.contains(imported),"all profiles detach imported collection membership");
    check(!prefs.contains("user_0_file")&&!prefs.contains("user_1_file"),"saved study references cleared across profiles");
    boolean invalidHidden=false;
-   try{LibraryStore.decode("{\\"version\\":1,\\"favorites\\":[],\\"collections\\":[],\\"hiddenScores\\":[\\"imported/meu.mxl\\"]}");}
+   try{LibraryStore.decode("{\"version\":1,\"favorites\":[],\"collections\":[],\"hiddenScores\":[\"imported/meu.mxl\"]}");}
    catch(IllegalArgumentException expected){invalidHidden=true;}
    check(invalidHidden,"imported files cannot be hidden as built-in scores");
    return checks;
