@@ -218,7 +218,7 @@ public final class CreationScoreReview {
                                 .append(" · duração ")
                                 .append(String.format(Locale.ROOT,"%.2f",(n.endTick-n.startTick)/960.0))
                                 .append(" → ").append(String.format(Locale.ROOT,"%.2f",duration/960.0))
-                                .append(" tempos\\n");
+                                .append(" tempos\n");
                         changed++;
                     }
                 }
