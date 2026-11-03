@@ -65,6 +65,10 @@ public final class CreationRhythmUniformizeTest {
  }
  static void uniformize()throws Exception{
   CreationScoreReview work=review();
+  // Rigorosa intentionally preserves the human 3rd-to-4th timing difference;
+  // Uniformizar must actually change the notation rather than pass as a no-op.
+  work.configure(100,4,4,32,CreationScoreTranscriber.Regularization.RIGOROUS);
+  work.markSaved();
   byte[] immutable=work.result().xml.getBytes(java.nio.charset.StandardCharsets.UTF_8);
   work.selectMeasures(1,work.result().measures);
   check(work.selectedCount()==4,"selection by measures");
