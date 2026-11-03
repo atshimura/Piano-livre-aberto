@@ -31,6 +31,8 @@ else:raise AssertionError('IMPL4 OSMD error dialog was not shown')
 assert any('PL-NOT-RENDER' in s for s in labels),'Stable code absent from error dialog'
 assert any('preservados' in s for s in labels),'Preservation statement missing from dialog'
 assert any('copiar diagnóstico' in s.casefold() for s in labels), 'Copy diagnosis action missing: '+repr(labels[-35:])
+assert any('tentar novamente' in s.casefold() for s in labels), 'Retry action hidden: '+repr(labels[-35:])
+assert any('voltar à biblioteca' in s.casefold() for s in labels), 'Library exit hidden: '+repr(labels[-35:])
 screenshot('piano-study-failure-osmd-dialog.png')
 # Copy must be actionable without dismissing the error/retry dialog.
 tap_text(['Copiar diagnóstico'],exact=True)
