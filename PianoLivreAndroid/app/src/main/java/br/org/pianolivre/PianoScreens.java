@@ -441,7 +441,7 @@ class PianoScreens {
     try{
      if(builtIn)new LibraryStore(a.prefs,a.user).setHidden(key,true);
      else if(created)new LibraryStore(a.prefs,a.user).removeCreation(key.substring(15));
-     else ImportedScoreDeletion.delete(a.getFilesDir(),key,()->LibraryStore.removeImportedEveryProfile(a.prefs,key));
+     else ImportedScoreDeletion.delete(a.getFilesDir(),key,scoreKey->LibraryStore.removeImportedEveryProfile(a.prefs,scoreKey));
      a.clearRemovedScoreInMemory(key);refreshLibrary();
      a.message(builtIn?"Música ocultada neste perfil.":"Partitura removida da Biblioteca Musical.");
     }catch(Exception ex){a.message("Não foi possível remover a partitura: "+ex.getMessage());}
