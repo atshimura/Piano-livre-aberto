@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """One C2-D synthetic emulator UI path; NOT the full Android regression suite."""
 import os
+import json
 import re
 import subprocess
 import time
@@ -86,6 +87,13 @@ def click(fragment):
     adb("shell", "input", "tap", str(x), str(y))
     time.sleep(1.1)
 
+def click_dialog_item(fragment):
+    """AlertDialog text rows need not advertise clickable=true to UiAutomator."""
+    item=find(fragment,clickable=False,max_scroll=2)
+    x,y=center(item)
+    adb("shell","input","tap",str(x),str(y))
+    time.sleep(.7)
+
 def screenshot(name):
     (DEST / (name + ".png")).write_bytes(adb("exec-out", "screencap", "-p",
                                              timeout=35, binary=True))
@@ -102,6 +110,23 @@ def wait_log(marker, timeout=45):
             return
         time.sleep(1)
     raise AssertionError("Timed out waiting for " + marker)
+
+def linked_creation_id():
+    """Read the exact synthetic project reference, never infer a random UUID."""
+    raw=adb("shell","run-as",PACKAGE,"cat","shared_prefs/piano_data.xml")
+    prefs=ET.fromstring(raw)
+    item=prefs.find("./string[@name='user_0_library']")
+    if item is None or not item.text:
+        raise AssertionError("Synthetic Library metadata missing")
+    ids=json.loads(item.text).get("addedCreations",[])
+    if len(ids)!=1 or not re.fullmatch(r"[0-9a-fA-F-]{36}",ids[0]):
+        raise AssertionError("Expected exactly one linked C2-D fixture")
+    return ids[0]
+
+def private_file_exists(path):
+    return subprocess.run(["adb","shell","run-as",PACKAGE,"ls",path],
+                          stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                          timeout=15).returncode==0
 
 def main():
     ensure_emulator()
@@ -163,9 +188,29 @@ def main():
     time.sleep(2.0)
     find("C2-D partitura de teste")
     screenshot("05-paisagem")
+    # The same synthetic generated score also proves safe unlinking from
+    # Library. No new C2-D setup, APK, or duplicate emulator session needed.
+    project_id=linked_creation_id()
+    assert private_file_exists("files/creations/"+project_id+".plc"), "Fixture project absent before unlink"
+    assert private_file_exists("files/creation-scores/"+project_id+".pls"), "Fixture MusicXML absent before unlink"
+    card=find("Estudar C2-D partitura de teste",clickable=True)
+    x,y=center(card)
+    adb("shell","input","swipe",str(x),str(y),str(x),str(y),"1100")
+    find("Excluir da biblioteca",clickable=False)
+    click_dialog_item("Excluir da biblioteca")
+    find("A gravação original e a partitura salva continuarão")
+    click("Excluir")
+    find("Partitura removida da Biblioteca Musical.")
+    click("OK")
+    assert not nodes("Estudar C2-D partitura de teste",clickable=True), "Unlinked generated score still listed"
+    assert private_file_exists("files/creations/"+project_id+".plc"), "Unlink destroyed the original project"
+    assert private_file_exists("files/creation-scores/"+project_id+".pls"), "Unlink destroyed the derived score"
+    prefs=ET.fromstring(adb("shell","run-as",PACKAGE,"cat","shared_prefs/piano_data.xml"))
+    entry=prefs.find("./string[@name='user_0_library']")
+    assert entry is not None and project_id not in json.loads(entry.text).get("addedCreations",[]), "Creation catalog entry survived unlink"
     (DEST / "memory.txt").write_text(adb("shell", "dumpsys", "meminfo", PACKAGE),
                                       encoding="utf-8")
-    print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape"
+    print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape,unlink-with-original-preserved"
           " synthetic=true emulator=true")
     adb("shell", "pm", "clear", PACKAGE)
     adb("shell","settings","put","system","user_rotation",orientation if orientation not in ("","null") else "0")

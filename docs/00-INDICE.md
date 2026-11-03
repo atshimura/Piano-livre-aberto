@@ -1,3 +1,6 @@
+- [115 — Implementação 1: auditoria e correções da suíte completa (sem executá-la)](115-IMPLEMENTACAO-1-AUDITORIA-SUITE.md)
+- [114 — Exclusão segura de músicas na Biblioteca (implementação técnica, sem APK)](114-BIBLIOTECA-EXCLUSAO-MUSICAS.md)
+
 # Documentação do Piano Livre aberto
 
 ## Ajustes da candidata 0.9.62 — seis alterações aprovadas
