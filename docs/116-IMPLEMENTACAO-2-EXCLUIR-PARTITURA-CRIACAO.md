@@ -18,7 +18,7 @@ Na tela **Laboratório Musical → Criação → Minhas Criações → Detalhes 
 - `CreationScoreDeletion` usa identificador UUID validado, recusa symlinks, verifica a existência do arquivo original e move somente o `.pls` para `creation-score.delete-pending`.
 - Antes de mudar os metadados grava o marcador durável `committed`: interrupção **antes** dele restaura o `.pls`; interrupção **depois** dele repete, de forma idempotente, a desvinculação dos perfis **antes** de descartar os bytes da derivação. Se a atualização falhar, o arquivo permanece no staging para recuperação posterior.
 - `LibraryStore.removeCreationEveryProfile` limpa atomicamente `addedCreations`, favoritos, coleções e `user_N_file` de todos os perfis que referenciem a partitura, sem apagar o histórico de estudo. A sessão carregada em memória também é encerrada se apontar para a derivação excluída.
-- A recuperação é chamada na inicialização do aplicativo, antes de `makeBackup` e antes da exportação manual do backup. Não há alteração de formato de backup ou de projetos; backups anteriores continuam válidos. Restaurar um backup anterior que contenha a derivação pode permitir recuperá-la.
+- A recuperação é chamada na inicialização do aplicativo, **antes de exibir Detalhes** (evitando regeneração durante uma exclusão pendente), antes de `makeBackup` e antes da exportação manual do backup. Não há alteração de formato de backup ou de projetos; backups anteriores continuam válidos. Restaurar um backup anterior que contenha a derivação pode permitir recuperá-la.
 - Sem serviços externos, telemetria, dependências pagas, permissões adicionais ou alterações no arquivo privado histórico.
 
 ## Testes básicos realizados

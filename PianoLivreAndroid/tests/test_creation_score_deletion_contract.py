@@ -29,6 +29,9 @@ class Contract(unittest.TestCase):
         self.assertIn('CreationScoreDeletion.delete(a.getFilesDir(),id,projectId->',self.ui)
         self.assertIn('if(!project.isFile()',self.score)
         self.assertIn('a.clearRemovedScoreInMemory("creation-score:"+id)',self.ui)
+        self.assertIn('CreationScoreDeletion.recover(a.getFilesDir(),projectId->',self.ui)
+        details=self.ui.split('private void renderDetails(',1)[1].split('private void confirmDeleteOnlyScore(',1)[0]
+        self.assertLess(details.index('CreationScoreDeletion.recover('),details.index('base("Detalhes da composição"'))
         self.assertIn('original MIDI bytes preserved after score deletion',self.selftest)
     def test_crash_recovery_and_prefs_cleanup(self):
         self.assertLess(self.score.index('marker(new File(stage,COMMITTED),"ok")'),self.score.index('detach.accept(projectId);',self.score.index('public static synchronized void delete(')))
