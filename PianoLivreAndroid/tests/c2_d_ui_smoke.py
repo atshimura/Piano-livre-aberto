@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """One C2-D synthetic emulator UI path; NOT the full Android regression suite."""
 import os
+import json
 import re
 import subprocess
 import time
@@ -86,6 +87,13 @@ def click(fragment):
     adb("shell", "input", "tap", str(x), str(y))
     time.sleep(1.1)
 
+def click_dialog_item(fragment):
+    """AlertDialog text rows need not advertise clickable=true to UiAutomator."""
+    item=find(fragment,clickable=False,max_scroll=2)
+    x,y=center(item)
+    adb("shell","input","tap",str(x),str(y))
+    time.sleep(.7)
+
 def screenshot(name):
     (DEST / (name + ".png")).write_bytes(adb("exec-out", "screencap", "-p",
                                              timeout=35, binary=True))
@@ -102,6 +110,23 @@ def wait_log(marker, timeout=45):
             return
         time.sleep(1)
     raise AssertionError("Timed out waiting for " + marker)
+
+def linked_creation_id():
+    """Read the exact synthetic project reference, never infer a random UUID."""
+    raw=adb("shell","run-as",PACKAGE,"cat","shared_prefs/piano_data.xml")
+    prefs=ET.fromstring(raw)
+    item=prefs.find("./string[@name='user_0_library']")
+    if item is None or not item.text:
+        raise AssertionError("Synthetic Library metadata missing")
+    ids=json.loads(item.text).get("addedCreations",[])
+    if len(ids)!=1 or not re.fullmatch(r"[0-9a-fA-F-]{36}",ids[0]):
+        raise AssertionError("Expected exactly one linked C2-D fixture")
+    return ids[0]
+
+def private_file_exists(path):
+    return subprocess.run(["adb","shell","run-as",PACKAGE,"ls",path],
+                          stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                          timeout=15).returncode==0
 
 def main():
     ensure_emulator()
@@ -125,11 +150,47 @@ def main():
     find("Selecionar notas e acordes")
     find("Nota 1 de 4")
     screenshot("02b-ajustes-pautas-acessibilidade")
+    # Implementation 3: reuse the single synthetic C2-D recording, with no
+    # additional fixture, emulator session, or change to the captured MIDI.
+    click("Selecionar intervalo de compassos")
+    find("Selecionar compassos")
+    click("Marcar")  # Default 1..N, includes all four source attacks
+    find("4 selecionada(s)")
+    click("Atribuir mão / voz")
+    find("Mão real atribuída pelo compositor")
+    click("Cancelar")  # Assignment UI must never silently change the MIDI
+    click("Uniformizar trecho")
+    find("Figura musical para o trecho")
+    click("Cancelar")
+    click("Uniformizar trecho")
+    click("Ver prévia")
+    find("Prévia — Semínima")
+    find("Notas afetadas:")
+    click("Cancelar")
+    click("Uniformizar trecho")
+    click("Ver prévia")
+    find("Prévia — Semínima")
+    click("Aplicar")
+    find("Selecionar notas e acordes")
+    click("Desfazer")
+    find("Selecionar notas e acordes")
+    click("Refazer")
+    find("Selecionar notas e acordes")
+    screenshot("02c-uniformizar-ritmo")
     click("Concluir ajustes")
+    # IMPL4: the save path must complete a REAL OSMD Study-path render.
+    before_study_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
+    click("Salvar partitura")
+    find("Partitura salva ✓")
+    assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>before_study_proof, (
+        "IMPL4 save was accepted without a successful OSMD Study proof")
     # Sixth change: generated scores must be explicitly placed in the Library.
+    before_library_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     click("Adicionar à Biblioteca")
-    # The app displays a success dialog before the new library state.
-    find("Partitura adicionada à Biblioteca Musical.")
+    # Library linking requires another OSMD Study proof, not only XML parsing.
+    find("Partitura compatível com Estudar e adicionada à Biblioteca Musical.")
+    assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>before_library_proof, (
+        "IMPL4 library linking bypassed OSMD compatibility proof")
     click("OK")
     find("Na Biblioteca Musical")
     screenshot("03-adicionada-a-biblioteca")
@@ -149,10 +210,17 @@ def main():
     click("← Biblioteca")  # Criação home -> Biblioteca Musical
     find("Biblioteca Musical")
     title=find("Estudar C2-D partitura de teste",clickable=True)
+    before_open_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     x,y=center(title)
     adb("shell","input","tap",str(x),str(y))
     find("MODO")
     find("MÃOS")
+    for _ in range(50):
+        if adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>before_open_proof:break
+        time.sleep(.3)
+    else:raise AssertionError("IMPL4 generated score did not render with OSMD in Estudar")
+    assert "AUTO_TEMPORAL_FALLBACK" not in adb("logcat","-d","-v","brief"), (
+        "IMPL4 old temporal renderer was activated")
     screenshot("04b-estudar-pela-biblioteca")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     time.sleep(1.4)
@@ -163,10 +231,71 @@ def main():
     time.sleep(2.0)
     find("C2-D partitura de teste")
     screenshot("05-paisagem")
+    # The same synthetic generated score also proves safe unlinking from
+    # Library. No new C2-D setup, APK, or duplicate emulator session needed.
+    project_id=linked_creation_id()
+    assert private_file_exists("files/creations/"+project_id+".plc"), "Fixture project absent before unlink"
+    assert private_file_exists("files/creation-scores/"+project_id+".pls"), "Fixture MusicXML absent before unlink"
+    card=find("Estudar C2-D partitura de teste",clickable=True)
+    x,y=center(card)
+    adb("shell","input","swipe",str(x),str(y),str(x),str(y),"1100")
+    find("Excluir da biblioteca",clickable=False)
+    click_dialog_item("Excluir da biblioteca")
+    find("A gravação original e a partitura salva continuarão")
+    click("Excluir")
+    find("Partitura removida da Biblioteca Musical.")
+    click("OK")
+    assert not nodes("Estudar C2-D partitura de teste",clickable=True), "Unlinked generated score still listed"
+    assert private_file_exists("files/creations/"+project_id+".plc"), "Unlink destroyed the original project"
+    assert private_file_exists("files/creation-scores/"+project_id+".pls"), "Unlink destroyed the derived score"
+    prefs=ET.fromstring(adb("shell","run-as",PACKAGE,"cat","shared_prefs/piano_data.xml"))
+    entry=prefs.find("./string[@name='user_0_library']")
+    assert entry is not None and project_id not in json.loads(entry.text).get("addedCreations",[]), "Creation catalog entry survived unlink"
+    # Implementation 2: revisit the SAME C2-D project, re-add its score, then
+    # delete ONLY the derived .pls through Detalhes. No second fixture/AVD.
+    original_bytes=subprocess.run(["adb","exec-out","run-as",PACKAGE,"cat",
+        "files/creations/"+project_id+".plc"],check=True,stdout=subprocess.PIPE).stdout
+    click("Laboratório Musical")
+    find("Descobrir")
+    click("Criação")
+    find("Criação Musical")
+    click("Minhas Criações")
+    click("C2-D partitura de teste")
+    find("Detalhes da composição")
+    find("Visualizar e ajustar partitura",clickable=True)
+    # Re-linking the saved score must revalidate the OSMD Study path too.
+    before_relink_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
+    click("Adicionar à Biblioteca")
+    find("Partitura compatível com Estudar e adicionada à Biblioteca Musical.")
+    assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>before_relink_proof, (
+        "IMPL4 re-linking a generated score bypassed OSMD Study proof")
+    click("OK")
+    find("Na Biblioteca Musical")
+    find("Mover composição para a Lixeira")
+    click("Excluir somente a partitura…")
+    find("Excluir somente a partitura?")
+    find("A gravação MIDI original será preservada.")
+    click("Cancelar")
+    assert private_file_exists("files/creation-scores/"+project_id+".pls"), "Cancel deleted generated score"
+    click("Excluir somente a partitura…")
+    click("Excluir partitura")
+    find("Partitura excluída. A gravação original foi preservada.")
+    click("OK")
+    find("Gerar partitura",clickable=True)
+    assert not nodes("Excluir somente a partitura…"), "Delete-score control present without a saved score"
+    assert not private_file_exists("files/creation-scores/"+project_id+".pls"), "Generated .pls still exists after confirmed deletion"
+    assert private_file_exists("files/creations/"+project_id+".plc"), "Deleting score also deleted original MIDI project"
+    after_bytes=subprocess.run(["adb","exec-out","run-as",PACKAGE,"cat",
+        "files/creations/"+project_id+".plc"],check=True,stdout=subprocess.PIPE).stdout
+    assert after_bytes==original_bytes, "Original MIDI project content changed after score deletion"
+    assert not private_file_exists("files/creation-score.delete-pending"), "Completed score deletion left staging files"
+    prefs=ET.fromstring(adb("shell","run-as",PACKAGE,"cat","shared_prefs/piano_data.xml"))
+    entry=prefs.find("./string[@name='user_0_library']")
+    assert entry is not None and project_id not in json.loads(entry.text).get("addedCreations",[]), "Deleted score retained Library link"
     (DEST / "memory.txt").write_text(adb("shell", "dumpsys", "meminfo", PACKAGE),
                                       encoding="utf-8")
-    print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape"
-          " synthetic=true emulator=true")
+    print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape,unlink,score-delete-cancel-confirm,original-midi-preserved"
+          " rhythm-uniformize=true synthetic=true emulator=true")
     adb("shell", "pm", "clear", PACKAGE)
     adb("shell","settings","put","system","user_rotation",orientation if orientation not in ("","null") else "0")
     adb("shell","settings","put","system","accelerometer_rotation",rotation if rotation not in ("","null") else "1")

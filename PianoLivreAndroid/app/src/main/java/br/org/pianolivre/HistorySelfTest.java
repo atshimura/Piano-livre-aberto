@@ -40,23 +40,48 @@ final class HistorySelfTest {
    return checks;
   }finally{prefs.edit().clear().commit();}
  }
+ /** Wait for the ACTUAL OSMD drawing before measuring a study period.
+  * Implementation 4 intentionally refuses to start the clock while a score
+  * is loading; the previous 30 ms test faked an immediate ready state. */
+ private static void awaitRendered(MainActivity a,boolean free,long deadline,Runnable next){
+  boolean visible=free?a.screens.isFreeOpen():a.screens.isStudyOpen();
+  NotationView view=free?a.screens.freeNotation:a.screens.notation;
+  if(visible&&view!=null&&view.isRendered()&&a.studyClock.active()){
+   // Ensure each recorded interval has strictly positive elapsed time.
+   a.handler.postDelayed(next,90);return;
+  }
+  if(android.os.SystemClock.uptimeMillis()>deadline){
+   throw new AssertionError("OSMD did not complete "+(free?"Free":"Study")+
+    " rendering and start the study clock within 30 seconds");
+  }
+  a.handler.postDelayed(()->awaitRendered(a,free,deadline,next),100);
+ }
  static void activity(MainActivity a){
-  a.screens.showStudy();a.beginStudyWindow();
-  a.handler.postDelayed(()->{
+  check(a.score!=null,"history integration requires a selected score");
+  a.screens.showStudy();
+  // Test the same asynchronous render path as Library -> Study; don't force
+  // the clock open or count invisible loading time as practice.
+  a.screens.displayScore(a.score,a.position);
+  awaitRendered(a,false,android.os.SystemClock.uptimeMillis()+30000,()->{
    a.screens.showFree();
-   a.handler.postDelayed(()->{
+   awaitRendered(a,true,android.os.SystemClock.uptimeMillis()+30000,()->{
     a.screens.showHome();
     try{
-     JSONArray rows=new StudyHistory(a.prefs,a.user).snapshot().getJSONArray("records");boolean study=false,free=false;
-     for(int i=0;i<rows.length();i++){int mode=rows.getJSONObject(i).getInt("mode");if(mode==3)free=true;else study=true;}
-     check(study&&free&&!a.studyClock.active(),"Activity boundaries record study/free and close on library");
+     JSONArray rows=new StudyHistory(a.prefs,a.user).snapshot().getJSONArray("records");
+     boolean study=false,free=false;
+     for(int i=0;i<rows.length();i++){
+      int mode=rows.getJSONObject(i).getInt("mode");
+      if(mode==3)free=true;else study=true;
+     }
+     check(study&&free&&!a.studyClock.active(),
+      "Activity records both rendered Study and rendered Free windows, then closes at Library");
      Log.i("PianoLivreHistory","HISTORY_ACTIVITY_SELFTEST_PASS assertions="+checks);
      if(a.getIntent().getBooleanExtra("midi_import_ui_selftest",false)){
       MidiFileImport.Result midi=MidiFileImport.read(new ByteArrayInputStream(MidiFileSelfTest.sample()));
       a.chooseMidiHands(midi,"Synthetic.MID",midi.noteTracks(),0,new HashMap<>());
      }
     }catch(Exception ex){throw new IllegalStateException(ex);}
-   },30);
-  },30);
+   });
+  });
  }
 }

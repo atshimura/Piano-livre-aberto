@@ -93,17 +93,12 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
   assert(report.same&&report.changed&&report.intact,item.name+' content invalidation/source preservation');
   console.log('STUDY_CORPUS_FILE '+item.name);
   if(report.error&&item.name.startsWith('tests/fixtures/motor/')){
-   // Parser-only fixtures can omit engraving metadata. The actual OSMD error
-   // must be explicit, and the retained temporal alternative must remain faithful.
-   const fallback=await page.evaluate(async item=>{
-    window.testDone=false;window.testError=null;PianoNotation.load(item.xml,0,'study');
-    const plan=TemporalNotation.parse(item.xml),steps={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
-    return {done:window.testDone,error:window.testError,notes:plan.notes.filter(n=>!n.grace).map(n=>({beat:n.at,length:n.dur,midi:12*(n.oct+1)+steps[n.step]+n.alter,staff:n.staff,step:n.step,octave:n.oct}))};
-   },item);
-   assert(fallback.done&&!fallback.error,item.name+' temporal alternative: '+fallback.error);
-   const sig=e=>JSON.stringify([Math.round(e.beat*1e6),Math.round(e.length*1e6),e.midi,e.staff,e.step,e.octave]);
-   assert.deepEqual(fallback.notes.map(sig).sort(),item.events.map(sig).sort(),item.name+' faithful fallback');
-   reports.push({name:item.name,renderer:'temporal',osmdError:report.error,notes:item.events.length});
+   // Known parser fixtures need not be printable sheets. Preserve the explicit
+   // OSMD error as a result; never invoke or silently accept another renderer.
+   assert(!report.done,item.name+' cannot be marked drawn when OSMD failed');
+   assert(typeof report.error==='string'&&report.error.length>0,item.name+' must disclose error');
+   reports.push({name:item.name,renderer:'osmd-incompatible',osmdError:report.error,
+     notes:item.events.length});
    continue;
   }
   assert(report.done&&!report.error,item.name+' OSMD: '+report.error);
@@ -131,15 +126,9 @@ for(const line of fs.readFileSync('build/study-corpus.tsv','utf8').trim().split(
     'do not hide ambiguous mapping warning');
    assert.deepEqual([...new Set(item.events.map(e=>e.voice))].sort(),['lower','upper'],
     'fixture explicitly has two distinct named voices');
-   // The temporal parser is a separately checked recovery path, not a
-   // fabricated one-to-one assignment to OSMD's indistinguishable heads.
-   const temporal=await page.evaluate(xml=>TemporalNotation.parse(xml).notes
-    .filter(n=>!n.grace).map(n=>({beat:n.at,length:n.dur,
-     midi:12*(n.oct+1)+({C:0,D:2,E:4,F:5,G:7,A:9,B:11})[n.step]+n.alter,
-     staff:n.staff})),item.xml);
-   const ts=e=>JSON.stringify([Math.round(e.beat*1e6),Math.round(e.length*1e6),e.midi,e.staff]);
-   assert.deepEqual(temporal.map(ts).sort(),item.events.map(ts).sort(),
-    'temporal alternative must preserve every named-voice onset and tie');
+   // The OSMD mapping ambiguity remains explicit; no second renderer is used.
+   assert(report.analysis.geometry.alerts.includes('native-mapping'),
+    'unmatched source voices must remain visible as a mapping warning');
   }
   const signature=e=>JSON.stringify([Math.round(e.beat*1e6),Math.round(e.length*1e6),e.midi,e.staff,e.measure,e.step||e.writtenStep,e.octave===undefined?e.writtenOctave:e.octave]);
   assert.deepEqual(graphic.map(signature).sort(),item.events.map(signature).sort(),item.name+' complete pitch/octave/duration multiset');

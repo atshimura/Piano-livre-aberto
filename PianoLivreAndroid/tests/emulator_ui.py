@@ -87,15 +87,15 @@ def reveal_study_controls():
     assert transport[3]>transport[1] and box[3]==transport[1],         "Permanent Study transport must remain immediately below notation"
     return layout
 
-def study_renderer(temporal, score_title=None):
-    """Debug-only renderer fixture; no manual production selector exists."""
+def study_renderer(score_title=None):
+    """Open Study with OSMD only; source/transport remain unchanged."""
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-W","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity",
-        "--ez","study_temporal_selftest","true" if temporal else "false")
+        "--ez","engraving_complex_selftest","false")
     time.sleep(2);assert_running()
     # Since 0.9.60 all cold starts intentionally show Home, even if a score
     # was saved. The renderer probe must explicitly enter Study, matching
-    # normal user navigation. Keep the debug-only temporal intent in place.
+    # normal user navigation; no alternative renderer is selectable.
     wait_for_text("Bem-vindo ao",timeout=30)
     # The default short fixture is Ode à Alegria; long-score checks must
     # deliberately reopen Gymnopédie after EACH force-stop. Otherwise they
@@ -104,7 +104,7 @@ def study_renderer(temporal, score_title=None):
     wait_for_text("Espera",timeout=30)
     assert_study_controls()
     print("STUDY_RENDERER_FIXTURE "+(score_title or DEFAULT_SCORE_TITLE)+
-          " temporal="+str(temporal),flush=True)
+          " engine=OSMD",flush=True)
 
 def assert_study_controls():
     labels=[n.attrib.get("text","") for n in dump().iter("node")]
@@ -215,6 +215,53 @@ def focus_library_search_field(timeout=12):
         time.sleep(.2)
     raise AssertionError("LIBRARY_SEARCH_FOCUS_FAILED: field did not settle/focus; labels="+repr(last[:40]))
 
+
+def long_press_library_card(title):
+    """Use the card accessibility identity, not its changing grid position."""
+    target="Estudar "+title
+    for attempt in range(3):
+        cards=[n for n in dump().iter("node")
+               if n.attrib.get("clickable")=="true" and n.attrib.get("content-desc")==target]
+        for card in cards:
+            values=[int(v) for v in re.findall(r"\d+",card.attrib.get("bounds",""))]
+            if len(values)!=4 or values[2]<=values[0] or values[3]<=values[1]:
+                continue
+            x,y=(values[0]+values[2])//2,(values[1]+values[3])//2
+            adb("shell","input","swipe",str(x),str(y),str(x),str(y),"1100")
+            wait_for_text("Excluir da biblioteca",timeout=12)
+            return
+        if attempt==0:
+            tap_text(["Biblioteca Musical"],exact=True,scroll=True)
+        else:
+            home_scroll_to_top()
+    raise AssertionError("Library card unavailable for long press: "+repr(target))
+
+def library_available_count():
+    """Read the visible native counter rather than hard-coding catalog totals."""
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    matches=[re.match(r"^(\d+) de (\d+) partituras(?: · .*)?$",label) for label in labels]
+    values=[(int(m.group(1)),int(m.group(2))) for m in matches if m]
+    if len(values)!=1:
+        raise AssertionError("Expected one visible Library counter; got "+repr(labels[:35]))
+    return values[0]
+
+def wait_library_available_count(expected,timeout=10):
+    deadline=time.monotonic()+timeout
+    last=None
+    while time.monotonic()<deadline:
+        try:
+            last=library_available_count()
+            if last==expected:return
+        except AssertionError:
+            pass
+        time.sleep(.35)
+    raise AssertionError("Library count mismatch: expected "+repr(expected)+", got "+repr(last))
+
+def imported_file_present(name):
+    """Read-only check in the isolated, debuggable emulator installation."""
+    command=["adb","shell","run-as","br.org.pianolivre.opensource","ls","files/imported/"+name]
+    return subprocess.run(command,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=15).returncode==0
+
 def assert_collection_filter_option(name, present=True):
     """Collections remain accessible through Collections > Ver coleção."""
     home_scroll_to_top()
@@ -310,23 +357,74 @@ if __name__=="__main__":
     midi_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Trilha 1" in t for t in midi_labels) and "Mão esquerda" in midi_labels and "Ignorar esta trilha" in midi_labels, "Explicit MIDI track hand selector missing"
     screenshot("piano-midi-import.png")
+    before_import_render=adb("logcat","-d","-v","brief").count("NOTATION_RENDERED")
+    before_import_error=adb("logcat","-d","-v","brief").count("OSMD_FAILURE ")
     tap_text(["Mão esquerda"],exact=True)
-    time.sleep(1)
+    wait_for_text("MIDI importado como notação aproximada")
     tap_text(["OK"],exact=True)
+    # Regression: the actual imported one-note MusicXML must render with OSMD,
+    # never merely parse successfully or remain stored as an empty staff.
+    imported_rendered=False
+    for _ in range(45):
+        assert_running()
+        probe=adb("logcat","-d","-v","brief")
+        if probe.count("OSMD_FAILURE ")>before_import_error:
+            raise AssertionError("MIDI import generated an incompatible score: "+
+                 str([line for line in probe.splitlines() if "PianoLivreNotation" in line][-12:]))
+        if probe.count("NOTATION_RENDERED")>before_import_render:
+            imported_rendered=True
+            break
+        time.sleep(.4)
+    assert imported_rendered, "Imported one-note MIDI must finish modern OSMD drawing"
+    print("IMPL4_MIDI_SINGLE_NOTE_ANDROID_OSMD_PASS",flush=True)
     generated=adb("shell","run-as","br.org.pianolivre.opensource","cat","files/imported/Synthetic.musicxml")
-    assert ET.fromstring(generated).find(".//note/staff").text=="2", "Chosen MIDI hand did not reach notation"
+    # A silent upper staff is represented by an explicit rest before the
+    # pitched lower-staff note; checking the first <note> would inspect a rest.
+    # Verify the pitched event, its staff and pitch, not document order.
+    score_xml=ET.fromstring(generated)
+    pitched=[note for note in score_xml.findall(".//note") if note.find("pitch") is not None]
+    assert len(pitched)==1, "MIDI import must retain exactly one pitched note"
+    pitch=pitched[0].find("pitch")
+    assert pitched[0].findtext("staff")=="2" and pitch.findtext("step")=="C" and pitch.findtext("octave")=="4", (
+        "Explicit MIDI left-hand assignment or sounding C4 was not preserved")
+    upper_rests=[note for note in score_xml.findall(".//note")
+                 if note.find("rest") is not None and note.findtext("staff")=="1"]
+    assert upper_rests, "Silent upper staff must retain its explicit rest"
     source=subprocess.run(["adb","exec-out","run-as","br.org.pianolivre.opensource","cat","files/imported/Synthetic.musicxml.source.mid"],check=True,stdout=subprocess.PIPE).stdout
     assert source.startswith(b"MThd") and len(source)==35, "Original synthetic MIDI source not preserved"
     tap_text(["Biblioteca"])
-    # Remove only these known synthetic files in this fresh emulator installation.
-    adb("shell","run-as","br.org.pianolivre.opensource","rm","files/imported/Synthetic.musicxml","files/imported/Synthetic.musicxml.source.mid","files/imported/upgrade.mxl")
+    # Exercise the public deletion UI instead of bypassing the feature with run-as rm.
+    # Scope: only the synthetic MIDI fixture just generated on this disposable AVD.
+    assert imported_file_present("Synthetic.musicxml") and imported_file_present("Synthetic.musicxml.source.mid"), "Synthetic MIDI pair missing before UI removal"
+    home_scroll_to_top();tap_text(["Biblioteca Musical"],exact=True,scroll=True)
+    focus_library_search_field()
+    adb("shell","input","text","Synthetic")
+    dismiss_keyboard()
+    wait_for_text("Synthetic.musicxml")
+    long_press_library_card("Synthetic.musicxml")
+    tap_text(["Excluir da biblioteca"],exact=True)
+    wait_for_text("todos os perfis")
+    tap_text(["Excluir"],exact=True)
+    wait_for_text("Partitura removida da Biblioteca Musical.")
+    tap_text(["OK"],exact=True)
+    assert not imported_file_present("Synthetic.musicxml"), "Imported MusicXML survived UI deletion"
+    assert not imported_file_present("Synthetic.musicxml.source.mid"), "Associated MIDI source survived UI deletion"
+    assert not any(n.attrib.get("content-desc")=="Estudar Synthetic.musicxml" for n in dump().iter("node")), "Deleted score still appears in filtered library"
+    focus_library_search_field()
+    adb("shell","input","keyevent","123")
+    adb("shell","input","keyevent",*(["67"]*20))
+    dismiss_keyboard()
+    # The upgrade fixture is owned by a different earlier emulator test; only
+    # remove that known synthetic leftover, never a real user's files.
+    adb("shell","run-as","br.org.pianolivre.opensource","rm","-f","files/imported/upgrade.mxl")
     tap_text([DEFAULT_SCORE_TITLE]);tap_text(["Biblioteca"])
-    print("PASS: explicit native MIDI hand selector, generated left staff and preserved source",flush=True)
+    print("PASS: native MIDI hand selector, generated staff and UI deletion of synthetic XML + source MIDI",flush=True)
     screenshot("piano-screen.png")
+    home_scroll_to_top()
     home=dump()
     names=[n.attrib.get("text","") for n in home.iter("node")]
     assert any(DEFAULT_SCORE_TITLE in n for n in names), "Music library must be visible on launch: "+str(names[:30])
-    assert "USB-MIDI" in names, "Disconnected home MIDI control must use the USB-MIDI label"
+    assert "USB-MIDI" in names, "Disconnected home MIDI control must use the USB-MIDI label; visible labels: "+str(names[:60])
     assert not any("piano conectado" in n.casefold() or "toque aqui para testar" in n.casefold() for n in names), "Redundant connection text leaked into the home header"
     print("PASS: library visible at startup",flush=True)
     home_responsive_screenshots()
@@ -348,7 +446,23 @@ if __name__=="__main__":
     assert any("Escolha uma partitura" in t for t in help_labels), "Local help content missing"
     tap_text(["Entendi"],exact=True)
     tap_text(["Biblioteca Musical"],exact=True);wait_for_text("10 de 10 partituras")
-    tap_text(["Favoritar Ode à Alegria"]);tap_text(["Remover favorito Ode à Alegria"])
+    previous_count=library_available_count()
+    assert previous_count[0]==previous_count[1], "Built-in hide probe must start unfiltered"
+    tap_text(["Favoritar Ode à Alegria"])
+    long_press_library_card(DEFAULT_SCORE_TITLE)
+    tap_text(["Excluir da biblioteca"],exact=True)
+    wait_for_text("ocultada somente neste perfil")
+    tap_text(["Ocultar"],exact=True)
+    wait_for_text("Música ocultada neste perfil.")
+    tap_text(["OK"],exact=True)
+    wait_library_available_count((previous_count[0]-1,previous_count[1]-1))
+    assert not any(n.attrib.get("content-desc")=="Estudar "+DEFAULT_SCORE_TITLE for n in dump().iter("node")), "Hidden built-in score still in library"
+    tap_text(["Coleções"],exact=True,scroll=True)
+    tap_text(["Restaurar músicas ocultas"],exact=True,scroll=True)
+    tap_text([DEFAULT_SCORE_TITLE],exact=True)
+    wait_library_available_count(previous_count)
+    tap_text(["Remover favorito Ode à Alegria"])
+    print("PASS: built-in score hide/restore preserves its favorite",flush=True)
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
     time.sleep(1.5);assert_running();return_to_library_if_study_was_restored()
@@ -790,34 +904,11 @@ if __name__=="__main__":
       "restriction":"Research-only optical interpolation and test playback. MIDI clock unchanged. Visual clipping, click accuracy, long-scroll performance and editorial quality not yet approved."
     },ensure_ascii=False,indent=2),encoding="utf-8")
     print("PASS: OSMD professional rendering POC screenshot, SVG metrics and Java/JS isolation",flush=True)
-    # Toggle to the temporal renderer and back using the visible controls.
-    study_renderer(True)
-    for attempt in range(20):
-        if "TIMELINE_READY" in adb("logcat","-d","-v","brief"):break
-        time.sleep(.6)
-    assert "TIMELINE_READY" in adb("logcat","-d","-v","brief"), "Visible alternative did not restore temporal rendering"
-    assert_study_controls()
-
-    logs=adb("logcat","-d","-v","brief")
-    assert "TIMELINE_READY" in logs, "Expected proportional timeline renderer, not ordinary print layout"
-    study_renderer(False)
-    for attempt in range(24):
-        entries=[line for line in adb("logcat","-d","-v","brief").splitlines() if "POC_OSMD_READY {" in line]
-        if len(entries)>1:break
-        time.sleep(.5)
-    # The generated coordinates must follow exactly x = origin + beat * pxPerBeat.
-    import json
-    frames=[l.split("TIMELINE_READY ",1)[1] for l in logs.splitlines() if "TIMELINE_READY {" in l]
-    assert frames, "No time-proportional layout diagnostics available"
-    plan=json.loads(frames[-1].split(" @",1)[0].strip())
-    beats=plan["firstBeats"];xs=plan["firstXs"];K=plan["pxPerBeat"]
-    for i in range(1,len(beats)):
-        assert abs((xs[i]-xs[0])-K*(beats[i]-beats[0]))<=2.1, "Beat-proportional x positioning is broken"
-    assert abs(plan["cursorFraction"]-.4)<.00001, "Study cursor no longer fixed at 40 percent"
-    print("PASS: exact proportional note spacing on shared musical timeline",flush=True)
-    print("PASS: temporal MusicXML engraving rendered with fixed 40-percent cursor",flush=True)
-    logs=adb("logcat","-d","-v","brief")
-    print("\\n".join(l for l in logs.splitlines() if "TEMPORAL_PROBE" in l)[-28000:],flush=True)
+    # IMPL4: there is no fallback or temporal toggle to exercise.
+    assert "AUTO_TEMPORAL_FALLBACK" not in adb("logcat","-d","-v","brief")
+    assert "TEMPORAL_RENDER_SUCCESS" not in adb("logcat","-d","-v","brief")
+    assert "OSMD_FAILURE" not in adb("logcat","-d","-v","brief")
+    print("IMPL4_OSMD_EXCLUSIVE_STUDY_PASS",flush=True)
 
     assert any("Contínuo" in s for s in labels), "Mode switch missing"
     assert_study_controls()
@@ -860,14 +951,8 @@ if __name__=="__main__":
     assert adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")>default_render_count, \
       "Reopened Study did not select OSMD by default"
     print("PASS: selected music loads with interactive study controls",flush=True)
-    temporal_ready_before=adb("logcat","-d","-v","brief").count("TIMELINE_READY {")
-    study_renderer(True)
-    for attempt in range(16):
-        if adb("logcat","-d","-v","brief").count("TIMELINE_READY {")>temporal_ready_before:break
-        time.sleep(.5)
-    assert adb("logcat","-d","-v","brief").count("TIMELINE_READY {")>temporal_ready_before, \
-      "Visible temporal alternative did not render after OSMD opened Study by default"
-    assert_study_controls()
+    # Reopening Study must continue to use the same OSMD engine.
+    assert "AUTO_TEMPORAL_FALLBACK" not in adb("logcat","-d","-v","brief")
     tap_text(["Contínuo"])
     time.sleep(.5)
     playback_point=tap_text(["Iniciar"],return_point=True)
@@ -884,17 +969,11 @@ if __name__=="__main__":
     logs=adb("logcat","-d","-v","brief")
     assert re.search(r"PianoLivreUI.*mode=1", logs), "Mode button click was not recorded"
     assert re.search(r"PianoLivreUI.*play=true", logs), "Play button click was not recorded"
-    samples=[]
-    for line in logs.splitlines():
-        if "TEMPORAL_SAMPLE {" in line:
-            try:samples.append(json.loads(line.split("TEMPORAL_SAMPLE ",1)[1].split(" @",1)[0].strip()))
-            except ValueError:pass
-    assert len(samples)>=2, "No continuous rendering frames reported"
-    for a,b in zip(samples,samples[1:]):
-        if b["beat"]>a["beat"]+.005:
-            actual=(b["offset"]-a["offset"])/(b["beat"]-a["beat"])
-            assert abs(actual-plan["pxPerBeat"])<1, "Visual velocity not uniform over musical beats"
-    print("PASS: continuous horizontal motion at proportional speed",flush=True)
+    # OSMD's own beat clock is authoritative; don't assert proportional
+    # geometry from the retired temporal engine's debug telemetry.
+    assert "AUTO_TEMPORAL_FALLBACK" not in logs
+    assert "TEMPORAL_RENDER_SUCCESS" not in logs
+    print("PASS: continuous playback uses OSMD optical rendering",flush=True)
     print("PASS: mode switch and play button accepted touch input",flush=True)
     # UIAutomator requires an idle hierarchy. Pause using the verified button
     # bounds before requesting another dump; never reuse an old XML snapshot.
@@ -919,10 +998,11 @@ if __name__=="__main__":
     assert "LIFECYCLE_PAUSED" in logs and "LIFECYCLE_RESUMED" in logs
     reports=[]
     for line in logs.splitlines():
-        if "TEMPORAL_PERF {" in line:
-            reports.append(json.loads(line.split("TEMPORAL_PERF ",1)[1].split(" @",1)[0].strip()))
-    assert any(r["reason"]=="pause" and r["movingFrames"]>=2 for r in reports), "Moving frame summary missing"
-    assert all(r["renderMs"]>=0 and r["maxDrawMs"]>=0 for r in reports)
+        if "POC_OPTICAL_PERF {" in line:
+            try:reports.append(json.loads(line.split("POC_OPTICAL_PERF ",1)[1].split(" @",1)[0].strip()))
+            except ValueError:pass
+    assert any(row.get("frames",0)>=2 for row in reports), (
+        "OSMD optical motion telemetry absent after background/pause")
     Path("piano-performance.json").write_text(json.dumps(reports,indent=2),encoding="utf-8")
     print("PASS: background pauses transport, foreground retains position, local performance evidence captured",flush=True)
     resume_point=tap_text(["Iniciar"],return_point=True)
@@ -954,10 +1034,8 @@ if __name__=="__main__":
     tap_text(["Gymnopédie nº 1"],scroll=True)
     time.sleep(3)
     assert_running()
-    study_renderer(True,score_title="Gymnopédie nº 1")
+    study_renderer(score_title="Gymnopédie nº 1")
     time.sleep(1)
-    screenshot("piano-temporal-long.png")
-    study_renderer(False,score_title="Gymnopédie nº 1")
     long_pid=adb("shell","pidof","br.org.pianolivre.opensource").strip()
     long_proof=None
     for attempt in range(35):

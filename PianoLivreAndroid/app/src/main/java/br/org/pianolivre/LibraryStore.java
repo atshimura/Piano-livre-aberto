@@ -11,14 +11,15 @@ final class LibraryStore {
   Collection(String id,String name,Set<String> scores){this.id=id;this.name=name;this.scores=Collections.unmodifiableSet(scores);}
  }
  static final class Snapshot {
-  final Set<String> favorites,addedCreations;final Map<String,Collection> collections;
-  Snapshot(Set<String> f,Map<String,Collection> c,Set<String> added){
+  final Set<String> favorites,addedCreations,hiddenScores;final Map<String,Collection> collections;
+  Snapshot(Set<String> f,Map<String,Collection> c,Set<String> added,Set<String> hidden){
    favorites=Collections.unmodifiableSet(f);collections=Collections.unmodifiableMap(c);
    addedCreations=Collections.unmodifiableSet(added);
+   hiddenScores=Collections.unmodifiableSet(hidden);
   }
  }
- private final SharedPreferences prefs;private final String key;
- LibraryStore(SharedPreferences prefs,int user){this.prefs=prefs;key="user_"+user+"_library";}
+ private final SharedPreferences prefs;private final String key;private final int user;
+ LibraryStore(SharedPreferences prefs,int user){this.prefs=prefs;this.user=user;key="user_"+user+"_library";}
  static void validateScoreKey(String key){
   if(key!=null&&key.startsWith("creation-score:")){validateCreationId(key.substring(15));return;}
   if(key==null||key.length()>264||key.indexOf('\u0000')>=0||!(key.startsWith("scores/")||key.startsWith("imported/")))throw new IllegalArgumentException("Partitura inválida");
@@ -56,7 +57,9 @@ final class LibraryStore {
     collections.put(id,new Collection(id,name,keys(item.getJSONArray("scores"))));
    }
    Set<String> added=creationIds(root.has("addedCreations")?root.getJSONArray("addedCreations"):new JSONArray());
-   return new Snapshot(favorites,collections,added);
+   Set<String> hidden=keys(root.has("hiddenScores")?root.getJSONArray("hiddenScores"):new JSONArray());
+   for(String score:hidden)if(!score.startsWith("scores/"))throw new IllegalArgumentException("Somente partituras do aplicativo podem ser ocultadas");
+   return new Snapshot(favorites,collections,added,hidden);
   }catch(JSONException ex){throw new IllegalArgumentException("Organização da biblioteca inválida",ex);}
  }
  private JSONObject read(){
@@ -64,10 +67,16 @@ final class LibraryStore {
   catch(JSONException ex){throw new IllegalArgumentException("Biblioteca inválida",ex);}
  }
  Snapshot snapshot(){return decode(prefs.getString(key,"{\"version\":1,\"favorites\":[],\"collections\":[]}"));}
- private void save(JSONObject data){
+ private void save(JSONObject data){save(data,null);}
+ private void save(JSONObject data,String detachedScore){
   String text=data.toString();decode(text);String previous=prefs.getString(key,null);
-  if(!prefs.edit().putString(key,text).commit()){
-   SharedPreferences.Editor rollback=prefs.edit();if(previous==null)rollback.remove(key);else rollback.putString(key,previous);rollback.commit();
+  String sessionKey="user_"+user+"_file",priorSession=prefs.getString(sessionKey,"");
+  boolean clearSession=detachedScore!=null&&!priorSession.isEmpty()&&detachedScore.equals(SessionFiles.portable(priorSession));
+  SharedPreferences.Editor editor=prefs.edit().putString(key,text);
+  if(clearSession)editor.remove(sessionKey);
+  if(!editor.commit()){
+   SharedPreferences.Editor rollback=prefs.edit();if(previous==null)rollback.remove(key);else rollback.putString(key,previous);
+   if(clearSession)rollback.putString(sessionKey,priorSession);rollback.commit();
    throw new IllegalStateException("Não foi possível salvar a biblioteca");
   }
  }
@@ -88,6 +97,112 @@ final class LibraryStore {
    JSONArray updated=new JSONArray(previous.toString());updated.put(projectId);
    obj.put("addedCreations",updated);save(obj);
   }catch(JSONException ex){throw new IllegalArgumentException(ex);}
+ }
+ private static JSONArray removed(JSONArray source,String target)throws JSONException{
+  JSONArray out=new JSONArray();
+  for(int i=0;i<source.length();i++){String value=source.getString(i);if(!value.equals(target))out.put(value);}
+  return out;
+ }
+ /** Purge stale library memberships, while retaining historic practice records. */
+ private static boolean detach(JSONObject obj,String score)throws JSONException{
+  boolean changed=false;
+  JSONArray favorites=obj.getJSONArray("favorites"),kept=removed(favorites,score);
+  if(kept.length()!=favorites.length()){obj.put("favorites",kept);changed=true;}
+  JSONArray collections=obj.getJSONArray("collections");
+  for(int i=0;i<collections.length();i++){
+   JSONObject collection=collections.getJSONObject(i);
+   JSONArray members=collection.getJSONArray("scores"),filtered=removed(members,score);
+   if(filtered.length()!=members.length()){collection.put("scores",filtered);changed=true;}
+  }
+  return changed;
+ }
+ /** Built-in APK assets are immutable: hide in a single profile only. */
+ void setHidden(String score,boolean hidden){
+  validateScoreKey(score);if(!score.startsWith("scores/"))throw new IllegalArgumentException("Somente partituras do aplicativo podem ser ocultadas");
+  try{
+   JSONObject obj=read();JSONArray source=obj.optJSONArray("hiddenScores");
+   if(source==null)source=new JSONArray();
+   Set<String> current=keys(source);if(current.contains(score)==hidden)return;
+   JSONArray next=removed(source,score);if(hidden)next.put(score);
+   obj.put("hiddenScores",next);save(obj,hidden?score:null);
+  }catch(JSONException ex){throw new IllegalArgumentException("Não foi possível atualizar músicas ocultas",ex);}
+ }
+ /** Unlink a created score but keep its source recording and derived MusicXML. */
+ void removeCreation(String projectId){
+  validateCreationId(projectId);projectId=projectId.toLowerCase(Locale.ROOT);
+  try{
+   JSONObject obj=read();JSONArray before=obj.optJSONArray("addedCreations");
+   if(before==null)before=new JSONArray();
+   JSONArray after=removed(before,projectId);obj.put("addedCreations",after);
+   detach(obj,"creation-score:"+projectId);
+   save(obj,"creation-score:"+projectId);
+  }catch(JSONException ex){throw new IllegalArgumentException("Não foi possível remover partitura criada",ex);}
+ }
+ /** Imported music is shared: clean all profiles in one atomic prefs transaction. */
+ static void removeImportedEveryProfile(SharedPreferences prefs,String score){
+  validateScoreKey(score);
+  if(!score.startsWith("imported/")||!score.equals(SessionFiles.portable(score)))throw new IllegalArgumentException("Partitura importada inválida");
+  Map<String,?> all=prefs.getAll();Map<String,String> originals=new LinkedHashMap<>();
+  SharedPreferences.Editor editor=prefs.edit();
+  try{
+   for(Map.Entry<String,?> item:all.entrySet()){
+    String preference=item.getKey();Object raw=item.getValue();
+    if(preference.matches("user_\\d+_library")){
+     if(!(raw instanceof String))throw new IllegalArgumentException("Biblioteca de perfil inválida");
+     JSONObject obj=new JSONObject((String)raw);decode((String)raw);
+     if(detach(obj,score)){originals.put(preference,(String)raw);editor.putString(preference,obj.toString());}
+    }else if(preference.matches("user_\\d+_file")){
+     if(!(raw instanceof String))throw new IllegalArgumentException("Sessão de perfil inválida");
+     String stored=(String)raw;
+     if(!stored.isEmpty()&&score.equals(SessionFiles.portable(stored))){originals.put(preference,stored);editor.remove(preference);}
+    }
+   }
+   if(originals.isEmpty())return;
+   if(!editor.commit()){
+    SharedPreferences.Editor rollback=prefs.edit();
+    for(Map.Entry<String,String> item:originals.entrySet())rollback.putString(item.getKey(),item.getValue());
+    rollback.commit();throw new IllegalStateException("Não foi possível atualizar bibliotecas dos perfis");
+   }
+  }catch(JSONException ex){throw new IllegalArgumentException("Organização da biblioteca inválida",ex);}
+ }
+ /** Permanently deleted derivatives must have no Library/study references in any profile. */
+ static void removeCreationEveryProfile(SharedPreferences prefs,String projectId){
+  validateCreationId(projectId);
+  String id=projectId.toLowerCase(Locale.ROOT),score="creation-score:"+id;
+  Map<String,?> all=prefs.getAll();Map<String,String> originals=new LinkedHashMap<>();
+  SharedPreferences.Editor editor=prefs.edit();
+  try{
+   for(Map.Entry<String,?> item:all.entrySet()){
+    String preference=item.getKey();Object raw=item.getValue();
+    if(preference.matches("user_\\d+_library")){
+     if(!(raw instanceof String))throw new IllegalArgumentException("Biblioteca de perfil inválida");
+     JSONObject obj=new JSONObject((String)raw);decode((String)raw);
+     boolean changed=detach(obj,score);
+     JSONArray before=obj.optJSONArray("addedCreations");
+     if(before!=null){
+      JSONArray after=new JSONArray();
+      for(int i=0;i<before.length();i++){
+       String entry=before.getString(i);
+       if(entry.equalsIgnoreCase(id))changed=true;else after.put(entry);
+      }
+      if(after.length()!=before.length())obj.put("addedCreations",after);
+     }
+     if(changed){originals.put(preference,(String)raw);editor.putString(preference,obj.toString());}
+    }else if(preference.matches("user_\\d+_file")){
+     if(!(raw instanceof String))throw new IllegalArgumentException("Sessão de perfil inválida");
+     String stored=(String)raw;
+     if(!stored.isEmpty()&&score.equals(SessionFiles.portable(stored))){
+      originals.put(preference,stored);editor.remove(preference);
+     }
+    }
+   }
+   if(originals.isEmpty())return;
+   if(!editor.commit()){
+    SharedPreferences.Editor rollback=prefs.edit();
+    for(Map.Entry<String,String> item:originals.entrySet())rollback.putString(item.getKey(),item.getValue());
+    rollback.commit();throw new IllegalStateException("Não foi possível atualizar referências da partitura");
+   }
+  }catch(JSONException ex){throw new IllegalArgumentException("Biblioteca de perfil inválida",ex);}
  }
  String create(String name){
   try{JSONObject obj=read();String id=UUID.randomUUID().toString();obj.getJSONArray("collections").put(new JSONObject().put("id",id).put("name",name.trim()).put("scores",new JSONArray()));save(obj);return id;}

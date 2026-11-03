@@ -242,12 +242,23 @@ final class CreationScorePreviewScreen extends LinearLayout {
         clear();CreationScoreTranscriber.Options o=review.options();
         CreationScoreTranscriber.Result r=review.result();
         addText(project.title,21,true,3);
-        addText(r.measures+" compassos · "+o.beats+"/"+o.beatType+" · "+o.bpm+" BPM · 1/"+o.grid,13,false,9);
+        addText(r.measures+" compassos · "+o.beats+"/"+o.beatType+" · "+o.bpm+" BPM · 1/"+o.grid
+            +" · Ritmo "+(o.legacyTiming?"legado":o.regularization==CreationScoreTranscriber.Regularization.RIGOROUS?"rigoroso":
+                o.regularization==CreationScoreTranscriber.Regularization.FLEXIBLE?"flexível":"equilibrado"),13,false,9);
         LinearLayout sheet=card();sheet.setPadding(dp(4),dp(4),dp(4),dp(4));
         NotationView view=new NotationView(activity,new NotationView.Listener(){
             public void onRendered(){if(!closed&&notation!=null)notation.setCreationSelected(review.selection());}
             public void onCreationNoteTapped(String id){tapGraphicalNote(id);}
-            public void onError(String text){if(!closed)activity.message("Problema ao desenhar partitura: "+text);}
+            public void onError(String text){
+                if(!closed)activity.reportNotationIssue("PL-NOT-RENDER",
+                    "Prévia de Criação",text,review==null?null:review.result().xml,
+                    ()->{if(!closed)render(splitView);});
+            }
+            @Override public void onFailure(NotationFailure failure){
+                if(!closed)activity.showNotationFailure(failure,
+                    ()->{if(!closed)render(splitView);},
+                    ()->{if(window!=null)window.dismiss();});
+            }
         });
         notation=view;view.setCreationSourceNotes(r.notes);view.setCreationSelected(review.selection());
         attach(sheet,view,split?218:310,0);
@@ -296,13 +307,24 @@ final class CreationScorePreviewScreen extends LinearLayout {
         Spinner grid=new Spinner(activity);grid.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,grids));
         grid.setSelection(o.grid==8?0:o.grid==16?1:2);
         responsiveFields(content,new String[]{"Andamento (BPM)","Compasso","Precisão rítmica"},new View[]{tempo,meter,grid});
+        final String[] names={"Rigorosa","Equilibrada","Flexível"};
+        Spinner regular=new Spinner(activity);regular.setAdapter(new ArrayAdapter<>(activity,
+            android.R.layout.simple_spinner_dropdown_item,names));
+        regular.setSelection(o.regularization.ordinal());
+        LinearLayout level=vertical();
+        attach(level,label("Regularização rítmica",14,true,0xff172A44),-2,4);
+        attach(level,regular,48,4);
+        attach(level,label("Corrige variações entre ataques da mesma voz. A gravação MIDI original permanece intacta.",
+            12,false,0xff57708A),-2,4);
+        attach(content,level,-2,4);
         new AlertDialog.Builder(activity).setTitle("Ajustar partitura").setView(content)
             .setPositiveButton("Atualizar",(d,w)->{
                 try{
                     int bpm=Integer.parseInt(tempo.getText().toString().trim());
                     int m=meter.getSelectedItemPosition(),beats=m==3?6:m+2,beatType=m==3?8:4;
                     int step=new int[]{8,16,32}[grid.getSelectedItemPosition()];
-                    mutate(()->review.configure(bpm,beats,beatType,step),false);
+                    CreationScoreTranscriber.Regularization chosenRegularization=CreationScoreTranscriber.Regularization.values()[regular.getSelectedItemPosition()];
+                    mutate(()->review.configure(bpm,beats,beatType,step,chosenRegularization),false);
                 }catch(Exception ex){activity.message("Andamento inválido: "+ex.getMessage());}
             }).setNegativeButton("Cancelar",null).show();
     }
@@ -311,14 +333,39 @@ final class CreationScorePreviewScreen extends LinearLayout {
         busy=true;final int id=++generation;
         CreationScoreTranscriber.Options options=review.options();
         String xml=review.result().xml;
-        clear();addText("Salvando partitura com segurança…",14,false,10);
+        clear();addText("Verificando compatibilidade com Estudar…",14,false,10);
         worker.execute(()->{
             try{
-                new CreationScoreStore(activity.getFilesDir()).save(project.id,project.profileId,options,xml);
-                post(()->{if(closed||id!=generation)return;busy=false;saved=true;
-                    review.markSaved();render(false);});
-            }catch(Exception error){post(()->{if(closed||id!=generation)return;busy=false;
-                activity.message("Partitura não salva: "+error.getMessage());render(false);});}
+                Score target=Score.read(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)),
+                    "creation-score:"+project.id);
+                post(()->{
+                    if(closed||id!=generation)return;
+                    CreationStudyCompatibility.check(activity,target,compatible->{
+                        if(closed||id!=generation)return;
+                        if(!compatible){
+                            busy=false;render(false);return;
+                        }
+                        worker.execute(()->{
+                            try{
+                                new CreationScoreStore(activity.getFilesDir()).save(
+                                    project.id,project.profileId,options,xml);
+                                post(()->{
+                                    if(closed||id!=generation)return;
+                                    busy=false;saved=true;review.markSaved();render(false);
+                                });
+                            }catch(Exception ex){post(()->{
+                                if(closed||id!=generation)return;
+                                busy=false;activity.message("Partitura não salva: "+ex.getMessage());
+                                render(false);
+                            });}
+                        });
+                    });
+                });
+            }catch(Exception error){post(()->{
+                if(closed||id!=generation)return;
+                busy=false;activity.message("Partitura incompatível: "+error.getMessage());
+                render(false);
+            });}
         });
     }
     private interface Change {void execute()throws Exception;}
@@ -392,11 +439,20 @@ final class CreationScorePreviewScreen extends LinearLayout {
         Button lower=button("Pauta inferior (Fá)",false,()->mutate(()->review.moveSelection(2),true));
         upper.setEnabled(review.selectedCount()>0);lower.setEnabled(review.selectedCount()>0);
         actions(contents,upper,lower);
+        Button handVoice=button("Atribuir mão / voz",false,this::chooseHandVoice);
+        Button uniform=button("Uniformizar trecho",true,this::chooseUniformization);
+        handVoice.setEnabled(review.selectedCount()>0);uniform.setEnabled(review.selectedCount()>0);
+        actions(contents,handVoice,uniform);
         Button undo=button("Desfazer",false,()->mutate(()->review.undo(),true));
         Button redo=button("Refazer",false,()->mutate(()->review.redo(),true));
         undo.setEnabled(review.canUndo());redo.setEnabled(review.canRedo());
         actions(contents,undo,redo);
         actions(contents,
+            button("Restaurar ritmo automático",false,()->new AlertDialog.Builder(activity)
+                .setTitle("Restaurar interpretação automática?")
+                .setMessage("Remover as figuras e posições ajustadas manualmente? A gravação MIDI será preservada.")
+                .setPositiveButton("Restaurar",(d,w)->mutate(()->review.restoreAutomaticRhythm(),true))
+                .setNegativeButton("Cancelar",null).show()),
             button("Restaurar sugestão",false,()->new AlertDialog.Builder(activity)
                 .setTitle("Restaurar distribuição?").setMessage("Remover todos os ajustes manuais das pautas? A gravação original será preservada.")
                 .setPositiveButton("Restaurar",(d,w)->mutate(()->review.restoreSuggestion(),true))
@@ -406,7 +462,74 @@ final class CreationScorePreviewScreen extends LinearLayout {
     }
     private String noteLabel(CreationScoreTranscriber.WrittenNote n,CreationScoreTranscriber.Options o){
         String[] names={"Dó","Dó♯","Ré","Ré♯","Mi","Fá","Fá♯","Sol","Sol♯","Lá","Lá♯","Si"};
-        return names[n.pitch%12]+(n.pitch/12-1)+" · compasso "+(1+n.startTick/o.barTicks())+" · pauta "+n.staff+" · voz "+n.voice;
+        return names[n.pitch%12]+(n.pitch/12-1)+" · compasso "+(1+n.startTick/o.barTicks())
+            +" · pauta "+n.staff+" · voz "+n.voice+" · "
+            +(n.hand==1?"mão direita":n.hand==2?"mão esquerda":"mão não atribuída");
+    }
+    private Spinner choice(LinearLayout panel,String label,String[] values,int current){
+        attach(panel,label(label,14,true,0xff172A44),-2,4);
+        Spinner spinner=new Spinner(activity);
+        spinner.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,values));
+        spinner.setSelection(Math.max(0,Math.min(values.length-1,current)));
+        attach(panel,spinner,48,8);return spinner;
+    }
+    private void chooseHandVoice(){
+        if(review.selectedCount()==0){activity.message("Selecione notas ou compassos");return;}
+        LinearLayout panel=vertical();panel.setPadding(dp(16),dp(8),dp(16),0);
+        Spinner hand=choice(panel,"Mão real atribuída pelo compositor",
+            new String[]{"Não atribuída","Mão direita","Mão esquerda"},0);
+        Spinner voice=choice(panel,"Voz musical",
+            new String[]{"Automática (voz 1)","Voz 1","Voz 2","Voz 3","Voz 4"},0);
+        attach(panel,label("Pauta superior/inferior não determina qual mão tocou. "
+            +"Selecione toda a passagem da mão antes de atribuir, inclusive notas cruzadas.",
+            12,false,0xff57708A),-2,4);
+        new AlertDialog.Builder(activity).setTitle("Atribuir mão e voz").setView(panel)
+            .setPositiveButton("Aplicar",(dialog,which)->mutate(
+                ()->review.assignSelection(hand.getSelectedItemPosition(),voice.getSelectedItemPosition()),true))
+            .setNegativeButton("Cancelar",null).show();
+    }
+    private void chooseUniformization(){
+        if(review.selectedCount()==0){activity.message("Selecione notas ou compassos");return;}
+        LinearLayout panel=vertical();panel.setPadding(dp(16),dp(8),dp(16),0);
+        final String[] values={"Semibreve","Mínima","Semínima","Colcheia","Semicolcheia","Fusa"};
+        Spinner figure=choice(panel,"Figura musical para o trecho",values,2);
+        Spinner hand=choice(panel,"Aplicar à mão",new String[]{"Todas as selecionadas","Mão direita","Mão esquerda"},0);
+        Spinner voice=choice(panel,"Aplicar à voz",new String[]{"Todas as vozes","Voz 1","Voz 2","Voz 3","Voz 4"},0);
+        attach(panel,label("O ajuste reorganiza somente as notas escolhidas, "
+            +"mantém acordes e mostra conflitos antes de alterar a partitura.",
+            12,false,0xff57708A),-2,4);
+        new AlertDialog.Builder(activity).setTitle("Uniformizar trecho").setView(panel)
+            .setPositiveButton("Ver prévia",(dialog,which)->{
+                int duration=new int[]{3840,1920,960,480,240,120}[figure.getSelectedItemPosition()];
+                int handChoice=hand.getSelectedItemPosition(),voiceChoice=voice.getSelectedItemPosition();
+                previewUniformization(duration,handChoice,voiceChoice,values[figure.getSelectedItemPosition()]);
+            }).setNegativeButton("Cancelar",null).show();
+    }
+    private void previewUniformization(int duration,int hand,int voice,String figure){
+        if(closed||busy)return;
+        busy=true;
+        worker.execute(()->{
+            try{
+                CreationScoreReview.Uniformization plan=review.previewUniformize(duration,hand,voice);
+                post(()->{
+                    if(closed)return;
+                    busy=false;
+                    new AlertDialog.Builder(activity).setTitle("Prévia — "+figure)
+                        .setMessage("Antes → Depois (posições e durações em tempos de semínima)\n\n"
+                            +plan.description+"\nNotas afetadas: "+plan.noteCount
+                            +" · linhas rítmicas: "+plan.voiceCount
+                            +"\nCompassos após o ajuste: "+plan.preview.measures
+                            +"\n\nAs outras notas e o MIDI original não serão alterados.")
+                        .setPositiveButton("Aplicar",(d,w)->mutate(()->review.applyUniformize(plan),true))
+                        .setNegativeButton("Cancelar",null).show();
+                });
+            }catch(Exception ex){post(()->{
+                if(closed)return;busy=false;
+                new AlertDialog.Builder(activity).setTitle("Trecho não uniformizado")
+                    .setMessage(ex.getMessage()+"\n\nAmplie a seleção, escolha outra figura ou ajuste a mão/voz.")
+                    .setPositiveButton("Fechar",null).show();
+            });}
+        });
     }
     private void chooseMeasures(){
         LinearLayout panel=vertical();panel.setPadding(dp(18),dp(7),dp(18),0);

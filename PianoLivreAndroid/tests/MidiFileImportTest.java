@@ -11,6 +11,11 @@ public class MidiFileImportTest {
   check(r.notes.size()==2&&r.ppqn==480&&r.noteTracks().equals(Arrays.asList(0,1)),"tracks retained");
   Map<Integer,Integer> hands=new HashMap<>();hands.put(0,1);hands.put(1,2);
   byte[] xml=MidiFileImport.musicXml(r,hands,"A & B");Score s=Score.read(new ByteArrayInputStream(xml),"midi.musicxml");
+  String musicalXml=new String(xml,java.nio.charset.StandardCharsets.UTF_8);
+  check(musicalXml.contains("<movement-title>A &amp; B</movement-title>")&&
+      musicalXml.contains("<direction-type><metronome>")&&
+      musicalXml.indexOf("<direction-type>")<musicalXml.indexOf("<sound tempo="),
+      "MIDI MusicXML contains canonical movement title and valid tempo direction for OSMD");
   check(s.events.size()==2&&s.events.get(0).staff==1&&s.events.get(0).midi==36&&s.events.get(1).staff==2&&s.events.get(1).midi==84,"explicit low right/high left, no pitch inference");
   check(s.events.get(0).velocity==100&&s.events.get(1).velocity==50&&s.events.get(0).length==1,"exact ticks/velocity");
   check(s.title.equals("A & B")&&Arrays.equals(r.original,bytes),"title escaped and source preserved");

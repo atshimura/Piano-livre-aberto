@@ -26,7 +26,6 @@
  #optical-note-tip{display:none;position:absolute;z-index:12;background:#fff;border:1px solid #a7c6bc;border-radius:6px;padding:5px 9px;font:14px sans-serif;color:#183b38;box-shadow:0 2px 6px #0002;pointer-events:none;max-width:210px}
 </style>
 <script src="osmd/opensheetmusicdisplay.min.js"></script>
-<script src="temporal-notation.js"></script>
 <script src="optical-time-map.js"></script>
 <script src="creation-note-picker.js"></script>
 <script src="study-note-tip.js"></script>
@@ -44,7 +43,7 @@
  let creationPicker=null,creationSource=[],creationSelected=[];
  let studyProfile=null,studyAnalysis=null,studyVerticalAdaptation={status:'not-evaluated'};
  let studyDynamicAdjustments=[],studyWordSourceNumbers=[],studyWindow=null,studyWindowRows=[],studyWindowGlobal=null;
- let generation=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
+ let generation=0,activeRenderToken=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
  let osmdRenderedWidth=0,osmdRenderedHeight=0,opticalDisplayScale=1,opticalReferenceX=0;
  let opticalTipTimeout=null;
  let opticalPlayback={bpm:100,playing:false},opticalReconciliation=null,lastNativeEvents=[];
@@ -54,46 +53,14 @@
  let opticalContextState=null,opticalContextMeasure=-1;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
  function inform(s){message.textContent=s;message.style.display='block';}
- function atBeat(beat,smooth){
-  if(freeLayout)return;
-  if(!loaded || !osmd || !osmd.cursor) {seekBeat=beat;return;}
-  const cursor=osmd.cursor;
-  if(!Number.isFinite(beat)||beat<0)return;
-  if(appliedBeat>=0&&Math.abs(appliedBeat-beat)<0.012)return;
-  // MusicXML quarter note = 0.25 of an OSMD whole note.
-  const target=beat/4.0-0.000025;
-  try{
-   // Apply the transition before moving the OSMD cursor. Otherwise its
-   // first update jumps instantly even when sheet scrolling is smooth.
-   const el=cursor.cursorElement;
-   if(el)el.style.transition=smooth
-      ?'left 420ms ease-in-out, top 420ms ease-in-out'
-      :'none';
-   if(appliedBeat>beat+0.002){cursor.reset();}
-   let count=0;
-   while(!cursor.iterator.endReached && cursor.iterator.currentTimeStamp.RealValue < target && count++<12000){
-    cursor.next();
-   }
-   cursor.show();
-   if(el){
-    const b=el.getBoundingClientRect();
-    const p=viewport.getBoundingClientRect();
-    const desiredY=p.top+p.height*.38;
-    const desiredX=p.left+p.width*.35;
-    const top=viewport.scrollTop+b.top-desiredY;
-    const left=viewport.scrollLeft+b.left-desiredX;
-    const maxTop=Math.max(0,viewport.scrollHeight-viewport.clientHeight);
-    const maxLeft=Math.max(0,viewport.scrollWidth-viewport.clientWidth);
-    console.log('SCORE_SEEK',beat,'cursor=',Math.round(b.left),Math.round(b.top),
-      'viewport=',Math.round(viewport.scrollTop),'max=',Math.round(maxTop));
-    // A zero-beat starting cursor should not scroll the original score away.
-    if(beat>0.01||viewport.scrollTop>0||viewport.scrollLeft>0){
-      viewport.scrollTo({top:Math.min(maxTop,Math.max(0,top)),
-       left:Math.min(maxLeft,Math.max(0,left)),behavior:smooth?'smooth':'auto'});
-    }
-   }
-   appliedBeat=beat;
-  }catch(e){ if(window.AndroidNotation)AndroidNotation.onError('Navegação: '+e.message); }
+ function reportFailure(token,code,stage,error){
+  if(token!==activeRenderToken)return;
+  const text=String(error&&error.message||error||'Falha desconhecida').slice(0,300);
+  inform('A partitura não pôde ser exibida. '+code);
+  if(window.AndroidNotation&&AndroidNotation.onFailure)
+   AndroidNotation.onFailure(token,code,stage,text);
+  else if(window.AndroidNotation&&AndroidNotation.onError)
+   AndroidNotation.onError(code+': '+text);
  }
  function cancelOpticalWait(){
   if(opticalWaitRaf)cancelAnimationFrame(opticalWaitRaf);
@@ -898,10 +865,11 @@
    dispatchNoteTap(ev);
   });
  }
- function render(xml,start,layout,nativeEvents){
+ function render(xml,start,layout,nativeEvents,renderToken){
   clearTimeout(renderTimer);
   if(creationPicker){creationPicker.dispose();creationPicker=null;}
   const ticket=++generation;
+  activeRenderToken=Number.isFinite(renderToken)?renderToken:0;
   cancelOptical();cancelOpticalWait();
   hideOpticalTip();
   loaded=false;appliedBeat=-1;seekBeat=start||0;
@@ -910,6 +878,10 @@
   opticalContextState=null;opticalContextMeasure=-1;
   document.getElementById('optical-context-rail').innerHTML='';
   freeLayout=(layout==='free');studyProof=(layout==='engraving-poc');
+  if(!freeLayout&&!studyProof){
+   reportFailure(activeRenderToken,'PL-NOT-LOAD','Modo de apresentação','Modo OSMD não suportado');
+   return;
+  }
   lastNativeEvents=studyProof&&Array.isArray(nativeEvents)?nativeEvents:[];
   document.body.className=freeLayout?'free':(studyProof?'preview':'continuous');
   // Native pinch zoom remains available in traditional reading mode only.
@@ -921,19 +893,6 @@
   document.getElementById('score').style.marginLeft='0px';
   document.getElementById('score').style.paddingRight='0px';
   viewport.scrollTo({top:0,left:0,behavior:'auto'});
-  if((freeLayout||studyProof)&&window.TemporalNotation)TemporalNotation.teardown();
-  if(!freeLayout&&!studyProof){
-   try{
-    const timePlan=TemporalNotation.render(xml,document.getElementById('score'),viewport,seekBeat);
-    loaded=true;message.style.display='none';
-    console.log('TEMPORAL_RENDER_SUCCESS',timePlan.plan.notes.length);
-    if(window.AndroidNotation)AndroidNotation.onRendered();
-   }catch(error){
-    inform('Partitura temporal indisponível: '+error.message);
-    if(window.AndroidNotation)AndroidNotation.onError(error.message);
-   }
-   return;
-  }
  const proofStarted=performance.now();
   const originalXml=xml;
   let repositionedDynamics=0;
@@ -984,6 +943,9 @@
       staff:osmd.EngravingRules.StaffDistance}));
     }
     // Keep OSMD at its default internal zoom; apply a CSS transform to the entire grand staff.
+    if(window.__testForceOSMD){window.__testForceOSMD=false;
+     throw new Error('Falha OSMD de renderização (teste sintético dirigido)');
+    }
     osmd.render();
     if(studyProof){
      let probe=document.querySelector('#score svg');
@@ -1193,39 +1155,19 @@
      }
      console.log('POC_NOT_PRODUCTION_READY: optical beat-to-x interpolation is experimental; note hit mapping, visual clipping and performance remain unvalidated');
     }
-    if(!freeLayout&&!studyProof&&svg){
-     const groups=Array.from(svg.querySelectorAll('g')).slice(0,44);
-     console.log('TEMPORAL_PROBE_GROUPS',JSON.stringify(groups.map(g=>({
-      cls:g.getAttribute('class'),id:g.id,transform:g.getAttribute('transform'),
-      bbox:(()=>{try{const b=g.getBBox();return [Math.round(b.x),Math.round(b.y),Math.round(b.width),Math.round(b.height)];}catch(e){return null;}})(),
-      xml:g.outerHTML.slice(0,150)
-     }))));
-     const notes=osmd.graphic.measureList.slice(0,2).map((measures,i)=>measures.map((m,j)=>({
-      measure:i,staff:j,sourceStart:m.parentSourceMeasure&&m.parentSourceMeasure.AbsoluteTimestamp&&m.parentSourceMeasure.AbsoluteTimestamp.RealValue,
-      abs:m.PositionAndShape.AbsolutePosition,
-      staveX:m.getVFStave&&m.getVFStave().getX(),
-      notes:m.staffEntries.slice(0,7).map(e=>({
-       t:e.getAbsoluteTimestamp().RealValue,x:e.PositionAndShape.AbsolutePosition.x,
-       vf:e.graphicalVoiceEntries.map(v=>v.vfStaveNote&&v.vfStaveNote.getX&&v.vfStaveNote.getX())
-      }))
-     })));
-     console.log('TEMPORAL_PROBE_NOTES',JSON.stringify(notes));
-    }
     console.log('SCORE_DRAWN','zoom=',osmd.Zoom,'svg=',svg?svg.getBoundingClientRect().toJSON():null,
       'scroll=',viewport.scrollHeight,viewport.clientHeight);
     loaded=true;message.style.display='none';
     if(studyProof&&window.AndroidNotation&&AndroidNotation.onPresentation)
      AndroidNotation.onPresentation(StudyProfile.summary(studyProfile,studyAnalysis));
-    if(!freeLayout&&!studyProof&&osmd.cursor){osmd.cursor.reset();osmd.cursor.show();}
-    if(window.AndroidNotation)AndroidNotation.onRendered();
-    if(!freeLayout&&!studyProof)requestAnimationFrame(()=>setTimeout(()=>atBeat(seekBeat,true),150));
+    if(window.AndroidNotation)AndroidNotation.onRendered(activeRenderToken);
    }).catch(function(err){
     if(ticket!==generation)return;
     console.error('POC_OSMD_EXCEPTION '+(err&&err.stack||err));
     inform('Falha ao abrir notação: '+err.message);
-    if(window.AndroidNotation)AndroidNotation.onError(err.message);
+    reportFailure(activeRenderToken,'PL-NOT-RENDER','Desenho OSMD',err);
    });
-  }catch(e){inform('Erro de partitura: '+e.message);if(window.AndroidNotation)AndroidNotation.onError(e.message);}
+  }catch(e){reportFailure(activeRenderToken,'PL-NOT-LOAD','Carregamento OSMD',e);}
  }
  function bindCreationSelection(){
   if(creationPicker){creationPicker.dispose();creationPicker=null;}
@@ -1251,8 +1193,7 @@
    analysis:function(){return {context:opticalContextState?{measure:opticalContextMeasure+1,railWidthCss:opticalContextState.railWidthCss,sourceMeasures:opticalContextState.active.map(function(a){return {clef:a.clef&&a.clef.sourceMeasure,key:a.key&&a.key.sourceMeasure,time:a.time&&a.time.sourceMeasure};})}:null,windowPlan:studyWindow?{windows:studyWindow.windows,current:studyWindow.current,fullScale:studyWindow.fullScale}:null,profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,layoutAdaptation:studyVerticalAdaptation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
    seek:function(beat,animated,bpm,playing){
     if(freeLayout)return;seekBeat=beat;
-    if(studyProof){opticalSeek(beat,bpm,!!playing);return;}
-    if(window.TemporalNotation)TemporalNotation.sync(beat,bpm,!!playing);
+    if(studyProof)opticalSeek(beat,bpm,!!playing);
    },
    studyHand:function(hand){
     if(hand!==0&&hand!==1&&hand!==2)return;
@@ -1260,13 +1201,9 @@
     if(studyProof)paintOpticalCues(seekBeat);
    },
    waitPrepare:function(milliseconds){
-    if(studyProof){beginOpticalWait(milliseconds);return;}
-    if(!freeLayout&&loaded&&window.TemporalNotation)TemporalNotation.waitPrepare(milliseconds);
+    if(studyProof)beginOpticalWait(milliseconds);
    },
-   waitCancel:function(){
-    if(studyProof){cancelOpticalWait();return;}
-    if(window.TemporalNotation)TemporalNotation.waitCancel();
-   },
+   waitCancel:function(){if(studyProof)cancelOpticalWait();},
    loopEdit:function(enabled){
     if(studyProof){
      opticalLoopEditing=!!enabled;opticalLoopStart=null;
@@ -1276,7 +1213,6 @@
      tip.style.left='12px';tip.style.top='10px';tip.style.display=enabled?'block':'none';
      return;
     }
-    if(!freeLayout&&window.TemporalNotation)TemporalNotation.loopEdit(!!enabled);
    },
    clearLoop:function(){
     if(studyProof){
@@ -1284,11 +1220,9 @@
      hideOpticalTip();
      return;
     }
-    if(!freeLayout&&window.TemporalNotation)TemporalNotation.clearLoop();
    },
    resize:function(){
     if(!loaded)return;
-    if(!freeLayout&&!studyProof){if(window.TemporalNotation)TemporalNotation.resize();return;}
     if(!osmd)return;
     // Chrome transitions change HEIGHT only: retain horizontal SVG and touch targets.
     if(studyProof&&osmdRenderedWidth===viewport.clientWidth){
@@ -1337,9 +1271,9 @@
       makeOpticalContextState(resizedSvg,osmd.graphic&&osmd.graphic.measureList||[]);
       prepareStudyWindow(resizedSvg);
       opticalSeek(seekBeat,opticalPlayback.bpm,opticalPlayback.playing);
-     }else if(!freeLayout)atBeat(seekBeat,false);
-     else if(creationSource.length)bindCreationSelection();
-    }catch(e){console.log('POC_RESIZE_ERROR',e.message)}},220);
+     }else if(creationSource.length)bindCreationSelection();
+    }catch(e){console.log('POC_RESIZE_ERROR',e.message);
+     reportFailure(activeRenderToken,'PL-NOT-GEOMETRY','Redimensionamento OSMD',e);}},220);
    }
  };
  viewport.addEventListener('scroll',function(){

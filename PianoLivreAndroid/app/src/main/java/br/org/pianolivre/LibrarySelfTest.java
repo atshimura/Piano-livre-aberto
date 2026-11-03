@@ -48,6 +48,75 @@ final class LibrarySelfTest {
    rejected=false;try{BackupArchive.restore(prefs,root,bad);}catch(Exception ex){rejected=true;}
    check(rejected&&before.equals(prefs.getAll()),"invalid library key rejected before restore");
    store.toggleMember(id,asset);check(!store.snapshot().collections.get(id).scores.contains(asset),"membership toggles independently");
+   store.setHidden(asset,true);
+   check(store.snapshot().hiddenScores.contains(asset)&&!other.snapshot().hiddenScores.contains(asset),"bundled score hidden per profile");
+   check(store.snapshot().favorites.contains(asset),"hiding preserves favorite");
+   // Old v1 JSON still decodes; new hiddenScores is saved in existing backup v4.
+   JSONObject hiddenBackup=BackupArchive.create(prefs,root);
+   store.setHidden(asset,false);
+   BackupArchive.restore(prefs,root,hiddenBackup);
+   check(store.snapshot().hiddenScores.contains(asset),"hidden state survives backup/restore");
+   store.setHidden(asset,false);
+   check(!store.snapshot().hiddenScores.contains(asset),"hidden built-in score can be restored");
+   store.toggleMember(id,"creation-score:"+creationId);
+   store.removeCreation(creationId);
+   check(!store.hasCreation(creationId)&&!store.snapshot().favorites.contains("creation-score:"+creationId),"unlinked creation cleans stale favorite");
+   check(!store.snapshot().collections.get(id).scores.contains("creation-score:"+creationId),"unlinked creation cleans stale collection");
+   other.toggleFavorite(imported);String otherCollection=other.create("Outro");
+   other.toggleMember(otherCollection,imported);
+   File midiSource=new File(folder,"meu.mxl.source.mid");
+   try(FileOutputStream out=new FileOutputStream(midiSource)){out.write(content);}
+   prefs.edit().putString("user_0_file",shared.getAbsolutePath()).putString("user_1_file",imported).commit();
+   ImportedScoreDeletion.delete(root,imported,scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));
+   check(!shared.exists()&&!midiSource.exists(),"imported score and matching MIDI source deleted");
+   check(!store.snapshot().favorites.contains(imported)&&!other.snapshot().favorites.contains(imported),"all profiles detach imported favorite");
+   check(!other.snapshot().collections.get(otherCollection).scores.contains(imported),"all profiles detach imported collection membership");
+   check(!prefs.contains("user_0_file")&&!prefs.contains("user_1_file"),"saved study references cleared across profiles");
+   boolean invalidHidden=false;
+   try{LibraryStore.decode("{\"version\":1,\"favorites\":[],\"collections\":[],\"hiddenScores\":[\"imported/meu.mxl\"]}");}
+   catch(IllegalArgumentException expected){invalidHidden=true;}
+   check(invalidHidden,"imported files cannot be hidden as built-in scores");
+   // Simulate a crash just after the file transaction marker, before prefs
+   // cleanup. Recovery must prune both profiles before discarding the file.
+   String interruptedKey="imported/interrupted.mxl";
+   File interrupted=new File(folder,"interrupted.mxl");
+   try(FileOutputStream out=new FileOutputStream(interrupted)){out.write(content);}
+   store.toggleFavorite(interruptedKey);other.toggleFavorite(interruptedKey);
+   other.toggleMember(otherCollection,interruptedKey);
+   File stage=new File(root,"imported.delete-pending");
+   check(stage.mkdir(),"crash staging created");
+   try(FileOutputStream out=new FileOutputStream(new File(stage,"score-name"))){out.write("interrupted.mxl".getBytes(java.nio.charset.StandardCharsets.UTF_8));}
+   java.nio.file.Files.move(interrupted.toPath(),new File(stage,"interrupted.mxl").toPath());
+   try(FileOutputStream out=new FileOutputStream(new File(stage,"committed"))){out.write("ok".getBytes(java.nio.charset.StandardCharsets.UTF_8));}
+   ImportedScoreDeletion.recover(root,scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));
+   check(!interrupted.exists()&&!stage.exists(),"postcommit recovery completes physical deletion");
+   check(!store.snapshot().favorites.contains(interruptedKey)&&!other.snapshot().favorites.contains(interruptedKey),
+    "postcommit recovery completes metadata in all profiles");
+   check(!other.snapshot().collections.get(otherCollection).scores.contains(interruptedKey),
+    "postcommit recovery cleans collection memberships");
+   // Isolated synthetic score: deleting a derived .pls cannot alter the .plc.
+   // Earlier BackupArchive.create/restore in THIS test already prepares the
+   // creations/creation-scores directories. mkdir() returns false if an
+   // existing directory is safe, so asserting mkdir() alone crashes on a
+   // successful prerequisite. Fail closed on a non-directory instead.
+   File originalDir=new File(root,"creations"),scoresDir=new File(root,"creation-scores");
+   check((originalDir.isDirectory()||originalDir.mkdirs())
+     &&(scoresDir.isDirectory()||scoresDir.mkdirs())
+     &&originalDir.isDirectory()&&scoresDir.isDirectory(),
+     "synthetic creation directories available after backup/restore");
+   File originalMidi=new File(originalDir,creationId+".plc"),derivedScore=new File(scoresDir,creationId+".pls");
+   try(FileOutputStream out=new FileOutputStream(originalMidi)){out.write(content);}
+   try(FileOutputStream out=new FileOutputStream(derivedScore)){out.write(content);}
+   String createdKey="creation-score:"+creationId;
+   store.addCreation(creationId);store.toggleFavorite(createdKey);
+   other.toggleFavorite(createdKey);other.toggleMember(otherCollection,createdKey);
+   prefs.edit().putString("user_0_file",createdKey).putString("user_1_file",createdKey).commit();
+   CreationScoreDeletion.delete(root,creationId,projectId->LibraryStore.removeCreationEveryProfile(prefs,projectId));
+   check(originalMidi.isFile()&&Arrays.equals(content,java.nio.file.Files.readAllBytes(originalMidi.toPath())),"original MIDI bytes preserved after score deletion");
+   check(!derivedScore.exists()&&!store.hasCreation(creationId),"generated score removed, library link detached");
+   check(!store.snapshot().favorites.contains(createdKey)&&!other.snapshot().favorites.contains(createdKey),"generated score favorites cleaned across profiles");
+   check(!other.snapshot().collections.get(otherCollection).scores.contains(createdKey),"generated score collection membership cleaned");
+   check(!prefs.contains("user_0_file")&&!prefs.contains("user_1_file"),"study references cleared for deleted derivative");
    return checks;
   }finally{prefs.edit().clear().commit();}
  }

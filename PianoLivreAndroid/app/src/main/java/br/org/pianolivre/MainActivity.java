@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
  private String pendingCreationExportId,pendingCreationExportFile,pendingCreationExportSha;private boolean creationExportPreparing;
  private final java.util.concurrent.ExecutorService creationExportDisk=java.util.concurrent.Executors.newSingleThreadExecutor();
  AlertDialog lastMessageDialog;
- PianoScreens screens;LinearLayout root,toolbar;PianoView scoreView;TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
+ PianoScreens screens;LinearLayout root,toolbar;final StudyInputState studyState=new StudyInputState();TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
  Score score;String currentFile="";String currentName="";int currentHand=0;int mode=0;boolean running=false,waitTraveling=false;double waitTravelTarget=0,position=0;double tempoFactor=1,loopStart=0,loopEnd=Double.MAX_VALUE;
  MidiManager midiManager;private MidiManager.DeviceCallback midiDeviceCallback;
  final MidiConnection midiConnection=new MidiConnection(new MidiConnection.Listener(){
@@ -143,7 +143,7 @@ public class MainActivity extends Activity {
    try{android.util.Log.i("PianoLivreXmlInput","XML_INPUT_SELFTEST_PASS assertions="+XmlInputSelfTest.run());}
    catch(Exception ex){throw new IllegalStateException("XML input self-test failed",ex);}
   }
-  try{BackupArchive.recover(prefs,getFilesDir());}
+  try{BackupArchive.recover(prefs,getFilesDir());ImportedScoreDeletion.recover(getFilesDir(),scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));CreationScoreDeletion.recover(getFilesDir(),id->LibraryStore.removeCreationEveryProfile(prefs,id));}
   catch(Exception recovery){
    android.util.Log.e("PianoLivreBackup","Não foi possível recuperar restauração anterior",recovery);
    new AlertDialog.Builder(this).setTitle("Recuperação de dados")
@@ -175,7 +175,7 @@ public class MainActivity extends Activity {
   mode=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"mode",0)));
   // Legacy keyboard preference remains stored even though Study no longer
   // renders the visual keyboard guide. Keep it when opening a new score.
-  scoreView.showKeyboard=prefs.getBoolean(studyPrefix+"keyboard",false);
+  studyState.showKeyboard=prefs.getBoolean(studyPrefix+"keyboard",false);
   String previous=prefs.getString("user_"+user+"_file","");
   boolean contextSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("engraving_context_selftest",false);
@@ -255,10 +255,10 @@ public class MainActivity extends Activity {
  void loadCreationScore(String id){loadScore("creation-score:"+id,true,false);}
  void addCreationScoreToLibrary(String id,java.util.function.Consumer<Boolean> onDone){
   final int owner=user;
-  // Validate a potentially expensive MusicXML derivation away from the
-  // Android UI; commit the registration and update UI on the main thread.
+  // Read and validate the exact saved MusicXML without blocking the UI.
+  // Before linking, run the same live OSMD engraving as the Study screen.
   new Thread(()->{
-   String problem=null;
+   String problem=null;Score parsed=null;
    try{
     LibraryStore.validateCreationId(id);
     CreationProjectStore.Project source=new CreationProjectStore(getFilesDir()).get(id);
@@ -266,19 +266,33 @@ public class MainActivity extends Activity {
      throw new IOException("Composição indisponível para o perfil ativo");
     CreationScoreStore.Saved saved=new CreationScoreStore(getFilesDir()).read(id);
     if(saved.profileId!=owner)throw new IOException("Partitura de outro perfil");
+    parsed=Score.read(new ByteArrayInputStream(saved.xml.getBytes(StandardCharsets.UTF_8)),
+      "creation-score:"+id);
    }catch(Exception error){problem=error.getMessage();}
-   final String failure=problem;
+   final String failure=problem;final Score checked=parsed;
    runOnUiThread(()->{
-    boolean added=false;
-    if(failure==null&&user==owner){
+    if(failure!=null||user!=owner){
+     reportNotationIssue("PL-NOT-STORAGE","Validação para Biblioteca",
+       failure==null?"Perfil ativo alterado":failure,null,
+       ()->addCreationScoreToLibrary(id,onDone));
+     onDone.accept(false);return;
+    }
+    CreationStudyCompatibility.check(this,checked,compatible->{
+     if(!compatible){onDone.accept(false);return;}
+     if(user!=owner){message("Perfil ativo alterado");onDone.accept(false);return;}
      try{
+      // Detect a concurrent edit/delete between the probe and library update.
+      CreationScoreStore.Saved current=new CreationScoreStore(getFilesDir()).read(id);
+      if(!current.xml.equals(checked.sourceXml))
+       throw new IOException("Partitura alterada durante a validação; verifique novamente");
       new LibraryStore(prefs,owner).addCreation(id);
       if(screens!=null)screens.refreshLibrary();
-      message("Partitura adicionada à Biblioteca Musical.");
-      added=true;
-     }catch(Exception ex){message("Não foi possível adicionar à biblioteca: "+ex.getMessage());}
-    }else message("Não foi possível adicionar à biblioteca: "+(failure==null?"Perfil ativo alterado":failure));
-    onDone.accept(added);
+      message("Partitura compatível com Estudar e adicionada à Biblioteca Musical.");
+      onDone.accept(true);
+     }catch(Exception e){
+      message("Não foi possível adicionar à Biblioteca: "+e.getMessage());onDone.accept(false);
+     }
+    });
    });
   },"PianoLivre-AdicionarBiblioteca").start();
  }
@@ -325,24 +339,28 @@ public class MainActivity extends Activity {
    if(!Double.isFinite(position))position=score.firstOnset(currentHand);
    if(!Double.isFinite(loopStart)||loopStart<0||!Double.isFinite(loopEnd)
       ||loopEnd<=loopStart){loopStart=0;loopEnd=Double.MAX_VALUE;}
-   scoreView.showKeyboard=prefs.getBoolean(prefix+"keyboard",false);
+   studyState.showKeyboard=prefs.getBoolean(prefix+"keyboard",false);
   }
   position=Math.max(0,Math.min(position,score.end()));
   if(routeCursor!=null){
    if(reset||!routeCursor.restore(prefs.getInt(prefix+"route_visit",-1),position))
     routeCursor.align(position);
   }
-  scoreView.score=score;scoreView.hand=currentHand;scoreView.playhead=position;scoreView.invalidate();
+  studyState.score=score;studyState.hand=currentHand;studyState.playhead=position;
   if(tempoBar!=null)tempoBar.setProgress((int)Math.round(tempoFactor*100)-25);
   if(free){screens.showFree();}
-  else{screens.showStudy();screens.displayScore(score,position);if(mode==0)prepareWaiting();}
+  else{screens.showStudy();screens.displayScore(score,position);}
   updateInfo();saveSession();
   if(!score.importWarnings.isEmpty())message("Aviso de interpretação: "+String.join("; ",score.importWarnings));
   if(routeHasMarkers&&!route.supported())
    message("Atenção: não é possível determinar com segurança todos os retornos: "+
      String.join(", ",route.warnings)+". A reprodução desta partitura será linear.");
   }
- }catch(Exception e){message("Não foi possível abrir a partitura: "+e.getMessage());}}
+ }catch(Exception e){
+   final String retryPath=path;
+   reportNotationIssue("PL-NOT-PARSE","Leitura MusicXML",e.getMessage(),null,
+    ()->loadScore(retryPath,true,free));
+  }}
  void chooseMidiHands(MidiFileImport.Result midi,String name,List<Integer> tracks,int index,Map<Integer,Integer> hands){
   if(index<tracks.size()){
    int track=tracks.get(index);long count=midi.notes.stream().filter(n->n.track==track).count();
@@ -397,6 +415,7 @@ public class MainActivity extends Activity {
      loadScore(dest.getAbsolutePath(),true);
     }
    }else if(request==EXPORT){
+    CreationScoreDeletion.recover(getFilesDir(),id->LibraryStore.removeCreationEveryProfile(prefs,id));
     if(screens!=null)screens.prepareCreationBackup();
     BackupArchive.export(prefs,getFilesDir(),()->getContentResolver().openOutputStream(uri));
     message("Backup exportado com verificação de integridade");
@@ -413,9 +432,9 @@ public class MainActivity extends Activity {
       try{
        if(screens!=null)screens.prepareCreationBackup();
        BackupArchive.restore(prefs,getFilesDir(),backup);
-       score=null;scoreView.score=null;scoreView.pressed.clear();
+       score=null;studyState.score=null;studyState.pressed.clear();
        position=0;currentFile="";currentName="";user=0;
-       scoreView.invalidate();
+       
        screens.showHome();loadProfiles();
        message("Backup restaurado e verificado. Os dados anteriores foram substituídos.");
       }catch(Exception restoreError){
@@ -499,7 +518,7 @@ public class MainActivity extends Activity {
  void disconnectMidi(){midiConnection.disconnect("Nenhum dispositivo conectado");}
  void clearMidiObservation(){
   downKeys.clear();midiSources.clear();waitRecognizer.clear();performance.disconnect();sustainDown=false;
-  if(scoreView!=null){scoreView.pressed.clear();scoreView.invalidate();}
+  if(studyState!=null){studyState.pressed.clear();}
   if(screens!=null)screens.updatePressed(downKeys);
  }
  void send(int pitch,boolean on){send(pitch,on,74);}
@@ -623,7 +642,7 @@ public class MainActivity extends Activity {
     if(chordCalibration.recording()&&chordCalibration.noteOff(pitch,now))updateChordCalibrationStatus();
    }
   }
-  scoreView.pressed.clear();scoreView.pressed.addAll(downKeys);scoreView.invalidate();
+  studyState.pressed.clear();studyState.pressed.addAll(downKeys);
   if(screens!=null){
    screens.updatePressed(downKeys);
    if(foreground){
@@ -728,11 +747,11 @@ public class MainActivity extends Activity {
  void selectHand(int selected){
   if(selected<0||selected>2)return;
   stopPlayback();finishStudyWindow();
-  currentHand=selected;scoreView.hand=selected;
+  currentHand=selected;studyState.hand=selected;
   if(screens!=null&&screens.notation!=null)screens.notation.setStudyHand(selected);
   if(score!=null)position=HandNavigation.nextPosition(score,position,selected,loopStart,loopEnd);
   if(routeCursor!=null)routeCursor.align(position);
-  scoreView.playhead=position;scoreView.invalidate();
+  studyState.playhead=position;
   if(mode==0)prepareWaiting();else if(screens!=null)screens.followScore(position,true);
   saveSession();updateInfo();beginStudyWindow();
  }
@@ -746,7 +765,7 @@ public class MainActivity extends Activity {
   if(Math.abs(next-position)<.0001)return;
   waitTravelTarget=next;
   if(waitTravelTarget<=position){
-   position=waitTravelTarget;scoreView.playhead=position;
+   position=waitTravelTarget;studyState.playhead=position;
    prepareWaiting();
    if(screens!=null)screens.followScore(position,true);
    return;
@@ -775,7 +794,7 @@ public class MainActivity extends Activity {
   loopStart=0;loopEnd=Double.MAX_VALUE;writtenRepeats.reset();
   position=0;
   if(routeCursor!=null){routeCursor.reset();routeCursor.align(position);}
-  scoreView.playhead=position;scoreView.invalidate();
+  studyState.playhead=position;
   if(mode==0)prepareWaiting();
   else if(screens!=null)screens.followScore(position,true);
   if(screens!=null)screens.clearLoopSelection();
@@ -790,7 +809,7 @@ public class MainActivity extends Activity {
   stopPlayback();
   loopStart=start;loopEnd=end;resetWrittenRoute();
   position=start;
-  scoreView.playhead=position;scoreView.invalidate();
+  studyState.playhead=position;
   if(mode==0)prepareWaiting();
   else if(screens!=null)screens.followScore(position,true);
   saveSession();updateInfo();
@@ -831,7 +850,7 @@ public class MainActivity extends Activity {
   }
   if(position>=score.end()-0.001){
    position=score.firstOnset(currentHand);
-   scoreView.playhead=position;scoreView.invalidate();
+   studyState.playhead=position;
    if(screens!=null)screens.followScore(position,true);
   }
   // A paused session preserves its current repeat/Coda pass.
@@ -840,7 +859,7 @@ public class MainActivity extends Activity {
   if(routeCursor!=null&&routeCursor.finished()){
    position=score.firstOnset(currentHand);
    routeCursor.reset();routeCursor.align(position);
-   scoreView.playhead=position;scoreView.invalidate();
+   studyState.playhead=position;
    if(screens!=null)screens.followScore(position,true);
   }
   if(mode==2){
@@ -931,8 +950,8 @@ public class MainActivity extends Activity {
       }
      }
     }
-    scoreView.playhead=position;
-    scoreView.invalidate();
+    studyState.playhead=position;
+    
     if(screens!=null)screens.followScore(position,false);
     updateInfo(!running&&!waitTraveling);
     if(!running&&screens!=null)screens.updateSelections();
@@ -986,12 +1005,12 @@ public class MainActivity extends Activity {
  void activateProfile(int id){if(user==id)return;if(screens!=null)screens.connectionLostCreation();stopPlayback();finishStudyWindow();applyProfile(id);}
  void applyProfile(int id){
   user=id;prefs.edit().putInt("active_profile",id).apply();refreshChordWindow();
-  score=null;scoreView.score=null;scoreView.pressed.clear();currentFile="";currentName="";
+  score=null;studyState.score=null;studyState.pressed.clear();currentFile="";currentName="";
   route=null;routeCursor=null;routeHasMarkers=false;waitRecognizer.clear();
-  currentHand=0;mode=0;tempoFactor=1;scoreView.hand=0;scoreView.showKeyboard=false;
+  currentHand=0;mode=0;tempoFactor=1;studyState.hand=0;studyState.showKeyboard=false;
   String file=prefs.getString("user_"+id+"_file","");
   if(!file.isEmpty())loadScore(file,false);
-  else{position=0;loopStart=0;loopEnd=Double.MAX_VALUE;scoreView.invalidate();screens.showHome();updateInfo();}
+  else{position=0;loopStart=0;loopEnd=Double.MAX_VALUE;screens.showHome();updateInfo();}
  }
  void manageProfile(){
   try{
@@ -1019,6 +1038,8 @@ public class MainActivity extends Activity {
  }
  void beginStudyWindow(){
   if(!foreground||score==null||currentFile.isEmpty()||screens==null||(!screens.isStudyOpen()&&!screens.isFreeOpen()))return;
+  if(screens.isStudyOpen()&&(screens.notation==null||!screens.notation.isRendered()))return;
+  if(screens.isFreeOpen()&&(screens.freeNotation==null||!screens.freeNotation.isRendered()))return;
   studyClock.start(SystemClock.uptimeMillis(),System.currentTimeMillis(),user,LibrarySearch.key(currentFile),
    currentName.isEmpty()?score.title:currentName,screens.isFreeOpen()?3:mode,currentHand,position,tempoFactor);
  }
@@ -1064,6 +1085,16 @@ public class MainActivity extends Activity {
    new AlertDialog.Builder(this).setTitle("Períodos registrados").setItems(labels.toArray(new String[0]),(d,index)->{}).setPositiveButton("Fechar",null).show();
   }catch(Exception ex){message("Não foi possível ler os períodos");}
  }
+ /** Drop an in-memory last-study reference after its score is hidden or removed. */
+ void clearRemovedScoreInMemory(String scoreKey){
+  if(currentFile==null||currentFile.isEmpty()||!scoreKey.equals(LibrarySearch.key(currentFile)))return;
+  finishStudyWindow();
+  waitStarted=false;waitPreparing=false;waitPreparationSequence++;waitPreparation.cancel();
+  running=false;waitTraveling=false;allOff();
+  score=null;currentFile="";currentName="";position=0;
+  studyState.score=null;studyState.pressed.clear();
+  route=null;routeCursor=null;routeHasMarkers=false;waitRecognizer.clear();updateInfo();
+ }
  void saveSession(){
   if(prefs==null||score==null)return;
   String key="user_"+user+"_";
@@ -1073,11 +1104,13 @@ public class MainActivity extends Activity {
    .putLong(key+"tempo",Double.doubleToLongBits(tempoFactor))
    .putLong(key+"loop_start",Double.doubleToLongBits(loopStart))
    .putLong(key+"loop_end",Double.doubleToLongBits(loopEnd))
-   .putBoolean(key+"keyboard",scoreView.showKeyboard)
+   .putBoolean(key+"keyboard",studyState.showKeyboard)
    .putInt(key+"route_visit",routeCursor==null?0:routeCursor.index()).apply();
  }
  JSONObject makeBackup()throws Exception{
   saveSession();
+  ImportedScoreDeletion.recover(getFilesDir(),scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));
+  CreationScoreDeletion.recover(getFilesDir(),id->LibraryStore.removeCreationEveryProfile(prefs,id));
   if(screens!=null)screens.prepareCreationBackup();
   return BackupArchive.create(prefs,getFilesDir());
  }
@@ -1107,6 +1140,87 @@ public class MainActivity extends Activity {
  private void clearCreationExport(){if(pendingCreationExportFile!=null&&pendingCreationExportFile.matches("creation-export-[a-f0-9-]{36}\\.mid"))new File(getCacheDir(),pendingCreationExportFile).delete();pendingCreationExportFile=pendingCreationExportSha=pendingCreationExportId=null;creationExportPreparing=false;}
  @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("creationExportId",pendingCreationExportId);state.putString("creationExportFile",pendingCreationExportFile);state.putString("creationExportSha",pendingCreationExportSha);}
  void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
+ void reportNotationIssue(String code,String stage,String details,String xml,Runnable retry){
+  String version="beta";
+  try{version=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
+  catch(Exception ignored){}
+  NotationFailure failure=new NotationFailure(code,stage,details,"creation",xml,
+    0,0,0,0,0,version);
+  new Thread(()->{
+   try{new NotationDiagnosticsStore(getFilesDir()).add(failure);}
+   catch(Exception e){android.util.Log.w("PianoLivreNotation","Falha ao registrar incidente",e);}
+  },"PianoLivre-NotationError").start();
+  showNotationFailure(failure,retry);
+ }
+ void showNotationFailure(NotationFailure failure,Runnable retry){
+  showNotationFailure(failure,retry,null);
+ }
+ void showNotationFailure(NotationFailure failure,Runnable retry,Runnable abort){
+  if(isFinishing()||isDestroyed())return;
+  stopPlayback();finishStudyWindow();
+  // Android landscape can hide the entire AlertDialog button bar if a long
+  // message and a custom action compete for unrestricted vertical space.
+  // Bound only the report viewport; keep the complete report scrollable.
+  final float density=getResources().getDisplayMetrics().density;
+  final int reportHeight=Math.min((int)(140*density+0.5f),
+      (int)(getResources().getDisplayMetrics().heightPixels*0.28f));
+  LinearLayout content=new LinearLayout(this);
+  content.setOrientation(LinearLayout.VERTICAL);
+  content.setPadding((int)(16*density+0.5f),0,(int)(16*density+0.5f),0);
+  ScrollView scroll=new ScrollView(this);
+  TextView reportText=new TextView(this);
+  reportText.setText("O motor moderno OSMD encontrou um problema. A partitura e o MIDI original foram preservados.\n\n"+failure.report());
+  reportText.setTextIsSelectable(true);
+  scroll.addView(reportText);
+  content.addView(scroll,new LinearLayout.LayoutParams(
+      LinearLayout.LayoutParams.MATCH_PARENT,reportHeight));
+  Button copyDiagnostic=new Button(this);
+  copyDiagnostic.setText("Copiar diagnóstico");
+  copyDiagnostic.setContentDescription("Copiar diagnóstico");
+  copyDiagnostic.setAllCaps(false);
+  copyDiagnostic.setOnClickListener(v->{
+    android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+    if(clipboard!=null)clipboard.setPrimaryClip(ClipData.newPlainText("Erro de notação Piano Livre",failure.report()));
+    Toast.makeText(this,"Diagnóstico copiado; nenhum dado enviado",Toast.LENGTH_SHORT).show();
+  });
+  content.addView(copyDiagnostic,new LinearLayout.LayoutParams(
+      LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
+  AlertDialog dialog=new AlertDialog.Builder(this)
+    .setTitle("Não foi possível exibir a partitura")
+    .setView(content)
+    .setPositiveButton("Tentar novamente",(d,w)->{if(retry!=null)retry.run();})
+    .setNegativeButton("Voltar à Biblioteca",(d,w)->{
+      stopPlayback();finishStudyWindow();
+      if(abort!=null)abort.run();
+      if(screens!=null)screens.showHome();
+    })
+    .setCancelable(false).create();
+  dialog.show();lastMessageDialog=dialog;
+ }
+ void showNotationHistory(){
+  if(isFinishing()||isDestroyed())return;
+  final NotationDiagnosticsStore store=new NotationDiagnosticsStore(getFilesDir());
+  try{
+   final String report=store.report();
+   final boolean empty=store.read().length()==0;
+   if(empty){message("Ainda não há falhas de notação registradas.");return;}
+   AlertDialog dlg=new AlertDialog.Builder(this).setTitle("Erros de partitura (armazenamento local)")
+     .setMessage(report.length()>6000?report.substring(0,6000)+"\n[Exibindo somente parte do histórico]":report)
+     .setPositiveButton("Exportar por escolha própria",(d,w)->{
+       Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("text/plain");
+       intent.putExtra(Intent.EXTRA_TEXT,report);
+       startActivity(Intent.createChooser(intent,"Compartilhar diagnóstico"));
+     })
+     .setNeutralButton("Apagar histórico",(d,w)->new AlertDialog.Builder(this)
+       .setTitle("Apagar somente os diagnósticos?")
+       .setMessage("Partituras, MIDI e histórico de estudos não serão alterados.")
+       .setPositiveButton("Apagar",(dd,ww)->{try{store.clear();message("Histórico de erros apagado.");}
+         catch(Exception e){message("Não foi possível apagar o histórico de erros.");}})
+       .setNegativeButton("Cancelar",null).show())
+     .setNegativeButton("Fechar",null).create();
+   dlg.show();
+  }catch(Exception e){message("Não foi possível ler o histórico local de erros.");}
+ }
  void message(String m){if(isFinishing()||isDestroyed())return;lastMessageDialog=new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
  @Override public void onBackPressed(){
   if(screens!=null&&screens.isLabOpen()){screens.backFromLab();return;}

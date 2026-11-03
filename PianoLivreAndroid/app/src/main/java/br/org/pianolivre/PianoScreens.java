@@ -29,7 +29,7 @@ class PianoScreens {
  MusicLabScreen lab;
  MusicLabDiscoveryScreen discovery;
  MusicCreationScreen creation;
- PianoView legacyFallback;
+ TextView notationStatus;
  final StudyChromeState chrome=new StudyChromeState();
  String lastStudyLayout="";
  String lastHomeLayout="";
@@ -298,6 +298,11 @@ class PianoScreens {
     grid.addView(text("Algumas partituras criadas não puderam ser listadas. Nenhum dado foi alterado.",13,ink,false),lp(-1,-2));
    }
   }
+  // Hidden built-in entries should not inflate the available-library count.
+  entries.removeIf(entry->{
+   String key=LibrarySearch.key(entry[1]);
+   return key.startsWith("scores/")&&metadata.hiddenScores.contains(key);
+  });
   int total=entries.size();
   entries.removeIf(entry->{
    String key=LibrarySearch.key(entry[1]);
@@ -334,7 +339,7 @@ class PianoScreens {
     free.setTextSize(14);actions.addView(free,new LinearLayout.LayoutParams(0,d(44),1));card.addView(actions,lp(-1,44));
     card.setContentDescription("Estudar "+entry[0]);card.setClickable(true);card.setFocusable(true);
     card.setOnClickListener(v->a.loadScore(entry[1],true));
-    card.setOnLongClickListener(v->{organizeScore(entry[0],scoreKey);return true;});
+    card.setOnLongClickListener(v->{scoreActions(entry[0],scoreKey);return true;});
    }
   }
   // Searching replaces the score cards. When the user returns from studying a
@@ -376,12 +381,13 @@ class PianoScreens {
  }
  void manageCollections(){
   new AlertDialog.Builder(a).setTitle("Coleções")
-   .setItems(new String[]{"Todas as partituras","Favoritos","Ver coleção","Nova coleção","Renomear coleção","Excluir coleção"},(dialog,which)->{
+   .setItems(new String[]{"Todas as partituras","Favoritos","Ver coleção","Nova coleção","Renomear coleção","Excluir coleção","Restaurar músicas ocultas"},(dialog,which)->{
     if(which==0||which==1){
      selectedLibraryFilter=which==0?"":"*";refreshLibrary();focusLibrary();return;
     }
     if(which==2){chooseLibraryCollection();return;}
     if(which==3){collectionName("Nova coleção","",name->new LibraryStore(a.prefs,a.user).create(name));return;}
+    if(which==6){restoreHiddenScores();return;}
     try{
      java.util.List<LibraryStore.Collection> list=new java.util.ArrayList<>(new LibraryStore(a.prefs,a.user).snapshot().collections.values());
      if(list.isEmpty()){a.message("Crie uma coleção primeiro. Para organizar uma partitura, mantenha seu cartão pressionado.");return;}
@@ -395,6 +401,52 @@ class PianoScreens {
     }catch(RuntimeException ex){a.message(ex.getMessage());}
    }).show();
  }
+ void restoreHiddenScores(){
+  try{
+   LibraryStore.Snapshot current=new LibraryStore(a.prefs,a.user).snapshot();
+   if(current.hiddenScores.isEmpty()){a.message("Não há músicas ocultas neste perfil.");return;}
+   java.util.List<String> keys=new java.util.ArrayList<>(current.hiddenScores);
+   java.util.Collections.sort(keys);
+   String[] labels=new String[keys.size()];
+   for(int i=0;i<keys.size();i++){
+    String key=keys.get(i),file=key.substring(7);String title=file;
+    for(int j=0;j<a.catalog.length();j++){
+     JSONObject song=a.catalog.optJSONObject(j);
+     if(song!=null&&file.equals(song.optString("file"))){title=song.optString("name",file);break;}
+    }
+    labels[i]=title;
+   }
+   new AlertDialog.Builder(a).setTitle("Restaurar músicas ocultas")
+    .setItems(labels,(dialog,index)->libraryAction(()->new LibraryStore(a.prefs,a.user).setHidden(keys.get(index),false)))
+    .setNegativeButton("Cancelar",null).show();
+  }catch(RuntimeException ex){a.message("Não foi possível listar músicas ocultas: "+ex.getMessage());}
+ }
+ void scoreActions(String title,String key){
+  new AlertDialog.Builder(a).setTitle(title)
+   .setItems(new String[]{"Organizar em coleção","Excluir da biblioteca"},(dialog,which)->{
+    if(which==0)organizeScore(title,key);
+    else confirmRemoveScore(title,key);
+   }).show();
+ }
+ void confirmRemoveScore(String title,String key){
+  final boolean builtIn=key.startsWith("scores/"),created=key.startsWith("creation-score:");
+  String message=builtIn
+   ?"Esta música vem com o aplicativo. Ela será ocultada somente neste perfil, sem apagar seu arquivo. Você poderá restaurá-la em Coleções."
+   :created
+    ?"A partitura será removida da Biblioteca Musical deste perfil. A gravação original e a partitura salva continuarão em Minhas Criações."
+    :"Esta partitura importada será excluída do armazenamento do aplicativo e desaparecerá de todos os perfis. Se veio de MIDI, seu arquivo MIDI de origem também será excluído. O histórico de estudo será preservado. Faça um backup antes se quiser recuperá-la.";
+  new AlertDialog.Builder(a).setTitle((builtIn?"Ocultar":"Excluir")+" "+title+"?")
+   .setMessage(message)
+   .setPositiveButton(builtIn?"Ocultar":"Excluir",(dialog,which)->{
+    try{
+     if(builtIn)new LibraryStore(a.prefs,a.user).setHidden(key,true);
+     else if(created)new LibraryStore(a.prefs,a.user).removeCreation(key.substring(15));
+     else ImportedScoreDeletion.delete(a.getFilesDir(),key,scoreKey->LibraryStore.removeImportedEveryProfile(a.prefs,scoreKey));
+     a.clearRemovedScoreInMemory(key);refreshLibrary();
+     a.message(builtIn?"Música ocultada neste perfil.":"Partitura removida da Biblioteca Musical.");
+    }catch(Exception ex){a.message("Não foi possível remover a partitura: "+ex.getMessage());}
+   }).setNegativeButton("Cancelar",null).show();
+ }
  void organizeScore(String title,String scoreKey){
   try{
    java.util.List<LibraryStore.Collection> list=new java.util.ArrayList<>(new LibraryStore(a.prefs,a.user).snapshot().collections.values());
@@ -405,7 +457,7 @@ class PianoScreens {
  }
  void options(){
   new AlertDialog.Builder(a).setTitle("Ferramentas")
-   .setItems(new String[]{"Histórico","Como usar","Fazer backup","Restaurar backup","Importar MusicXML","Calibrar acordes MIDI","Preparação do Espera","Sobre esta versão","Gerenciar perfil"},(dialog,i)->{
+   .setItems(new String[]{"Histórico","Como usar","Fazer backup","Restaurar backup","Importar MusicXML","Calibrar acordes MIDI","Preparação do Espera","Sobre esta versão","Gerenciar perfil","Erros de partitura"},(dialog,i)->{
     if(i==0)a.showHistory();
     else if(i==1)showHelp();
     else if(i==2)a.exportBackup();
@@ -414,6 +466,7 @@ class PianoScreens {
     else if(i==5)a.showChordSettings();
     else if(i==6)a.configureWaitPreparation();
     else if(i==8)a.manageProfile();
+    else if(i==9)a.showNotationHistory();
     else {
      String version="beta";
      try{version=a.getPackageManager().getPackageInfo(a.getPackageName(),0).versionName;}
@@ -442,21 +495,19 @@ class PianoScreens {
   studyControlsBar.setFillViewport(true);
   studio.removeView(controls);studio.addView(studyControlsBar,lp(-1,40));studyControlsBar.addView(controls,new android.widget.HorizontalScrollView.LayoutParams(-2,d(40)));
   FrameLayout notationArea=new FrameLayout(a);
-  legacyFallback=new PianoView(a);legacyFallback.allowKeyboard=false;
-  legacyFallback.setOnTouchListener((view,event)->{
-   if(event.getActionMasked()==android.view.MotionEvent.ACTION_UP)revealStudyControls();
-   return true;
-  });
-  a.scoreView=legacyFallback;
-  notationArea.addView(legacyFallback,new FrameLayout.LayoutParams(-1,-1));
+  notationStatus=text("Preparando partitura moderna…",15,muted,false);
+  notationStatus.setGravity(Gravity.CENTER);
+  notationStatus.setContentDescription("Carregamento do motor OpenSheetMusicDisplay");
+  notationArea.addView(notationStatus,new FrameLayout.LayoutParams(-1,-1));
   notation=new NotationView(a,new NotationView.Listener(){
    public void onRendered(){
-    legacyFallback.setVisibility(View.INVISIBLE);
+    notationStatus.setVisibility(View.INVISIBLE);
+    a.beginStudyWindow();
+    if(a.mode==0)a.prepareWaiting();
     if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
        &&a.getIntent().getBooleanExtra("study_failure_selftest",false)){
      a.getIntent().removeExtra("study_failure_selftest");
-     String failTemporal=a.getIntent().getBooleanExtra("study_native_failure_selftest",false)?"window.TemporalNotation=null;":"";
-     notation.evaluateJavascript(failTemporal+"window.opensheetmusicdisplay=null;PianoNotation.load('<score-partwise/>',0,'engraving-poc',[])",null);
+     notation.debugForceOSMDFailure();
     }
     updateSelections();
     followScore(a.position,true);
@@ -464,10 +515,21 @@ class PianoScreens {
    }
    public void onError(String cause){
     notation.setVisibility(View.INVISIBLE);
-    legacyFallback.setVisibility(View.VISIBLE);
-    updateSelections();
-    android.widget.Toast.makeText(a,"Visualização esquemática ativa; falha na notação: "+cause,android.widget.Toast.LENGTH_LONG).show();
-    android.util.Log.w("PianoLivreNotation","ACTIVE_RENDERER schematic; Notation fallback: "+cause);
+    notationStatus.setText("Partitura indisponível no OSMD");
+    notationStatus.setVisibility(View.VISIBLE);
+    a.showNotationFailure(new NotationFailure("PL-NOT-UNKNOWN","Estudar",cause,
+      "study",a.score==null?null:a.score.sourceXml,a.score==null?0:a.score.measures,
+      a.score==null?0:a.score.writtenEvents.size(),0,notation.getWidth(),notation.getHeight(),
+      "beta"),()->notation.loadScore(a.score,a.position));
+   }
+   @Override public void onFailure(NotationFailure failure){
+    notation.setVisibility(View.INVISIBLE);
+    notationStatus.setText("Partitura indisponível no OSMD");
+    notationStatus.setVisibility(View.VISIBLE);
+    a.showNotationFailure(failure,()->{
+      notationStatus.setText("Preparando partitura moderna…");
+      notation.loadScore(a.score,a.position);
+    });
    }
    @Override public void onStudyTap(){revealStudyControls();}
    @Override public void onPresentation(String message){if(!message.isEmpty())android.widget.Toast.makeText(a,message,android.widget.Toast.LENGTH_LONG).show();}
@@ -660,8 +722,11 @@ class PianoScreens {
   freeTitle.setEllipsize(TextUtils.TruncateAt.END);
   freeBar.addView(freeTitle,new LinearLayout.LayoutParams(0,-1,1));
   freeNotation=new NotationView(a,new NotationView.Listener(){
-   public void onRendered(){android.util.Log.i("PianoLivreNotation","FREE_RENDERED");}
-   public void onError(String msg){a.message("Erro ao abrir a partitura: "+msg);}
+   public void onRendered(){a.beginStudyWindow();android.util.Log.i("PianoLivreNotation","FREE_RENDERED");}
+   public void onError(String msg){a.message("Não foi possível abrir a partitura no OSMD: "+msg);}
+   @Override public void onFailure(NotationFailure failure){
+    a.showNotationFailure(failure,()->freeNotation.loadScore(a.score,0,true));
+   }
   });
   freeRoot.addView(freeNotation,new LinearLayout.LayoutParams(-1,0,1));
  }
@@ -725,14 +790,16 @@ class PianoScreens {
   studio.setVisibility(View.VISIBLE);
   songTitle.setText(a.currentName==null||a.currentName.isEmpty()?a.score.title:a.currentName);
   if(notation!=null)notation.postDelayed(()->notation.resizeToFit(),180);
-  modeNote=null;updateSelections();updateMidiIndicator();a.beginStudyWindow();
+  modeNote=null;updateSelections();updateMidiIndicator();
+  // Study timing begins only when the new score's OSMD SVG is ready.
  }
  void displayScore(Score score,double beat){
   editingLoop=false;updateSelections();
-  legacyFallback.setVisibility(View.VISIBLE);
+  notationStatus.setText("Preparando partitura moderna…");
+  notationStatus.setVisibility(View.VISIBLE);
   notation.setStudyHand(a.currentHand);
   notation.loadScore(score,beat);
-  updateSelections(); // Every newly opened Study score starts in OSMD.
+  updateSelections(); // OSMD is the sole renderer; loading has a neutral background.
 
  }
  void clearLoopSelection(){

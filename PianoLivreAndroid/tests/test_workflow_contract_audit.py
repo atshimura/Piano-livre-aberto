@@ -82,7 +82,7 @@ class FullSuiteContractAudit(unittest.TestCase):
         self.assertIn('double savedTempo=Double.longBitsToDouble',src)
         self.assertIn('currentHand=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"hand",0)))',src)
         self.assertIn('mode=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"mode",0)))',src)
-        self.assertIn('scoreView.showKeyboard=prefs.getBoolean(studyPrefix+"keyboard",false)',src)
+        self.assertIn('studyState.showKeyboard=prefs.getBoolean(studyPrefix+"keyboard",false)',src)
         self.assertIn('STARTUP_HOME lastScoreSaved=',src)
         self.assertIn('if(tempoBar!=null)tempoBar.setProgress',src)
 

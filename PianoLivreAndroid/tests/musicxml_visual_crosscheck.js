@@ -2,7 +2,7 @@
 const assert=require("assert");
 const fs=require("fs"),path=require("path"),cp=require("child_process");
 const {DOMParser}=require(path.resolve("build/musicxml-audit/node_modules/@xmldom/xmldom"));
-const T=require("../app/src/main/assets/temporal-notation.js");
+const T=require("./fixtures/retired-temporal-oracle.js");
 const inventory=cp.execFileSync("java",["-cp","build/score-tests","ScoreInventory"],{encoding:"utf8",maxBuffer:3000000});
 const groups=new Map();
 for(const row of inventory.trim().split("\n")){

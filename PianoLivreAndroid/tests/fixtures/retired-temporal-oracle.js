@@ -1,3 +1,6 @@
+/* Test-only archived reference, never bundled or called by Android.
+ * Production uses OSMD exclusively. This file preserves independent parser
+ * behavior checks while the full suite migrates its historic expectations. */
 /* Piano Livre - time-proportional piano score renderer.
  * All x coordinates derive from MusicXML quarter-note timestamps, never from
  * the conventional print engraving. The cursor is a fixed view overlay.

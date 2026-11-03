@@ -13,7 +13,7 @@ import java.util.*;
  */
 public final class CreationScoreStore {
  public static final int MAX_SCORE_BYTES=2*1024*1024, MAX_TOTAL_BYTES=8*1024*1024;
- private static final int MAGIC=0x504c5331, FORMAT=1, MAX_OVERRIDES=CreationScoreTranscriber.MAX_NOTES;
+ private static final int MAGIC=0x504c5331, FORMAT=2, FORMAT_LEGACY=1, MAX_OVERRIDES=CreationScoreTranscriber.MAX_NOTES;
  public static final String DIRECTORY="creation-scores", EXT=".pls";
  private final File directory;
  private final CreationProjectStore projects;
@@ -105,6 +105,18 @@ public final class CreationScoreStore {
   data.writeInt(o.staffOverrides.size());
   List<String> keys=new ArrayList<>(o.staffOverrides.keySet());Collections.sort(keys);
   for(String key:keys){if(key.length()>110)throw new IOException("ID de nota inválido");data.writeUTF(key);data.writeInt(o.staffOverrides.get(key));}
+  // PLS1 format 2 adds durable, bounded interpretation overrides.
+  data.writeBoolean(o.legacyTiming);
+  data.writeInt(o.regularization.ordinal());
+  writeIntMap(data,o.handOverrides);writeIntMap(data,o.voiceOverrides);
+  if(o.rhythmOverrides.size()>MAX_OVERRIDES)throw new IOException("Muitos ajustes rítmicos");
+  data.writeInt(o.rhythmOverrides.size());
+  List<String> rhythmIds=new ArrayList<>(o.rhythmOverrides.keySet());Collections.sort(rhythmIds);
+  for(String key:rhythmIds){
+   if(key.length()>110)throw new IOException("ID de ritmo inválido");
+   CreationScoreTranscriber.Timing time=o.rhythmOverrides.get(key);
+   data.writeUTF(key);data.writeLong(time.startTick);data.writeLong(time.endTick);
+  }
   data.writeInt(music.length);data.write(music);data.flush();
   byte[] raw=buffer.toByteArray();if(raw.length+32>MAX_SCORE_BYTES)throw new IOException("Partitura excede o limite");
   buffer.write(hash(raw));return buffer.toByteArray();
@@ -114,7 +126,9 @@ public final class CreationScoreStore {
   byte[] body=Arrays.copyOf(bytes,bytes.length-32),digest=Arrays.copyOfRange(bytes,bytes.length-32,bytes.length);
   if(!MessageDigest.isEqual(hash(body),digest))throw new IOException("Integridade da partitura incorreta");
   DataInputStream in=new DataInputStream(new ByteArrayInputStream(body));
-  if(in.readInt()!=MAGIC||in.readInt()!=FORMAT)throw new IOException("Formato de partitura desconhecido");
+  if(in.readInt()!=MAGIC)throw new IOException("Partitura não reconhecida");
+  int format=in.readInt();
+  if(format!=FORMAT&&format!=FORMAT_LEGACY)throw new IOException("Formato de partitura desconhecido");
   String projectId=id(in.readUTF());int profile=in.readInt();String expected=in.readUTF();String savedTitle=in.readUTF();
   if(savedTitle.length()>255)throw new IOException("Título da transcrição inválido");
   if(!projectId.equals(id(p.id))||profile!=p.profileId||!expected.equals(fingerprint(p)))
@@ -126,15 +140,54 @@ public final class CreationScoreStore {
   for(int i=0;i<count;i++){String key=in.readUTF();int value=in.readInt();
    if(key.isEmpty()||key.length()>110||overrides.put(key,value)!=null)throw new IOException("Nota duplicada na partitura");
   }
+  CreationScoreTranscriber.Options o;
+  if(format==FORMAT_LEGACY){
+   // Old derivatives must regenerate byte-for-byte with pre-3 timing.
+   o=CreationScoreTranscriber.Options.legacy(bpm,beats,type,grid,
+    CreationScoreTranscriber.StaffMode.values()[mode],split,overrides);
+  }else{
+   boolean legacy=in.readBoolean();
+   int reg=in.readInt();
+   if(reg<0||reg>=CreationScoreTranscriber.Regularization.values().length)
+    throw new IOException("Regularização não suportada");
+   Map<String,Integer> hands=readIntMap(in),voices=readIntMap(in);
+   int rhythmCount=in.readInt();
+   if(rhythmCount<0||rhythmCount>MAX_OVERRIDES)throw new IOException("Ajustes rítmicos inválidos");
+   Map<String,CreationScoreTranscriber.Timing> rhythms=new HashMap<>();
+   for(int i=0;i<rhythmCount;i++){
+    String key=in.readUTF();long start=in.readLong(),end=in.readLong();
+    if(key.length()>110||rhythms.put(key,new CreationScoreTranscriber.Timing(start,end))!=null)
+     throw new IOException("Ajuste rítmico duplicado");
+   }
+   o=new CreationScoreTranscriber.Options(bpm,beats,type,grid,
+    CreationScoreTranscriber.StaffMode.values()[mode],split,overrides,
+    CreationScoreTranscriber.Regularization.values()[reg],hands,voices,rhythms,legacy);
+  }
   int size=in.readInt();if(size<40||size>MAX_SCORE_BYTES||size!=in.available())throw new IOException("Conteúdo MusicXML inválido");
   byte[] music=new byte[size];in.readFully(music);String xml=new String(music,StandardCharsets.UTF_8);
-  CreationScoreTranscriber.Options o=new CreationScoreTranscriber.Options(bpm,beats,type,grid,
-   CreationScoreTranscriber.StaffMode.values()[mode],split,overrides);
   // Exact regeneration guards against stale/corrupted XML, missing attacks and
   // edits to project source after a snapshot was generated.
   if(!xml.equals(CreationScoreTranscriber.transcribe(p.events,p.segments,o,savedTitle).xml))
    throw new IOException("A partitura não corresponde aos eventos gravados");
   return new Saved(projectId,profile,o,xml);
+ }
+ private static void writeIntMap(DataOutputStream out,Map<String,Integer> map)throws IOException{
+  if(map.size()>MAX_OVERRIDES)throw new IOException("Muitos ajustes de mão/voz");
+  out.writeInt(map.size());
+  List<String> keys=new ArrayList<>(map.keySet());Collections.sort(keys);
+  for(String key:keys){
+   if(key.length()>110)throw new IOException("Identificador de nota inválido");
+   out.writeUTF(key);out.writeInt(map.get(key));
+  }
+ }
+ private static Map<String,Integer> readIntMap(DataInputStream in)throws IOException{
+  int count=in.readInt();if(count<0||count>MAX_OVERRIDES)throw new IOException("Ajustes de mão/voz inválidos");
+  Map<String,Integer> result=new HashMap<>();
+  for(int i=0;i<count;i++){
+   String key=in.readUTF();int value=in.readInt();
+   if(key.length()>110||result.put(key,value)!=null)throw new IOException("Identificador duplicado");
+  }
+  return result;
  }
  public static byte[] readFile(File f)throws IOException{
   if(!f.isFile()||f.length()>MAX_SCORE_BYTES)throw new IOException("Partitura ausente ou excede limite");

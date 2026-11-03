@@ -38,11 +38,13 @@ class CreationLibraryContracts(unittest.TestCase):
         self.assertIn('new Thread(()->{',MAIN)
         self.assertIn('new CreationScoreStore(getFilesDir()).read(id)',MAIN)
         self.assertIn('source.profileId!=owner||source.trash||source.recoverable',MAIN)
-        self.assertIn('if(failure==null&&user==owner)',MAIN)
+        self.assertIn('if(failure!=null||user!=owner)',MAIN)
+        self.assertIn('CreationStudyCompatibility.check(this,checked',MAIN)
         self.assertIn('runOnUiThread(()->{',MAIN)
         self.assertIn('new LibraryStore(prefs,owner).addCreation(id)',MAIN)
         self.assertIn('screens.refreshLibrary()',MAIN)
-        self.assertIn('onDone.accept(added)',MAIN)
+        self.assertIn('onDone.accept(true)',MAIN)
+        self.assertIn('onDone.accept(false)',MAIN)
 
     def test_normal_library_routes_no_musicxml_duplication(self):
         self.assertIn('for(String id:metadata.addedCreations)',UI)

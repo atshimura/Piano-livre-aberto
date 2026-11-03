@@ -62,29 +62,114 @@ public final class MidiFileImport {
   tempos.sort(Comparator.comparingLong(x->x.tick));return new Result(bytes,ppqn,tracks,notes,tempos);
  }
  private static String esc(String value){return value.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;");}
- /** Each note uses a stable voice so exact overlaps survive the approximation. */
- public static byte[] musicXml(Result midi,Map<Integer,Integer> hands,String title)throws IOException{
-  List<Note> selected=new ArrayList<>();for(Note n:midi.notes){Integer hand=hands.get(n.track);if(hand==null||hand<0||hand>2)throw new IOException("Escolha explícita de mão para cada trilha é obrigatória");if(hand>0)selected.add(n);}
-  if(selected.isEmpty())throw new IOException("Selecione pelo menos uma trilha");
-  long bar=midi.ppqn*4L,end=0;for(Note n:selected)end=Math.max(end,n.end);int bars=(int)((end+bar-1)/bar);
-  StringBuilder xml=new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?><score-partwise version=\"4.0\"><work><work-title>").append(esc(title)).append("</work-title></work><identification><miscellaneous><miscellaneous-field name=\"PianoLivre-import\">MIDI: notação aproximada em 4/4; fonte .mid preservada; sem pedal/programas/controladores</miscellaneous-field></miscellaneous></identification><part-list><score-part id=\"P1\"><part-name>Piano</part-name></score-part></part-list><part id=\"P1\">");
-  for(int m=0;m<bars;m++){
-   long begin=m*bar,stop=begin+bar;xml.append("<measure number=\"").append(m+1).append("\"><attributes><divisions>").append(midi.ppqn).append("</divisions>");
-   if(m==0)xml.append("<time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number=\"1\"><sign>G</sign><line>2</line></clef><clef number=\"2\"><sign>F</sign><line>4</line></clef>");xml.append("</attributes>");
-   if(m==0)xml.append("<direction><sound tempo=\"120\"/></direction>");
-   for(Tempo tempo:midi.tempos)if(tempo.tick>=begin&&tempo.tick<stop)xml.append("<direction><offset>").append(tempo.tick-begin).append("</offset><sound tempo=\"").append(60000000.0/tempo.micros).append("\"/></direction>");
-   for(int id=0;id<selected.size();id++){
-    Note n=selected.get(id);if(n.start>=stop||n.end<=begin)continue;long start=Math.max(n.start,begin),finish=Math.min(n.end,stop),duration=finish-start;
-    if(start>begin)xml.append("<forward><duration>").append(start-begin).append("</duration></forward>");
-    String[] steps={"C","C","D","D","E","F","F","G","G","A","A","B"};boolean sharp=n.pitch%12==1||n.pitch%12==3||n.pitch%12==6||n.pitch%12==8||n.pitch%12==10;
-    xml.append("<note dynamics=\"").append(n.velocity/0.9).append("\"><pitch><step>").append(steps[n.pitch%12]).append("</step>");if(sharp)xml.append("<alter>1</alter>");xml.append("<octave>").append(n.pitch/12-1).append("</octave></pitch><duration>").append(duration).append("</duration>");
-    if(n.start<begin)xml.append("<tie type=\"stop\"/>");if(n.end>stop)xml.append("<tie type=\"start\"/>");
-    double quarters=(double)duration/midi.ppqn;String type=quarters>=4?"whole":quarters>=2?"half":quarters>=1?"quarter":quarters>=.5?"eighth":quarters>=.25?"16th":quarters>=.125?"32nd":"64th";
-    xml.append("<voice>").append(id+1).append("</voice><type>").append(type).append("</type><staff>").append(hands.get(n.track)).append("</staff></note><backup><duration>").append(finish-begin).append("</duration></backup>");
-    if(xml.length()>16*1024*1024)throw new IOException("Notação MIDI grande demais");
+ /** Keep each staff's timeline complete and each overlapping MIDI note in
+  * its own stable voice. OSMD can reject an empty top staff plus a trailing
+  * <forward> as a score with no graphical note anchors. Explicit rests and
+  * full-bar backups follow the same convention as CreationScoreTranscriber.
+  * MIDI original bytes never enter this representation and remain untouched. */
+ private static void appendRest(StringBuilder xml,long ticks,int voice,int staff,int ppqn){
+  if(ticks<=0)return;
+  long quarter=ppqn;
+  long[] candidates={quarter*4,quarter*2,quarter,quarter/2,quarter/4,quarter/8,quarter/16};
+  String[] types={"whole","half","quarter","eighth","16th","32nd","64th"};
+  while(ticks>0){
+   int chosen=types.length-1;
+   for(int k=0;k<candidates.length;k++){
+    if(candidates[k]>0&&candidates[k]<=ticks){chosen=k;break;}
    }
-   xml.append("<forward><duration>").append(bar).append("</duration></forward></measure>");
+   long duration=candidates[chosen]>0&&candidates[chosen]<=ticks?candidates[chosen]:ticks;
+   xml.append("<note><rest/><duration>").append(duration)
+      .append("</duration><voice>").append(voice).append("</voice><type>")
+      .append(types[chosen]).append("</type><staff>").append(staff)
+      .append("</staff></note>");
+   ticks-=duration;
   }
-  xml.append("</part></score-partwise>");return xml.toString().getBytes(StandardCharsets.UTF_8);
+ }
+ private static void appendMidiNote(StringBuilder xml,Note n,long begin,long stop,int voice,int staff,int ppqn){
+  long start=Math.max(n.start,begin),finish=Math.min(n.end,stop),duration=finish-start;
+  String[] steps={"C","C","D","D","E","F","F","G","G","A","A","B"};
+  boolean sharp=n.pitch%12==1||n.pitch%12==3||n.pitch%12==6||n.pitch%12==8||n.pitch%12==10;
+  xml.append("<note dynamics=\"").append(n.velocity/0.9).append("\"><pitch><step>")
+     .append(steps[n.pitch%12]).append("</step>");
+  if(sharp)xml.append("<alter>1</alter>");
+  xml.append("<octave>").append(n.pitch/12-1).append("</octave></pitch><duration>")
+     .append(duration).append("</duration>");
+  boolean tiedEnd=n.start<begin,tiedStart=n.end>stop;
+  if(tiedEnd)xml.append("<tie type=\"stop\"/>");
+  if(tiedStart)xml.append("<tie type=\"start\"/>");
+  double quarters=(double)duration/ppqn;
+  String type=quarters>=4?"whole":quarters>=2?"half":quarters>=1?"quarter":quarters>=.5?"eighth":quarters>=.25?"16th":quarters>=.125?"32nd":"64th";
+  xml.append("<voice>").append(voice).append("</voice><type>").append(type)
+     .append("</type><staff>").append(staff).append("</staff>");
+  if(tiedEnd||tiedStart){
+   xml.append("<notations>");
+   if(tiedEnd)xml.append("<tied type=\"stop\"/>");
+   if(tiedStart)xml.append("<tied type=\"start\"/>");
+   xml.append("</notations>");
+  }
+  xml.append("</note>");
+ }
+ /** Every MusicXML voice spans its full bar, even for an otherwise silent hand. */
+ public static byte[] musicXml(Result midi,Map<Integer,Integer> hands,String title)throws IOException{
+  List<Note> selected=new ArrayList<>();
+  for(Note n:midi.notes){
+   Integer hand=hands.get(n.track);
+   if(hand==null||hand<0||hand>2)throw new IOException("Escolha explícita de mão para cada trilha é obrigatória");
+   if(hand>0)selected.add(n);
+  }
+  if(selected.isEmpty())throw new IOException("Selecione pelo menos uma trilha");
+  long bar=midi.ppqn*4L,end=0;
+  for(Note n:selected)end=Math.max(end,n.end);
+  int bars=(int)((end+bar-1)/bar);
+  StringBuilder xml=new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?><score-partwise version=\"4.0\"><work><work-title>")
+   .append(esc(title)).append("</work-title></work><movement-title>")
+   .append(esc(title)).append("</movement-title><identification><miscellaneous><miscellaneous-field name=\"PianoLivre-import\">MIDI: notação aproximada em 4/4; fonte .mid preservada; sem pedal/programas/controladores</miscellaneous-field></miscellaneous></identification><part-list><score-part id=\"P1\"><part-name>Piano</part-name></score-part></part-list><part id=\"P1\">");
+  for(int m=0;m<bars;m++){
+   long begin=m*bar,stop=begin+bar;
+   xml.append("<measure number=\"").append(m+1).append("\"><attributes><divisions>")
+      .append(midi.ppqn).append("</divisions>");
+   if(m==0)xml.append("<time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number=\"1\"><sign>G</sign><line>2</line></clef><clef number=\"2\"><sign>F</sign><line>4</line></clef>");
+   xml.append("</attributes>");
+   // MusicXML direction requires a direction-type before a sound.
+   // OSMD silently rendered only staff lines for sparse imported MIDI when
+   // the old sound-only direction was used. Keep both visual tempo notation
+   // and the original exact playback tempo; never change source .mid bytes.
+   if(m==0)xml.append("<direction placement=\"above\"><direction-type><metronome>")
+      .append("<beat-unit>quarter</beat-unit><per-minute>120</per-minute></metronome>")
+      .append("</direction-type><sound tempo=\"120\"/></direction>");
+   for(Tempo tempo:midi.tempos)if(tempo.tick>=begin&&tempo.tick<stop){
+    double bpm=60000000.0/tempo.micros;
+    xml.append("<direction placement=\"above\"><direction-type><metronome>")
+      .append("<beat-unit>quarter</beat-unit><per-minute>").append(bpm)
+      .append("</per-minute></metronome></direction-type><offset>")
+      .append(tempo.tick-begin).append("</offset><sound tempo=\"")
+      .append(bpm).append("\"/></direction>");
+   }
+   boolean first=true;
+   for(int staff=1;staff<=2;staff++){
+    boolean any=false;
+    for(int id=0;id<selected.size();id++){
+     Note n=selected.get(id);
+     if(hands.get(n.track)!=staff||n.start>=stop||n.end<=begin)continue;
+     if(!first)xml.append("<backup><duration>").append(bar).append("</duration></backup>");
+     first=false;any=true;
+     int voice=100*staff+id+1;
+     long start=Math.max(n.start,begin),finish=Math.min(n.end,stop);
+     appendRest(xml,start-begin,voice,staff,midi.ppqn);
+     appendMidiNote(xml,n,begin,stop,voice,staff,midi.ppqn);
+     appendRest(xml,stop-finish,voice,staff,midi.ppqn);
+     if(xml.length()>16*1024*1024)throw new IOException("Notação MIDI grande demais");
+    }
+    if(!any){
+     if(!first)xml.append("<backup><duration>").append(bar).append("</duration></backup>");
+     first=false;
+     appendRest(xml,bar,100*staff+1,staff,midi.ppqn);
+    }
+   }
+   xml.append("</measure>");
+   if(xml.length()>16*1024*1024)throw new IOException("Notação MIDI grande demais");
+  }
+  xml.append("</part></score-partwise>");
+  return xml.toString().getBytes(StandardCharsets.UTF_8);
  }
 }
