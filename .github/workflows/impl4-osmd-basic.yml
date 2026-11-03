@@ -60,14 +60,14 @@ jobs:
           java -cp build/impl4-jvm br.org.pianolivre.CreationC2DCorpusTest
       - name: Prepare bundled OSMD assets for browser (no APK)
         run: gradle --no-daemon :app:prepareOfflineNotation
+      - name: Android Java compilation ONLY (never assemble APK)
+        run: gradle --no-daemon :app:compileDebugJavaWithJavac
       - name: Real OSMD browser on generated MusicXML only (no Android emulator)
         run: |
           mkdir -p build/impl4-browser
           npm install --prefix build/impl4-browser --no-audit --no-fund playwright@1.49.1
           build/impl4-browser/node_modules/.bin/playwright install --with-deps chromium
           PIANO_PLAYWRIGHT="$PWD/build/impl4-browser/node_modules/playwright" node tests/CreationOSMDStudyBrowserTest.js
-      - name: Android Java compilation ONLY (never assemble APK)
-        run: gradle --no-daemon :app:compileDebugJavaWithJavac
       - name: Confirm APK output absent
         run: |
           test ! -e app/build/outputs/apk/debug/app-debug.apk
