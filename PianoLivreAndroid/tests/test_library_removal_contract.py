@@ -15,6 +15,9 @@ class LibraryRemovalContracts(unittest.TestCase):
         cls.files=source("ImportedScoreDeletion.java")
         cls.main=source("MainActivity.java")
         cls.selftest=source("LibrarySelfTest.java")
+        cls.emulator_ui=(ROOT/"tests/emulator_ui.py").read_text(encoding="utf-8")
+        cls.c2_smoke=(ROOT/"tests/c2_d_ui_smoke.py").read_text(encoding="utf-8")
+        cls.emulator_workflow=(ROOT.parent/".github/workflows/emulator.yml").read_text(encoding="utf-8")
 
     def test_discovery_and_accessible_options(self):
         self.assertIn('card.setOnLongClickListener(v->{scoreActions(entry[0],scoreKey);return true;});',self.ui)
@@ -56,6 +59,28 @@ class LibraryRemovalContracts(unittest.TestCase):
         self.assertNotIn('new StudyHistory(',self.store)
         self.assertNotIn('.clear()',self.files)
         self.assertIn('void clearRemovedScoreInMemory(String scoreKey)',self.main)
+
+    def test_full_emulator_suite_exercises_import_deletion_and_recovery(self):
+        self.assertIn("python3 tests/emulator_ui.py",self.emulator_workflow)
+        self.assertIn('long_press_library_card("Synthetic.musicxml")',self.emulator_ui)
+        self.assertIn('tap_text(["Excluir da biblioteca"],exact=True)',self.emulator_ui)
+        self.assertIn('assert not imported_file_present("Synthetic.musicxml")',self.emulator_ui)
+        self.assertIn('assert not imported_file_present("Synthetic.musicxml.source.mid")',self.emulator_ui)
+        self.assertNotIn('"rm","files/imported/Synthetic.musicxml"',self.emulator_ui)
+        self.assertIn('wait_for_text("Partitura removida da Biblioteca Musical.")',self.emulator_ui)
+        self.assertIn('focus_library_search_field()',self.emulator_ui)
+
+    def test_full_emulator_suite_exercises_hide_restore_and_creation_unlink(self):
+        self.assertIn("python3 tests/c2_d_ui_smoke.py",self.emulator_workflow)
+        self.assertIn('long_press_library_card(DEFAULT_SCORE_TITLE)',self.emulator_ui)
+        self.assertIn('tap_text(["Restaurar músicas ocultas"],exact=True,scroll=True)',self.emulator_ui)
+        self.assertIn('wait_for_text("9 de 9 partituras")',self.emulator_ui)
+        self.assertIn('wait_for_text("10 de 10 partituras")',self.emulator_ui)
+        self.assertIn('project_id=linked_creation_id()',self.c2_smoke)
+        self.assertIn('find("Excluir da biblioteca",clickable=True)',self.c2_smoke)
+        self.assertIn('not nodes("Estudar C2-D partitura de teste",clickable=True)',self.c2_smoke)
+        self.assertIn('private_file_exists("files/creations/"+project_id+".plc")',self.c2_smoke)
+        self.assertIn('private_file_exists("files/creation-scores/"+project_id+".pls")',self.c2_smoke)
 
 if __name__=="__main__":
     unittest.main()
