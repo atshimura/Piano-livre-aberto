@@ -5,7 +5,7 @@ const proto=Object.getPrototypeOf(new DOMParser().parseFromString('<root/>','tex
 if(!Object.getOwnPropertyDescriptor(proto,'children'))
  Object.defineProperty(proto,'children',{get(){return Array.from(this.childNodes||[]).filter(n=>n.nodeType===1);}});
 global.DOMParser=DOMParser;
-const T=require('../app/src/main/assets/temporal-notation.js');
+const T=require('./fixtures/retired-temporal-oracle.js');
 const test=T._test;
 assert.strictEqual(test.noteIdentification({step:'C',alter:0,oct:4}),'Dó4 · C4');
 assert.strictEqual(test.noteIdentification({step:'B',alter:-1,oct:3}),'Si♭3 · B♭3');

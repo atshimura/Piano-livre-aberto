@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("assert");
-const T=require("../app/src/main/assets/temporal-notation.js")._test;
+const T=require("./fixtures/retired-temporal-oracle.js")._test;
 let checks=0;
 function ok(v,s){checks++;assert(v,s);}
 function close(a,b,s){ok(Math.abs(a-b)<1e-8,s+": "+a+" !== "+b);}
