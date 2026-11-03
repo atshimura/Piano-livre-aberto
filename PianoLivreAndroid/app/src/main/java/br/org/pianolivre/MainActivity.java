@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
  private String pendingCreationExportId,pendingCreationExportFile,pendingCreationExportSha;private boolean creationExportPreparing;
  private final java.util.concurrent.ExecutorService creationExportDisk=java.util.concurrent.Executors.newSingleThreadExecutor();
  AlertDialog lastMessageDialog;
- PianoScreens screens;LinearLayout root,toolbar;PianoView scoreView;TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
+ PianoScreens screens;LinearLayout root,toolbar;final StudyInputState studyState=new StudyInputState();TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
  Score score;String currentFile="";String currentName="";int currentHand=0;int mode=0;boolean running=false,waitTraveling=false;double waitTravelTarget=0,position=0;double tempoFactor=1,loopStart=0,loopEnd=Double.MAX_VALUE;
  MidiManager midiManager;private MidiManager.DeviceCallback midiDeviceCallback;
  final MidiConnection midiConnection=new MidiConnection(new MidiConnection.Listener(){
@@ -175,7 +175,7 @@ public class MainActivity extends Activity {
   mode=Math.max(0,Math.min(2,prefs.getInt(studyPrefix+"mode",0)));
   // Legacy keyboard preference remains stored even though Study no longer
   // renders the visual keyboard guide. Keep it when opening a new score.
-  scoreView.showKeyboard=prefs.getBoolean(studyPrefix+"keyboard",false);
+  studyState.showKeyboard=prefs.getBoolean(studyPrefix+"keyboard",false);
   String previous=prefs.getString("user_"+user+"_file","");
   boolean contextSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
      &&getIntent().getBooleanExtra("engraving_context_selftest",false);
@@ -325,17 +325,17 @@ public class MainActivity extends Activity {
    if(!Double.isFinite(position))position=score.firstOnset(currentHand);
    if(!Double.isFinite(loopStart)||loopStart<0||!Double.isFinite(loopEnd)
       ||loopEnd<=loopStart){loopStart=0;loopEnd=Double.MAX_VALUE;}
-   scoreView.showKeyboard=prefs.getBoolean(prefix+"keyboard",false);
+   studyState.showKeyboard=prefs.getBoolean(prefix+"keyboard",false);
   }
   position=Math.max(0,Math.min(position,score.end()));
   if(routeCursor!=null){
    if(reset||!routeCursor.restore(prefs.getInt(prefix+"route_visit",-1),position))
     routeCursor.align(position);
   }
-  scoreView.score=score;scoreView.hand=currentHand;scoreView.playhead=position;scoreView.invalidate();
+  studyState.score=score;studyState.hand=currentHand;studyState.playhead=position;
   if(tempoBar!=null)tempoBar.setProgress((int)Math.round(tempoFactor*100)-25);
   if(free){screens.showFree();}
-  else{screens.showStudy();screens.displayScore(score,position);if(mode==0)prepareWaiting();}
+  else{screens.showStudy();screens.displayScore(score,position);}
   updateInfo();saveSession();
   if(!score.importWarnings.isEmpty())message("Aviso de interpretação: "+String.join("; ",score.importWarnings));
   if(routeHasMarkers&&!route.supported())
@@ -414,9 +414,9 @@ public class MainActivity extends Activity {
       try{
        if(screens!=null)screens.prepareCreationBackup();
        BackupArchive.restore(prefs,getFilesDir(),backup);
-       score=null;scoreView.score=null;scoreView.pressed.clear();
+       score=null;studyState.score=null;studyState.pressed.clear();
        position=0;currentFile="";currentName="";user=0;
-       scoreView.invalidate();
+       
        screens.showHome();loadProfiles();
        message("Backup restaurado e verificado. Os dados anteriores foram substituídos.");
       }catch(Exception restoreError){
@@ -500,7 +500,7 @@ public class MainActivity extends Activity {
  void disconnectMidi(){midiConnection.disconnect("Nenhum dispositivo conectado");}
  void clearMidiObservation(){
   downKeys.clear();midiSources.clear();waitRecognizer.clear();performance.disconnect();sustainDown=false;
-  if(scoreView!=null){scoreView.pressed.clear();scoreView.invalidate();}
+  if(studyState!=null){studyState.pressed.clear();}
   if(screens!=null)screens.updatePressed(downKeys);
  }
  void send(int pitch,boolean on){send(pitch,on,74);}
@@ -624,7 +624,7 @@ public class MainActivity extends Activity {
     if(chordCalibration.recording()&&chordCalibration.noteOff(pitch,now))updateChordCalibrationStatus();
    }
   }
-  scoreView.pressed.clear();scoreView.pressed.addAll(downKeys);scoreView.invalidate();
+  studyState.pressed.clear();studyState.pressed.addAll(downKeys);
   if(screens!=null){
    screens.updatePressed(downKeys);
    if(foreground){
@@ -729,11 +729,11 @@ public class MainActivity extends Activity {
  void selectHand(int selected){
   if(selected<0||selected>2)return;
   stopPlayback();finishStudyWindow();
-  currentHand=selected;scoreView.hand=selected;
+  currentHand=selected;studyState.hand=selected;
   if(screens!=null&&screens.notation!=null)screens.notation.setStudyHand(selected);
   if(score!=null)position=HandNavigation.nextPosition(score,position,selected,loopStart,loopEnd);
   if(routeCursor!=null)routeCursor.align(position);
-  scoreView.playhead=position;scoreView.invalidate();
+  studyState.playhead=position;
   if(mode==0)prepareWaiting();else if(screens!=null)screens.followScore(position,true);
   saveSession();updateInfo();beginStudyWindow();
  }
@@ -747,7 +747,7 @@ public class MainActivity extends Activity {
   if(Math.abs(next-position)<.0001)return;
   waitTravelTarget=next;
   if(waitTravelTarget<=position){
-   position=waitTravelTarget;scoreView.playhead=position;
+   position=waitTravelTarget;studyState.playhead=position;
    prepareWaiting();
    if(screens!=null)screens.followScore(position,true);
    return;
@@ -776,7 +776,7 @@ public class MainActivity extends Activity {
   loopStart=0;loopEnd=Double.MAX_VALUE;writtenRepeats.reset();
   position=0;
   if(routeCursor!=null){routeCursor.reset();routeCursor.align(position);}
-  scoreView.playhead=position;scoreView.invalidate();
+  studyState.playhead=position;
   if(mode==0)prepareWaiting();
   else if(screens!=null)screens.followScore(position,true);
   if(screens!=null)screens.clearLoopSelection();
@@ -791,7 +791,7 @@ public class MainActivity extends Activity {
   stopPlayback();
   loopStart=start;loopEnd=end;resetWrittenRoute();
   position=start;
-  scoreView.playhead=position;scoreView.invalidate();
+  studyState.playhead=position;
   if(mode==0)prepareWaiting();
   else if(screens!=null)screens.followScore(position,true);
   saveSession();updateInfo();
@@ -832,7 +832,7 @@ public class MainActivity extends Activity {
   }
   if(position>=score.end()-0.001){
    position=score.firstOnset(currentHand);
-   scoreView.playhead=position;scoreView.invalidate();
+   studyState.playhead=position;
    if(screens!=null)screens.followScore(position,true);
   }
   // A paused session preserves its current repeat/Coda pass.
@@ -841,7 +841,7 @@ public class MainActivity extends Activity {
   if(routeCursor!=null&&routeCursor.finished()){
    position=score.firstOnset(currentHand);
    routeCursor.reset();routeCursor.align(position);
-   scoreView.playhead=position;scoreView.invalidate();
+   studyState.playhead=position;
    if(screens!=null)screens.followScore(position,true);
   }
   if(mode==2){
@@ -932,8 +932,8 @@ public class MainActivity extends Activity {
       }
      }
     }
-    scoreView.playhead=position;
-    scoreView.invalidate();
+    studyState.playhead=position;
+    
     if(screens!=null)screens.followScore(position,false);
     updateInfo(!running&&!waitTraveling);
     if(!running&&screens!=null)screens.updateSelections();
@@ -987,12 +987,12 @@ public class MainActivity extends Activity {
  void activateProfile(int id){if(user==id)return;if(screens!=null)screens.connectionLostCreation();stopPlayback();finishStudyWindow();applyProfile(id);}
  void applyProfile(int id){
   user=id;prefs.edit().putInt("active_profile",id).apply();refreshChordWindow();
-  score=null;scoreView.score=null;scoreView.pressed.clear();currentFile="";currentName="";
+  score=null;studyState.score=null;studyState.pressed.clear();currentFile="";currentName="";
   route=null;routeCursor=null;routeHasMarkers=false;waitRecognizer.clear();
-  currentHand=0;mode=0;tempoFactor=1;scoreView.hand=0;scoreView.showKeyboard=false;
+  currentHand=0;mode=0;tempoFactor=1;studyState.hand=0;studyState.showKeyboard=false;
   String file=prefs.getString("user_"+id+"_file","");
   if(!file.isEmpty())loadScore(file,false);
-  else{position=0;loopStart=0;loopEnd=Double.MAX_VALUE;scoreView.invalidate();screens.showHome();updateInfo();}
+  else{position=0;loopStart=0;loopEnd=Double.MAX_VALUE;screens.showHome();updateInfo();}
  }
  void manageProfile(){
   try{
@@ -1020,6 +1020,8 @@ public class MainActivity extends Activity {
  }
  void beginStudyWindow(){
   if(!foreground||score==null||currentFile.isEmpty()||screens==null||(!screens.isStudyOpen()&&!screens.isFreeOpen()))return;
+  if(screens.isStudyOpen()&&(screens.notation==null||!screens.notation.isRendered()))return;
+  if(screens.isFreeOpen()&&(screens.freeNotation==null||!screens.freeNotation.isRendered()))return;
   studyClock.start(SystemClock.uptimeMillis(),System.currentTimeMillis(),user,LibrarySearch.key(currentFile),
    currentName.isEmpty()?score.title:currentName,screens.isFreeOpen()?3:mode,currentHand,position,tempoFactor);
  }
@@ -1072,7 +1074,7 @@ public class MainActivity extends Activity {
   waitStarted=false;waitPreparing=false;waitPreparationSequence++;waitPreparation.cancel();
   running=false;waitTraveling=false;allOff();
   score=null;currentFile="";currentName="";position=0;
-  scoreView.score=null;scoreView.pressed.clear();scoreView.invalidate();
+  studyState.score=null;studyState.pressed.clear();
   route=null;routeCursor=null;routeHasMarkers=false;waitRecognizer.clear();updateInfo();
  }
  void saveSession(){
@@ -1084,7 +1086,7 @@ public class MainActivity extends Activity {
    .putLong(key+"tempo",Double.doubleToLongBits(tempoFactor))
    .putLong(key+"loop_start",Double.doubleToLongBits(loopStart))
    .putLong(key+"loop_end",Double.doubleToLongBits(loopEnd))
-   .putBoolean(key+"keyboard",scoreView.showKeyboard)
+   .putBoolean(key+"keyboard",studyState.showKeyboard)
    .putInt(key+"route_visit",routeCursor==null?0:routeCursor.index()).apply();
  }
  JSONObject makeBackup()throws Exception{
@@ -1120,6 +1122,45 @@ public class MainActivity extends Activity {
  private void clearCreationExport(){if(pendingCreationExportFile!=null&&pendingCreationExportFile.matches("creation-export-[a-f0-9-]{36}\\.mid"))new File(getCacheDir(),pendingCreationExportFile).delete();pendingCreationExportFile=pendingCreationExportSha=pendingCreationExportId=null;creationExportPreparing=false;}
  @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("creationExportId",pendingCreationExportId);state.putString("creationExportFile",pendingCreationExportFile);state.putString("creationExportSha",pendingCreationExportSha);}
  void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
+ void showNotationFailure(NotationFailure failure,Runnable retry){
+  if(isFinishing()||isDestroyed())return;
+  stopPlayback();finishStudyWindow();
+  AlertDialog dialog=new AlertDialog.Builder(this)
+    .setTitle("Não foi possível exibir a partitura")
+    .setMessage("O motor moderno OSMD encontrou um problema. A partitura e o MIDI original foram preservados.\n\n"+failure.report())
+    .setPositiveButton("Tentar novamente",(d,w)->{if(retry!=null)retry.run();})
+    .setNegativeButton("Voltar à Biblioteca",(d,w)->{stopPlayback();finishStudyWindow();screens.showHome();})
+    .setNeutralButton("Copiar diagnóstico",(d,w)->{
+      android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+      if(clipboard!=null)clipboard.setPrimaryClip(ClipData.newPlainText("Erro de notação Piano Livre",failure.report()));
+      message("Diagnóstico copiado. Nenhum dado foi enviado automaticamente.");
+    }).create();
+  dialog.show();lastMessageDialog=dialog;
+ }
+ void showNotationHistory(){
+  if(isFinishing()||isDestroyed())return;
+  final NotationDiagnosticsStore store=new NotationDiagnosticsStore(getFilesDir());
+  try{
+   final String report=store.report();
+   final boolean empty=store.read().length()==0;
+   if(empty){message("Ainda não há falhas de notação registradas.");return;}
+   AlertDialog dlg=new AlertDialog.Builder(this).setTitle("Erros de partitura (armazenamento local)")
+     .setMessage(report.length()>6000?report.substring(0,6000)+"\n[Exibindo somente parte do histórico]":report)
+     .setPositiveButton("Exportar por escolha própria",(d,w)->{
+       Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("text/plain");
+       intent.putExtra(Intent.EXTRA_TEXT,report);
+       startActivity(Intent.createChooser(intent,"Compartilhar diagnóstico"));
+     })
+     .setNeutralButton("Apagar histórico",(d,w)->new AlertDialog.Builder(this)
+       .setTitle("Apagar somente os diagnósticos?")
+       .setMessage("Partituras, MIDI e histórico de estudos não serão alterados.")
+       .setPositiveButton("Apagar",(dd,ww)->{try{store.clear();message("Histórico de erros apagado.");}
+         catch(Exception e){message("Não foi possível apagar o histórico de erros.");}})
+       .setNegativeButton("Cancelar",null).show())
+     .setNegativeButton("Fechar",null).create();
+   dlg.show();
+  }catch(Exception e){message("Não foi possível ler o histórico local de erros.");}
+ }
  void message(String m){if(isFinishing()||isDestroyed())return;lastMessageDialog=new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
  @Override public void onBackPressed(){
   if(screens!=null&&screens.isLabOpen()){screens.backFromLab();return;}
