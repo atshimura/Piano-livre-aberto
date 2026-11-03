@@ -31,6 +31,9 @@ public final class ImportedScoreDeletion {
  }
  /** Recover interrupted operations before Library is opened or backup is generated. */
  public static synchronized void recover(File root,Consumer<String> finishMetadata)throws IOException{
+  recover(root,finishMetadata,false);
+ }
+ private static void recover(File root,Consumer<String> finishMetadata,boolean metadataAlreadyUpdated)throws IOException{
   if(finishMetadata==null)throw new IOException("Recuperação de biblioteca sem metadados");
   File stage=new File(root,STAGE);
   if(!stage.exists())return;
@@ -54,7 +57,7 @@ public final class ImportedScoreDeletion {
   // The durable commit marker precedes the prefs update. If Android stopped
   // between those steps, finish the idempotent metadata update before removing
   // any staged bytes. A failure retains the staging directory for retry.
-  if(committed){
+  if(committed&&!metadataAlreadyUpdated){
    try{finishMetadata.accept("imported/"+filename);}
    catch(RuntimeException failure){throw new IOException("Exclusão pendente: não foi possível concluir os metadados",failure);}
   }
@@ -97,6 +100,8 @@ public final class ImportedScoreDeletion {
    }
    throw new IOException(committed?"Exclusão pendente de finalização segura":"Exclusão cancelada; arquivos restaurados quando possível",error);
   }
-  recover(root,updateMetadata);
+  // Do not commit metadata twice in the normal path. On crash, startup
+  // recovery replays it exactly as needed before cleaning remaining bytes.
+  recover(root,updateMetadata,true);
  }
 }
