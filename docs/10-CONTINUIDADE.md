@@ -1,5 +1,9 @@
 # 10 — Como continuar o Piano Livre aberto
 
+## Release corretiva 0.9.64-open-beta — autorização de 03/11/2026
+
+A janela `Criação → Visualizar e ajustar partitura → Ajustar ritmo` ocultava a Regularização rítmica em modo paisagem no Realme. A correção introduz formulário rolável com ações Atualizar/Cancelar fixas, além do mesmo padrão para seleção de compassos, mão/voz e uniformização. [PR #109](https://github.com/atshimura/Piano-livre-aberto/pull/109), [gate dirigido #41736838277](https://github.com/atshimura/Piano-livre-aberto/actions/runs/41736838277) e [notas 0.9.64](releases/0.9.64-open-beta.md). Publicação autorizada pelo mantenedor, condicionada a `build` e `emulator` completos no HEAD do PR e da `main`, com APK release assinado permanentemente e tag `v0.9.64-open-beta` criada pelo publicador confiável. Teste no hardware real da nova versão pendente, sem alterar composições ou backup.
+
 ## Correção da abertura — candidata 0.9.60-open-beta (01/11/2026)
 
 A nova Activity mostra Home mesmo com `user_N_file` gravado, em vez de carregar automaticamente uma partitura e abrir Estudar. `saveSession` e todos os dados anteriores permanecem intactos. Ver [issue #92](https://github.com/atshimura/Piano-livre-aberto/issues/92) e [notas da versão 0.9.60](releases/0.9.60-open-beta.md). A versão 0.9.60 possui autorização específica para Release; conferir os gates da CI e artefatos da publicação, sem reaproveitar aprovação de versões antigas. Testes físicos pendentes.
