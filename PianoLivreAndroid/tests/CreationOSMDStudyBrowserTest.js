@@ -14,7 +14,7 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
    onError(message){window.testFailure={code:"PL-NOT-UNKNOWN",msg:message};},
    onPresentation(){},onStudyTap(){}};
  });
- let checks=0;let token=10;
+ let checks=0;let token=10;const failures=[];
  for(const name of ["solo-created","melody","legacy","chords","crossing","long","assigned","midi-single-staff1","midi-single-staff2"]){
   const dir=path.resolve("build/impl4-fixtures"),xml=fs.readFileSync(path.join(dir,name+".musicxml"),"utf8");
   const notes=JSON.parse(fs.readFileSync(path.join(dir,name+".json"),"utf8"));
@@ -53,12 +53,15 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
      });
      console.error("IMPL4_OSMD_FIXTURE_DIAGNOSTIC "+JSON.stringify({name,layout,report,debug}));
    }
-   assert.equal(report.failure,null,name+" "+layout+" "+JSON.stringify(report.failure));
-   assert.equal(report.ready,token,name+" "+layout+" OSMD callback mismatch");
-   assert(report.svg&&report.heads>=notes.length/2,name+" "+layout+" missing score heads: "+report.heads+"/"+notes.length);
-   checks++;
+   const correct=report.failure===null&&report.ready===token&&
+      report.svg&&report.heads>=Math.ceil(notes.length/2)&&
+      (layout==="free"||!name.startsWith("midi-single-")||
+       report.mapping&&report.mapping.matched===notes.length&&report.mapping.unmatched===0);
+   if(!correct)failures.push({name,layout,report});
+   else checks++;
   }
  }
+ assert.deepEqual(failures,[],"OSMD compatibility regression across generated/imported music");
  token++;
  await page.evaluate(token=>{
     window.testReady=null;window.testFailure=null;
