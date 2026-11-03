@@ -85,7 +85,8 @@ public final class CreationRhythmUniformizeTest {
   check(work.result().notes.get(3).startTick==2880,"redo reapplies quarter-note notation");
   work.restoreAutomaticRhythm();
   check(work.options().rhythmOverrides.isEmpty(),"restore automatic removes rhythm overrides");
-  check(work.result().notes.get(3).startTick!=2880,"restored automatic attack pattern");
+  check(Arrays.equals(immutable,work.result().xml.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+        "restored automatic MusicXML matches initial generation");
 
   CreationScoreReview conflict=review();
   String first=conflict.result().notes.get(0).sourceId;
