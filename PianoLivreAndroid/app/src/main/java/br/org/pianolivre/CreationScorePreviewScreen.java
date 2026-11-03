@@ -324,14 +324,39 @@ final class CreationScorePreviewScreen extends LinearLayout {
         busy=true;final int id=++generation;
         CreationScoreTranscriber.Options options=review.options();
         String xml=review.result().xml;
-        clear();addText("Salvando partitura com segurança…",14,false,10);
+        clear();addText("Verificando compatibilidade com Estudar…",14,false,10);
         worker.execute(()->{
             try{
-                new CreationScoreStore(activity.getFilesDir()).save(project.id,project.profileId,options,xml);
-                post(()->{if(closed||id!=generation)return;busy=false;saved=true;
-                    review.markSaved();render(false);});
-            }catch(Exception error){post(()->{if(closed||id!=generation)return;busy=false;
-                activity.message("Partitura não salva: "+error.getMessage());render(false);});}
+                Score target=Score.read(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)),
+                    "creation-score:"+project.id);
+                post(()->{
+                    if(closed||id!=generation)return;
+                    CreationStudyCompatibility.check(activity,target,compatible->{
+                        if(closed||id!=generation)return;
+                        if(!compatible){
+                            busy=false;render(false);return;
+                        }
+                        worker.execute(()->{
+                            try{
+                                new CreationScoreStore(activity.getFilesDir()).save(
+                                    project.id,project.profileId,options,xml);
+                                post(()->{
+                                    if(closed||id!=generation)return;
+                                    busy=false;saved=true;review.markSaved();render(false);
+                                });
+                            }catch(Exception ex){post(()->{
+                                if(closed||id!=generation)return;
+                                busy=false;activity.message("Partitura não salva: "+ex.getMessage());
+                                render(false);
+                            });}
+                        });
+                    });
+                });
+            }catch(Exception error){post(()->{
+                if(closed||id!=generation)return;
+                busy=false;activity.message("Partitura incompatível: "+error.getMessage());
+                render(false);
+            });}
         });
     }
     private interface Change {void execute()throws Exception;}

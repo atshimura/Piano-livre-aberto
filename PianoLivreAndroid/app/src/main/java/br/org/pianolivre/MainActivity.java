@@ -255,10 +255,10 @@ public class MainActivity extends Activity {
  void loadCreationScore(String id){loadScore("creation-score:"+id,true,false);}
  void addCreationScoreToLibrary(String id,java.util.function.Consumer<Boolean> onDone){
   final int owner=user;
-  // Validate a potentially expensive MusicXML derivation away from the
-  // Android UI; commit the registration and update UI on the main thread.
+  // Read and validate the exact saved MusicXML without blocking the UI.
+  // Before linking, run the same live OSMD engraving as the Study screen.
   new Thread(()->{
-   String problem=null;
+   String problem=null;Score parsed=null;
    try{
     LibraryStore.validateCreationId(id);
     CreationProjectStore.Project source=new CreationProjectStore(getFilesDir()).get(id);
@@ -266,19 +266,31 @@ public class MainActivity extends Activity {
      throw new IOException("Composição indisponível para o perfil ativo");
     CreationScoreStore.Saved saved=new CreationScoreStore(getFilesDir()).read(id);
     if(saved.profileId!=owner)throw new IOException("Partitura de outro perfil");
+    parsed=Score.read(new ByteArrayInputStream(saved.xml.getBytes(StandardCharsets.UTF_8)),
+      "creation-score:"+id);
    }catch(Exception error){problem=error.getMessage();}
-   final String failure=problem;
+   final String failure=problem;final Score checked=parsed;
    runOnUiThread(()->{
-    boolean added=false;
-    if(failure==null&&user==owner){
+    if(failure!=null||user!=owner){
+     message("Não foi possível adicionar à Biblioteca: "+(failure==null?"Perfil ativo alterado":failure));
+     onDone.accept(false);return;
+    }
+    CreationStudyCompatibility.check(this,checked,compatible->{
+     if(!compatible){onDone.accept(false);return;}
+     if(user!=owner){message("Perfil ativo alterado");onDone.accept(false);return;}
      try{
+      // Detect a concurrent edit/delete between the probe and library update.
+      CreationScoreStore.Saved current=new CreationScoreStore(getFilesDir()).read(id);
+      if(!current.xml.equals(checked.sourceXml))
+       throw new IOException("Partitura alterada durante a validação; verifique novamente");
       new LibraryStore(prefs,owner).addCreation(id);
       if(screens!=null)screens.refreshLibrary();
-      message("Partitura adicionada à Biblioteca Musical.");
-      added=true;
-     }catch(Exception ex){message("Não foi possível adicionar à biblioteca: "+ex.getMessage());}
-    }else message("Não foi possível adicionar à biblioteca: "+(failure==null?"Perfil ativo alterado":failure));
-    onDone.accept(added);
+      message("Partitura compatível com Estudar e adicionada à Biblioteca Musical.");
+      onDone.accept(true);
+     }catch(Exception e){
+      message("Não foi possível adicionar à Biblioteca: "+e.getMessage());onDone.accept(false);
+     }
+    });
    });
   },"PianoLivre-AdicionarBiblioteca").start();
  }
