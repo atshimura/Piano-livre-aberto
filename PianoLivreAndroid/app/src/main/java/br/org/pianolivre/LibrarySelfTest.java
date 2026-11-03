@@ -95,8 +95,15 @@ final class LibrarySelfTest {
    check(!other.snapshot().collections.get(otherCollection).scores.contains(interruptedKey),
     "postcommit recovery cleans collection memberships");
    // Isolated synthetic score: deleting a derived .pls cannot alter the .plc.
+   // Earlier BackupArchive.create/restore in THIS test already prepares the
+   // creations/creation-scores directories. mkdir() returns false if an
+   // existing directory is safe, so asserting mkdir() alone crashes on a
+   // successful prerequisite. Fail closed on a non-directory instead.
    File originalDir=new File(root,"creations"),scoresDir=new File(root,"creation-scores");
-   check(originalDir.mkdir()&&scoresDir.mkdir(),"synthetic creation directories prepared");
+   check((originalDir.isDirectory()||originalDir.mkdirs())
+     &&(scoresDir.isDirectory()||scoresDir.mkdirs())
+     &&originalDir.isDirectory()&&scoresDir.isDirectory(),
+     "synthetic creation directories available after backup/restore");
    File originalMidi=new File(originalDir,creationId+".plc"),derivedScore=new File(scoresDir,creationId+".pls");
    try(FileOutputStream out=new FileOutputStream(originalMidi)){out.write(content);}
    try(FileOutputStream out=new FileOutputStream(derivedScore)){out.write(content);}
