@@ -1158,8 +1158,22 @@ public class MainActivity extends Activity {
  void showNotationFailure(NotationFailure failure,Runnable retry,Runnable abort){
   if(isFinishing()||isDestroyed())return;
   stopPlayback();finishStudyWindow();
-  // Keep the copy action in the dialog content: three long horizontal
-  // AlertDialog button labels do not all fit on some landscape Android devices.
+  // Android landscape can hide the entire AlertDialog button bar if a long
+  // message and a custom action compete for unrestricted vertical space.
+  // Bound only the report viewport; keep the complete report scrollable.
+  final float density=getResources().getDisplayMetrics().density;
+  final int reportHeight=Math.min((int)(140*density+0.5f),
+      (int)(getResources().getDisplayMetrics().heightPixels*0.28f));
+  LinearLayout content=new LinearLayout(this);
+  content.setOrientation(LinearLayout.VERTICAL);
+  content.setPadding((int)(16*density+0.5f),0,(int)(16*density+0.5f),0);
+  ScrollView scroll=new ScrollView(this);
+  TextView reportText=new TextView(this);
+  reportText.setText("O motor moderno OSMD encontrou um problema. A partitura e o MIDI original foram preservados.\n\n"+failure.report());
+  reportText.setTextIsSelectable(true);
+  scroll.addView(reportText);
+  content.addView(scroll,new LinearLayout.LayoutParams(
+      LinearLayout.LayoutParams.MATCH_PARENT,reportHeight));
   Button copyDiagnostic=new Button(this);
   copyDiagnostic.setText("Copiar diagnóstico");
   copyDiagnostic.setContentDescription("Copiar diagnóstico");
@@ -1169,10 +1183,11 @@ public class MainActivity extends Activity {
     if(clipboard!=null)clipboard.setPrimaryClip(ClipData.newPlainText("Erro de notação Piano Livre",failure.report()));
     Toast.makeText(this,"Diagnóstico copiado; nenhum dado enviado",Toast.LENGTH_SHORT).show();
   });
+  content.addView(copyDiagnostic,new LinearLayout.LayoutParams(
+      LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
   AlertDialog dialog=new AlertDialog.Builder(this)
     .setTitle("Não foi possível exibir a partitura")
-    .setMessage("O motor moderno OSMD encontrou um problema. A partitura e o MIDI original foram preservados.\n\n"+failure.report())
-    .setView(copyDiagnostic)
+    .setView(content)
     .setPositiveButton("Tentar novamente",(d,w)->{if(retry!=null)retry.run();})
     .setNegativeButton("Voltar à Biblioteca",(d,w)->{
       stopPlayback();finishStudyWindow();
