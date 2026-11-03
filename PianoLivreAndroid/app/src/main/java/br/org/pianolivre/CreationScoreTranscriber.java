@@ -361,9 +361,9 @@ public final class CreationScoreTranscriber {
                 if(next==Long.MAX_VALUE)end=release;
                 else{
                     long gap=next-start;
-                    // A long silence after a released key is a possible rest,
+                    // Only a very long gap after key release suggests a rest,
                     // not automatically a multi-beat sustained note.
-                    end=(gap>=2L*DIVISIONS&&release-start<=gap/3)
+                    end=(gap>=4L*DIVISIONS&&release-start<=gap/4)
                         ?Math.min(next,Math.max(start+grid,release)):next;
                 }
                 end=Math.max(start+grid,end);
