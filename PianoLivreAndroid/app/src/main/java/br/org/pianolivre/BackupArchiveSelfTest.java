@@ -50,7 +50,13 @@ public final class BackupArchiveSelfTest {
    CreationProjectStore projects=new CreationProjectStore(root);MidiTakeRecorder take=new MidiTakeRecorder();take.start(1,1_000_000_000L);take.accept(0x90,60,88,1_100_000_000L,1);take.accept(0x80,60,0,1_300_000_000L,1);take.stop(1_400_000_000L);
    CreationProjectStore.Project backed=projects.save("Backup test",0,1,take.durationNs(),take.events(),take.segments());
    CreationScoreStore savedScores=new CreationScoreStore(root);
-   CreationScoreTranscriber.Options settings=CreationScoreTranscriber.Options.defaults();
+   String sourceId=CreationScoreTranscriber.transcribe(backed.events,backed.segments,
+      CreationScoreTranscriber.Options.defaults(),backed.title).notes.get(0).sourceId;
+   CreationScoreTranscriber.Options settings=new CreationScoreTranscriber.Options(
+      100,4,4,16,CreationScoreTranscriber.StaffMode.SUGGESTED,60,null,
+      CreationScoreTranscriber.Regularization.FLEXIBLE,
+      Collections.singletonMap(sourceId,1),Collections.singletonMap(sourceId,2),
+      Collections.singletonMap(sourceId,new CreationScoreTranscriber.Timing(0,960)),false);
    String derived=CreationScoreTranscriber.transcribe(backed.events,backed.segments,settings,backed.title).xml;
    savedScores.save(backed.id,backed.profileId,settings,derived);
    JSONObject original=BackupArchive.create(prefs,root);
@@ -58,6 +64,10 @@ public final class BackupArchiveSelfTest {
    ok(original.getJSONArray("creations").length()==1,"v4 includes saved projects");
    ok(original.getJSONArray("creationScores").length()==1,"v4 includes derived score");
    ok(savedScores.read(backed.id).options.grid==16,"v4 saved rhythmic settings");
+   ok(savedScores.read(backed.id).options.rhythmOverrides.size()==1
+      &&savedScores.read(backed.id).options.handOverrides.get(sourceId)==1
+      &&savedScores.read(backed.id).options.voiceOverrides.get(sourceId)==2,
+      "v4 backed score preserves manual rhythm and explicit hands/voices");
    // Capture v4 with a project and score, then add local work before restoring.
    CreationProjectStore.Project newer=projects.save("Created later",0,2,take.durationNs(),take.events(),take.segments());
    prefs.edit().putInt("user_0_mode",0).commit();
@@ -79,6 +89,9 @@ public final class BackupArchiveSelfTest {
    BackupArchive.restore(prefs,root,original);
    ok(savedScores.has(backed.id)&&savedScores.read(backed.id).xml.equals(derived),
       "v4 restores missing score from validated source");
+   ok(savedScores.read(backed.id).options.rhythmOverrides.size()==1
+      &&savedScores.read(backed.id).options.handOverrides.get(sourceId)==1,
+      "v4 restore retains all manual rhythm decisions");
    CreationScoreTranscriber.Options alternative=new CreationScoreTranscriber.Options(
       120,4,4,16,CreationScoreTranscriber.StaffMode.SUGGESTED,60,null);
    String changed=CreationScoreTranscriber.transcribe(
