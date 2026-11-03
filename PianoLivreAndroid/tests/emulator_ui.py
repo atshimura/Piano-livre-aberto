@@ -378,7 +378,18 @@ if __name__=="__main__":
     assert imported_rendered, "Imported one-note MIDI must finish modern OSMD drawing"
     print("IMPL4_MIDI_SINGLE_NOTE_ANDROID_OSMD_PASS",flush=True)
     generated=adb("shell","run-as","br.org.pianolivre.opensource","cat","files/imported/Synthetic.musicxml")
-    assert ET.fromstring(generated).find(".//note/staff").text=="2", "Chosen MIDI hand did not reach notation"
+    # A silent upper staff is represented by an explicit rest before the
+    # pitched lower-staff note; checking the first <note> would inspect a rest.
+    # Verify the pitched event, its staff and pitch, not document order.
+    score_xml=ET.fromstring(generated)
+    pitched=[note for note in score_xml.findall(".//note") if note.find("pitch") is not None]
+    assert len(pitched)==1, "MIDI import must retain exactly one pitched note"
+    pitch=pitched[0].find("pitch")
+    assert pitched[0].findtext("staff")=="2" and pitch.findtext("step")=="C" and pitch.findtext("octave")=="4", (
+        "Explicit MIDI left-hand assignment or sounding C4 was not preserved")
+    upper_rests=[note for note in score_xml.findall(".//note")
+                 if note.find("rest") is not None and note.findtext("staff")=="1"]
+    assert upper_rests, "Silent upper staff must retain its explicit rest"
     source=subprocess.run(["adb","exec-out","run-as","br.org.pianolivre.opensource","cat","files/imported/Synthetic.musicxml.source.mid"],check=True,stdout=subprocess.PIPE).stdout
     assert source.startswith(b"MThd") and len(source)==35, "Original synthetic MIDI source not preserved"
     tap_text(["Biblioteca"])
