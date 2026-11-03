@@ -366,6 +366,8 @@ a.handler.postDelayed(this,100);}};ticker.run();
  private void renderDetails(CreationProjectStore.Project p){
   String id=p.id;
   try{
+   // Do not offer Gerar partitura while an interrupted deletion is pending.
+   CreationScoreDeletion.recover(a.getFilesDir(),projectId->LibraryStore.removeCreationEveryProfile(a.prefs,projectId));
    base("Detalhes da composição",this::requestLeave);
    label(body,p.title,23,true,3);
    attach(body,mutedText(p.trash?"Na Lixeira":p.recoverable?"Trecho recuperável":"Composição salva",13),-2,12);
