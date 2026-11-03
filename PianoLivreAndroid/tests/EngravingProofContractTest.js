@@ -6,8 +6,8 @@ const bridge=fs.readFileSync("app/src/main/java/br/org/pianolivre/NotationView.j
 const views=fs.readFileSync("app/src/main/java/br/org/pianolivre/PianoScreens.java","utf8");
 const activity=fs.readFileSync("app/src/main/java/br/org/pianolivre/MainActivity.java","utf8");
 const history=fs.readFileSync("tests/fixtures/retired-temporal-oracle.js","utf8");
-ok(!fs.existsSync("app/src/main/assets/temporal-notation.js"),"Former renderer is absent from Android assets");
 let checks=0;function ok(cond,msg){checks++;assert.ok(cond,msg)}
+ok(!fs.existsSync("app/src/main/assets/temporal-notation.js"),"Former renderer is absent from Android assets");
 ok(html.includes("studyProof=(layout==='engraving-poc')"),"Explicit research mode required");
 ok(html.includes("renderSingleHorizontalStaffline:studyProof"),"OSMD horizontal only in PoC");
 ok(html.includes("if(!freeLayout&&!studyProof){")&&html.includes("Modo OSMD não suportado"),
