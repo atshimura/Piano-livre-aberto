@@ -19,7 +19,10 @@ assert 'AUTO_TEMPORAL_FALLBACK' not in logs
 assert 'TEMPORAL_RENDER_SUCCESS' not in logs
 assert 'ACTIVE_RENDERER schematic' not in logs
 def visible():
-    return [n.attrib.get('text','') for n in dump().iter('node')]
+    # UIAutomator exposes some AlertDialog actions through accessibility
+    # descriptions rather than the text attribute (Android API/theme dependent).
+    return [value for n in dump().iter('node') for value in
+            (n.attrib.get('text',''),n.attrib.get('content-desc','')) if value]
 for _ in range(30):
     labels=visible()
     if any('Não foi possível exibir a partitura' in s for s in labels):break
