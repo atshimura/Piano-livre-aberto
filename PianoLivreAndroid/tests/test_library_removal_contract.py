@@ -32,7 +32,7 @@ class LibraryRemovalContracts(unittest.TestCase):
         self.assertIn('setNegativeButton("Cancelar",null)',self.ui)
         self.assertIn('new LibraryStore(a.prefs,a.user).setHidden(key,true)',self.ui)
         self.assertIn('new LibraryStore(a.prefs,a.user).removeCreation(key.substring(15))',self.ui)
-        self.assertIn('ImportedScoreDeletion.delete(a.getFilesDir(),key,()->LibraryStore.removeImportedEveryProfile(a.prefs,key))',self.ui)
+        self.assertIn('ImportedScoreDeletion.delete(a.getFilesDir(),key,scoreKey->LibraryStore.removeImportedEveryProfile(a.prefs,scoreKey))',self.ui)
         self.assertNotIn('new CreationScoreStore(a.getFilesDir()).delete(',self.ui)
 
     def test_backward_compatible_hidden_metadata(self):
@@ -46,14 +46,21 @@ class LibraryRemovalContracts(unittest.TestCase):
     def test_import_deletion_is_transactional_and_recoverable(self):
         self.assertIn('move(score,new File(stage,filename))',self.files)
         self.assertIn('source.exists())move(source,new File(stage,filename+".source.mid"))',self.files)
-        self.assertIn('updateMetadata.run()',self.files)
+        self.assertIn('updateMetadata.accept(key)',self.files)
         self.assertIn('marker(new File(stage,COMMITTED),"ok")',self.files)
-        self.assertIn('try{recover(root);}catch(IOException rollback)',self.files)
-        self.assertIn('ImportedScoreDeletion.recover(getFilesDir())',self.main)
+        self.assertIn('try{recover(root,updateMetadata);}catch(IOException rollback)',self.files)
+        self.assertIn('ImportedScoreDeletion.recover(getFilesDir(),scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey))',self.main)
         self.assertIn('removeImportedEveryProfile',self.store)
         self.assertIn('if(detach(obj,score))',self.store)
         self.assertIn('editor.remove(preference)',self.store)
         self.assertIn('ImportedScoreDeletion.delete(root,imported',self.selftest)
+        self.assertLess(self.files.index('marker(new File(stage,COMMITTED),"ok")'),
+                        self.files.index('updateMetadata.accept(key)'))
+        self.assertIn('if(committed&&!metadataAlreadyUpdated)',self.files)
+        self.assertIn('finishMetadata.accept("imported/"+filename)',self.files)
+        self.assertIn('recover(root,updateMetadata,true)',self.files)
+        self.assertIn('hidden state survives backup/restore',self.selftest)
+        self.assertIn('unlinked creation cleans stale collection',self.selftest)
 
     def test_study_history_preserved(self):
         self.assertNotIn('new StudyHistory(',self.store)
