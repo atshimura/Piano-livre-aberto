@@ -21,6 +21,7 @@ jobs:
           python3 tests/test_creation_library_contract.py
           python3 tests/test_home_banner_contract.py
           python3 tests/test_suite_six_changes_contract.py
+          python3 -m py_compile tests/emulator_ui.py tests/c2_d_ui_smoke.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
