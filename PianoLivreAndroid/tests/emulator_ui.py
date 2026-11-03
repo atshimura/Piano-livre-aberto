@@ -357,9 +357,26 @@ if __name__=="__main__":
     midi_labels=[n.attrib.get("text","") for n in dump().iter("node")]
     assert any("Trilha 1" in t for t in midi_labels) and "Mão esquerda" in midi_labels and "Ignorar esta trilha" in midi_labels, "Explicit MIDI track hand selector missing"
     screenshot("piano-midi-import.png")
+    before_import_render=adb("logcat","-d","-v","brief").count("NOTATION_RENDERED")
+    before_import_error=adb("logcat","-d","-v","brief").count("OSMD_FAILURE ")
     tap_text(["Mão esquerda"],exact=True)
-    time.sleep(1)
+    wait_for_text("MIDI importado como notação aproximada")
     tap_text(["OK"],exact=True)
+    # Regression: the actual imported one-note MusicXML must render with OSMD,
+    # never merely parse successfully or remain stored as an empty staff.
+    imported_rendered=False
+    for _ in range(45):
+        assert_running()
+        probe=adb("logcat","-d","-v","brief")
+        if probe.count("OSMD_FAILURE ")>before_import_error:
+            raise AssertionError("MIDI import generated an incompatible score: "+
+                 str([line for line in probe.splitlines() if "PianoLivreNotation" in line][-12:]))
+        if probe.count("NOTATION_RENDERED")>before_import_render:
+            imported_rendered=True
+            break
+        time.sleep(.4)
+    assert imported_rendered, "Imported one-note MIDI must finish modern OSMD drawing"
+    print("IMPL4_MIDI_SINGLE_NOTE_ANDROID_OSMD_PASS",flush=True)
     generated=adb("shell","run-as","br.org.pianolivre.opensource","cat","files/imported/Synthetic.musicxml")
     assert ET.fromstring(generated).find(".//note/staff").text=="2", "Chosen MIDI hand did not reach notation"
     source=subprocess.run(["adb","exec-out","run-as","br.org.pianolivre.opensource","cat","files/imported/Synthetic.musicxml.source.mid"],check=True,stdout=subprocess.PIPE).stdout
