@@ -236,6 +236,27 @@ def long_press_library_card(title):
             home_scroll_to_top()
     raise AssertionError("Library card unavailable for long press: "+repr(target))
 
+def library_available_count():
+    """Read the visible native counter rather than hard-coding catalog totals."""
+    labels=[n.attrib.get("text","") for n in dump().iter("node")]
+    matches=[re.match(r"^(\\d+) de (\\d+) partituras(?: · .*)?$",label) for label in labels]
+    values=[(int(m.group(1)),int(m.group(2))) for m in matches if m]
+    if len(values)!=1:
+        raise AssertionError("Expected one visible Library counter; got "+repr(labels[:35]))
+    return values[0]
+
+def wait_library_available_count(expected,timeout=10):
+    deadline=time.monotonic()+timeout
+    last=None
+    while time.monotonic()<deadline:
+        try:
+            last=library_available_count()
+            if last==expected:return
+        except AssertionError:
+            pass
+        time.sleep(.35)
+    raise AssertionError("Library count mismatch: expected "+repr(expected)+", got "+repr(last))
+
 def imported_file_present(name):
     """Read-only check in the isolated, debuggable emulator installation."""
     command=["adb","shell","run-as","br.org.pianolivre.opensource","ls","files/imported/"+name]
@@ -396,6 +417,8 @@ if __name__=="__main__":
     assert any("Escolha uma partitura" in t for t in help_labels), "Local help content missing"
     tap_text(["Entendi"],exact=True)
     tap_text(["Biblioteca Musical"],exact=True);wait_for_text("10 de 10 partituras")
+    previous_count=library_available_count()
+    assert previous_count[0]==previous_count[1], "Built-in hide probe must start unfiltered"
     tap_text(["Favoritar Ode à Alegria"])
     long_press_library_card(DEFAULT_SCORE_TITLE)
     tap_text(["Excluir da biblioteca"],exact=True)
@@ -403,12 +426,12 @@ if __name__=="__main__":
     tap_text(["Ocultar"],exact=True)
     wait_for_text("Música ocultada neste perfil.")
     tap_text(["OK"],exact=True)
-    wait_for_text("9 de 9 partituras")
+    wait_library_available_count((previous_count[0]-1,previous_count[1]-1))
     assert not any(n.attrib.get("content-desc")=="Estudar "+DEFAULT_SCORE_TITLE for n in dump().iter("node")), "Hidden built-in score still in library"
     tap_text(["Coleções"],exact=True,scroll=True)
     tap_text(["Restaurar músicas ocultas"],exact=True,scroll=True)
     tap_text([DEFAULT_SCORE_TITLE],exact=True)
-    wait_for_text("10 de 10 partituras")
+    wait_library_available_count(previous_count)
     tap_text(["Remover favorito Ode à Alegria"])
     print("PASS: built-in score hide/restore preserves its favorite",flush=True)
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
