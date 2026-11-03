@@ -58,6 +58,8 @@ jobs:
           java -cp build/impl4-jvm br.org.pianolivre.CreationScoreReviewTest
           java -cp build/impl4-jvm br.org.pianolivre.CreationScoreStoreTest
           java -cp build/impl4-jvm br.org.pianolivre.CreationC2DCorpusTest
+      - name: Prepare bundled OSMD assets for browser (no APK)
+        run: gradle --no-daemon :app:prepareOfflineNotation
       - name: Real OSMD browser on generated MusicXML only (no Android emulator)
         run: |
           mkdir -p build/impl4-browser
