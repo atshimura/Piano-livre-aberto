@@ -4,7 +4,7 @@
 
 Relato de aparelho real: em orientação horizontal, **Ajustar partitura** escondia a seleção de **Regularização rítmica** abaixo dos botões. O conteúdo era um `LinearLayout` diretamente no `AlertDialog`, sem altura máxima ou rolagem. A alteração coloca o formulário em `ScrollView` com altura medida até 55% da tela (ou menor se o pai limitar), barra de rolagem visível e **Atualizar/Cancelar fora da rolagem**. O mesmo padrão cobre **Atribuir mão e voz**, **Uniformizar trecho** e **Selecionar compassos**. Sem mudança no motor musical, MIDI original, armazenamento, permissões, assinatura ou direitos de partituras.
 
-Verificação planejada: contrato Python para os quatro diálogos, compilação Android, e roteiro C2-D para verificar títulos, rolagem, regularização e botões persistentes em emulador. A branch técnica usa apenas testes básicos; **não é uma nova Release nem uma correção já instalada no aparelho**. Validação física da nova interface continuará pendente.
+Verificação dirigida: contrato Python para os quatro diálogos, compilação Java Android sem APK no primeiro job e **teste de interface no emulador Android 10 horizontal**, usando exclusivamente a fixture sintética C2-D e APK de depuração descartável no segundo job. O roteiro verifica campos, rolagem, regularização e os botões Atualizar/Cancelar. Não executar a suíte completa nesta branch. **Não é nova Release nem correção já instalada no aparelho**. Validação física da nova interface continuará pendente.
 
 ## 0.9.60-open-beta (code69) — correção de abertura (01/11/2026)
 

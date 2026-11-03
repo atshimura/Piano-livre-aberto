@@ -174,6 +174,9 @@ def main():
     screenshot("02a-ajustar-ritmo-final")
     click("Cancelar")
     find("Ajustar ritmo", clickable=True)
+    if os.environ.get("PIANO_DIALOG_SCROLL_ONLY") == "1":
+        print("CREATION_DIALOG_SCROLL_EMULATOR_PASS fields=tempo,meter,grid,regularization actions=update,cancel")
+        return
     click("Divisão entre pautas")
     find("Selecionar notas e acordes")
     find("Nota 1 de 4")
