@@ -790,7 +790,8 @@ class PianoScreens {
   studio.setVisibility(View.VISIBLE);
   songTitle.setText(a.currentName==null||a.currentName.isEmpty()?a.score.title:a.currentName);
   if(notation!=null)notation.postDelayed(()->notation.resizeToFit(),180);
-  modeNote=null;updateSelections();updateMidiIndicator();a.beginStudyWindow();
+  modeNote=null;updateSelections();updateMidiIndicator();
+  // Study timing begins only when the new score's OSMD SVG is ready.
  }
  void displayScore(Score score,double beat){
   editingLoop=false;updateSelections();

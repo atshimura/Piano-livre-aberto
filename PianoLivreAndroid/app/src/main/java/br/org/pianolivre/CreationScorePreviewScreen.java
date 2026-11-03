@@ -249,7 +249,16 @@ final class CreationScorePreviewScreen extends LinearLayout {
         NotationView view=new NotationView(activity,new NotationView.Listener(){
             public void onRendered(){if(!closed&&notation!=null)notation.setCreationSelected(review.selection());}
             public void onCreationNoteTapped(String id){tapGraphicalNote(id);}
-            public void onError(String text){if(!closed)activity.message("Problema ao desenhar partitura: "+text);}
+            public void onError(String text){
+                if(!closed)activity.reportNotationIssue("PL-NOT-RENDER",
+                    "Prévia de Criação",text,review==null?null:review.result().xml,
+                    ()->{if(!closed)render(splitView);});
+            }
+            @Override public void onFailure(NotationFailure failure){
+                if(!closed)activity.showNotationFailure(failure,
+                    ()->{if(!closed)render(splitView);},
+                    ()->{if(window!=null)window.dismiss();});
+            }
         });
         notation=view;view.setCreationSourceNotes(r.notes);view.setCreationSelected(review.selection());
         attach(sheet,view,split?218:310,0);
