@@ -1,3 +1,5 @@
+- [114 — Exclusão segura de músicas na Biblioteca (implementação técnica, sem APK)](114-BIBLIOTECA-EXCLUSAO-MUSICAS.md)
+
 # Documentação do Piano Livre aberto
 
 ## Ajustes da candidata 0.9.62 — seis alterações aprovadas
