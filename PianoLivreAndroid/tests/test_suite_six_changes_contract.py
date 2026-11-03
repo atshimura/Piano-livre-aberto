@@ -86,7 +86,9 @@ class SixChangesSuiteContracts(unittest.TestCase):
     def test_generated_score_studied_from_library_only(self):
         ui=source("tests/c2_d_ui_smoke.py")
         self.assertIn('click("Adicionar à Biblioteca")',ui)
-        self.assertIn('find("Partitura adicionada à Biblioteca Musical.")',ui)
+        self.assertIn('find("Partitura compatível com Estudar e adicionada à Biblioteca Musical.")',ui)
+        self.assertIn('before_relink_proof=',ui)
+        self.assertIn('IMPL4 re-linking a generated score bypassed OSMD Study proof',ui)
         self.assertIn('click("OK")',ui)
         self.assertIn('find("Estudar C2-D partitura de teste",clickable=True)',ui)
         self.assertIn('find("MODO")',ui)
