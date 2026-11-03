@@ -215,6 +215,32 @@ def focus_library_search_field(timeout=12):
         time.sleep(.2)
     raise AssertionError("LIBRARY_SEARCH_FOCUS_FAILED: field did not settle/focus; labels="+repr(last[:40]))
 
+
+def long_press_library_card(title):
+    """Use the card accessibility identity, not its changing grid position."""
+    target="Estudar "+title
+    for attempt in range(3):
+        cards=[n for n in dump().iter("node")
+               if n.attrib.get("clickable")=="true" and n.attrib.get("content-desc")==target]
+        for card in cards:
+            values=[int(v) for v in re.findall(r"\d+",card.attrib.get("bounds",""))]
+            if len(values)!=4 or values[2]<=values[0] or values[3]<=values[1]:
+                continue
+            x,y=(values[0]+values[2])//2,(values[1]+values[3])//2
+            adb("shell","input","swipe",str(x),str(y),str(x),str(y),"1100")
+            wait_for_text("Excluir da biblioteca",timeout=12)
+            return
+        if attempt==0:
+            tap_text(["Biblioteca Musical"],exact=True,scroll=True)
+        else:
+            home_scroll_to_top()
+    raise AssertionError("Library card unavailable for long press: "+repr(target))
+
+def imported_file_present(name):
+    """Read-only check in the isolated, debuggable emulator installation."""
+    command=["adb","shell","run-as","br.org.pianolivre.opensource","ls","files/imported/"+name]
+    return subprocess.run(command,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=15).returncode==0
+
 def assert_collection_filter_option(name, present=True):
     """Collections remain accessible through Collections > Ver coleção."""
     home_scroll_to_top()
@@ -318,10 +344,32 @@ if __name__=="__main__":
     source=subprocess.run(["adb","exec-out","run-as","br.org.pianolivre.opensource","cat","files/imported/Synthetic.musicxml.source.mid"],check=True,stdout=subprocess.PIPE).stdout
     assert source.startswith(b"MThd") and len(source)==35, "Original synthetic MIDI source not preserved"
     tap_text(["Biblioteca"])
-    # Remove only these known synthetic files in this fresh emulator installation.
-    adb("shell","run-as","br.org.pianolivre.opensource","rm","files/imported/Synthetic.musicxml","files/imported/Synthetic.musicxml.source.mid","files/imported/upgrade.mxl")
+    # Exercise the public deletion UI instead of bypassing the feature with run-as rm.
+    # Scope: only the synthetic MIDI fixture just generated on this disposable AVD.
+    assert imported_file_present("Synthetic.musicxml") and imported_file_present("Synthetic.musicxml.source.mid"), "Synthetic MIDI pair missing before UI removal"
+    home_scroll_to_top();tap_text(["Biblioteca Musical"],exact=True,scroll=True)
+    focus_library_search_field()
+    adb("shell","input","text","Synthetic")
+    dismiss_keyboard()
+    wait_for_text("Synthetic.musicxml")
+    long_press_library_card("Synthetic.musicxml")
+    tap_text(["Excluir da biblioteca"],exact=True)
+    wait_for_text("todos os perfis")
+    tap_text(["Excluir"],exact=True)
+    wait_for_text("Partitura removida da Biblioteca Musical.")
+    tap_text(["OK"],exact=True)
+    assert not imported_file_present("Synthetic.musicxml"), "Imported MusicXML survived UI deletion"
+    assert not imported_file_present("Synthetic.musicxml.source.mid"), "Associated MIDI source survived UI deletion"
+    assert not any(n.attrib.get("content-desc")=="Estudar Synthetic.musicxml" for n in dump().iter("node")), "Deleted score still appears in filtered library"
+    focus_library_search_field()
+    adb("shell","input","keyevent","123")
+    adb("shell","input","keyevent",*(["67"]*20))
+    dismiss_keyboard()
+    # The upgrade fixture is owned by a different earlier emulator test; only
+    # remove that known synthetic leftover, never a real user's files.
+    adb("shell","run-as","br.org.pianolivre.opensource","rm","-f","files/imported/upgrade.mxl")
     tap_text([DEFAULT_SCORE_TITLE]);tap_text(["Biblioteca"])
-    print("PASS: explicit native MIDI hand selector, generated left staff and preserved source",flush=True)
+    print("PASS: native MIDI hand selector, generated staff and UI deletion of synthetic XML + source MIDI",flush=True)
     screenshot("piano-screen.png")
     home=dump()
     names=[n.attrib.get("text","") for n in home.iter("node")]
@@ -348,7 +396,21 @@ if __name__=="__main__":
     assert any("Escolha uma partitura" in t for t in help_labels), "Local help content missing"
     tap_text(["Entendi"],exact=True)
     tap_text(["Biblioteca Musical"],exact=True);wait_for_text("10 de 10 partituras")
-    tap_text(["Favoritar Ode à Alegria"]);tap_text(["Remover favorito Ode à Alegria"])
+    tap_text(["Favoritar Ode à Alegria"])
+    long_press_library_card(DEFAULT_SCORE_TITLE)
+    tap_text(["Excluir da biblioteca"],exact=True)
+    wait_for_text("ocultada somente neste perfil")
+    tap_text(["Ocultar"],exact=True)
+    wait_for_text("Música ocultada neste perfil.")
+    tap_text(["OK"],exact=True)
+    wait_for_text("9 de 9 partituras")
+    assert not any(n.attrib.get("content-desc")=="Estudar "+DEFAULT_SCORE_TITLE for n in dump().iter("node")), "Hidden built-in score still in library"
+    tap_text(["Coleções"],exact=True,scroll=True)
+    tap_text(["Restaurar músicas ocultas"],exact=True,scroll=True)
+    tap_text([DEFAULT_SCORE_TITLE],exact=True)
+    wait_for_text("10 de 10 partituras")
+    tap_text(["Remover favorito Ode à Alegria"])
+    print("PASS: built-in score hide/restore preserves its favorite",flush=True)
     adb("shell","am","force-stop","br.org.pianolivre.opensource")
     adb("shell","am","start","-n","br.org.pianolivre.opensource/br.org.pianolivre.MainActivity")
     time.sleep(1.5);assert_running();return_to_library_if_study_was_restored()
