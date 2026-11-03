@@ -143,7 +143,7 @@ public class MainActivity extends Activity {
    try{android.util.Log.i("PianoLivreXmlInput","XML_INPUT_SELFTEST_PASS assertions="+XmlInputSelfTest.run());}
    catch(Exception ex){throw new IllegalStateException("XML input self-test failed",ex);}
   }
-  try{BackupArchive.recover(prefs,getFilesDir());}
+  try{BackupArchive.recover(prefs,getFilesDir());ImportedScoreDeletion.recover(getFilesDir());}
   catch(Exception recovery){
    android.util.Log.e("PianoLivreBackup","Não foi possível recuperar restauração anterior",recovery);
    new AlertDialog.Builder(this).setTitle("Recuperação de dados")
@@ -1064,6 +1064,16 @@ public class MainActivity extends Activity {
    new AlertDialog.Builder(this).setTitle("Períodos registrados").setItems(labels.toArray(new String[0]),(d,index)->{}).setPositiveButton("Fechar",null).show();
   }catch(Exception ex){message("Não foi possível ler os períodos");}
  }
+ /** Drop an in-memory last-study reference after its score is hidden or removed. */
+ void clearRemovedScoreInMemory(String scoreKey){
+  if(currentFile==null||currentFile.isEmpty()||!scoreKey.equals(LibrarySearch.key(currentFile)))return;
+  finishStudyWindow();
+  waitStarted=false;waitPreparing=false;waitPreparationSequence++;waitPreparation.cancel();
+  running=false;waitTraveling=false;allOff();
+  score=null;currentFile="";currentName="";position=0;
+  scoreView.score=null;scoreView.pressed.clear();scoreView.invalidate();
+  route=null;routeCursor=null;routeHasMarkers=false;waitRecognizer.clear();updateInfo();
+ }
  void saveSession(){
   if(prefs==null||score==null)return;
   String key="user_"+user+"_";
@@ -1078,6 +1088,7 @@ public class MainActivity extends Activity {
  }
  JSONObject makeBackup()throws Exception{
   saveSession();
+  ImportedScoreDeletion.recover(getFilesDir());
   if(screens!=null)screens.prepareCreationBackup();
   return BackupArchive.create(prefs,getFilesDir());
  }
