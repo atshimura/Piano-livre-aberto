@@ -30,7 +30,7 @@ for _ in range(30):
 else:raise AssertionError('IMPL4 OSMD error dialog was not shown')
 assert any('PL-NOT-RENDER' in s for s in labels),'Stable code absent from error dialog'
 assert any('preservados' in s for s in labels),'Preservation statement missing from dialog'
-assert any('Copiar diagnóstico' in s for s in labels),'Copy diagnosis action missing'
+assert any('copiar diagnóstico' in s.casefold() for s in labels), 'Copy diagnosis action missing: '+repr(labels[-35:])
 screenshot('piano-study-failure-osmd-dialog.png')
 report=''
 for _ in range(30):
