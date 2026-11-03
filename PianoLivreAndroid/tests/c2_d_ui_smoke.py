@@ -146,6 +146,34 @@ def main():
     find("Transformar em partitura")
     find("Partitura salva")
     screenshot("02-previa-osmd")
+    # On short landscape displays the old custom AlertDialog clipped regularization.
+    # The new scroll container must expose every field without moving native actions.
+    click("Ajustar ritmo")
+    find("Ajustar partitura", max_scroll=0)
+    find("Andamento (BPM)", max_scroll=0)
+    find("Precisão rítmica", max_scroll=0)
+    find("Cancelar", clickable=True, max_scroll=0)
+    screenshot("02a-ajustar-ritmo-inicio")
+    dialog_scrolls=[n for n in dump().iter("node")
+                    if n.attrib.get("class")=="android.widget.ScrollView"
+                    and n.attrib.get("scrollable")=="true"]
+    if dialog_scrolls:
+        found=re.search(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",
+                        dialog_scrolls[0].attrib.get("bounds",""))
+        assert found, "Scrollable settings panel has no bounds"
+        x1,y1,x2,y2=map(int,found.groups())
+        assert y2-y1>50, "Scrollable settings viewport collapsed"
+        x=(x1+x2)//2
+        adb("shell","input","swipe",str(x),str(y1+(y2-y1)*4//5),
+            str(x),str(y1+(y2-y1)//5),"420")
+        time.sleep(.5)
+    find("Regularização rítmica", max_scroll=0)
+    find("Equilibrada", max_scroll=0)
+    find("Atualizar", clickable=True, max_scroll=0)
+    find("Cancelar", clickable=True, max_scroll=0)
+    screenshot("02a-ajustar-ritmo-final")
+    click("Cancelar")
+    find("Ajustar ritmo", clickable=True)
     click("Divisão entre pautas")
     find("Selecionar notas e acordes")
     find("Nota 1 de 4")

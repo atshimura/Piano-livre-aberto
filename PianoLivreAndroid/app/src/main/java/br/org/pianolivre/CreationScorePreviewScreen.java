@@ -293,6 +293,24 @@ final class CreationScorePreviewScreen extends LinearLayout {
             }
         }
     }
+    // AlertDialog does not automatically constrain a custom LinearLayout in landscape.
+    // Keep controls scrollable and native confirm/cancel actions outside the viewport.
+    private ScrollView scrollableSettings(LinearLayout panel){
+        ScrollView scrolling=new ScrollView(activity){
+            @Override protected void onMeasure(int widthSpec,int heightSpec){
+                int limit=Math.max(1,Math.round(getResources().getDisplayMetrics().heightPixels*0.55f));
+                if(View.MeasureSpec.getMode(heightSpec)!=View.MeasureSpec.UNSPECIFIED
+                    &&View.MeasureSpec.getSize(heightSpec)>0)
+                    limit=Math.min(limit,View.MeasureSpec.getSize(heightSpec));
+                super.onMeasure(widthSpec,View.MeasureSpec.makeMeasureSpec(limit,View.MeasureSpec.AT_MOST));
+            }
+        };
+        scrolling.setFillViewport(false);
+        scrolling.setVerticalScrollBarEnabled(true);
+        scrolling.setScrollbarFadingEnabled(false);
+        scrolling.addView(panel,new ScrollView.LayoutParams(-1,-2));
+        return scrolling;
+    }
     private void editRhythm(){
         CreationScoreTranscriber.Options o=review.options();
         LinearLayout content=vertical();content.setPadding(dp(16),dp(6),dp(16),0);
@@ -317,7 +335,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         attach(level,label("Corrige variações entre ataques da mesma voz. A gravação MIDI original permanece intacta.",
             12,false,0xff57708A),-2,4);
         attach(content,level,-2,4);
-        new AlertDialog.Builder(activity).setTitle("Ajustar partitura").setView(content)
+        new AlertDialog.Builder(activity).setTitle("Ajustar partitura").setView(scrollableSettings(content))
             .setPositiveButton("Atualizar",(d,w)->{
                 try{
                     int bpm=Integer.parseInt(tempo.getText().toString().trim());
@@ -483,7 +501,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         attach(panel,label("Pauta superior/inferior não determina qual mão tocou. "
             +"Selecione toda a passagem da mão antes de atribuir, inclusive notas cruzadas.",
             12,false,0xff57708A),-2,4);
-        new AlertDialog.Builder(activity).setTitle("Atribuir mão e voz").setView(panel)
+        new AlertDialog.Builder(activity).setTitle("Atribuir mão e voz").setView(scrollableSettings(panel))
             .setPositiveButton("Aplicar",(dialog,which)->mutate(
                 ()->review.assignSelection(hand.getSelectedItemPosition(),voice.getSelectedItemPosition()),true))
             .setNegativeButton("Cancelar",null).show();
@@ -498,7 +516,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         attach(panel,label("O ajuste reorganiza somente as notas escolhidas, "
             +"mantém acordes e mostra conflitos antes de alterar a partitura.",
             12,false,0xff57708A),-2,4);
-        new AlertDialog.Builder(activity).setTitle("Uniformizar trecho").setView(panel)
+        new AlertDialog.Builder(activity).setTitle("Uniformizar trecho").setView(scrollableSettings(panel))
             .setPositiveButton("Ver prévia",(dialog,which)->{
                 int duration=new int[]{3840,1920,960,480,240,120}[figure.getSelectedItemPosition()];
                 int handChoice=hand.getSelectedItemPosition(),voiceChoice=voice.getSelectedItemPosition();
@@ -537,7 +555,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         EditText to=new EditText(activity);to.setInputType(InputType.TYPE_CLASS_NUMBER);
         to.setText(String.valueOf(review.result().measures));
         responsiveFields(panel,new String[]{"Do compasso","Até o compasso (inclusive)"},new View[]{from,to});
-        new AlertDialog.Builder(activity).setTitle("Selecionar compassos").setView(panel)
+        new AlertDialog.Builder(activity).setTitle("Selecionar compassos").setView(scrollableSettings(panel))
             .setPositiveButton("Marcar",(d,w)->{
                 try{review.selectMeasures(Integer.parseInt(from.getText().toString().trim()),
                     Integer.parseInt(to.getText().toString().trim()));render(true);}
