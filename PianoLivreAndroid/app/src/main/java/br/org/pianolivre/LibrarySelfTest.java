@@ -48,6 +48,23 @@ final class LibrarySelfTest {
    rejected=false;try{BackupArchive.restore(prefs,root,bad);}catch(Exception ex){rejected=true;}
    check(rejected&&before.equals(prefs.getAll()),"invalid library key rejected before restore");
    store.toggleMember(id,asset);check(!store.snapshot().collections.get(id).scores.contains(asset),"membership toggles independently");
+   store.setHidden(asset,true);
+   check(store.snapshot().hiddenScores.contains(asset)&&!other.snapshot().hiddenScores.contains(asset),"bundled score hidden per profile");
+   check(store.snapshot().favorites.contains(asset),"hiding preserves favorite");
+   store.setHidden(asset,false);
+   check(!store.snapshot().hiddenScores.contains(asset),"hidden built-in score can be restored");
+   store.removeCreation(creationId);
+   check(!store.hasCreation(creationId)&&!store.snapshot().favorites.contains("creation-score:"+creationId),"unlinked creation cleans stale favorite");
+   other.toggleFavorite(imported);String otherCollection=other.create("Outro");
+   other.toggleMember(otherCollection,imported);
+   File midiSource=new File(folder,"meu.mxl.source.mid");
+   try(FileOutputStream out=new FileOutputStream(midiSource)){out.write(content);}
+   prefs.edit().putString("user_0_file",shared.getAbsolutePath()).putString("user_1_file",imported).commit();
+   ImportedScoreDeletion.delete(root,imported,()->LibraryStore.removeImportedEveryProfile(prefs,imported));
+   check(!shared.exists()&&!midiSource.exists(),"imported score and matching MIDI source deleted");
+   check(!store.snapshot().favorites.contains(imported)&&!other.snapshot().favorites.contains(imported),"all profiles detach imported favorite");
+   check(!other.snapshot().collections.get(otherCollection).scores.contains(imported),"all profiles detach imported collection membership");
+   check(!prefs.contains("user_0_file")&&!prefs.contains("user_1_file"),"saved study references cleared across profiles");
    return checks;
   }finally{prefs.edit().clear().commit();}
  }
