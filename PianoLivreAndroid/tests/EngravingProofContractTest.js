@@ -1,15 +1,17 @@
 "use strict";
-/** OSMD is default; temporal remains an automatic fallback, without UI selectors. */
+/** OSMD is the only production renderer; historical fixture is not an app engine. */
 const assert=require("node:assert/strict"),fs=require("node:fs");
 const html=fs.readFileSync("app/src/main/assets/notation.html","utf8");
 const bridge=fs.readFileSync("app/src/main/java/br/org/pianolivre/NotationView.java","utf8");
 const views=fs.readFileSync("app/src/main/java/br/org/pianolivre/PianoScreens.java","utf8");
 const activity=fs.readFileSync("app/src/main/java/br/org/pianolivre/MainActivity.java","utf8");
-const time=fs.readFileSync("app/src/main/assets/temporal-notation.js","utf8");
+const history=fs.readFileSync("tests/fixtures/retired-temporal-oracle.js","utf8");
 let checks=0;function ok(cond,msg){checks++;assert.ok(cond,msg)}
+ok(!fs.existsSync("app/src/main/assets/temporal-notation.js"),"Former renderer is absent from Android assets");
 ok(html.includes("studyProof=(layout==='engraving-poc')"),"Explicit research mode required");
 ok(html.includes("renderSingleHorizontalStaffline:studyProof"),"OSMD horizontal only in PoC");
-ok(html.includes("if(!freeLayout&&!studyProof){"),"Temporal renderer must remain available as a Study alternative");
+ok(html.includes("if(!freeLayout&&!studyProof){")&&html.includes("Modo OSMD não suportado"),
+  "All other layout modes must be rejected, not substituted");
 ok(html.includes("POC_OSMD_READY"),"SVG render metrics required");
 ok(html.includes("POC_CONTEXT_MEASURE_")&&html.includes("POC_CONTEXT_SVG_ROOT")&&
  html.includes("POC_CONTEXT_MODIFIERS_")&&html.includes("POC_CONTEXT_NODES_")&&
@@ -77,13 +79,14 @@ ok(html.includes("12*vb.width/rect.width")&&html.includes("10*vb.height/rect.hei
 ok(html.includes("role=\"status\""),"Preview note feedback exposed accessibly");
 ok(!views.includes("OSMD · nova")&&!views.includes("Anterior · temporal")&&
  !views.includes("selectStudyRenderer")&&!views.includes("rendererButtons"),"Prompt 2 removes manual renderer controls and handlers");
-ok(bridge.includes("AUTO_TEMPORAL_FALLBACK")&&bridge.includes("if(!freeLayout&&engravingProof)")&&
- !views.includes("POC_GESTURE_LONG_CLICK"),"Actual Study errors must try temporal automatically, keeping Free separate");
+ok(!bridge.includes("AUTO_TEMPORAL_FALLBACK")&&!views.includes("legacyFallback")&&
+ views.includes("showNotationFailure")&&bridge.includes("onFailure(long token"),
+ "OSMD error is visible and structured, with no temporal or native fallback");
 ok(html.includes("AndroidNotation.onStudyTap()")&&html.includes("requestAnimationFrame(function()"),
  "Chrome reveal observes a completed tap without replacing note/loop handlers");
-ok(time.includes("function computeX(beat,pxPerBeat,origin){return origin+beat*pxPerBeat;}"),
-   "Strict beat-proportional baseline untouched");
-ok(time.includes("function cursorPx(width){return width*.4;}"),"Existing cursor placement untouched");
+ok(history.includes("function computeX("),"Previous proportional geometry remains test-only historical reference");
+ok(html.includes("function opticalSeek(")&&html.includes("opticalPosition"),
+  "Modern OSMD engine owns native-beat seeking");
 ok(bridge.includes("JSONArray serialized=new JSONArray()"),
    "Native Score events must be serialized only in engraving preview");
 ok(bridge.includes('note.put("midi",event.midi)'),
@@ -140,9 +143,9 @@ ok(html.includes("document.getElementById('score').style.transform='none'"),
 ok(html.includes("textContent='Preparação'")&&
  !html.includes("Math.ceil(remaining/1000)+' s'"),
  "Wait preparation must not display a numerical countdown");
-ok(html.includes("if(studyProof){beginOpticalWait(milliseconds);return;}"),
-   "Only experimental OSMD preview uses optical Wait preparation");
-ok(html.includes("if(studyProof){cancelOpticalWait();return;}"),
+ok(html.includes("if(studyProof)beginOpticalWait(milliseconds);"),
+   "OSMD Study uses native wait preparation");
+ok(html.includes("if(studyProof)cancelOpticalWait();"),
    "Native stop cancels OSMD countdown");
 ok(bridge.includes("if(disposed||freeLayout||!htmlReady||!scoreRendered||pendingWaitDeadline<=0)return;"),
    "Wait preparation can reach preview through native bridge");

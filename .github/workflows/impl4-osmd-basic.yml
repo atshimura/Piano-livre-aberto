@@ -1,0 +1,81 @@
+name: Piano Livre - Implementacao 4 OSMD unico (BASICO SEM APK)
+on:
+  push:
+    branches: [feat/impl4-osmd-only-errors-20261103]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  impl4-basic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: PianoLivreAndroid
+    steps:
+      - uses: actions/checkout@v4
+      - name: Public snapshot and Implementation 4 directed contracts
+        run: |
+          python3 scripts/verify_public_snapshot.py
+          python3 tests/test_impl4_osmd_contract.py
+          python3 tests/test_creation_rhythm_contract.py
+          python3 tests/test_creation_score_deletion_contract.py
+          python3 tests/test_creation_library_contract.py
+          python3 tests/test_creation_responsive_contract.py
+          python3 tests/test_suite_six_changes_contract.py
+          python3 tests/test_workflow_contract_audit.py
+          python3 tests/test_study_compact_chrome_contract.py
+          python3 -m py_compile tests/emulator_study_failure.py tests/c2_d_ui_smoke.py
+          python3 tests/extract_inline_osmd.py
+          node --check build/impl4-inline.js
+          node tests/EngravingProofContractTest.js
+          node tests/StudyNoteTipTest.js
+          node tests/VerticalNavigationTest.js
+          node tests/OpticalTimeMapTest.js
+          node tests/StudyLoopTransportContractTest.js
+          node tests/CreationNotePickerTest.js
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Directed Creation JVM compatibility corpus
+        run: |
+          mkdir -p build/impl4-jvm
+          javac -encoding UTF-8 -d build/impl4-jvm \
+            app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
+            app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
+            app/src/main/java/br/org/pianolivre/SessionFiles.java \
+            app/src/main/java/br/org/pianolivre/Score.java \
+            tests/CreationOSMDCompatibilityFixture.java \
+            tests/CreationRhythmUniformizeTest.java \
+            tests/CreationScoreTranscriberTest.java \
+            tests/CreationScoreReviewTest.java \
+            tests/CreationScoreStoreTest.java \
+            tests/CreationC2DCorpusTest.java
+          java -cp build/impl4-jvm br.org.pianolivre.CreationOSMDCompatibilityFixture
+          java -cp build/impl4-jvm br.org.pianolivre.CreationRhythmUniformizeTest
+          java -cp build/impl4-jvm br.org.pianolivre.CreationScoreTranscriberTest
+          java -cp build/impl4-jvm br.org.pianolivre.CreationScoreReviewTest
+          java -cp build/impl4-jvm br.org.pianolivre.CreationScoreStoreTest
+          java -cp build/impl4-jvm br.org.pianolivre.CreationC2DCorpusTest
+      - name: Prepare bundled OSMD assets for browser (no APK)
+        run: gradle --no-daemon :app:prepareOfflineNotation
+      - name: Android Java compilation ONLY (never assemble APK)
+        run: gradle --no-daemon :app:compileDebugJavaWithJavac
+      - name: Real OSMD browser on generated MusicXML only (no Android emulator)
+        run: |
+          mkdir -p build/impl4-browser
+          npm install --prefix build/impl4-browser --no-audit --no-fund playwright@1.49.1
+          build/impl4-browser/node_modules/.bin/playwright install --with-deps chromium
+          PIANO_PLAYWRIGHT="$PWD/build/impl4-browser/node_modules/playwright" node tests/CreationOSMDStudyBrowserTest.js
+      - name: Confirm APK output absent
+        run: |
+          test ! -e app/build/outputs/apk/debug/app-debug.apk
+          test ! -e app/build/outputs/apk/release/app-release.apk
+          echo IMPL4_BASIC_NO_APK_PASS

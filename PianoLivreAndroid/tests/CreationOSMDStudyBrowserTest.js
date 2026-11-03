@@ -1,0 +1,53 @@
+"use strict";
+/** Targeted BASIC browser test: actual generated MusicXML in both OSMD layouts. */
+const fs=require("fs"),path=require("path"),assert=require("assert");
+const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
+(async()=>{
+ const browser=await chromium.launch({headless:true,args:["--no-sandbox","--allow-file-access-from-files"]});
+ const page=await browser.newPage({viewport:{width:738,height:245}});
+ const requests=[];
+ await page.route(/^https?:/,route=>{requests.push(route.request().url());return route.abort();});
+ await page.goto("file://"+path.resolve("app/src/main/assets/notation.html"));
+ await page.evaluate(()=>{window.AndroidNotation={
+   onReady(){},onRendered(token){window.testReady=token;},
+   onFailure(token,code,stage,msg){window.testFailure={token,code,stage,msg};},
+   onError(message){window.testFailure={code:"PL-NOT-UNKNOWN",msg:message};},
+   onPresentation(){},onStudyTap(){}};
+ });
+ let checks=0;let token=10;
+ for(const name of ["melody","legacy","chords","crossing","long","assigned"]){
+  const dir=path.resolve("build/impl4-fixtures"),xml=fs.readFileSync(path.join(dir,name+".musicxml"),"utf8");
+  const notes=JSON.parse(fs.readFileSync(path.join(dir,name+".json"),"utf8"));
+  for(const layout of ["free","engraving-poc"]){
+   token++;
+   await page.evaluate(({xml,notes,layout,token})=>{
+      window.testReady=null;window.testFailure=null;
+      PianoNotation.load(xml,0,layout,layout==="free"?null:notes,token);
+   },{xml,notes,layout,token});
+   await page.waitForFunction(()=>window.testReady!==null||window.testFailure!==null,null,{timeout:45000});
+   const report=await page.evaluate(()=>({
+     ready:window.testReady,failure:window.testFailure,
+     svg:!!document.querySelector("#score svg"),
+     heads:document.querySelectorAll("#score svg .vf-notehead").length,
+     mapping:PianoNotation.analysis().mapping
+   }));
+   assert.equal(report.failure,null,name+" "+layout+" "+JSON.stringify(report.failure));
+   assert.equal(report.ready,token,name+" "+layout+" OSMD callback mismatch");
+   assert(report.svg&&report.heads>=notes.length/2,name+" "+layout+" missing score heads: "+report.heads+"/"+notes.length);
+   checks++;
+  }
+ }
+ token++;
+ await page.evaluate(token=>{
+    window.testReady=null;window.testFailure=null;
+    PianoNotation.load("<score-partwise/>",0,"engraving-poc",[],token);
+ },token);
+ await page.waitForFunction(()=>window.testFailure!==null||window.testReady!==null,null,{timeout:20000});
+ const failure=await page.evaluate(()=>window.testFailure);
+ assert(failure&&failure.code.startsWith("PL-NOT-"),"OSMD error must be structured");
+ assert.equal(await page.evaluate(()=>typeof window.TemporalNotation),"undefined",
+    "The discontinued temporal engine cannot be loaded as a fallback");
+ assert.equal(requests.length,0,"Offline only; network requests forbidden");
+ console.log("IMPL4_OSMD_CREATION_STUDY_BROWSER_PASS cases="+checks+" forcedFailure="+failure.code);
+ await browser.close();
+})().catch(err=>{console.error(err);process.exitCode=1;});

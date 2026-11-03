@@ -249,7 +249,16 @@ final class CreationScorePreviewScreen extends LinearLayout {
         NotationView view=new NotationView(activity,new NotationView.Listener(){
             public void onRendered(){if(!closed&&notation!=null)notation.setCreationSelected(review.selection());}
             public void onCreationNoteTapped(String id){tapGraphicalNote(id);}
-            public void onError(String text){if(!closed)activity.message("Problema ao desenhar partitura: "+text);}
+            public void onError(String text){
+                if(!closed)activity.reportNotationIssue("PL-NOT-RENDER",
+                    "Prévia de Criação",text,review==null?null:review.result().xml,
+                    ()->{if(!closed)render(splitView);});
+            }
+            @Override public void onFailure(NotationFailure failure){
+                if(!closed)activity.showNotationFailure(failure,
+                    ()->{if(!closed)render(splitView);},
+                    ()->{if(window!=null)window.dismiss();});
+            }
         });
         notation=view;view.setCreationSourceNotes(r.notes);view.setCreationSelected(review.selection());
         attach(sheet,view,split?218:310,0);
@@ -324,14 +333,39 @@ final class CreationScorePreviewScreen extends LinearLayout {
         busy=true;final int id=++generation;
         CreationScoreTranscriber.Options options=review.options();
         String xml=review.result().xml;
-        clear();addText("Salvando partitura com segurança…",14,false,10);
+        clear();addText("Verificando compatibilidade com Estudar…",14,false,10);
         worker.execute(()->{
             try{
-                new CreationScoreStore(activity.getFilesDir()).save(project.id,project.profileId,options,xml);
-                post(()->{if(closed||id!=generation)return;busy=false;saved=true;
-                    review.markSaved();render(false);});
-            }catch(Exception error){post(()->{if(closed||id!=generation)return;busy=false;
-                activity.message("Partitura não salva: "+error.getMessage());render(false);});}
+                Score target=Score.read(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)),
+                    "creation-score:"+project.id);
+                post(()->{
+                    if(closed||id!=generation)return;
+                    CreationStudyCompatibility.check(activity,target,compatible->{
+                        if(closed||id!=generation)return;
+                        if(!compatible){
+                            busy=false;render(false);return;
+                        }
+                        worker.execute(()->{
+                            try{
+                                new CreationScoreStore(activity.getFilesDir()).save(
+                                    project.id,project.profileId,options,xml);
+                                post(()->{
+                                    if(closed||id!=generation)return;
+                                    busy=false;saved=true;review.markSaved();render(false);
+                                });
+                            }catch(Exception ex){post(()->{
+                                if(closed||id!=generation)return;
+                                busy=false;activity.message("Partitura não salva: "+ex.getMessage());
+                                render(false);
+                            });}
+                        });
+                    });
+                });
+            }catch(Exception error){post(()->{
+                if(closed||id!=generation)return;
+                busy=false;activity.message("Partitura incompatível: "+error.getMessage());
+                render(false);
+            });}
         });
     }
     private interface Change {void execute()throws Exception;}

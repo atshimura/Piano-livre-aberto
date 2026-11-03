@@ -4,7 +4,7 @@ const {DOMParser}=require(path.resolve('build/musicxml-audit/node_modules/@xmldo
 const proto=Object.getPrototypeOf(new DOMParser().parseFromString('<root/>','text/xml').documentElement);
 if(!Object.getOwnPropertyDescriptor(proto,'children'))Object.defineProperty(proto,'children',{get(){return Array.from(this.childNodes||[]).filter(n=>n.nodeType===1);}});
 global.DOMParser=DOMParser;
-const T=require('../app/src/main/assets/temporal-notation.js');
+const T=require('./fixtures/retired-temporal-oracle.js');
 const rows=cp.execFileSync('java',['-cp','build/score-tests','MusicXmlFixtureInventory'],{encoding:'utf8'}).trim().split('\n').map(s=>s.split('\t'));
 const step={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 function close(a,b,why){assert(Math.abs(a-b)<1e-7,why+': '+a+' vs '+b);}

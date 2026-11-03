@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("assert");
-const T=require("../app/src/main/assets/temporal-notation.js")._test;
+const T=require("./fixtures/retired-temporal-oracle.js")._test;
 assert.strictEqual(T.cursorPx(1000),400);
 assert.strictEqual(T.cursorLeadPx(300),45);
 assert.strictEqual(T.cursorLeadPx(900),70);

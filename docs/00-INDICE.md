@@ -1,3 +1,4 @@
+- [120 — Implementação 4: OSMD único, execução técnica, diagnóstico local e revisão da suíte](120-IMPLEMENTACAO-4-EXECUCAO-OSMD-TESTES-IMPACTO-SUITE.md)
 - [119 — Implementação 4: OSMD único, compatibilidade integral Criação → Biblioteca → Estudar, erros locais e remoção de motores antigos](119-IMPLEMENTACAO-4-OSMD-UNICO-COMPATIBILIDADE-CRIACAO-ESTUDAR.md)
 - [118 — Implementação 3: execução, controles, preservação de dados e revisão da suíte completa](118-IMPLEMENTACAO-3-EXECUCAO-TESTES.md)
 - [117 — Implementação 3: interpretação por ataques, regularização rítmica e Uniformizar trecho (planejamento aprovado)](117-IMPLEMENTACAO-3-INTERPRETACAO-RITMICA-UNIFORMIZAR-TRECHO.md)
