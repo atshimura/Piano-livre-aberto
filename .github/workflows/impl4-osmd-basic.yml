@@ -21,6 +21,10 @@ jobs:
           python3 tests/test_creation_rhythm_contract.py
           python3 tests/test_creation_score_deletion_contract.py
           python3 tests/test_creation_library_contract.py
+          python3 tests/test_creation_responsive_contract.py
+          python3 tests/test_suite_six_changes_contract.py
+          python3 tests/test_workflow_contract_audit.py
+          python3 tests/test_study_compact_chrome_contract.py
           python3 -m py_compile tests/emulator_study_failure.py tests/c2_d_ui_smoke.py
           python3 tests/extract_inline_osmd.py
           node --check build/impl4-inline.js
@@ -28,6 +32,8 @@ jobs:
           node tests/StudyNoteTipTest.js
           node tests/VerticalNavigationTest.js
           node tests/OpticalTimeMapTest.js
+          node tests/StudyLoopTransportContractTest.js
+          node tests/CreationNotePickerTest.js
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
