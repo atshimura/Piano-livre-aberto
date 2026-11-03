@@ -18,7 +18,7 @@ public final class CreationRhythmUniformizeTest {
   long[] at={0,570_000_000L,1_210_000_000L,1_900_000_000L};
   for(int i=0;i<at.length;i++){
    events.add(ev(0x90,60+i*2,80,at[i],i*2));
-   events.add(ev(0x80,60+i*2,0,at[i]+(i==3?550_000_000L:100_000_000L),i*2+1));
+   events.add(ev(0x80,60+i*2,0,at[i]+100_000_000L,i*2+1));
   }
   events.sort(Comparator.comparingLong((MidiTakeRecorder.Event e)->e.timeNs).thenComparingInt(e->e.order));
   return events;
@@ -40,6 +40,8 @@ public final class CreationRhythmUniformizeTest {
   check(notes.get(2).endTick==notes.get(3).startTick,"third attack decides the written duration");
   check(notes.get(0).sourceEndNs-notes.get(0).sourceStartNs==100_000_000L,"original short key press preserved");
   check(notes.get(0).endTick==960&&notes.get(1).endTick==1920,"human quarter-note timing regularized");
+  check(notes.get(3).endTick-notes.get(3).startTick==960,
+        "last staccato note inherits regular attack pulse rather than a semiquaver");
   check(!work.options().legacyTiming,"new projects use onset-based interpretation");
  }
  static void hands()throws Exception{
@@ -62,6 +64,19 @@ public final class CreationRhythmUniformizeTest {
   check(byId.get("c2-1-7-0-72").endTick==960,"right-hand rhythm independent from left");
   check(byId.get("c2-0-7-0-48").hand==2&&byId.get("c2-1-7-0-72").hand==1,
         "explicit hands retained, not inferred from staff");
+ }
+ static void assignment()throws Exception{
+  CreationScoreReview work=review();
+  String chosen=work.result().notes.get(0).sourceId;
+  work.toggle(chosen);
+  work.assignSelection(1,2);
+  CreationScoreTranscriber.WrittenNote note=null;
+  for(CreationScoreTranscriber.WrittenNote n:work.result().notes)
+      if(n.sourceId.equals(chosen))note=n;
+  check(note!=null&&note.hand==1&&note.voice==2,"explicit right-hand voice 2 is maintained");
+  check(work.options().handOverrides.get(chosen)==1&&work.options().voiceOverrides.get(chosen)==2,
+      "assigned hand/voice persisted in options");
+  check(work.undo()&&work.result().notes.get(0).hand==0,"undo restores unassigned physical hand");
  }
  static void uniformize()throws Exception{
   CreationScoreReview work=review();
@@ -117,7 +132,7 @@ public final class CreationRhythmUniformizeTest {
   check(work.result().xml.contains("<chord/>"),"chord stays in MusicXML");
  }
  public static void main(String[] args)throws Exception{
-  attacks();hands();uniformize();chord();
+  attacks();hands();assignment();uniformize();chord();
   System.out.println("CREATION_RHYTHM_BASIC_PASS checks="+checks);
  }
 }

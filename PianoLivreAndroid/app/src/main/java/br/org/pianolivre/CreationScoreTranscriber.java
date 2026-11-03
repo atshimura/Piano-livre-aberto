@@ -285,9 +285,13 @@ public final class CreationScoreTranscriber {
             for(Group g:groups){
                 int staff=g.staff-1;Integer voice=lanes[staff].get(g.lane);
                 if(voice==null){
-                    if(voices[staff].size()>=24)throw new IOException("Muitas vozes simultâneas para transcrever");
-                    voice=voices[staff].size()+1;lanes[staff].put(g.lane,voice);
-                    voices[staff].add(new ArrayList<Group>());
+                    Set<Integer> occupied=new HashSet<>(lanes[staff].values());
+                    int explicit=g.notes.get(0).voiceHint;
+                    int requested=explicit>1&&!occupied.contains(explicit)?explicit:1;
+                    while(occupied.contains(requested))requested++;
+                    if(requested>24)throw new IOException("Muitas vozes simultâneas para transcrever");
+                    voice=requested;lanes[staff].put(g.lane,voice);
+                    while(voices[staff].size()<voice)voices[staff].add(new ArrayList<Group>());
                 }
                 g.voice=voice;List<Group> list=voices[staff].get(voice-1);
                 if(!list.isEmpty()&&list.get(list.size()-1).end>g.start)
@@ -358,8 +362,18 @@ public final class CreationScoreTranscriber {
                 long release=start+grid;
                 for(Note n:lane.get(start))release=Math.max(release,n.end);
                 long end;
-                if(next==Long.MAX_VALUE)end=release;
-                else{
+                if(next==Long.MAX_VALUE){
+                    end=release;
+                    // Last note of a regular phrase has no following attack.
+                    // Infer its written value from the two preceding intervals
+                    // when the physical key release was conspicuously short.
+                    if(i>=2){
+                        long previousGap=start-onsets.get(i-1);
+                        long beforeGap=onsets.get(i-1)-onsets.get(i-2);
+                        if(Math.abs(previousGap-beforeGap)<=grid&&release-start<previousGap/2)
+                            end=start+previousGap;
+                    }
+                }else{
                     long gap=next-start;
                     // Only a very long gap after key release suggests a rest,
                     // not automatically a multi-beat sustained note.
