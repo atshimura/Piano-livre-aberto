@@ -36,7 +36,8 @@ final class MidiSessionSelfTest {
     a.stopPlayback();a.disconnectMidi();a.currentHand=hand;
     a.position=a.score.firstOnset(hand);double onset=a.position;
     a.waitStarted=true;a.rearmWaitIfStudying();
-    check(!a.screens.legacyFallback.allowKeyboard,"Study cannot draw legacy keyboard preference");
+    check(a.screens.notation!=null&&a.screens.notation.isEngravingProof(),
+       "Study must use OSMD, never a legacy notation renderer");
     a.onMidiMessage(0x90,0,70);
     check(!a.waitTraveling&&a.position==onset,"extra note alone cannot advance hand "+hand);
     Set<Integer> pitches=new LinkedHashSet<>();for(Score.Event e:a.score.at(onset,hand))pitches.add(e.midi);
