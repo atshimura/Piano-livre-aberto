@@ -33,7 +33,7 @@ jobs:
           mkdir -p build/library-basic
           javac -encoding UTF-8 -d build/library-basic app/src/main/java/br/org/pianolivre/SessionFiles.java app/src/main/java/br/org/pianolivre/ImportedScoreDeletion.java tests/ImportedScoreDeletionTest.java
           java -cp build/library-basic ImportedScoreDeletionTest
-          javac -encoding UTF-8 -d build/library-basic app/src/main/java/br/org/pianolivre/LibrarySearch.java tests/LibrarySearchTest.java
+          javac -encoding UTF-8 -cp build/library-basic -d build/library-basic app/src/main/java/br/org/pianolivre/LibrarySearch.java tests/LibrarySearchTest.java
           java -cp build/library-basic LibrarySearchTest
       - name: Compile Android Java without assembling or signing an APK
         run: gradle --no-daemon :app:compileDebugJavaWithJavac
