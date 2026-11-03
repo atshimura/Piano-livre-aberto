@@ -48,6 +48,7 @@ jobs:
           python3 tests/test_creation_library_contract.py
           python3 tests/test_suite_six_changes_contract.py
           python3 tests/test_creation_rhythm_contract.py
+          python3 tests/test_impl4_osmd_contract.py
           python3 -m py_compile tests/emulator_midi_interfaces.py tests/emulator_study_layout.py tests/emulator_ui.py tests/emulator_creation_navigation.py tests/c2_d_ui_smoke.py
       - name: Adaptive Study profile and complete corpus (desktop Chromium)
         env:
@@ -59,10 +60,16 @@ jobs:
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/Score.java tests/StudyProfileCorpus.java
           java -cp build/score-tests StudyProfileCorpus > build/study-corpus.tsv
           gradle --no-daemon :app:prepareOfflineNotation
+          javac -encoding UTF-8 -d build/score-tests \
+            app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
+            app/src/main/java/br/org/pianolivre/Score.java \
+            tests/CreationOSMDCompatibilityFixture.java
+          java -cp build/score-tests br.org.pianolivre.CreationOSMDCompatibilityFixture
           npm install --prefix build/study-browser --no-audit --no-fund playwright@1.49.1
           build/study-browser/node_modules/.bin/playwright install --with-deps chromium
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/StudyProfileBrowserTest.js
-          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/TemporalNoteTipBrowserTest.js
+          PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/CreationOSMDStudyBrowserTest.js
           javac -encoding UTF-8 -d build/score-tests app/src/main/java/br/org/pianolivre/DiscoveryScoreBuilder.java tests/DiscoveryNotationFixtures.java
           java -cp build/score-tests br.org.pianolivre.DiscoveryNotationFixtures > build/discovery-fixtures.txt
           PIANO_PLAYWRIGHT="$PWD/build/study-browser/node_modules/playwright" node tests/DiscoveryNotationBrowserTest.js
@@ -285,7 +292,7 @@ jobs:
           node --check app/src/main/assets/optical-time-map.js
       - name: Test proportional score layout (JavaScript)
         run: |
-          node --check app/src/main/assets/temporal-notation.js
+          node --check tests/fixtures/retired-temporal-oracle.js
           node tests/TemporalLayoutTest.js
           node tests/ClefEngravingTest.js
           node tests/NotationSpannersTest.js
