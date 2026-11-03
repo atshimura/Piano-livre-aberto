@@ -15,7 +15,7 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
    onPresentation(){},onStudyTap(){}};
  });
  let checks=0;let token=10;
- for(const name of ["melody","legacy","chords","crossing","long","assigned"]){
+ for(const name of ["melody","legacy","chords","crossing","long","assigned","midi-single-staff1","midi-single-staff2"]){
   const dir=path.resolve("build/impl4-fixtures"),xml=fs.readFileSync(path.join(dir,name+".musicxml"),"utf8");
   const notes=JSON.parse(fs.readFileSync(path.join(dir,name+".json"),"utf8"));
   for(const layout of ["free","engraving-poc"]){
@@ -31,6 +31,21 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
      heads:document.querySelectorAll("#score svg .vf-notehead").length,
      mapping:PianoNotation.analysis().mapping
    }));
+   if(report.failure!==null) {
+     const debug=await page.evaluate(()=>({
+       graphicalMeasures:window.osmd&&window.osmd.graphic&&window.osmd.graphic.measureList?
+         window.osmd.graphic.measureList.map(group=>(group||[]).map(m=>({
+           entries:m&&m.staffEntries?m.staffEntries.length:0,
+           nodes:m&&m.staffEntries?m.staffEntries.slice(0,3).map(e=>({
+             timestamp:e.getAbsoluteTimestamp&&e.getAbsoluteTimestamp()?.RealValue,
+             pos:e.PositionAndShape&&e.PositionAndShape.AbsolutePosition,
+             voiceCount:(e.graphicalVoiceEntries||[]).length
+           })):[]
+         }))):null,
+       graphicalSvgHeads:document.querySelectorAll("#score svg .vf-notehead").length
+     }));
+     console.error("IMPL4_OSMD_FIXTURE_DIAGNOSTIC "+JSON.stringify({name,layout,report,debug}));
+   }
    assert.equal(report.failure,null,name+" "+layout+" "+JSON.stringify(report.failure));
    assert.equal(report.ready,token,name+" "+layout+" OSMD callback mismatch");
    assert(report.svg&&report.heads>=notes.length/2,name+" "+layout+" missing score heads: "+report.heads+"/"+notes.length);
