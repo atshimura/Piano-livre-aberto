@@ -1,0 +1,44 @@
+name: Piano Livre - exclusao da Biblioteca (testes basicos; sem APK)
+on:
+  push:
+    branches: [feat/library-safe-remove-20261103]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  library-basic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: PianoLivreAndroid
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate public checkout and UI contracts
+        run: |
+          python3 scripts/verify_public_snapshot.py
+          python3 tests/test_library_removal_contract.py
+          python3 tests/test_creation_library_contract.py
+          python3 tests/test_home_banner_contract.py
+          python3 tests/test_suite_six_changes_contract.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Plain JVM deletion and crash-recovery tests
+        run: |
+          mkdir -p build/library-basic
+          javac -encoding UTF-8 -d build/library-basic app/src/main/java/br/org/pianolivre/SessionFiles.java app/src/main/java/br/org/pianolivre/ImportedScoreDeletion.java tests/ImportedScoreDeletionTest.java
+          java -cp build/library-basic ImportedScoreDeletionTest
+          javac -encoding UTF-8 -d build/library-basic app/src/main/java/br/org/pianolivre/LibrarySearch.java tests/LibrarySearchTest.java
+          java -cp build/library-basic LibrarySearchTest
+      - name: Compile Android Java without assembling or signing an APK
+        run: gradle --no-daemon :app:compileDebugJavaWithJavac
+      - name: Enforce no APK generation
+        run: |
+          test ! -f app/build/outputs/apk/debug/app-debug.apk
+          test ! -f app/build/outputs/apk/release/app-release.apk
+          echo LIBRARY_BASIC_NO_APK_PASS
