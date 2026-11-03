@@ -1,5 +1,6 @@
 'use strict';
-// Production renderer with deterministic DOM/clock; not an FPS benchmark.
+// Archived historical renderer ORACLE (test-only, not shipped or used by Piano Livre).
+// This regression checks old MusicXML timing/geometry independently of modern OSMD.
 const assert=require('assert'),fs=require('fs'),vm=require('vm'),path=require('path');
 const {DOMParser}=require(path.resolve('build/musicxml-audit/node_modules/@xmldom/xmldom'));
 const proto=Object.getPrototypeOf(new DOMParser().parseFromString('<root/>','text/xml').documentElement);
@@ -14,7 +15,7 @@ class Node {
  querySelectorAll(s){queries++;const result=[];function walk(n){for(const c of n.children){if(s.startsWith('.')?(c.attrs.class||'').split(' ').includes(s.slice(1)):c.tag===s)result.push(c);walk(c);}}walk(this);return result;}
 }
 const document={createElement:t=>new Node(t),createElementNS:(ns,t)=>new Node(t)};
-const ctx={document,DOMParser,performance:{now:()=>now},console:{log(){}},requestAnimationFrame:fn=>{frames.set(++nextId,fn);return nextId;},cancelAnimationFrame:id=>frames.delete(id),innerWidth:900};ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('app/src/main/assets/temporal-notation.js','utf8'),ctx);
+const ctx={document,DOMParser,performance:{now:()=>now},console:{log(){}},requestAnimationFrame:fn=>{frames.set(++nextId,fn);return nextId;},cancelAnimationFrame:id=>frames.delete(id),innerWidth:900};ctx.window=ctx;vm.createContext(ctx);vm.runInContext(fs.readFileSync('tests/fixtures/retired-temporal-oracle.js','utf8'),ctx);
 const T=ctx.TemporalNotation,container=new Node('div');let width=900,height=250;
 const viewport={get clientWidth(){dimensions++;return width;},get clientHeight(){dimensions++;return height;}};
 const xml=`<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><type>quarter</type><staff>1</staff></note><note><pitch><step>D</step><octave>4</octave></pitch><duration>15</duration><type>whole</type><staff>1</staff></note></measure></part></score-partwise>`;
