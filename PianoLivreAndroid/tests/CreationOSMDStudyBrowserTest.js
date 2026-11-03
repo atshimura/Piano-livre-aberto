@@ -15,7 +15,7 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
    onPresentation(){},onStudyTap(){}};
  });
  let checks=0;let token=10;
- for(const name of ["melody","legacy","chords","crossing","long","assigned","midi-single-staff1","midi-single-staff2"]){
+ for(const name of ["solo-created","melody","legacy","chords","crossing","long","assigned","midi-single-staff1","midi-single-staff2"]){
   const dir=path.resolve("build/impl4-fixtures"),xml=fs.readFileSync(path.join(dir,name+".musicxml"),"utf8");
   const notes=JSON.parse(fs.readFileSync(path.join(dir,name+".json"),"utf8"));
   for(const layout of ["free","engraving-poc"]){
@@ -31,19 +31,26 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
      heads:document.querySelectorAll("#score svg .vf-notehead").length,
      mapping:PianoNotation.analysis().mapping
    }));
-   if(report.failure!==null) {
-     const debug=await page.evaluate(()=>({
-       graphicalMeasures:window.osmd&&window.osmd.graphic&&window.osmd.graphic.measureList?
-         window.osmd.graphic.measureList.map(group=>(group||[]).map(m=>({
-           entries:m&&m.staffEntries?m.staffEntries.length:0,
-           nodes:m&&m.staffEntries?m.staffEntries.slice(0,3).map(e=>({
-             timestamp:e.getAbsoluteTimestamp&&e.getAbsoluteTimestamp()?.RealValue,
-             pos:e.PositionAndShape&&e.PositionAndShape.AbsolutePosition,
-             voiceCount:(e.graphicalVoiceEntries||[]).length
-           })):[]
-         }))):null,
-       graphicalSvgHeads:document.querySelectorAll("#score svg .vf-notehead").length
-     }));
+   if(report.failure!==null||!report.svg||report.heads<notes.length/2) {
+     const debug=await page.evaluate(()=>{
+       const graph=typeof osmd==="undefined"?null:osmd&&osmd.graphic;
+       const svg=document.querySelector("#score svg");
+       return {
+         graphicalMeasures:graph&&graph.measureList?
+           graph.measureList.map(group=>(group||[]).map(m=>({
+             entries:m&&m.staffEntries?m.staffEntries.length:0,
+             nodes:m&&m.staffEntries?m.staffEntries.slice(0,4).map(e=>({
+               timestamp:e.getAbsoluteTimestamp&&e.getAbsoluteTimestamp()?.RealValue,
+               position:e.PositionAndShape&&e.PositionAndShape.AbsolutePosition,
+               voices:(e.graphicalVoiceEntries||[]).map(v=>({notes:(v.notes||[]).length}))
+             })):[]
+           }))):null,
+         geometricNoteCount:PianoNotation.analysis()?.notes?.length,
+         noteheadClassCount:svg&&svg.querySelectorAll('[class*="notehead"]').length,
+         svgPaths:svg&&svg.querySelectorAll("path").length,
+         svgPreview:svg&&svg.outerHTML.slice(0,2200)
+       };
+     });
      console.error("IMPL4_OSMD_FIXTURE_DIAGNOSTIC "+JSON.stringify({name,layout,report,debug}));
    }
    assert.equal(report.failure,null,name+" "+layout+" "+JSON.stringify(report.failure));

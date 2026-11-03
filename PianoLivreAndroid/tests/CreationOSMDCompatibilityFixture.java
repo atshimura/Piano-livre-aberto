@@ -56,6 +56,7 @@ public final class CreationOSMDCompatibilityFixture {
   Path dir=Paths.get("build/impl4-fixtures");Files.createDirectories(dir);
   CreationScoreTranscriber.Options d=CreationScoreTranscriber.Options.defaults();
   write(dir,"melody",melodic(8,2,600_000_000L,100_000_000L),5_000_000_000L,d);
+  write(dir,"solo-created",melodic(1,0,600_000_000L,600_000_000L),1_000_000_000L,d);
   write(dir,"legacy",melodic(8,1,600_000_000L,270_000_000L),5_000_000_000L,
     CreationScoreTranscriber.Options.legacy(100,4,4,16,
        CreationScoreTranscriber.StaffMode.SUGGESTED,60,null));
