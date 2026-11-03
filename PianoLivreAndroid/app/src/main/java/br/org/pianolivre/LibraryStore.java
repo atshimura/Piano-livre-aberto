@@ -165,6 +165,45 @@ final class LibraryStore {
    }
   }catch(JSONException ex){throw new IllegalArgumentException("Organização da biblioteca inválida",ex);}
  }
+ /** Permanently deleted derivatives must have no Library/study references in any profile. */
+ static void removeCreationEveryProfile(SharedPreferences prefs,String projectId){
+  validateCreationId(projectId);
+  String id=projectId.toLowerCase(Locale.ROOT),score="creation-score:"+id;
+  Map<String,?> all=prefs.getAll();Map<String,String> originals=new LinkedHashMap<>();
+  SharedPreferences.Editor editor=prefs.edit();
+  try{
+   for(Map.Entry<String,?> item:all.entrySet()){
+    String preference=item.getKey();Object raw=item.getValue();
+    if(preference.matches("user_\\d+_library")){
+     if(!(raw instanceof String))throw new IllegalArgumentException("Biblioteca de perfil inválida");
+     JSONObject obj=new JSONObject((String)raw);decode((String)raw);
+     boolean changed=detach(obj,score);
+     JSONArray before=obj.optJSONArray("addedCreations");
+     if(before!=null){
+      JSONArray after=new JSONArray();
+      for(int i=0;i<before.length();i++){
+       String entry=before.getString(i);
+       if(entry.equalsIgnoreCase(id))changed=true;else after.put(entry);
+      }
+      if(after.length()!=before.length())obj.put("addedCreations",after);
+     }
+     if(changed){originals.put(preference,(String)raw);editor.putString(preference,obj.toString());}
+    }else if(preference.matches("user_\\d+_file")){
+     if(!(raw instanceof String))throw new IllegalArgumentException("Sessão de perfil inválida");
+     String stored=(String)raw;
+     if(!stored.isEmpty()&&score.equals(SessionFiles.portable(stored))){
+      originals.put(preference,stored);editor.remove(preference);
+     }
+    }
+   }
+   if(originals.isEmpty())return;
+   if(!editor.commit()){
+    SharedPreferences.Editor rollback=prefs.edit();
+    for(Map.Entry<String,String> item:originals.entrySet())rollback.putString(item.getKey(),item.getValue());
+    rollback.commit();throw new IllegalStateException("Não foi possível atualizar referências da partitura");
+   }
+  }catch(JSONException ex){throw new IllegalArgumentException("Biblioteca de perfil inválida",ex);}
+ }
  String create(String name){
   try{JSONObject obj=read();String id=UUID.randomUUID().toString();obj.getJSONArray("collections").put(new JSONObject().put("id",id).put("name",name.trim()).put("scores",new JSONArray()));save(obj);return id;}
   catch(JSONException ex){throw new IllegalArgumentException(ex);}
