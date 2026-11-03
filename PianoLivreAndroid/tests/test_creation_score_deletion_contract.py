@@ -38,6 +38,21 @@ class Contract(unittest.TestCase):
         self.assertIn('if(changed){originals.put(preference',self.store)
         self.assertIn('if(!stored.isEmpty()&&score.equals(SessionFiles.portable(stored)))',self.store)
         self.assertIn('if(!editor.commit())',self.store)
+    def test_full_suite_already_includes_implementation_two(self):
+        smoke=(ROOT/"tests/c2_d_ui_smoke.py").read_text(encoding="utf-8")
+        native=java("CreationSelfTest.java")
+        workflow=(ROOT.parent/".github/workflows/emulator.yml").read_text(encoding="utf-8")
+        self.assertIn('python3 tests/c2_d_ui_smoke.py',workflow)
+        self.assertIn('click("Excluir somente a partitura…")',smoke)
+        self.assertIn('click("Cancelar")',smoke)
+        self.assertIn('click("Excluir partitura")',smoke)
+        self.assertIn('original_bytes',smoke)
+        self.assertIn('assert after_bytes==original_bytes',smoke)
+        self.assertIn('find("Gerar partitura",clickable=True)',smoke)
+        self.assertIn('project_id not in json.loads(entry.text).get("addedCreations",[])',smoke)
+        self.assertIn('findButton(screen,"Mover composição para a Lixeira")',native)
+        self.assertNotIn('"Mover para Lixeira"',native)
+
     def test_recover_before_backup_and_startup(self):
         self.assertIn('CreationScoreDeletion.recover(getFilesDir(),id->LibraryStore.removeCreationEveryProfile(prefs,id))',self.main)
         self.assertIn('BackupArchive.export(prefs,getFilesDir()',self.main)
