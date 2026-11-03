@@ -95,8 +95,9 @@ public final class CreationScoreTranscriberTest {
             e(0x90,60,80,0,0),e(0x90,64,80,300_000_000L,1),
             e(0x80,64,0,900_000_000L,2),e(0x80,60,0,1_200_000_000L,3));
         CreationScoreTranscriber.Result poly=read(overlapping,seg(0,1_500_000_000L),defaults);
-        ok(poly.notes.size()==2&&poly.notes.get(0).voice!=poly.notes.get(1).voice,
-                "overlapping notes in independent voices");
+        ok(poly.notes.size()==2&&poly.notes.get(0).endTick==poly.notes.get(1).startTick
+           &&poly.notes.get(0).voice==poly.notes.get(1).voice,
+                "overlapping finger holds use next attack in same provisional line");
         List<MidiTakeRecorder.Event> reattack=Arrays.asList(
             e(0x90,60,80,0,0),e(0x90,60,80,600_000_000L,1),
             e(0x80,60,0,1_200_000_000L,2));
