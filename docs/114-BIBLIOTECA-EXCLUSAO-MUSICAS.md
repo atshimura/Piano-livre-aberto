@@ -15,15 +15,15 @@ Manter pressionado um cartão da Biblioteca Musical abre `Organizar em coleção
 ## Integridade e recuperação
 
 - `LibraryStore` mantém o JSON `version:1`, introduz campo opcional `hiddenScores` (padrão lista vazia) e valida que só contém chaves `scores/`. Backups antigos v1–v4 e bibliotecas legadas sem campo novo continuam aceitos; não há migração destrutiva.
-- `ImportedScoreDeletion` aceita apenas nomes MusicXML internos válidos e rejeita travessia de diretórios e caminhos simbólicos. Antes de mexer nas preferências, move o score e o MIDI correspondente para `files/imported.delete-pending`; escreve um manifesto durável; atualiza referências; grava marcador `committed`; então descarta o staging.
-- Se falhar antes de `committed`, tenta restaurar os arquivos. Na inicialização e antes de gerar backup, `recover` restaura um estágio **não confirmado** ou termina a exclusão **confirmada**. Conflitos e estados inesperados falham fechados para evitar perda silenciosa.
+- `ImportedScoreDeletion` aceita apenas nomes MusicXML internos válidos e rejeita travessia de diretórios e caminhos simbólicos. Antes de mexer nas preferências, move o score e o MIDI correspondente para `files/imported.delete-pending`; grava um manifesto; move XML/MIDI para o staging; grava um marcador durável `committed` **antes** da atualização dos metadados; conclui a limpeza atômica das referências de todos os perfis e só então descarta os arquivos provisórios.
+- Se falhar antes de `committed`, tenta restaurar os arquivos. Após o marcador, qualquer interrupção mantém o staging para finalizar **primeiro** os metadados de todos os perfis e **depois** descartar os arquivos. Na inicialização e antes de gerar backup, `recover` restaura um estágio não confirmado ou repete a atualização idempotente da exclusão confirmada. Se a atualização falhar, preserva os bytes no staging para uma tentativa posterior; conflitos e estados inesperados falham fechados.
 - Sessões em memória referentes à partitura removida são limpas. O histórico acumulado não é excluído; entradas antigas podem indicar uma partitura que não está mais disponível, sem reimportação.
 - Uma exclusão importada confirmada não é reversível pelo botão Restaurar músicas ocultas: para recuperar o arquivo, reimportar a cópia pessoal ou restaurar backup anterior. O catálogo de partituras do APK nunca é alterado.
 
 ## Testes direcionados
 
-- `tests/ImportedScoreDeletionTest.java`: JVM, 10 verificações de exclusão de par XML+MIDI, isolamento de outros arquivos, callback único, erro de gravação e rollback, recuperação antes/depois do commit, rejeição de chaves inválidas e XML sem sidecar.
-- `LibrarySelfTest.java`: verificações adicionais da ocultação por perfil, favoritos preservados, restauração, desvinculação de criação, remoção compartilhada com MIDI e limpeza de coleções, favoritos e sessão de dois perfis.
+- `tests/ImportedScoreDeletionTest.java`: JVM, testes de exclusão de par XML+MIDI, isolamento de outros arquivos, callback único, falha após marcador, recuperação/replay de metadados antes e depois do commit, rejeição de chaves inválidas e XML sem sidecar. A falha **antes** do marcador restaura o arquivo; a falha **depois** dele conserva o staging para concluir a operação em segurança.
+- `LibrarySelfTest.java`: verificações da ocultação por perfil e backup, favoritos preservados, restauração, desvinculação de criação e coleções, remoção compartilhada com MIDI, sessões de dois perfis e recuperação pós-commit sem deixar metadados órfãos.
 - `tests/test_library_removal_contract.py`: contratos da UI, fluxo dos três tipos, retrocompatibilidade, segurança e ausência de exclusão do histórico.
 - `.github/workflows/library-basic.yml`: somente testes Python, JVM e `gradle :app:compileDebugJavaWithJavac`, com asserção explícita de **nenhum APK**; sem `assemble`, sem emulador, sem assinatura e sem suíte completa.
 
@@ -32,3 +32,7 @@ Manter pressionado um cartão da Biblioteca Musical abre `Organizar em coleção
 ## Estado dos checks
 
 Registrar no PR os resultados do **SHA final** do workflow básico. Não descrever sucessos de builds antigos como validação deste patch; o workflow completo `build.yml`/`emulator.yml` não deve ser acionado por este PR técnico.
+
+## Revisão posterior dos testes da suíte — Implementação 1
+
+Auditoria e correções no [documento 115](115-IMPLEMENTACAO-1-AUDITORIA-SUITE.md). O código da suíte foi adaptado, mas a suíte integral não foi executada nesta etapa. Não confundir checks básicos com execução de emulador ou release.
