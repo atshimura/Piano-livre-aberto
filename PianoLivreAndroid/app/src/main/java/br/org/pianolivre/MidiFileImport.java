@@ -122,18 +122,29 @@ public final class MidiFileImport {
   for(Note n:selected)end=Math.max(end,n.end);
   int bars=(int)((end+bar-1)/bar);
   StringBuilder xml=new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?><score-partwise version=\"4.0\"><work><work-title>")
-   .append(esc(title)).append("</work-title></work><identification><miscellaneous><miscellaneous-field name=\"PianoLivre-import\">MIDI: notação aproximada em 4/4; fonte .mid preservada; sem pedal/programas/controladores</miscellaneous-field></miscellaneous></identification><part-list><score-part id=\"P1\"><part-name>Piano</part-name></score-part></part-list><part id=\"P1\">");
+   .append(esc(title)).append("</work-title></work><movement-title>")
+   .append(esc(title)).append("</movement-title><identification><miscellaneous><miscellaneous-field name=\"PianoLivre-import\">MIDI: notação aproximada em 4/4; fonte .mid preservada; sem pedal/programas/controladores</miscellaneous-field></miscellaneous></identification><part-list><score-part id=\"P1\"><part-name>Piano</part-name></score-part></part-list><part id=\"P1\">");
   for(int m=0;m<bars;m++){
    long begin=m*bar,stop=begin+bar;
    xml.append("<measure number=\"").append(m+1).append("\"><attributes><divisions>")
       .append(midi.ppqn).append("</divisions>");
    if(m==0)xml.append("<time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number=\"1\"><sign>G</sign><line>2</line></clef><clef number=\"2\"><sign>F</sign><line>4</line></clef>");
    xml.append("</attributes>");
-   if(m==0)xml.append("<direction><sound tempo=\"120\"/></direction>");
-   for(Tempo tempo:midi.tempos)
-    if(tempo.tick>=begin&&tempo.tick<stop)xml.append("<direction><offset>")
+   // MusicXML direction requires a direction-type before a sound.
+   // OSMD silently rendered only staff lines for sparse imported MIDI when
+   // the old sound-only direction was used. Keep both visual tempo notation
+   // and the original exact playback tempo; never change source .mid bytes.
+   if(m==0)xml.append("<direction placement=\"above\"><direction-type><metronome>")
+      .append("<beat-unit>quarter</beat-unit><per-minute>120</per-minute></metronome>")
+      .append("</direction-type><sound tempo=\"120\"/></direction>");
+   for(Tempo tempo:midi.tempos)if(tempo.tick>=begin&&tempo.tick<stop){
+    double bpm=60000000.0/tempo.micros;
+    xml.append("<direction placement=\"above\"><direction-type><metronome>")
+      .append("<beat-unit>quarter</beat-unit><per-minute>").append(bpm)
+      .append("</per-minute></metronome></direction-type><offset>")
       .append(tempo.tick-begin).append("</offset><sound tempo=\"")
-      .append(60000000.0/tempo.micros).append("\"/></direction>");
+      .append(bpm).append("\"/></direction>");
+   }
    boolean first=true;
    for(int staff=1;staff<=2;staff++){
     boolean any=false;
