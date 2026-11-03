@@ -314,8 +314,8 @@ final class CreationScorePreviewScreen extends LinearLayout {
                     int bpm=Integer.parseInt(tempo.getText().toString().trim());
                     int m=meter.getSelectedItemPosition(),beats=m==3?6:m+2,beatType=m==3?8:4;
                     int step=new int[]{8,16,32}[grid.getSelectedItemPosition()];
-                    CreationScoreTranscriber.Regularization level=CreationScoreTranscriber.Regularization.values()[regular.getSelectedItemPosition()];
-                    mutate(()->review.configure(bpm,beats,beatType,step,level),false);
+                    CreationScoreTranscriber.Regularization chosenRegularization=CreationScoreTranscriber.Regularization.values()[regular.getSelectedItemPosition()];
+                    mutate(()->review.configure(bpm,beats,beatType,step,chosenRegularization),false);
                 }catch(Exception ex){activity.message("Andamento inválido: "+ex.getMessage());}
             }).setNegativeButton("Cancelar",null).show();
     }
