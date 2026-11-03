@@ -154,6 +154,12 @@ public final class NotationView extends WebView {
   getSettings().setDisplayZoomControls(false);
   pendingWaitDeadline=0;pendingScore=score;pendingBeat=position;lastBeat=Double.NaN;lastSeekAt=0L;lastMoving=false;lastBpm=Double.NaN;scoreRendered=false;
   setVisibility(View.INVISIBLE);
+  final long watch=scoreGeneration;
+  postDelayed(()->{
+   if(!disposed&&watch==scoreGeneration&&!scoreRendered&&!failureRecorded)
+    reportFailure(watch,"PL-NOT-TIMEOUT","Inicialização WebView",
+      "A visualização OSMD não ficou pronta em 30 segundos");
+  },30000);
   if(htmlReady)sendScore();
  }
  private void sendScore(){
@@ -219,10 +225,6 @@ public final class NotationView extends WebView {
   }
   final long token=scoreGeneration;
   evaluateJavascript("PianoNotation.load("+JSONObject.quote(xml)+","+pendingBeat+","+layout+","+nativeEvents+","+token+")",null);
-  postDelayed(()->{
-   if(!disposed&&token==scoreGeneration&&!scoreRendered&&!failureRecorded)
-    reportFailure(token,"PL-NOT-TIMEOUT","Tempo limite","O OSMD não concluiu o desenho em 30 segundos");
-  },30000);
 
  }
  private void reportFailure(long token,String code,String stage,String details){
@@ -256,6 +258,7 @@ public final class NotationView extends WebView {
   evaluateJavascript("(function(){var a=Array.from(document.querySelectorAll('#score svg .vf-clef'));return JSON.stringify(a.map(function(n){return n.outerHTML}))})()",callback);
  }
  public boolean hasRendererFailure(){return rendererFailed;}
+ public boolean isRendered(){return scoreRendered&&!rendererFailed&&!disposed;}
  private void sendStudyHand(){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered&&engravingProof)
    evaluateJavascript("PianoNotation.studyHand("+studyHand+")",null);
