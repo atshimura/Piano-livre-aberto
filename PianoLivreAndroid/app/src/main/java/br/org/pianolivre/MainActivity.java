@@ -1123,18 +1123,26 @@ public class MainActivity extends Activity {
  @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("creationExportId",pendingCreationExportId);state.putString("creationExportFile",pendingCreationExportFile);state.putString("creationExportSha",pendingCreationExportSha);}
  void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
  void showNotationFailure(NotationFailure failure,Runnable retry){
+  showNotationFailure(failure,retry,null);
+ }
+ void showNotationFailure(NotationFailure failure,Runnable retry,Runnable abort){
   if(isFinishing()||isDestroyed())return;
   stopPlayback();finishStudyWindow();
   AlertDialog dialog=new AlertDialog.Builder(this)
     .setTitle("Não foi possível exibir a partitura")
     .setMessage("O motor moderno OSMD encontrou um problema. A partitura e o MIDI original foram preservados.\n\n"+failure.report())
     .setPositiveButton("Tentar novamente",(d,w)->{if(retry!=null)retry.run();})
-    .setNegativeButton("Voltar à Biblioteca",(d,w)->{stopPlayback();finishStudyWindow();screens.showHome();})
-    .setNeutralButton("Copiar diagnóstico",(d,w)->{
-      android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
-      if(clipboard!=null)clipboard.setPrimaryClip(ClipData.newPlainText("Erro de notação Piano Livre",failure.report()));
-      message("Diagnóstico copiado. Nenhum dado foi enviado automaticamente.");
-    }).create();
+    .setNegativeButton("Voltar à Biblioteca",(d,w)->{
+      stopPlayback();finishStudyWindow();
+      if(abort!=null)abort.run();
+      if(screens!=null)screens.showHome();
+    })
+    .setNeutralButton("Copiar diagnóstico",null).setCancelable(false).create();
+  dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->{
+    android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+    if(clipboard!=null)clipboard.setPrimaryClip(ClipData.newPlainText("Erro de notação Piano Livre",failure.report()));
+    android.widget.Toast.makeText(this,"Diagnóstico copiado; nenhum dado enviado",android.widget.Toast.LENGTH_SHORT).show();
+  }));
   dialog.show();lastMessageDialog=dialog;
  }
  void showNotationHistory(){

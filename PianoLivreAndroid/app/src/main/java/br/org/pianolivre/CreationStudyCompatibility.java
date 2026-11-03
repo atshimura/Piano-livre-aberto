@@ -44,8 +44,7 @@ public final class CreationStudyCompatibility {
    @Override public void onFailure(NotationFailure failure){
     if(!completed.compareAndSet(false,true))return;
     if(dialog[0]!=null)dialog[0].dismiss();
-    finished.accept(false);
-    activity.showNotationFailure(failure,()->check(activity,score,finished));
+    activity.showNotationFailure(failure,()->check(activity,score,finished),()->finished.accept(false));
    }
   });
   panel.addView(view[0],new LinearLayout.LayoutParams(-1,
