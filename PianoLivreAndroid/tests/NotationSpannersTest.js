@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("assert");
-const T=require("../app/src/main/assets/temporal-notation.js")._test;
+const T=require("./fixtures/retired-temporal-oracle.js")._test;
 class Node {
  constructor(tag){this.tag=tag;this.attrs={};this.children=[];}
  setAttribute(k,v){this.attrs[k]=String(v);}
