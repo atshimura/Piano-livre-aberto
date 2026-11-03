@@ -32,6 +32,9 @@ assert any('PL-NOT-RENDER' in s for s in labels),'Stable code absent from error 
 assert any('preservados' in s for s in labels),'Preservation statement missing from dialog'
 assert any('copiar diagnóstico' in s.casefold() for s in labels), 'Copy diagnosis action missing: '+repr(labels[-35:])
 screenshot('piano-study-failure-osmd-dialog.png')
+# Copy must be actionable without dismissing the error/retry dialog.
+tap_text(['Copiar diagnóstico'],exact=True)
+assert any('Não foi possível exibir a partitura' in s for s in visible()), 'Copy action dismissed OSMD error dialog'
 report=''
 for _ in range(30):
     report=adb('exec-out','run-as',PACKAGE,'cat','files/notation-errors.json')
