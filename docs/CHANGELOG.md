@@ -1,5 +1,11 @@
 # Histórico de alterações
 
+## 0.9.64-open-beta (code73) — diálogos de ajustes da Criação (03/11/2026; candidata autorizada)
+
+Relato de aparelho real: em orientação horizontal, **Ajustar partitura** escondia a seleção de **Regularização rítmica** abaixo dos botões. O conteúdo era um `LinearLayout` diretamente no `AlertDialog`, sem altura máxima ou rolagem. A alteração coloca o formulário em `ScrollView` com altura medida até 55% da tela (ou menor se o pai limitar), barra de rolagem visível e **Atualizar/Cancelar fora da rolagem**. O mesmo padrão cobre **Atribuir mão e voz**, **Uniformizar trecho** e **Selecionar compassos**. Sem mudança no motor musical, MIDI original, armazenamento, permissões, assinatura ou direitos de partituras.
+
+Verificação dirigida: contrato Python para os quatro diálogos, compilação Java Android sem APK no primeiro job e **teste de interface no emulador Android 10 horizontal**, usando exclusivamente a fixture sintética C2-D e APK de depuração descartável no segundo job. O roteiro verifica campos, rolagem, regularização e os botões Atualizar/Cancelar. Não executar a suíte completa nesta branch. **A Release 0.9.64 foi autorizada; distribuição somente após os gates completos no SHA de integração e confirmação do APK público assinado**. Validação física da nova interface continuará pendente.
+
 ## 0.9.60-open-beta (code69) — correção de abertura (01/11/2026)
 
 Corrigido o lançamento que abria diretamente Estudar quando o perfil possuía uma partitura salva. Toda nova Activity inicia em Home, preservando dados e preferências; o estudo só abre após escolha explícita. Testes de reabertura com sessão salva adicionados à CI Android. **Release aprovada especificamente pelo usuário; publicação condicionada aos gates do SHA final.** [Issue #92](https://github.com/atshimura/Piano-livre-aberto/issues/92) · [notas 0.9.60](releases/0.9.60-open-beta.md).

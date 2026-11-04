@@ -1,5 +1,7 @@
 # Piano Livre — Android, código aberto
 
+**Beta corretiva 0.9.64-open-beta (code73):** autorizado o ajuste de rolagem dos diálogos de configuração da partitura em telas horizontais. [PR #109](https://github.com/atshimura/Piano-livre-aberto/pull/109) com testes completos de publicação exigidos na `main` protegida e assinatura pública permanente antes da nova Release. [Notas da versão candidata](docs/releases/0.9.64-open-beta.md). O pacote anterior 0.9.63 não contém esta correção.
+
 Criação C1.1–C1.5 implementada no [PR #82](https://github.com/atshimura/Piano-livre-aberto/pull/82), candidata 0.9.55-open-beta/code64, sobre a beta pública 0.9.54/code63 (`cf4b24b`). A revisão ampliou captura, recuperação, persistência e testes funcionais Android. [Registro técnico e protocolo de aceite](docs/78-CREACAO-C1-IMPLEMENTACAO.md). Integração autorizada após build/emulador completos no SHA final; Release depende de autorização específica e está bloqueada por `publishApproved=false`. Hardware/V1 pendentes.
 
 Aplicativo experimental de estudo de piano com leitura MusicXML, importação MIDI aproximada, USB-MIDI, modo Espera e demonstração MIDI. Na implementação do Prompt 2, a tela Estudar prioriza a pauta, com controles responsivos e sem teclado guia. Desenvolvido em Java/Android e JavaScript. **O código aberto não é uma versão V1 concluída.** Consulte [a entrega e seus limites](docs/71-TELA-ESTUDAR-PROMPT-02.md).

@@ -92,6 +92,21 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('applyUniformize(plan)',SCORE)
         self.assertIn('review.selectMeasures(',SCORE)
 
+
+    def test_score_setting_dialogs_scroll_without_hiding_native_actions(self):
+        self.assertIn('private ScrollView scrollableSettings(LinearLayout panel)', SCORE)
+        self.assertIn('getDisplayMetrics().heightPixels*0.55f', SCORE)
+        self.assertIn('View.MeasureSpec.AT_MOST', SCORE)
+        self.assertIn('scrolling.setVerticalScrollBarEnabled(true)', SCORE)
+        self.assertIn('scrolling.setScrollbarFadingEnabled(false)', SCORE)
+        for title, panel in (('Ajustar partitura','content'),
+                             ('Atribuir mão e voz','panel'),
+                             ('Uniformizar trecho','panel'),
+                             ('Selecionar compassos','panel')):
+            self.assertIn('.setTitle("'+title+'").setView(scrollableSettings('+panel+'))', SCORE)
+        self.assertIn('.setPositiveButton("Atualizar"', SCORE)
+        self.assertIn('.setNegativeButton("Cancelar",null).show()', SCORE)
+
     def test_musical_data_logic_untouched_by_ui_reflow(self):
         self.assertIn('new CreationScoreStore(activity.getFilesDir()).save(',SCORE)
         self.assertIn('review.markSaved()',SCORE)
