@@ -104,7 +104,7 @@ public class MainActivity extends Activity {
  void rearmWaitIfStudying(){
   if(foreground&&waitStarted&&!waitPreparing&&score!=null&&mode==0&&screens!=null&&screens.isStudyOpen())prepareWaiting();
  }
- @Override public void onCreate(Bundle state){super.onCreate(state);if(state!=null){pendingCreationExportId=state.getString("creationExportId");pendingCreationExportFile=state.getString("creationExportFile");pendingCreationExportSha=state.getString("creationExportSha");creationExportPreparing=pendingCreationExportFile!=null;}getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+ @Override public void onCreate(Bundle state){super.onCreate(state);if(state!=null){pendingCreationExportId=state.getString("creationExportId");pendingCreationExportFile=state.getString("creationExportFile");pendingCreationExportSha=state.getString("creationExportSha");creationExportPreparing=pendingCreationExportFile!=null;}getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);ZEdgeInsets.apply(this);
   // Keep screen awake only while the app is visible (no persistent wakelock).
   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
   prefs=getSharedPreferences("piano_data",MODE_PRIVATE);
