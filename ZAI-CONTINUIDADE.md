@@ -59,3 +59,4 @@ separados.
 |---|---|---|---|
 | 2026-11-06 | `zai/lab` | Criação da base da linha Z a partir de `main` (0.9.64). | Concluído |
 | 2026-11-06 | `zai/lab` | Criação desta carta de protocolo (`ZAI-CONTINUIDADE.md`). | Concluído |
+| 2026-11-06 | `zai/feat/target-sdk-35` | `targetSdk` 28→35; novo `ZEdgeInsets` (Android 15+: oculta barra de status via `WindowInsetsController` e aplica `systemBars`/`displayCutout` como padding; Android ≤14 inalterado); `MainActivity.onCreate` ganhou 1 chamada. Validação: `verify_public_snapshot` + 4 contratos Python + `py_compile` PASS; `compileDebugJavaWithJavac` e `assembleDebug` OK (APK debug 951 KB). Pendências de validação física: comportamento do lock `landscape` em telas grandes (Android 12+ pode ignorar) e aparência edge-to-edge no Android 15+. | Concluído (aguarda validação física) |
