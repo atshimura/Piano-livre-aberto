@@ -18,6 +18,8 @@ import java.util.*;
 public class MainActivity extends Activity {
  static final int IMPORT=100,EXPORT=101,RESTORE=102,CREATION_MIDI_EXPORT=103;
  private final ZCreationExport creationExport=new ZCreationExport(this);
+ private final ZStudyHistoryUi studyHistory=new ZStudyHistoryUi(this);
+ private final ZProfilesUi profilesUi=new ZProfilesUi(this);
  AlertDialog lastMessageDialog;
  PianoScreens screens;LinearLayout root,toolbar;final StudyInputState studyState=new StudyInputState();TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
  Score score;String currentFile="";String currentName="";int currentHand=0;int mode=0;boolean running=false,waitTraveling=false;double waitTravelTarget=0,position=0;double tempoFactor=1,loopStart=0,loopEnd=Double.MAX_VALUE;
@@ -47,7 +49,7 @@ public class MainActivity extends Activity {
  TextView chordCalibrationStatus;
  final MidiPerformance performance=new MidiPerformance();
  MidiPlayback midiPlayback;
- final StudyClock studyClock=new StudyClock();String pendingHistoryError=null;
+ final StudyClock studyClock=new StudyClock();
  final RepeatNavigator writtenRepeats=new RepeatNavigator();
  PerformanceRoute.Result route;
  PerformanceRoute.Cursor routeCursor;
@@ -826,123 +828,17 @@ public class MainActivity extends Activity {
   if(screens!=null)screens.updateStudyInfo(text);
  }
  LocalProfiles profileStore(){return new LocalProfiles(prefs);}
- void newProfile(){
-  EditText input=new EditText(this);input.setSingleLine(true);input.setHint("Nome do perfil");
-  new AlertDialog.Builder(this).setTitle("Novo perfil").setView(input).setPositiveButton("Criar",(d,w)->{
-   try{int id=profileStore().create(input.getText().toString());activateProfile(id);loadProfiles();}
-   catch(RuntimeException ex){message(ex.getMessage());}
-  }).setNegativeButton("Cancelar",null).show();
- }
- void loadProfiles(){
-  try{
-   List<LocalProfiles.Profile> list=profileStore().list();String[] names=new String[list.size()];int selected=0;
-   int active=ZSessionState.activeProfile(prefs);
-   for(int i=0;i<list.size();i++){LocalProfiles.Profile p=list.get(i);names[i]=LocalProfiles.AVATARS[p.avatar]+" "+p.name;if(p.id==active)selected=i;}
-   user=list.get(selected).id;
-   if(active!=user)ZSessionState.setActiveProfile(prefs,user);
-   profiles.setOnItemSelectedListener(null);
-   profiles.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,names));profiles.setSelection(selected);
-   if(screens!=null&&screens.homeProfiles!=null){
-    screens.homeProfiles.setOnItemSelectedListener(null);
-    screens.homeProfiles.setAdapter(screens.homeProfileAdapter(names));screens.homeProfiles.setSelection(selected);
-   }
-   refreshChordWindow();if(screens!=null)screens.refreshLibrary();
-   profiles.setOnItemSelectedListener(new Listener(index->selectProfileFromSpinner(index,list)));
-   if(screens!=null&&screens.homeProfiles!=null)
-    screens.homeProfiles.setOnItemSelectedListener(new Listener(index->selectProfileFromSpinner(index,list)));
-  }catch(RuntimeException ex){message("Não foi possível ler os perfis: "+ex.getMessage());}
- }
- void selectProfileFromSpinner(int index,List<LocalProfiles.Profile> list){
-  if(index<0||index>=list.size())return;
-  int id=list.get(index).id;
-  if(user!=id)activateProfile(id);
-  if(profiles!=null&&profiles.getSelectedItemPosition()!=index)profiles.setSelection(index);
-  if(screens!=null&&screens.homeProfiles!=null&&screens.homeProfiles.getSelectedItemPosition()!=index)screens.homeProfiles.setSelection(index);
- }
- void activateProfile(int id){if(user==id)return;if(screens!=null)screens.connectionLostCreation();stopPlayback();finishStudyWindow();applyProfile(id);}
- void applyProfile(int id){
-  user=id;ZSessionState.setActiveProfile(prefs,id);refreshChordWindow();
-  score=null;studyState.score=null;studyState.pressed.clear();currentFile="";currentName="";
-  route=null;routeCursor=null;routeHasMarkers=false;waitRecognizer.clear();
-  currentHand=0;mode=0;tempoFactor=1;studyState.hand=0;studyState.showKeyboard=false;
-  String file=ZSessionState.lastFile(prefs,id);
-  if(!file.isEmpty())loadScore(file,false);
-  else{position=0;loopStart=0;loopEnd=Double.MAX_VALUE;screens.showHome();updateInfo();}
- }
- void manageProfile(){
-  try{
-   LocalProfiles.Profile current=null;for(LocalProfiles.Profile p:profileStore().list())if(p.id==user)current=p;
-   if(current==null)return;final LocalProfiles.Profile selected=current;
-   new AlertDialog.Builder(this).setTitle(selected.name).setItems(new String[]{"Renomear perfil","Escolher avatar","Excluir perfil"},(dialog,which)->{
-    if(which==0){
-     EditText input=new EditText(this);input.setSingleLine(true);input.setText(selected.name);
-     new AlertDialog.Builder(this).setTitle("Renomear perfil").setView(input).setPositiveButton("Salvar",(d,w)->{
-      try{profileStore().update(selected.id,input.getText().toString(),selected.avatar);loadProfiles();}catch(RuntimeException ex){message(ex.getMessage());}
-     }).setNegativeButton("Cancelar",null).show();
-    }else if(which==1){
-     new AlertDialog.Builder(this).setTitle("Avatar").setItems(LocalProfiles.AVATARS,(d,index)->{
-      try{profileStore().update(selected.id,selected.name,index);loadProfiles();}catch(RuntimeException ex){message(ex.getMessage());}
-     }).show();
-    }else new AlertDialog.Builder(this).setTitle("Excluir perfil?")
-     .setMessage("Excluir este perfil e seus registros de estudo? As partituras compartilhadas serão mantidas.")
-     .setPositiveButton("Excluir",(d,w)->{
-      try{if(hasCreationDataForProfile(selected.id)){message("Este perfil ainda possui composições, inclusive itens na Lixeira ou recuperáveis. Exporte ou exclua definitivamente cada projeto antes de excluir o perfil.");return;}stopPlayback();finishStudyWindow();int active=profileStore().delete(selected.id);score=null;applyProfile(active);loadProfiles();}
-      catch(RuntimeException ex){message(ex.getMessage());}
-      catch(IOException ex){message("Não foi possível verificar as composições deste perfil; o perfil foi mantido.");}
-     }).setNegativeButton("Cancelar",null).show();
-   }).show();
-  }catch(RuntimeException ex){message(ex.getMessage());}
- }
- void beginStudyWindow(){
-  if(!foreground||score==null||currentFile.isEmpty()||screens==null||(!screens.isStudyOpen()&&!screens.isFreeOpen()))return;
-  if(screens.isStudyOpen()&&(screens.notation==null||!screens.notation.isRendered()))return;
-  if(screens.isFreeOpen()&&(screens.freeNotation==null||!screens.freeNotation.isRendered()))return;
-  studyClock.start(SystemClock.uptimeMillis(),System.currentTimeMillis(),user,LibrarySearch.key(currentFile),
-   currentName.isEmpty()?score.title:currentName,screens.isFreeOpen()?3:mode,currentHand,position,tempoFactor);
- }
- void finishStudyWindow(){
-  StudyClock.Window window=studyClock.finish(SystemClock.uptimeMillis(),position,tempoFactor);
-  if(window==null||prefs==null)return;
-  try{new StudyHistory(prefs,window.user).record(window);}
-  catch(RuntimeException ex){pendingHistoryError=ex.getMessage();android.util.Log.w("PianoLivreHistory","Período não registrado; dados anteriores mantidos");}
- }
- void showHistory(){
-  if(pendingHistoryError!=null){String error=pendingHistoryError;pendingHistoryError=null;message(error);return;}
-  try{
-   StudyHistory store=new StudyHistory(prefs,user);JSONObject data=store.snapshot(),pieces=data.getJSONObject("pieces");
-   List<String> keys=new ArrayList<>();Iterator<String> iterator=pieces.keys();long total=0,periods=0;
-   while(iterator.hasNext()){String key=iterator.next();keys.add(key);total=Math.addExact(total,pieces.getJSONObject(key).getLong("timeMs"));periods=Math.addExact(periods,pieces.getJSONObject(key).getLong("periods"));}
-   keys.sort((left,right)->Long.compare(pieces.optJSONObject(right).optLong("lastAt"),pieces.optJSONObject(left).optLong("lastAt")));
-   if(keys.isEmpty()){message("Ainda não há registros. O tempo é registrado quando uma partitura fica aberta em primeiro plano.");return;}
-   String[] items=new String[keys.size()+1];items[0]="Tempo na tela de estudo: "+StudyHistory.duration(total)+" · "+periods+" períodos";
-   for(int i=0;i<keys.size();i++){
-    JSONObject piece=pieces.getJSONObject(keys.get(i));long goal=piece.getLong("goalMinutes"),time=piece.getLong("timeMs");
-    items[i+1]=piece.getString("title")+"\n"+StudyHistory.duration(time)+(goal>0?" · meta: "+goal+" min"+(time>=goal*60000L?" ✓":""):"");
-   }
-   new AlertDialog.Builder(this).setTitle("Histórico deste perfil").setItems(items,(d,index)->{
-    if(index==0){message("Tempo em partitura aberta, incluindo pausas para leitura. Não representa avaliação de notas, ritmo ou esforço.");return;}
-    String key=keys.get(index-1);JSONObject piece=pieces.optJSONObject(key);EditText minutes=new EditText(this);
-    minutes.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);minutes.setHint("Minutos escolhidos por você");
-    if(piece.optInt("goalMinutes")>0)minutes.setText(String.valueOf(piece.optInt("goalMinutes")));
-    new AlertDialog.Builder(this).setTitle("Meta de tempo · "+piece.optString("title")).setView(minutes)
-     .setPositiveButton("Salvar",(dd,w)->{try{int value=Integer.parseInt(minutes.getText().toString().trim());if(value<=0)throw new NumberFormatException();store.goal(key,value);}catch(NumberFormatException ex){message("Informe um número inteiro positivo de minutos.");}catch(RuntimeException ex){message(ex.getMessage());}})
-     .setNeutralButton("Remover meta",(dd,w)->{try{store.goal(key,0);}catch(RuntimeException ex){message(ex.getMessage());}}).setNegativeButton("Cancelar",null).show();
-   }).setNeutralButton("Períodos",(d,w)->showHistoryPeriods(data.optJSONArray("records")))
-    .setNegativeButton("Apagar histórico e metas",(d,w)->new AlertDialog.Builder(this).setTitle("Apagar histórico deste perfil?")
-     .setMessage("Os períodos, o tempo acumulado e as metas serão removidos. Faça backup se quiser conservá-los. As partituras e os favoritos serão mantidos.")
-     .setPositiveButton("Apagar",(dd,ww)->{try{store.clear();}catch(RuntimeException ex){message(ex.getMessage());}}).setNegativeButton("Cancelar",null).show())
-    .setPositiveButton("Fechar",null).show();
-  }catch(Exception ex){message("Não foi possível ler o histórico: "+ex.getMessage());}
- }
- void showHistoryPeriods(JSONArray records){
-  try{
-   List<String> labels=new ArrayList<>();String[] modes={"Espera","Contínuo","Demonstração","Leitura livre"};
-   java.text.DateFormat date=java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT,java.text.DateFormat.SHORT);
-   for(int i=records.length()-1;i>=0;i--){JSONObject r=records.getJSONObject(i);labels.add(date.format(new Date(r.getLong("at")))+" · "+r.getString("title")+"\n"+modes[r.getInt("mode")]+" · "+StudyHistory.duration(r.getLong("elapsedMs")));}
-   new AlertDialog.Builder(this).setTitle("Períodos registrados").setItems(labels.toArray(new String[0]),(d,index)->{}).setPositiveButton("Fechar",null).show();
-  }catch(Exception ex){message("Não foi possível ler os períodos");}
- }
- /** Drop an in-memory last-study reference after its score is hidden or removed. */
+ void newProfile(){profilesUi.create();}
+ void loadProfiles(){profilesUi.load();}
+ void selectProfileFromSpinner(int index,List<LocalProfiles.Profile> list){profilesUi.selectFromSpinner(index,list);}
+ void activateProfile(int id){profilesUi.activate(id);}
+ void applyProfile(int id){profilesUi.apply(id);}
+ void manageProfile(){profilesUi.manage();}
+ void beginStudyWindow(){studyHistory.begin();}
+ void finishStudyWindow(){studyHistory.finish();}
+ void showHistory(){studyHistory.show();}
+ void showHistoryPeriods(JSONArray records){studyHistory.showPeriods(records);}
+/** Drop an in-memory last-study reference after its score is hidden or removed. */
  void clearRemovedScoreInMemory(String scoreKey){
   if(currentFile==null||currentFile.isEmpty()||!scoreKey.equals(LibrarySearch.key(currentFile)))return;
   finishStudyWindow();
