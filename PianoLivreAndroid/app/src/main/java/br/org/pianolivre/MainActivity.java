@@ -144,6 +144,7 @@ public class MainActivity extends Activity {
   handler.post(ticker);
   ZDebugSelfTests.launchEngravingFixtures(this,previous);
   ZDebugSelfTests.postRuntimeSelfTests(this);
+  registerPredictiveBack();
  }
  private String readAsset(String asset)throws IOException{try(InputStream in=getAssets().open(asset)){return new String(all(in),StandardCharsets.UTF_8);}}
  private byte[] all(InputStream in)throws IOException{ByteArrayOutputStream o=new ByteArrayOutputStream();byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)o.write(b,0,n);return o.toByteArray();}
@@ -1053,9 +1054,33 @@ public class MainActivity extends Activity {
  void showNotationHistory(){ZNotationFailures.showNotationHistory(this);}
  void message(String m){if(isFinishing()||isDestroyed())return;lastMessageDialog=new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
  @Override public void onBackPressed(){
+  onSystemBack();
+ }
+ /** Navegação do botão voltar, compartilhada pelo caminho legado (API 26-32,
+  * via onBackPressed) e pelo predictive back (API 33+, via OnBackInvokedCallback).
+  * Ordem idêntica à histórica: Laboratório, depois Estudo/Leitura livre, e por
+  * fim o comportamento padrão do sistema (fechar a activity, como
+  * Activity.onBackPressed faz). */
+ private void onSystemBack(){
   if(screens!=null&&screens.isLabOpen()){screens.backFromLab();return;}
   if(screens!=null&&(screens.isFreeOpen()||screens.isStudyOpen())){screens.backFromStudy();return;}
-  super.onBackPressed();
+  finish();
+ }
+ private android.window.OnBackInvokedCallback backInvokedCallback;
+ /** Predictive back (Android 13+/API 33+): o sistema entrega o gesto/botão ao
+  * dispatcher quando android:enableOnBackInvokedCallback="true"; onBackPressed
+  * deixa de ser chamado nessas versões. O registro é protegido por SDK_INT,
+  * então Androids 8-12 seguem 100% no caminho legado. */
+ private void registerPredictiveBack(){
+  if(android.os.Build.VERSION.SDK_INT<33)return;
+  backInvokedCallback=this::onSystemBack;
+  getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+   android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,backInvokedCallback);
+ }
+ private void unregisterPredictiveBack(){
+  if(android.os.Build.VERSION.SDK_INT<33||backInvokedCallback==null)return;
+  getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backInvokedCallback);
+  backInvokedCallback=null;
  }
  @Override public void onWindowFocusChanged(boolean hasFocus){
   super.onWindowFocusChanged(hasFocus);
@@ -1084,6 +1109,7 @@ public class MainActivity extends Activity {
   android.util.Log.i("PianoLivreUI","LIFECYCLE_PAUSED");
  }
  @Override protected void onDestroy(){
+  unregisterPredictiveBack();
   finishStudyWindow();
   midiDestroyed=true;
   if(midiManager!=null&&midiDeviceCallback!=null)midiManager.unregisterDeviceCallback(midiDeviceCallback);

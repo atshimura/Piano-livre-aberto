@@ -1,8 +1,8 @@
 plugins { id 'com.android.application' }
 android {
   namespace 'br.org.pianolivre'
-  compileSdk 35
-  defaultConfig { applicationId 'br.org.pianolivre'; minSdk 26; targetSdk 35; versionCode 20; versionName '0.9.11-open-beta' }
+  compileSdk 36
+  defaultConfig { applicationId 'br.org.pianolivre'; minSdk 26; targetSdk 36; versionCode 20; versionName '0.9.11-open-beta' }
   // Public builds do not use the historical private-beta signing certificate.
   // Ordinary pull requests run with their own ephemeral Android debug key.
   def publicKeys = [
