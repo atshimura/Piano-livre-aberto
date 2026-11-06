@@ -123,8 +123,9 @@ public class MainActivity extends Activity {
  private byte[] all(InputStream in)throws IOException{ByteArrayOutputStream o=new ByteArrayOutputStream();byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)o.write(b,0,n);return o.toByteArray();}
  void buildUi(){screens=new PianoScreens(this);screens.build();}
  interface OnSelected{void accept(int index);}static class Listener implements android.widget.AdapterView.OnItemSelectedListener{OnSelected cb;Listener(OnSelected c){cb=c;}public void onItemSelected(android.widget.AdapterView<?> a,View v,int i,long l){cb.accept(i);}public void onNothingSelected(android.widget.AdapterView<?> a){}}
- Spinner spin(String[] items,LinearLayout parent,int width){Spinner sp=new Spinner(this);ArrayAdapter<String> adapter=new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,items);sp.setAdapter(adapter);parent.addView(sp,new LinearLayout.LayoutParams(width,48));return sp;}
- void button(String text,Runnable r,LinearLayout parent){Button b=new Button(this);b.setText(text);b.setTextSize(11);b.setAllCaps(false);b.setPadding(4,0,4,0);b.setOnClickListener(v->r.run());parent.addView(b,new LinearLayout.LayoutParams(-2,44));}
+ // Fatia 10: helpers órfãos spin()/button() removidos (zero chamadores no
+ // pacote e zero contratos; auditoria scripts/f10_orfaos.py). OnSelected/
+ // Listener permanecem (ZProfilesUi usa MainActivity.Listener).
  void chooseScore(){screens.showHome();}
  void loadScore(String path,boolean reset){loadScore(path,reset,false);}
  void openFreeScore(String path){loadScore(path,true,true);}
