@@ -23,6 +23,8 @@ public class MainActivity extends Activity {
  private final ZChordCalibrationUi chordUi=new ZChordCalibrationUi(this);
  private final ZMidiDevices midiDevices=new ZMidiDevices(this);
  private final ZMidiInput midiInput=new ZMidiInput(this);
+ private final ZScoreLoader scoreLoader=new ZScoreLoader(this);
+ private final ZScoreImport scoreImport=new ZScoreImport(this);
  AlertDialog lastMessageDialog;
  PianoScreens screens;LinearLayout root,toolbar;final StudyInputState studyState=new StudyInputState();TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
  Score score;String currentFile="";String currentName="";int currentHand=0;int mode=0;boolean running=false,waitTraveling=false;double waitTravelTarget=0,position=0;double tempoFactor=1,loopStart=0,loopEnd=Double.MAX_VALUE;
@@ -179,76 +181,15 @@ public class MainActivity extends Activity {
    });
   },"PianoLivre-AdicionarBiblioteca").start();
  }
- void loadScore(String path,boolean reset,boolean free){
-  stopPlayback();finishStudyWindow();writtenRepeats.reset();
-  try{path=SessionFiles.resolve(getFilesDir(),path);}catch(IllegalArgumentException ex){message(ex.getMessage());return;}
-  CreationProjectStore.Project original=null;CreationScoreStore.Saved saved=null;
-  try{
-   if(path.startsWith("creation-score:")){
-    String id=path.substring(15);original=new CreationProjectStore(getFilesDir()).get(id);
-    if(original.profileId!=user||original.trash||original.recoverable)
-     throw new IOException("Partitura não disponível para o perfil ativo");
-    saved=new CreationScoreStore(getFilesDir()).read(id);
-   }
-   try(InputStream input=saved!=null
-       ?new ByteArrayInputStream(saved.xml.getBytes(StandardCharsets.UTF_8))
-       :path.startsWith("scores/")?getAssets().open(path):new FileInputStream(path)){
-    score=Score.read(input,path);
-    currentFile=path;currentName=original!=null?original.title:score.title;
-  route=PerformanceRoute.build(score);
-  routeCursor=route.supported()?new PerformanceRoute.Cursor(route):null;
-  routeHasMarkers=false;
-  for(Score.MeasureInfo m:score.measureInfo){
-   if(m.forwardRepeat||m.backwardRepeat||!m.endings.isEmpty()||
-     m.daCapo||m.dalSegno||m.segno||m.toCoda||m.coda||m.fine){
-    routeHasMarkers=true;break;
-   }
-  }
-  for(int i=0;i<catalog.length();i++){JSONObject entry=catalog.optJSONObject(i);if(entry!=null&&path.equals("scores/"+entry.optString("file"))){currentName=entry.optString("name",score.title);break;}}
-  ZSessionState.Study restored=ZSessionState.readStudy(prefs,user);
-  if(reset){
-   position=score.firstOnset(currentHand);loopStart=0;loopEnd=Double.MAX_VALUE;
-  }else{
-   currentHand=restored.hand;mode=restored.mode;tempoFactor=restored.tempo;
-   loopStart=restored.loopStart;loopEnd=restored.loopEnd;
-   studyState.showKeyboard=restored.showKeyboard;
-   position=ZSessionState.readPosition(prefs,user,score.firstOnset(currentHand));
-  }
-  position=Math.max(0,Math.min(position,score.end()));
-  if(routeCursor!=null){
-   if(reset||!routeCursor.restore(restored.routeVisit,position))
-    routeCursor.align(position);
-  }
-  studyState.score=score;studyState.hand=currentHand;studyState.playhead=position;
+
+ void loadScore(String path,boolean reset,boolean free){scoreLoader.loadScore(path,reset,free);}
+ /** Barra de tempo reflete o fator de tempo aplicado à sessão (estado da
+  * casca); literal cravado pelo contrato test_workflow_contract_audit. */
+ void applyTempoFactorToBar(){
   if(tempoBar!=null)tempoBar.setProgress((int)Math.round(tempoFactor*100)-25);
-  if(free){screens.showFree();}
-  else{screens.showStudy();screens.displayScore(score,position);}
-  updateInfo();saveSession();
-  if(!score.importWarnings.isEmpty())message("Aviso de interpretação: "+String.join("; ",score.importWarnings));
-  if(routeHasMarkers&&!route.supported())
-   message("Atenção: não é possível determinar com segurança todos os retornos: "+
-     String.join(", ",route.warnings)+". A reprodução desta partitura será linear.");
-  }
- }catch(Exception e){
-   final String retryPath=path;
-   reportNotationIssue("PL-NOT-PARSE","Leitura MusicXML",e.getMessage(),null,
-    ()->loadScore(retryPath,true,free));
-  }}
- void chooseMidiHands(MidiFileImport.Result midi,String name,List<Integer> tracks,int index,Map<Integer,Integer> hands){
-  if(index<tracks.size()){
-   int track=tracks.get(index);long count=midi.notes.stream().filter(n->n.track==track).count();
-   new AlertDialog.Builder(this).setTitle("Trilha "+(track+1)+" · "+count+" notas")
-    .setItems(new String[]{"Mão direita","Mão esquerda","Ignorar esta trilha"},(d,choice)->{
-     hands.put(track,choice==0?1:choice==1?2:0);chooseMidiHands(midi,name,tracks,index+1,hands);
-    }).setNegativeButton("Cancelar",null).show();return;
-  }
-  try{
-   File dest=MidiImportStorage.save(new File(getFilesDir(),"imported"),name,midi,hands);
-   loadScore(dest.getAbsolutePath(),true);
-   message("MIDI importado como notação aproximada. Fonte original preservada; pedal e controladores não fazem parte da conversão.");
-  }catch(Exception ex){message("Não foi possível importar o MIDI: "+ex.getMessage());}
  }
- void importScore(){Intent in=new Intent(Intent.ACTION_OPEN_DOCUMENT);in.setType("*/*");in.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(in,IMPORT);}
+ void chooseMidiHands(MidiFileImport.Result midi,String name,List<Integer> tracks,int index,Map<Integer,Integer> hands){scoreImport.chooseMidiHands(midi,name,tracks,index,hands);}
+ void importScore(){scoreImport.importScore();}
  @Override protected void onActivityResult(int request,int result,Intent data){
   super.onActivityResult(request,result,data);
   if(creationExport.onActivityResult(request,result,data))return;
@@ -256,26 +197,8 @@ public class MainActivity extends Activity {
   if(result!=RESULT_OK||data==null)return;
   Uri uri=data.getData();if(uri==null)return;
   try {
-   if(request==IMPORT){
-    String display="Importada.musicxml";
-    try(android.database.Cursor cursor=getContentResolver().query(uri,null,null,null,null)){
-     if(cursor!=null&&cursor.moveToFirst()){
-      int idx=cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
-      if(idx>=0&&cursor.getString(idx)!=null)display=cursor.getString(idx);
-     }
-    }
-    if(display.toLowerCase(Locale.ROOT).endsWith(".mid")||display.toLowerCase(Locale.ROOT).endsWith(".midi")){
-     MidiFileImport.Result midi;try(InputStream in=getContentResolver().openInputStream(uri)){midi=MidiFileImport.read(in);}
-     final String midiName=display;
-     new AlertDialog.Builder(this).setTitle("Importar MIDI como partitura aproximada")
-      .setMessage("MIDI não contém a escrita original. A conversão usa compassos 4/4 e grafia aproximada; preserva tempos, ataques, durações e velocidades. Pedal, instrumentos, controladores, tonalidade e compassos originais não serão reproduzidos. O arquivo .mid original será conservado no backup. Escolha a mão de cada trilha; nenhuma mão será inferida pela altura.")
-      .setPositiveButton("Escolher trilhas",(dialog,which)->chooseMidiHands(midi,midiName,midi.noteTracks(),0,new HashMap<>()))
-      .setNegativeButton("Cancelar",null).show();
-    }else{
-     File dest;try(InputStream in=getContentResolver().openInputStream(uri)){dest=ScoreImport.save(new File(getFilesDir(),"imported"),display,in);}
-     loadScore(dest.getAbsolutePath(),true);
-    }
-   }else if(request==EXPORT){
+   if(request==IMPORT){scoreImport.handleImport(uri);}
+   else if(request==EXPORT){
     CreationScoreDeletion.recover(getFilesDir(),id->LibraryStore.removeCreationEveryProfile(prefs,id));
     if(screens!=null)screens.prepareCreationBackup();
     BackupArchive.export(prefs,getFilesDir(),()->getContentResolver().openOutputStream(uri));
