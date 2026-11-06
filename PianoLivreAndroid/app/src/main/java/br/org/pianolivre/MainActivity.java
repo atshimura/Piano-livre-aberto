@@ -17,8 +17,7 @@ import java.util.*;
 /** Prototype native Android piano trainer. Needs real-device USB MIDI testing. */
 public class MainActivity extends Activity {
  static final int IMPORT=100,EXPORT=101,RESTORE=102,CREATION_MIDI_EXPORT=103;
- private String pendingCreationExportId,pendingCreationExportFile,pendingCreationExportSha;private boolean creationExportPreparing;
- private final java.util.concurrent.ExecutorService creationExportDisk=java.util.concurrent.Executors.newSingleThreadExecutor();
+ private final ZCreationExport creationExport=new ZCreationExport(this);
  AlertDialog lastMessageDialog;
  PianoScreens screens;LinearLayout root,toolbar;final StudyInputState studyState=new StudyInputState();TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
  Score score;String currentFile="";String currentName="";int currentHand=0;int mode=0;boolean running=false,waitTraveling=false;double waitTravelTarget=0,position=0;double tempoFactor=1,loopStart=0,loopEnd=Double.MAX_VALUE;
@@ -104,7 +103,7 @@ public class MainActivity extends Activity {
  void rearmWaitIfStudying(){
   if(foreground&&waitStarted&&!waitPreparing&&score!=null&&mode==0&&screens!=null&&screens.isStudyOpen())prepareWaiting();
  }
- @Override public void onCreate(Bundle state){super.onCreate(state);if(state!=null){pendingCreationExportId=state.getString("creationExportId");pendingCreationExportFile=state.getString("creationExportFile");pendingCreationExportSha=state.getString("creationExportSha");creationExportPreparing=pendingCreationExportFile!=null;}getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);ZEdgeInsets.apply(this);
+ @Override public void onCreate(Bundle state){super.onCreate(state);if(state!=null)creationExport.restoreState(state);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);ZEdgeInsets.apply(this);
   // Keep screen awake only while the app is visible (no persistent wakelock).
   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
   prefs=getSharedPreferences("piano_data",MODE_PRIVATE);
@@ -271,20 +270,8 @@ public class MainActivity extends Activity {
  void importScore(){Intent in=new Intent(Intent.ACTION_OPEN_DOCUMENT);in.setType("*/*");in.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(in,IMPORT);}
  @Override protected void onActivityResult(int request,int result,Intent data){
   super.onActivityResult(request,result,data);
-  if(request==CREATION_MIDI_EXPORT){
-   if(result!=RESULT_OK||data==null||data.getData()==null){clearCreationExport();return;}
-   final Uri destination=data.getData();final String file=pendingCreationExportFile,id=pendingCreationExportId,expected=pendingCreationExportSha;
-   pendingCreationExportFile=pendingCreationExportId=pendingCreationExportSha=null;creationExportPreparing=false;
-   creationExportDisk.execute(()->{try{
-    byte[] bytes=null;
-    if(file!=null&&file.matches("creation-export-[a-f0-9-]{36}\\.mid")){File cached=new File(getCacheDir(),file);if(cached.isFile())try(InputStream in=new FileInputStream(cached)){byte[] candidate=BackupArchive.readLimited(in,MidiStandardFileWriter.MAX_BYTES);if(sha256Creation(candidate).equals(expected))bytes=candidate;}}
-    if(bytes==null)bytes=MidiStandardFileWriter.write(new CreationProjectStore(getFilesDir()).get(id));
-    try(OutputStream out=getContentResolver().openOutputStream(destination,"w")){if(out==null)throw new IOException("Destino indisponível");out.write(bytes);out.flush();}
-    if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0&&getIntent().getBooleanExtra("creation_export_selftest",false))CreationSelfTest.verifyExport(this,destination,bytes);
-    deleteCreationExportCache(file);handler.post(()->message("Arquivo MIDI exportado com sucesso."));
-   }catch(Exception error){deleteCreationExportCache(file);handler.post(()->message("Não foi possível exportar a composição: "+error.getMessage()));}});
-   return;
-  }
+  if(creationExport.onActivityResult(request,result,data))return;
+  if(ZBackupFlow.onActivityResult(this,request,result,data))return;
   if(result!=RESULT_OK||data==null)return;
   Uri uri=data.getData();if(uri==null)return;
   try {
@@ -312,29 +299,6 @@ public class MainActivity extends Activity {
     if(screens!=null)screens.prepareCreationBackup();
     BackupArchive.export(prefs,getFilesDir(),()->getContentResolver().openOutputStream(uri));
     message("Backup exportado com verificação de integridade");
-   }else if(request==RESTORE){
-    JSONObject backup;
-    try(InputStream in=getContentResolver().openInputStream(uri)){
-     String text=new String(BackupArchive.readLimited(in,95*1024*1024),StandardCharsets.UTF_8);JsonLimits.check(text,95*1024*1024,64);backup=new JSONObject(text);
-    }
-    String summary=BackupArchive.summary(backup);
-    new AlertDialog.Builder(this).setTitle("Substituir dados locais?")
-     .setMessage(summary+"\n\nPreferências e partituras serão substituídas; composições serão mescladas após validação. Preserve um backup do estado atual.")
-     .setPositiveButton("Substituir",(dialog,which)->{
-      stopPlayback();
-      try{
-       if(screens!=null)screens.prepareCreationBackup();
-       BackupArchive.restore(prefs,getFilesDir(),backup);
-       score=null;studyState.score=null;studyState.pressed.clear();
-       position=0;currentFile="";currentName="";user=0;
-       
-       screens.showHome();loadProfiles();
-       message("Backup restaurado e verificado. Os dados anteriores foram substituídos.");
-      }catch(Exception restoreError){
-       android.util.Log.e("PianoLivreBackup","Restauração não concluída",restoreError);
-       message("Backup não restaurado: "+restoreError.getMessage()+". Seus dados anteriores foram preservados ou recuperados.");
-      }
-     }).setNegativeButton("Cancelar",null).show();
    }
   }catch(Exception e){message("Erro: "+e.getMessage());}
  }
@@ -1002,32 +966,16 @@ public class MainActivity extends Activity {
   if(screens!=null)screens.prepareCreationBackup();
   return BackupArchive.create(prefs,getFilesDir());
  }
- void exportBackup(){Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);i.setType("application/json");i.putExtra(Intent.EXTRA_TITLE,"pianolivre-backup.json");startActivityForResult(i,EXPORT);}
- boolean hasCreationDataForProfile(int id)throws IOException{
-  if(new CreationProjectStore(getFilesDir()).hasProjectsForProfile(id))return true;
-  File[] journals=new File(getFilesDir(),"creation-journals").listFiles((d,n)->n.endsWith(".journal"));
-  if(journals!=null)for(File file:journals)if(CreationJournal.read(file).profileId==id)return true;
-  return false;
- }
- private interface CreationExportSource{byte[] prepare()throws Exception;}
- static String sha256Creation(byte[] bytes)throws Exception{byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest(bytes);StringBuilder text=new StringBuilder();for(byte b:hash)text.append(String.format(java.util.Locale.ROOT,"%02x",b&255));return text.toString();}
- void exportCreationMidi(String id,String title){prepareCreationExport(id,title,()->MidiStandardFileWriter.write(new CreationProjectStore(getFilesDir()).get(id)));}
- void exportCreationTake(CreationProjectStore.Project p){prepareCreationExport(p.id,p.title,()->MidiStandardFileWriter.write(p));}
- private void prepareCreationExport(String id,String title,CreationExportSource source){
-  if(creationExportPreparing){message("Aguarde a exportação em andamento.");return;}
-  creationExportPreparing=true;pendingCreationExportId=id;
-  creationExportDisk.execute(()->{try{
-   byte[] bytes=source.prepare();String name="creation-export-"+UUID.randomUUID()+".mid";File target=new File(getCacheDir(),name);
-   try(FileOutputStream out=new FileOutputStream(target)){out.write(bytes);out.getFD().sync();}
-   String digest=sha256Creation(bytes);
-   handler.post(()->{if(isDestroyed())return;pendingCreationExportFile=name;pendingCreationExportSha=digest;String fileName=title.replaceAll("[^\\p{L}\\p{N}._-]+","_").replaceAll("^[_ .-]+|[_ .-]+$","");if(fileName.isEmpty())fileName="composicao";
-    Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType("audio/midi");intent.putExtra(Intent.EXTRA_TITLE,fileName+".mid");startActivityForResult(intent,CREATION_MIDI_EXPORT);});
-  }catch(Exception error){handler.post(()->{clearCreationExport();message("Composição não validada para exportação: "+error.getMessage());});}});
- }
- private void deleteCreationExportCache(String name){if(name!=null&&name.matches("creation-export-[a-f0-9-]{36}\\.mid"))new File(getCacheDir(),name).delete();}
- private void clearCreationExport(){if(pendingCreationExportFile!=null&&pendingCreationExportFile.matches("creation-export-[a-f0-9-]{36}\\.mid"))new File(getCacheDir(),pendingCreationExportFile).delete();pendingCreationExportFile=pendingCreationExportSha=pendingCreationExportId=null;creationExportPreparing=false;}
- @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("creationExportId",pendingCreationExportId);state.putString("creationExportFile",pendingCreationExportFile);state.putString("creationExportSha",pendingCreationExportSha);}
- void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
+ void exportBackup(){ZBackupFlow.export(this);}
+ boolean hasCreationDataForProfile(int id)throws IOException{return ZBackupFlow.hasCreationDataForProfile(this,id);}
+ /** Delegados package-private: MusicCreationScreen chama a.exportCreation*;
+  * CreationSelfTest chama MainActivity.sha256Creation (contrato
+  * test_creation_responsive_contract + self-tests). */
+ void exportCreationMidi(String id,String title){creationExport.exportMidi(id,title);}
+ void exportCreationTake(CreationProjectStore.Project p){creationExport.exportTake(p);}
+ static String sha256Creation(byte[] bytes)throws Exception{return ZCreationExport.sha256(bytes);}
+ @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);creationExport.saveState(state);}
+ void restoreBackup(){ZBackupFlow.restore(this);}
  // Textos do fluxo de falhas de notação: fonte da verdade permanece aqui
  // (contratos tests/test_impl4_osmd_contract.py verificam estes literais);
  // a implementação do diálogo vive em ZNotationFailures.
@@ -1099,7 +1047,7 @@ public class MainActivity extends Activity {
   midiDestroyed=true;
   if(midiManager!=null&&midiDeviceCallback!=null)midiManager.unregisterDeviceCallback(midiDeviceCallback);
   handler.removeCallbacks(ticker);midiConnection.destroy();
-  if(screens!=null)screens.destroyNotation();creationExportDisk.shutdown();
+  if(screens!=null)screens.destroyNotation();creationExport.shutdown();
   super.onDestroy();
  }
 }
