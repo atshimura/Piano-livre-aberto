@@ -20,6 +20,7 @@ public class MainActivity extends Activity {
  private final ZCreationExport creationExport=new ZCreationExport(this);
  private final ZStudyHistoryUi studyHistory=new ZStudyHistoryUi(this);
  private final ZProfilesUi profilesUi=new ZProfilesUi(this);
+ private final ZChordCalibrationUi chordUi=new ZChordCalibrationUi(this);
  AlertDialog lastMessageDialog;
  PianoScreens screens;LinearLayout root,toolbar;final StudyInputState studyState=new StudyInputState();TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
  Score score;String currentFile="";String currentName="";int currentHand=0;int mode=0;boolean running=false,waitTraveling=false;double waitTravelTarget=0,position=0;double tempoFactor=1,loopStart=0,loopEnd=Double.MAX_VALUE;
@@ -46,7 +47,6 @@ public class MainActivity extends Activity {
  boolean waitStarted=false,waitPreparing=false;
  long waitPreparationSequence=0;
  final ChordCalibration chordCalibration=new ChordCalibration();
- TextView chordCalibrationStatus;
  final MidiPerformance performance=new MidiPerformance();
  MidiPlayback midiPlayback;
  final StudyClock studyClock=new StudyClock();
@@ -527,82 +527,12 @@ public class MainActivity extends Activity {
   }
   if(result.advance)nextWait(); // Duration/pedal are guidance, NOT a gate.
  }
- /** Keep the current passage when changing the active musical hand. */
- void refreshChordWindow(){
-  long ms=prefs.getLong("user_"+user+"_chord_window_ms",-1);
-  waitRecognizer.setChordWindowMs(ms>0?ms:null);
- }
- void updateChordCalibrationStatus(){
-  if(chordCalibrationStatus!=null)
-   chordCalibrationStatus.setText("Amostras: "+chordCalibration.sampleCount()+
-    "\nJanela observada: "+(chordCalibration.observedWindowMs()==null?"aguardando acordes válidos":
-    chordCalibration.observedWindowMs()+" ms")+
-    "\nToque um acorde com pelo menos duas notas e solte todas as teclas. Repita em ritmos naturais.");
- }
- /** User-confirmed calibration; no preconfigured millisecond values. */
- void showChordSettings(){
-  String current=waitRecognizer.chordWindowMs()==null?"Não calibrada":
-   waitRecognizer.chordWindowMs()+" ms";
-  String[] choices={"Calibrar tocando acordes","Ajustar janela calibrada","Remover calibração"};
-  new AlertDialog.Builder(this).setTitle("Janela de acordes · "+current)
-   .setItems(choices,(dlg,index)->{
-    if(index==0)beginChordCalibration();
-    else if(index==1){
-     Long observed=waitRecognizer.chordWindowMs();
-     if(observed==null)message("Toque primeiro os acordes de calibração. Nenhum número será presumido.");
-     else editChordWindow(observed);
-    }else{
-     prefs.edit().remove("user_"+user+"_chord_window_ms").apply();
-     waitRecognizer.setChordWindowMs(null);
-     message("Calibração removida. Os acordes não terão limite temporal até uma nova medição.");
-    }
-   }).setNegativeButton("Fechar",null).show();
- }
- void beginChordCalibration(){
-  if(!midiConnection.snapshot().canReceive){message("Conecte primeiro a entrada MIDI do instrumento.");return;}
-  stopPlayback();
-  chordCalibration.start();
-  TextView body=new TextView(this);chordCalibrationStatus=body;
-  body.setPadding(28,22,28,22);body.setTextSize(15);
-  updateChordCalibrationStatus();
-  AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Calibrar simultaneidade")
-   .setView(body).setPositiveButton("Concluir",null)
-   .setNegativeButton("Cancelar",(d,w)->chordCalibration.stop()).create();
-  dialog.setOnDismissListener(d->{chordCalibration.stop();chordCalibrationStatus=null;});
-  dialog.show();
-  dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
-   if(chordCalibration.sampleCount()<3){
-    body.setText("Faça pelo menos três acordes completos, soltando todas as teclas entre eles.\n\n"+
-     "Amostras válidas: "+chordCalibration.sampleCount());
-    return;
-   }
-   Long measured=chordCalibration.observedWindowMs();
-   if(measured==null){body.setText("Ainda não foi possível medir os intervalos. Experimente acordes distintos.");return;}
-   dialog.dismiss();
-   editChordWindow(measured);
-  });
- }
- void editChordWindow(long measuredMs){
-  EditText ms=new EditText(this);
-  ms.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-  ms.setSingleLine(true);ms.setText(String.valueOf(measuredMs));
-  ms.setSelectAllOnFocus(true);
-  ms.setPadding(28,10,28,10);
-  AlertDialog dlg=new AlertDialog.Builder(this).setTitle("Janela de simultaneidade")
-   .setMessage("O valor inicial é o maior intervalo observado nos seus acordes, não uma tolerância presumida. Pode ajustá-lo em milissegundos.")
-   .setView(ms).setPositiveButton("Salvar",null).setNegativeButton("Cancelar",null).create();
-  dlg.show();
-  dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
-   try{
-    long value=Long.parseLong(ms.getText().toString().trim());
-    if(value<=0||value>60000){ms.setError("Informe um valor positivo de até 60.000 ms.");return;}
-    prefs.edit().putLong("user_"+user+"_chord_window_ms",value).apply();
-    waitRecognizer.setChordWindowMs(value);
-    if(mode==0&&score!=null)prepareWaiting();
-    dlg.dismiss();message("Janela configurada: "+value+" ms. Notas extras continuam permitidas; duração e pedal são orientativos.");
-   }catch(NumberFormatException invalid){ms.setError("Informe milissegundos em número inteiro.");}
-  });
- }
+/** Keep the current passage when changing the active musical hand. */
+ void refreshChordWindow(){chordUi.refreshWindow();}
+ void showChordSettings(){chordUi.settings();}
+ void beginChordCalibration(){chordUi.beginCalibration();}
+ void updateChordCalibrationStatus(){chordUi.updateStatus();}
+ void editChordWindow(long measuredMs){chordUi.editWindow(measuredMs);}
  void selectHand(int selected){
   if(selected<0||selected>2)return;
   stopPlayback();finishStudyWindow();
