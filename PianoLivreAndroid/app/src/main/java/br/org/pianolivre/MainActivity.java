@@ -21,10 +21,12 @@ public class MainActivity extends Activity {
  private final ZStudyHistoryUi studyHistory=new ZStudyHistoryUi(this);
  private final ZProfilesUi profilesUi=new ZProfilesUi(this);
  private final ZChordCalibrationUi chordUi=new ZChordCalibrationUi(this);
+ private final ZMidiDevices midiDevices=new ZMidiDevices(this);
+ private final ZMidiInput midiInput=new ZMidiInput(this);
  AlertDialog lastMessageDialog;
  PianoScreens screens;LinearLayout root,toolbar;final StudyInputState studyState=new StudyInputState();TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
  Score score;String currentFile="";String currentName="";int currentHand=0;int mode=0;boolean running=false,waitTraveling=false;double waitTravelTarget=0,position=0;double tempoFactor=1,loopStart=0,loopEnd=Double.MAX_VALUE;
- MidiManager midiManager;private MidiManager.DeviceCallback midiDeviceCallback;
+ MidiManager midiManager;MidiManager.DeviceCallback midiDeviceCallback;
  final MidiConnection midiConnection=new MidiConnection(new MidiConnection.Listener(){
   public void invalidated(long generation){
    midiGeneration=generation;midiInputEpoch++;stopPlayback();
@@ -37,10 +39,10 @@ public class MainActivity extends Activity {
    setMidiStatus(state.detail);
   }
  });
- private volatile long midiInputEpoch;private boolean midiDestroyed;
+ volatile long midiInputEpoch;boolean midiDestroyed;
  long midiInputEpoch(){return midiInputEpoch;}
  long beginCreationCapture(){midiInputEpoch++;clearMidiObservation();return midiInputEpoch;}
- private long outputTestSequence;
+ long outputTestSequence;
  Set<Integer> activeNotes=new HashSet<>(); Set<Integer> downKeys=new HashSet<>();Set<Integer> midiSources=new HashSet<>();
  final WaitRecognizer waitRecognizer=new WaitRecognizer();
  final WaitPreparation waitPreparation=new WaitPreparation();
@@ -63,8 +65,8 @@ public class MainActivity extends Activity {
   if(routeCursor!=null){routeCursor.reset();routeCursor.align(position);}
  }
  volatile long midiGeneration=0;
- private final java.util.concurrent.atomic.AtomicLong midiPacketSequence=new java.util.concurrent.atomic.AtomicLong();
- private long currentMidiPacket=0,currentUiSession=-1,currentMidiEventTime=0;
+ final java.util.concurrent.atomic.AtomicLong midiPacketSequence=new java.util.concurrent.atomic.AtomicLong();
+ long currentMidiPacket=0,currentUiSession=-1,currentMidiEventTime=0;
  volatile boolean foreground=false;
  int receivedMessages=0, sentMessages=0, lastMidiChannel=0;
  int lastMidiNote=-1, lastMidiVelocity=0;
@@ -75,32 +77,9 @@ public class MainActivity extends Activity {
  Handler handler=new Handler(Looper.getMainLooper());long previousTick;int user=0;JSONArray catalog;
  android.content.SharedPreferences prefs;
  MidiReceiver createReceiver(final long generation){
-  final int sourceId=midiConnection.snapshot().target==null?-1:midiConnection.snapshot().target.id;
-  final MidiProtocol decoder=new MidiProtocol();
-  return new MidiReceiver(){
-   @Override public synchronized void onSend(byte[] data,int offset,int count,long timestamp){
-    if(generation!=midiGeneration)return;
-    final long arrivalTimeNs=SystemClock.elapsedRealtimeNanos();
-    final long inputEpoch=midiInputEpoch;
-    final boolean arrivedInForeground=foreground;
-    final ArrayList<int[]> decoded=new ArrayList<>();
-    // Drain background bytes to retain stream framing, but never deliver them.
-    decoder.feed(data,offset,count,inputEpoch,(st,d1,d2,startedEpoch)->{
-     if(startedEpoch==inputEpoch)decoded.add(new int[]{st,d1,d2});
-    });
-    if(!arrivedInForeground||!foreground||decoded.isEmpty())return;
-    final long packet=midiPacketSequence.incrementAndGet();
-    final long arrivalTime=SystemClock.uptimeMillis();
-    final long uiSession=screens==null?-1:screens.discoveryGeneration();
-    if(generation!=midiGeneration||inputEpoch!=midiInputEpoch||!foreground)return;
-    if(screens!=null)for(int[] event:decoded)screens.captureCreationMidi(event[0],event[1],event[2],arrivalTimeNs,inputEpoch,timestamp,sourceId);
-    handler.post(()->{
-     if(generation!=midiGeneration||inputEpoch!=midiInputEpoch||!foreground)return;
-     for(int[] event:decoded)onMidiMessage(event[0],event[1],event[2],packet,arrivalTime,arrivalTimeNs,timestamp,uiSession,false);
-     if(screens!=null)screens.onLabMidiBatchEnd(packet,arrivalTime,uiSession);
-    });
-   }
-  };
+  // Delegado package-private: CreationSelfTest/MidiSessionSelfTest chamam
+  // a.createReceiver(...) e a reconciliação usa o retorno desta assinatura.
+  return midiInput.createReceiver(generation);
  }
  void rearmWaitIfStudying(){
   if(foreground&&waitStarted&&!waitPreparing&&score!=null&&mode==0&&screens!=null&&screens.isStudyOpen())prepareWaiting();
@@ -304,229 +283,22 @@ public class MainActivity extends Activity {
    }
   }catch(Exception e){message("Erro: "+e.getMessage());}
  }
- void setupMidi(){
-  if(midiManager==null){setMidiStatus("MIDI indisponível neste Android");return;}
-  midiDeviceCallback=new MidiManager.DeviceCallback(){
-   @Override public void onDeviceAdded(MidiDeviceInfo info){reconcileMidiDevices();}
-   @Override public void onDeviceRemoved(MidiDeviceInfo info){reconcileMidiDevices();}
-   @Override public void onDeviceStatusChanged(MidiDeviceStatus status){
-    reconcileMidiDevices();
-   }
-  };
-  midiManager.registerDeviceCallback(midiDeviceCallback,handler);
-  reconcileMidiDevices();
- }
- MidiConnection.Target midiTarget(MidiDeviceInfo info){return new MidiConnection.Target(info.getId(),midiInstrumentName(info),info.getType()==MidiDeviceInfo.TYPE_USB);}
- void reconcileMidiDevices(){
-  if(midiDestroyed||midiManager==null)return;
-  ArrayList<MidiConnection.Target> available=new ArrayList<>();
-  for(MidiDeviceInfo info:midiManager.getDevices())available.add(midiTarget(info));
-  midiConnection.reconcile(available,(target,generation,completion)->{
-   MidiDeviceInfo selected=null;
-   for(MidiDeviceInfo info:midiManager.getDevices())if(info.getId()==target.id){selected=info;break;}
-   if(selected==null){completion.complete(null);return;}
-   midiManager.openDevice(selected,opened->{
-    // Do not open ports or attach a receiver to an obsolete async completion.
-    if(opened==null){completion.complete(null);return;}
-    if(midiDestroyed||generation!=midiGeneration){try{opened.close();}catch(Exception ignored){}return;}
-    completion.complete(new AndroidMidiPorts(opened,createReceiver(generation)));
-   },handler);
-  });
- }
- String midiName(MidiDeviceInfo info){
-  if(info==null)return "Nenhum";
-  String name=midiInstrumentName(info);
-  return name.isEmpty()?"Dispositivo MIDI "+info.getId():name;
- }
- String midiInstrumentName(MidiDeviceInfo info){
-  if(info==null)return "";
-  String name=info.getProperties().getString(MidiDeviceInfo.PROPERTY_NAME);
-  return name==null?"":name.trim();
- }
- void setMidiStatus(String description){
-  connectionDescription=description;
-  if(status!=null)status.setText(description);
-  if(screens!=null)screens.updateMidiIndicator();
-  refreshMidiDiagnostics();
- }
- void selectMidi(){
-  if(midiManager==null){message("O Android não disponibiliza MIDI");return;}
-  MidiDeviceInfo[] infos=midiManager.getDevices();
-  if(infos.length==0){showMidiDiagnostics();return;}
-  String[] choices=new String[infos.length+1];
-  for(int i=0;i<infos.length;i++){
-   MidiDeviceInfo info=infos[i];
-   choices[i]=midiName(info)+" · entrada "+info.getOutputPortCount()+" / saída "+info.getInputPortCount();
-  }
-  choices[infos.length]="Mostrar diagnóstico e teste de áudio";
-  new AlertDialog.Builder(this).setTitle("Conexão USB-MIDI")
-   .setItems(choices,(dialog,which)->{
-    if(which==infos.length)showMidiDiagnostics();
-    else connectMidi(infos[which]);
-   }).setNegativeButton("Cancelar",null).show();
- }
- void connectMidi(MidiDeviceInfo info){
-  if(info==null||midiManager==null||midiDestroyed)return;
-  midiConnection.connect(midiTarget(info),(target,generation,completion)->
-   midiManager.openDevice(info,opened->{
-    if(opened==null){completion.complete(null);return;}
-    if(midiDestroyed||generation!=midiGeneration){try{opened.close();}catch(Exception ignored){}return;}
-    completion.complete(new AndroidMidiPorts(opened,createReceiver(generation)));
-   },handler));
- }
- void disconnectMidi(){midiConnection.disconnect("Nenhum dispositivo conectado");}
- void clearMidiObservation(){
-  downKeys.clear();midiSources.clear();waitRecognizer.clear();performance.disconnect();sustainDown=false;
-  if(studyState!=null){studyState.pressed.clear();}
-  if(screens!=null)screens.updatePressed(downKeys);
- }
+ void setupMidi(){midiDevices.setupMidi();}
+ void reconcileMidiDevices(){midiDevices.reconcileMidiDevices();}
+ void setMidiStatus(String description){midiDevices.setMidiStatus(description);}
+ void selectMidi(){midiDevices.selectMidi();}
+ void disconnectMidi(){midiDevices.disconnectMidi();}
+ void clearMidiObservation(){midiInput.clearMidiObservation();}
  void send(int pitch,boolean on){send(pitch,on,74);}
- void send(int pitch,boolean on,int velocity){
-  byte[] bytes={(byte)(on?0x90:0x80),(byte)pitch,(byte)(on?velocity:0)};
-  if(midiConnection.send(bytes)){
-   sentMessages++;refreshMidiDiagnostics();
-  }
- }
- void allOff(){
-  outputTestSequence++;
-  if(midiPlayback!=null){MidiPlayback playing=midiPlayback;midiPlayback=null;playing.stop();}
-  for(int note:new HashSet<>(activeNotes))send(note,false);
-  activeNotes.clear();midiConnection.silence();
- }
- void updateSustainState(){
-  sustainDown=false;for(int ch=0;ch<16;ch++)if(performance.pedalDown(ch)){sustainDown=true;break;}
- }
+ void send(int pitch,boolean on,int velocity){midiInput.send(pitch,on,velocity);}
+ void allOff(){midiInput.allOff();}
  void onMidiMessage(int statusCode,int data1,int data2){
-  onMidiMessage(statusCode,data1,data2,midiPacketSequence.incrementAndGet(),SystemClock.uptimeMillis(),SystemClock.elapsedRealtimeNanos(),-1,screens==null?-1:screens.discoveryGeneration(),true);
+  // Delegado package-private: os autotestes gravam eventos com a.onMidiMessage(...).
+  midiInput.onMidiMessage(statusCode,data1,data2);
  }
- private void onMidiMessage(int statusCode,int data1,int data2,long packet,long eventTime,long eventTimeNs,long androidTime,long uiSession,boolean recordCreation){
-  currentMidiPacket=packet;currentMidiEventTime=eventTime;currentUiSession=uiSession;
-  if(recordCreation&&screens!=null)screens.onCreationMidi(statusCode,data1,data2,eventTimeNs,midiInputEpoch,androidTime,midiConnection.snapshot().target==null?-1:midiConnection.snapshot().target.id);
-  int command=statusCode&0xF0;
-  receivedMessages++;lastMidiChannel=(statusCode&0x0f)+1;
-  if(command==0x90&&data2>0){
-   lastMidiNote=data1;lastMidiVelocity=data2;
-   lastMidiMessage="Nota "+midiNoteName(data1)+" ("+data1+") · canal "+lastMidiChannel+" · velocidade "+data2;
-   if(status!=null)status.setText("♪ MIDI RX: "+midiNoteName(data1));
-   performance.noteOn(statusCode&15,data1,data2,SystemClock.uptimeMillis(),position);
-   onKey(data1,true,statusCode&15);
-  }else if(command==0x80||(command==0x90&&data2==0)){
-   lastMidiNote=data1;lastMidiVelocity=0;
-   lastMidiMessage="Soltou "+midiNoteName(data1)+" ("+data1+") · canal "+lastMidiChannel;
-   performance.noteOff(statusCode&15,data1,SystemClock.uptimeMillis());
-   onKey(data1,false,statusCode&15);
-  }else if(command==0xB0&&(data1==120||data1==121||data1==123)){
-   int channel=statusCode&15;
-   performance.channelMode(channel,data1,SystemClock.uptimeMillis());
-   if(data1!=121)for(int source:new HashSet<>(midiSources))
-    if((source>>7)==channel)onKey(source&127,false,channel);
-   updateSustainState();
-   lastMidiMessage=(data1==120?"Som interrompido":data1==123?"Notas liberadas":"Controladores redefinidos")+" · canal "+(channel+1);
-  }else if(command==0xB0&&data1==64){
-   performance.control64(statusCode&15,data2,SystemClock.uptimeMillis());
-   // CC64 belongs to a MIDI channel. Releasing one channel must not
-   // report the pedal as up while another channel still holds sustain.
-   updateSustainState();
-   lastMidiMessage="Pedal sustain "+(sustainDown?"pressionado":"solto");
-   if(mode==0&&screens!=null&&screens.isStudyOpen()&&!chordCalibration.recording())
-    screens.showWaitFeedback("Pedal "+(sustainDown?"acionado":"liberado")+" · orientação, não bloqueia o Espera");
-  }else{
-   lastMidiMessage="MIDI 0x"+Integer.toHexString(statusCode)+" · "+data1+" · "+data2;
-  }
-  android.util.Log.i("PianoLivreMIDI","RX "+lastMidiMessage);
-  refreshMidiDiagnostics();
- }
- String midiNoteName(int n){
-  String[] notes={"Dó","Dó#","Ré","Ré#","Mi","Fá","Fá#","Sol","Sol#","Lá","Lá#","Si"};
-  return notes[n%12]+(n/12-1);
- }
- String midiDiagnosticReport(){
-  MidiConnection.Snapshot connection=midiConnection.snapshot();
-  return "Dispositivo: "+(connection.target==null?"Nenhum":connection.target.name.isEmpty()?"Dispositivo sem nome (ID "+connection.target.id+")":connection.target.name)
-   +"\nEstado MIDI: "+connection.phase
-   +"\nSituação: "+connectionDescription
-   +"\nPorta de entrada (piano → app): "+(!connection.canReceive?"não conectada":"aberta")
-   +"\nPorta de saída (app → piano): "+(!connection.canSend?"não conectada":"aberta")
-   +"\nMensagens recebidas: "+receivedMessages
-   +"\nMensagens enviadas: "+sentMessages
-   +"\nÚltima mensagem: "+lastMidiMessage
-   +"\nNotas pressionadas: "+downKeys
-   +"\nPedal: "+(sustainDown?"pressionado":"solto")
-   +"\nNotas fisicamente pressionadas: "+performance.physicalKeysDown()
-   +"\nVozes retidas por tecla/pedal: "+performance.soundingVoices()
-   +"\nNotas concluídas registradas: "+performance.completed().size()
-   +"\nJanela de acorde: "+(waitRecognizer.chordWindowMs()==null?"aguardando calibração":waitRecognizer.chordWindowMs()+" ms (ajustável)")
-   +"\n\nToque algumas teclas do instrumento e verifique se o contador aumenta."
-   +"\nO teste de saída envia Dó4 ao instrumento por meio segundo."
-   +"\nO volume e a configuração de recepção MIDI do piano precisam permitir som.";
- }
- void refreshMidiDiagnostics(){
-  if(midiDiagnosticText!=null)midiDiagnosticText.setText(midiDiagnosticReport());
- }
- void showMidiDiagnostics(){
-  TextView body=new TextView(this);body.setTextSize(14);
-  body.setPadding(24,20,24,20);midiDiagnosticText=body;refreshMidiDiagnostics();
-  ScrollView scroll=new ScrollView(this);scroll.addView(body,new ScrollView.LayoutParams(-1,-2));
-  AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Diagnóstico USB-MIDI")
-   .setView(scroll).setPositiveButton("Testar saída: Dó4",(d,which)->testMidiOutput())
-   .setNeutralButton("Escolher dispositivo",(d,which)->selectMidi())
-   .setNegativeButton("Fechar",null).create();
-  dialog.setOnDismissListener(d->midiDiagnosticText=null);
-  dialog.show();
- }
- void testMidiOutput(){
-  if(!midiConnection.snapshot().canSend){message("Sem porta de saída MIDI. Selecione um instrumento em USB-MIDI.");return;}
-  stopPlayback();final long generation=midiGeneration,sequence=++outputTestSequence;
-  send(60,true,88);
-  handler.postDelayed(()->{if(generation==midiGeneration&&sequence==outputTestSequence&&foreground)send(60,false,0);},550);
-  if(status!=null)status.setText("Teste MIDI enviado: Dó4 por 0,55 s");
- }
- /** MIDI sources are tracked by channel+pitch. New attacks only. */
- void onKey(int pitch,boolean pressed,int channel){
-  if(pitch<0||pitch>127||channel<0||channel>15)return;
-  int source=(channel<<7)|pitch;
-  boolean newAttack=false;
-  boolean releasedLast=false;
-  long now=currentMidiEventTime>0?currentMidiEventTime:SystemClock.uptimeMillis();
-  if(pressed){
-   if(midiSources.add(source))newAttack=downKeys.add(pitch);
-   if(newAttack&&foreground&&chordCalibration.recording())chordCalibration.noteOn(pitch,now);
-  }else{
-   midiSources.remove(source);
-   boolean stillPressed=false;
-   for(int ch=0;ch<16;ch++)if(midiSources.contains((ch<<7)|pitch)){stillPressed=true;break;}
-   if(!stillPressed){
-    releasedLast=true;
-    downKeys.remove(pitch);waitRecognizer.noteOff(pitch);
-    if(chordCalibration.recording()&&chordCalibration.noteOff(pitch,now))updateChordCalibrationStatus();
-   }
-  }
-  studyState.pressed.clear();studyState.pressed.addAll(downKeys);
-  if(screens!=null){
-   screens.updatePressed(downKeys);
-   if(foreground){
-    if(newAttack)screens.onLabMidiAttack(pitch,now,currentMidiPacket,midiGeneration,currentUiSession);
-    else if(releasedLast)screens.onLabMidiRelease(pitch,midiGeneration,currentUiSession);
-   }
-  }
-  if(!foreground||chordCalibration.recording()||score==null||mode!=0||!waitStarted||waitPreparing||!pressed||waitTraveling||
-      (screens!=null&&!screens.isStudyOpen()))return;
-  WaitRecognizer.Result result=waitRecognizer.noteOnTimed(pitch,newAttack,downKeys,now);
-  if(screens!=null&&screens.isStudyOpen()){
-   if(result.extra){
-    screens.showWaitFeedback("Nota extra: "+midiNoteName(pitch)+" · continue com as notas da partitura");
-   }else if(result.windowExceeded){
-    screens.showWaitFeedback("Acorde fora da janela calibrada · solte e repita as notas");
-   }else if(result.advance){
-    String suffix=result.extraPitches.isEmpty()?"":" · extras indicadas (não bloqueiam)";
-    if(waitRecognizer.expected().size()>1)
-     screens.showWaitFeedback("Acorde reconhecido ✓ · observe a duração escrita"+suffix);
-    else if(!result.extraPitches.isEmpty())
-     screens.showWaitFeedback("Nota reconhecida ✓"+suffix);
-   }
-  }
-  if(result.advance)nextWait(); // Duration/pedal are guidance, NOT a gate.
- }
+ void refreshMidiDiagnostics(){midiInput.refreshMidiDiagnostics();}
+ void showMidiDiagnostics(){midiInput.showMidiDiagnostics();}
+ void testMidiOutput(){midiInput.testMidiOutput();}
 /** Keep the current passage when changing the active musical hand. */
  void refreshChordWindow(){chordUi.refreshWindow();}
  void showChordSettings(){chordUi.settings();}
