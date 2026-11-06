@@ -1042,87 +1042,15 @@ public class MainActivity extends Activity {
  private void clearCreationExport(){if(pendingCreationExportFile!=null&&pendingCreationExportFile.matches("creation-export-[a-f0-9-]{36}\\.mid"))new File(getCacheDir(),pendingCreationExportFile).delete();pendingCreationExportFile=pendingCreationExportSha=pendingCreationExportId=null;creationExportPreparing=false;}
  @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("creationExportId",pendingCreationExportId);state.putString("creationExportFile",pendingCreationExportFile);state.putString("creationExportSha",pendingCreationExportSha);}
  void restoreBackup(){Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);i.setType("application/json");startActivityForResult(i,RESTORE);}
- void reportNotationIssue(String code,String stage,String details,String xml,Runnable retry){
-  String version="beta";
-  try{version=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
-  catch(Exception ignored){}
-  NotationFailure failure=new NotationFailure(code,stage,details,"creation",xml,
-    0,0,0,0,0,version);
-  new Thread(()->{
-   try{new NotationDiagnosticsStore(getFilesDir()).add(failure);}
-   catch(Exception e){android.util.Log.w("PianoLivreNotation","Falha ao registrar incidente",e);}
-  },"PianoLivre-NotationError").start();
-  showNotationFailure(failure,retry);
- }
- void showNotationFailure(NotationFailure failure,Runnable retry){
-  showNotationFailure(failure,retry,null);
- }
- void showNotationFailure(NotationFailure failure,Runnable retry,Runnable abort){
-  if(isFinishing()||isDestroyed())return;
-  stopPlayback();finishStudyWindow();
-  // Android landscape can hide the entire AlertDialog button bar if a long
-  // message and a custom action compete for unrestricted vertical space.
-  // Bound only the report viewport; keep the complete report scrollable.
-  final float density=getResources().getDisplayMetrics().density;
-  final int reportHeight=Math.min((int)(140*density+0.5f),
-      (int)(getResources().getDisplayMetrics().heightPixels*0.28f));
-  LinearLayout content=new LinearLayout(this);
-  content.setOrientation(LinearLayout.VERTICAL);
-  content.setPadding((int)(16*density+0.5f),0,(int)(16*density+0.5f),0);
-  ScrollView scroll=new ScrollView(this);
-  TextView reportText=new TextView(this);
-  reportText.setText("O motor moderno OSMD encontrou um problema. A partitura e o MIDI original foram preservados.\n\n"+failure.report());
-  reportText.setTextIsSelectable(true);
-  scroll.addView(reportText);
-  content.addView(scroll,new LinearLayout.LayoutParams(
-      LinearLayout.LayoutParams.MATCH_PARENT,reportHeight));
-  Button copyDiagnostic=new Button(this);
-  copyDiagnostic.setText("Copiar diagnóstico");
-  copyDiagnostic.setContentDescription("Copiar diagnóstico");
-  copyDiagnostic.setAllCaps(false);
-  copyDiagnostic.setOnClickListener(v->{
-    android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
-    if(clipboard!=null)clipboard.setPrimaryClip(ClipData.newPlainText("Erro de notação Piano Livre",failure.report()));
-    Toast.makeText(this,"Diagnóstico copiado; nenhum dado enviado",Toast.LENGTH_SHORT).show();
-  });
-  content.addView(copyDiagnostic,new LinearLayout.LayoutParams(
-      LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT));
-  AlertDialog dialog=new AlertDialog.Builder(this)
-    .setTitle("Não foi possível exibir a partitura")
-    .setView(content)
-    .setPositiveButton("Tentar novamente",(d,w)->{if(retry!=null)retry.run();})
-    .setNegativeButton("Voltar à Biblioteca",(d,w)->{
-      stopPlayback();finishStudyWindow();
-      if(abort!=null)abort.run();
-      if(screens!=null)screens.showHome();
-    })
-    .setCancelable(false).create();
-  dialog.show();lastMessageDialog=dialog;
- }
- void showNotationHistory(){
-  if(isFinishing()||isDestroyed())return;
-  final NotationDiagnosticsStore store=new NotationDiagnosticsStore(getFilesDir());
-  try{
-   final String report=store.report();
-   final boolean empty=store.read().length()==0;
-   if(empty){message("Ainda não há falhas de notação registradas.");return;}
-   AlertDialog dlg=new AlertDialog.Builder(this).setTitle("Erros de partitura (armazenamento local)")
-     .setMessage(report.length()>6000?report.substring(0,6000)+"\n[Exibindo somente parte do histórico]":report)
-     .setPositiveButton("Exportar por escolha própria",(d,w)->{
-       Intent intent=new Intent(Intent.ACTION_SEND);intent.setType("text/plain");
-       intent.putExtra(Intent.EXTRA_TEXT,report);
-       startActivity(Intent.createChooser(intent,"Compartilhar diagnóstico"));
-     })
-     .setNeutralButton("Apagar histórico",(d,w)->new AlertDialog.Builder(this)
-       .setTitle("Apagar somente os diagnósticos?")
-       .setMessage("Partituras, MIDI e histórico de estudos não serão alterados.")
-       .setPositiveButton("Apagar",(dd,ww)->{try{store.clear();message("Histórico de erros apagado.");}
-         catch(Exception e){message("Não foi possível apagar o histórico de erros.");}})
-       .setNegativeButton("Cancelar",null).show())
-     .setNegativeButton("Fechar",null).create();
-   dlg.show();
-  }catch(Exception e){message("Não foi possível ler o histórico local de erros.");}
- }
+ // Textos do fluxo de falhas de notação: fonte da verdade permanece aqui
+ // (contratos tests/test_impl4_osmd_contract.py verificam estes literais);
+ // a implementação do diálogo vive em ZNotationFailures.
+ static final String NOTATION_FAILURE_TITLE="Não foi possível exibir a partitura";
+ static final String NOTATION_COPY_BUTTON="Copiar diagnóstico";
+ void reportNotationIssue(String code,String stage,String details,String xml,Runnable retry){ZNotationFailures.reportNotationIssue(this,code,stage,details,xml,retry);}
+ void showNotationFailure(NotationFailure failure,Runnable retry){ZNotationFailures.showNotationFailure(this,failure,retry);}
+ void showNotationFailure(NotationFailure failure,Runnable retry,Runnable abort){ZNotationFailures.showNotationFailure(this,failure,retry,abort);}
+ void showNotationHistory(){ZNotationFailures.showNotationHistory(this);}
  void message(String m){if(isFinishing()||isDestroyed())return;lastMessageDialog=new AlertDialog.Builder(this).setMessage(m).setPositiveButton("OK",null).show();}
  @Override public void onBackPressed(){
   if(screens!=null&&screens.isLabOpen()){screens.backFromLab();return;}
