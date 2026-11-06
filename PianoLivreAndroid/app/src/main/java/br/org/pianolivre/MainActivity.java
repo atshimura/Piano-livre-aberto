@@ -225,28 +225,18 @@ public class MainActivity extends Activity {
    }
   }
   for(int i=0;i<catalog.length();i++){JSONObject entry=catalog.optJSONObject(i);if(entry!=null&&path.equals("scores/"+entry.optString("file"))){currentName=entry.optString("name",score.title);break;}}
-  String prefix="user_"+user+"_";
+  ZSessionState.Study restored=ZSessionState.readStudy(prefs,user);
   if(reset){
    position=score.firstOnset(currentHand);loopStart=0;loopEnd=Double.MAX_VALUE;
   }else{
-   currentHand=Math.max(0,Math.min(2,prefs.getInt(prefix+"hand",0)));
-   mode=Math.max(0,Math.min(2,prefs.getInt(prefix+"mode",0)));
-   tempoFactor=Double.longBitsToDouble(prefs.getLong(prefix+"tempo",
-    Double.doubleToLongBits(1.0)));
-   if(!Double.isFinite(tempoFactor))tempoFactor=1.0;
-   tempoFactor=Math.max(.25,Math.min(2,tempoFactor));
-   loopStart=Double.longBitsToDouble(prefs.getLong(prefix+"loop_start",Double.doubleToLongBits(0)));
-   loopEnd=Double.longBitsToDouble(prefs.getLong(prefix+"loop_end",Double.doubleToLongBits(Double.MAX_VALUE)));
-   position=Double.longBitsToDouble(prefs.getLong(prefix+"position",
-    Double.doubleToLongBits(score.firstOnset(currentHand))));
-   if(!Double.isFinite(position))position=score.firstOnset(currentHand);
-   if(!Double.isFinite(loopStart)||loopStart<0||!Double.isFinite(loopEnd)
-      ||loopEnd<=loopStart){loopStart=0;loopEnd=Double.MAX_VALUE;}
-   studyState.showKeyboard=prefs.getBoolean(prefix+"keyboard",false);
+   currentHand=restored.hand;mode=restored.mode;tempoFactor=restored.tempo;
+   loopStart=restored.loopStart;loopEnd=restored.loopEnd;
+   studyState.showKeyboard=restored.showKeyboard;
+   position=ZSessionState.readPosition(prefs,user,score.firstOnset(currentHand));
   }
   position=Math.max(0,Math.min(position,score.end()));
   if(routeCursor!=null){
-   if(reset||!routeCursor.restore(prefs.getInt(prefix+"route_visit",-1),position))
+   if(reset||!routeCursor.restore(restored.routeVisit,position))
     routeCursor.align(position);
   }
   studyState.score=score;studyState.hand=currentHand;studyState.playhead=position;
@@ -882,10 +872,10 @@ public class MainActivity extends Activity {
  void loadProfiles(){
   try{
    List<LocalProfiles.Profile> list=profileStore().list();String[] names=new String[list.size()];int selected=0;
-   int active=prefs.getInt("active_profile",0);
+   int active=ZSessionState.activeProfile(prefs);
    for(int i=0;i<list.size();i++){LocalProfiles.Profile p=list.get(i);names[i]=LocalProfiles.AVATARS[p.avatar]+" "+p.name;if(p.id==active)selected=i;}
    user=list.get(selected).id;
-   if(active!=user)prefs.edit().putInt("active_profile",user).apply();
+   if(active!=user)ZSessionState.setActiveProfile(prefs,user);
    profiles.setOnItemSelectedListener(null);
    profiles.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,names));profiles.setSelection(selected);
    if(screens!=null&&screens.homeProfiles!=null){
@@ -907,11 +897,11 @@ public class MainActivity extends Activity {
  }
  void activateProfile(int id){if(user==id)return;if(screens!=null)screens.connectionLostCreation();stopPlayback();finishStudyWindow();applyProfile(id);}
  void applyProfile(int id){
-  user=id;prefs.edit().putInt("active_profile",id).apply();refreshChordWindow();
+  user=id;ZSessionState.setActiveProfile(prefs,id);refreshChordWindow();
   score=null;studyState.score=null;studyState.pressed.clear();currentFile="";currentName="";
   route=null;routeCursor=null;routeHasMarkers=false;waitRecognizer.clear();
   currentHand=0;mode=0;tempoFactor=1;studyState.hand=0;studyState.showKeyboard=false;
-  String file=prefs.getString("user_"+id+"_file","");
+  String file=ZSessionState.lastFile(prefs,id);
   if(!file.isEmpty())loadScore(file,false);
   else{position=0;loopStart=0;loopEnd=Double.MAX_VALUE;screens.showHome();updateInfo();}
  }
@@ -1000,15 +990,10 @@ public class MainActivity extends Activity {
  }
  void saveSession(){
   if(prefs==null||score==null)return;
-  String key="user_"+user+"_";
-  prefs.edit().putString(key+"file",SessionFiles.portable(currentFile))
-   .putLong(key+"position",Double.doubleToLongBits(position))
-   .putInt(key+"hand",currentHand).putInt(key+"mode",mode)
-   .putLong(key+"tempo",Double.doubleToLongBits(tempoFactor))
-   .putLong(key+"loop_start",Double.doubleToLongBits(loopStart))
-   .putLong(key+"loop_end",Double.doubleToLongBits(loopEnd))
-   .putBoolean(key+"keyboard",studyState.showKeyboard)
-   .putInt(key+"route_visit",routeCursor==null?0:routeCursor.index()).apply();
+  // Delegado package-private: o contrato test_study_compact_chrome_contract
+  // crava a chamada a.saveSession() vinda de PianoScreens.
+  ZSessionState.save(prefs,user,currentFile,position,currentHand,mode,tempoFactor,
+   loopStart,loopEnd,studyState.showKeyboard,routeCursor==null?0:routeCursor.index());
  }
  JSONObject makeBackup()throws Exception{
   saveSession();
