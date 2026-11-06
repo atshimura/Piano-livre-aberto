@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
  private final ZMidiInput midiInput=new ZMidiInput(this);
  private final ZScoreLoader scoreLoader=new ZScoreLoader(this);
  private final ZScoreImport scoreImport=new ZScoreImport(this);
+ private final ZStudyEngine studyEngine=new ZStudyEngine(this);
  AlertDialog lastMessageDialog;
  PianoScreens screens;LinearLayout root,toolbar;final StudyInputState studyState=new StudyInputState();TextView status,info;Spinner hands,modes,profiles;SeekBar tempoBar;
  Score score;String currentFile="";String currentName="";int currentHand=0;int mode=0;boolean running=false,waitTraveling=false;double waitTravelTarget=0,position=0;double tempoFactor=1,loopStart=0,loopEnd=Double.MAX_VALUE;
@@ -58,14 +59,6 @@ public class MainActivity extends Activity {
  PerformanceRoute.Result route;
  PerformanceRoute.Cursor routeCursor;
  boolean routeHasMarkers=false;
- boolean writtenRouteActive(){
-  return score!=null&&routeHasMarkers&&route!=null&&route.supported()
-   &&routeCursor!=null&&loopEnd==Double.MAX_VALUE;
- }
- void resetWrittenRoute(){
-  writtenRepeats.reset();
-  if(routeCursor!=null){routeCursor.reset();routeCursor.align(position);}
- }
  volatile long midiGeneration=0;
  final java.util.concurrent.atomic.AtomicLong midiPacketSequence=new java.util.concurrent.atomic.AtomicLong();
  long currentMidiPacket=0,currentUiSession=-1,currentMidiEventTime=0;
@@ -83,9 +76,7 @@ public class MainActivity extends Activity {
   // a.createReceiver(...) e a reconciliação usa o retorno desta assinatura.
   return midiInput.createReceiver(generation);
  }
- void rearmWaitIfStudying(){
-  if(foreground&&waitStarted&&!waitPreparing&&score!=null&&mode==0&&screens!=null&&screens.isStudyOpen())prepareWaiting();
- }
+ void rearmWaitIfStudying(){studyEngine.rearmWaitIfStudying();}
  @Override public void onCreate(Bundle state){super.onCreate(state);if(state!=null)creationExport.restoreState(state);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);ZEdgeInsets.apply(this);
   // Keep screen awake only while the app is visible (no persistent wakelock).
   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -228,221 +219,26 @@ public class MainActivity extends Activity {
  void beginChordCalibration(){chordUi.beginCalibration();}
  void updateChordCalibrationStatus(){chordUi.updateStatus();}
  void editChordWindow(long measuredMs){chordUi.editWindow(measuredMs);}
- void selectHand(int selected){
-  if(selected<0||selected>2)return;
-  stopPlayback();finishStudyWindow();
-  currentHand=selected;studyState.hand=selected;
-  if(screens!=null&&screens.notation!=null)screens.notation.setStudyHand(selected);
-  if(score!=null)position=HandNavigation.nextPosition(score,position,selected,loopStart,loopEnd);
-  if(routeCursor!=null)routeCursor.align(position);
-  studyState.playhead=position;
-  if(mode==0)prepareWaiting();else if(screens!=null)screens.followScore(position,true);
-  saveSession();updateInfo();beginStudyWindow();
- }
- void nextWait(){
-  if(score==null||waitTraveling)return;
-  double next=writtenRouteActive()?
-    routeCursor.nextWait(score,position,currentHand):
-    writtenRepeats.nextWaitTarget(score,position,currentHand,loopStart,loopEnd);
-  // Returning to an earlier bar is intentional; only an unchanged position
-  // means that no further written onset/repeat is available.
-  if(Math.abs(next-position)<.0001)return;
-  waitTravelTarget=next;
-  if(waitTravelTarget<=position){
-   position=waitTravelTarget;studyState.playhead=position;
-   prepareWaiting();
-   if(screens!=null)screens.followScore(position,true);
-   return;
-  }
-  waitTraveling=true;previousTick=SystemClock.uptimeMillis();
-  if(screens!=null)screens.followScore(position,true);
-  android.util.Log.i("PianoLivreTimeline","WAIT_TRAVEL_BEGIN from="+position+" to="+waitTravelTarget);
- }
- void prepareWaiting(){
-  if(score==null||mode!=0)return;
-  waitRecognizer.clear();
-  if(!waitStarted||waitPreparing){
-   waitTraveling=false;
-   if(screens!=null)screens.followScore(position,true);
-   return;
-  }
-  double next=score.at(position,currentHand).isEmpty()?score.nextForHand(position,currentHand):position;
-  if(next>position+.0001){waitTravelTarget=next;waitTraveling=true;previousTick=SystemClock.uptimeMillis();}
-  else{waitTraveling=false;waitRecognizer.arm(score.at(position,currentHand));}
-  if(screens!=null)screens.followScore(position,true);
- }
- /** Retorna ao início da música e suspende qualquer repetição anterior. */
- void seekPrevious(){
-  if(score==null)return;
-  stopPlayback();
-  loopStart=0;loopEnd=Double.MAX_VALUE;writtenRepeats.reset();
-  position=0;
-  if(routeCursor!=null){routeCursor.reset();routeCursor.align(position);}
-  studyState.playhead=position;
-  if(mode==0)prepareWaiting();
-  else if(screens!=null)screens.followScore(position,true);
-  if(screens!=null)screens.clearLoopSelection();
-  saveSession();updateInfo();
- }
- /** Intervalo escolhido por toque diretamente sobre a partitura temporal. */
- void applyLoopSelection(double start,double end){
-  if(score==null||!Double.isFinite(start)||!Double.isFinite(end))return;
-  start=Math.max(0,Math.min(score.end(),start));
-  end=Math.max(0,Math.min(score.end(),end));
-  if(end-start<0.01){message("Escolha um trecho com início e fim diferentes.");return;}
-  stopPlayback();
-  loopStart=start;loopEnd=end;resetWrittenRoute();
-  position=start;
-  studyState.playhead=position;
-  if(mode==0)prepareWaiting();
-  else if(screens!=null)screens.followScore(position,true);
-  saveSession();updateInfo();
- }
- /** Menu start is a pending A marker; it must not mutate a running MIDI route. */
- void markLoopStart(){
-  if(score==null)return;
-  stopPlayback();
-  loopStart=StudyLoopPosition.start(score,position);
-  loopEnd=Double.MAX_VALUE;
-  resetWrittenRoute();
-  saveSession();updateInfo();
-  android.util.Log.i("PianoLivreUI","STUDY_LOOP_MENU start from="+loopStart);
- }
- /** Commit B at a complete musical release using the validated loop path. */
- void markLoopEnd(){
-  if(score==null)return;
-  double release=StudyLoopPosition.end(score,position);
-  applyLoopSelection(Math.min(loopStart,release),Math.max(loopStart,release));
-  android.util.Log.i("PianoLivreUI","STUDY_LOOP_MENU end from="+loopStart+" to="+loopEnd);
- }
- void clearLoop(){
-  // Release active MIDI notes before replacing the route and loop bounds.
-  stopPlayback();
-  loopStart=0;loopEnd=Double.MAX_VALUE;resetWrittenRoute();
-  if(screens!=null)screens.clearLoopSelection();
-  saveSession();updateInfo();
- }
- void toggle(){
-  if(score==null){chooseScore();return;}
-  if(mode==0){
-   if(!waitStarted){beginWaitPreparation();return;}
-   stopPlayback();
-   return;
-  }
-  if(running){
-   stopPlayback();return;
-  }
-  if(position>=score.end()-0.001){
-   position=score.firstOnset(currentHand);
-   studyState.playhead=position;
-   if(screens!=null)screens.followScore(position,true);
-  }
-  // A paused session preserves its current repeat/Coda pass.
-  // Restart the itinerary only when the piece actually finished (which can
-  // occur at Fine BEFORE the end of the written score).
-  if(routeCursor!=null&&routeCursor.finished()){
-   position=score.firstOnset(currentHand);
-   routeCursor.reset();routeCursor.align(position);
-   studyState.playhead=position;
-   if(screens!=null)screens.followScore(position,true);
-  }
-  if(mode==2){
-   if(!midiConnection.snapshot().canSend){
-    message("Demonstração requer uma saída MIDI aberta para o instrumento. Toque em USB-MIDI e selecione o piano.");
-    return;
-   }
-   midiPlayback=new MidiPlayback(score,currentHand,(pitch,on,velocity)->send(pitch,on,velocity));
-   midiPlayback.seek(position); // Includes notes beginning exactly at position zero.
-  }
-  running=true;
-  previousTick=SystemClock.uptimeMillis();
-  android.util.Log.i("PianoLivreUI","play=true mode="+mode);
-  updateInfo();if(screens!=null)screens.updateSelections();
- }
- void beginWaitPreparation(){
-  if(score==null||mode!=0||waitPreparing)return;
-  waitStarted=true;waitPreparing=true;waitTraveling=false;waitRecognizer.clear();
-  int seconds=WaitPreparation.configuredSeconds(prefs.getInt("user_"+user+"_wait_prep_seconds",5));
-  long now=SystemClock.uptimeMillis();
-  waitPreparation.start(now,seconds);
-  final long run=++waitPreparationSequence;
-  if(screens!=null){screens.startWaitPreparation(waitPreparation.durationMs());screens.updateSelections();}
-  handler.postDelayed(()->{
-   if(run!=waitPreparationSequence||!waitPreparing||!waitPreparation.finish(SystemClock.uptimeMillis()))return;
-   waitPreparing=false;
-   if(mode==0&&waitStarted&&foreground&&score!=null&&screens!=null&&screens.isStudyOpen()){
-    prepareWaiting();screens.updateSelections();
-   }else{waitStarted=false;if(screens!=null)screens.updateSelections();}
-  },waitPreparation.durationMs());
- }
- void configureWaitPreparation(){
-  EditText seconds=new EditText(this);seconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-  seconds.setSingleLine(true);
-  seconds.setText(String.valueOf(WaitPreparation.configuredSeconds(prefs.getInt("user_"+user+"_wait_prep_seconds",5))));
-  new AlertDialog.Builder(this).setTitle("Preparação do modo Espera")
-   .setMessage("Duração da entrada visual antes de aguardar notas (1 a 30 segundos). Não haverá prazo para tocar após a preparação.")
-   .setView(seconds).setPositiveButton("Salvar",(d,w)->{
-    try{
-     int selected=Integer.parseInt(seconds.getText().toString().trim());
-     if(selected<1||selected>30)throw new NumberFormatException();
-     prefs.edit().putInt("user_"+user+"_wait_prep_seconds",selected).apply();
-    }catch(NumberFormatException ex){message("Informe entre 1 e 30 segundos.");}
-   }).setNegativeButton("Cancelar",null).show();
- }
- void stopPlayback(){
-  waitStarted=false;waitPreparing=false;waitPreparationSequence++;waitPreparation.cancel();
-  if(screens!=null)screens.stopWaitPreparation();
-  running=false;waitTraveling=false;allOff();saveSession();updateInfo();
-  // A paused clock must stop the renderer's requestAnimationFrame extrapolation.
-  if(screens!=null){screens.followScore(position,true);screens.updateSelections();}
- }
- Runnable ticker=new Runnable(){
-  public void run(){
-   if((running||waitTraveling)&&score!=null){
-    long now=SystemClock.uptimeMillis();
-    double elapsedMs=Math.max(0,Math.min(now-previousTick,250));
-    double target=score.advanceBeats(position,elapsedMs,tempoFactor);
-    previousTick=now;
-    if(waitTraveling&&mode==0){
-     position=Math.min(waitTravelTarget,target);
-     if(position>=waitTravelTarget-.000001){
-      position=waitTravelTarget;waitTraveling=false;
-      waitRecognizer.arm(score.at(position,currentHand));
-       android.util.Log.i("PianoLivreTimeline","WAIT_TRAVEL_END at="+position);
-     }
-    }else if(running){
-     if(writtenRouteActive()){
-      PerformanceRoute.Movement movement=routeCursor.tick(score,position,elapsedMs,tempoFactor);
-      if(mode==2&&midiPlayback!=null)for(PerformanceRoute.Move step:movement.moves){
-       if(step.seek)midiPlayback.seek(step.beat);
-       else midiPlayback.advance(step.beat);
-      }
-      position=movement.position;
-      if(movement.finished){running=false;allOff();}
-     }else{
-      double finish=Math.min(score.end(),loopEnd);
-      if(finish<=loopStart)finish=score.end();
-      double next=Math.min(target,finish);
-      // A–B loop has priority and the non-routed path is linear.
-      if(mode==2&&midiPlayback!=null)midiPlayback.advance(next);
-      position=next;
-      if(position>=finish-.000001){
-       if(loopEnd<Double.MAX_VALUE&&loopStart<finish){
-        position=loopStart;
-        if(mode==2&&midiPlayback!=null)midiPlayback.seek(loopStart);
-       }else{running=false;allOff();}
-      }
-     }
-    }
-    studyState.playhead=position;
-    
-    if(screens!=null)screens.followScore(position,false);
-    updateInfo(!running&&!waitTraveling);
-    if(!running&&screens!=null)screens.updateSelections();
-   }
-   handler.postDelayed(this,25);
-  }
- };
+/** Delegados package-private (fatia 9): PianoScreens, ZMidiInput,
+ * ZNotationFailures, ZChordCalibrationUi, MidiSessionSelfTest e
+ * MidiInterfaceSelfTest chamam a.selectHand/a.nextWait/a.prepareWaiting/
+ * a.seekPrevious/a.applyLoopSelection/a.markLoopStart/a.markLoopEnd/
+ * a.clearLoop/a.toggle/a.configureWaitPreparation/a.stopPlayback; a
+ * implementação vive em ZStudyEngine. */
+ void selectHand(int selected){studyEngine.selectHand(selected);}
+ void nextWait(){studyEngine.nextWait();}
+ void prepareWaiting(){studyEngine.prepareWaiting();}
+ void seekPrevious(){studyEngine.seekPrevious();}
+ void applyLoopSelection(double start,double end){studyEngine.applyLoopSelection(start,end);}
+ void markLoopStart(){studyEngine.markLoopStart();}
+ void markLoopEnd(){studyEngine.markLoopEnd();}
+ void clearLoop(){studyEngine.clearLoop();}
+ void toggle(){studyEngine.toggle();}
+ void configureWaitPreparation(){studyEngine.configureWaitPreparation();}
+ void stopPlayback(){studyEngine.stopPlayback();}
+ /** Ticker de 25 ms: a cadeia permanece neste Runnable (onCreate/onResume/
+  * onPause/onDestroy intocados); o corpo do tick vive em ZStudyEngine. */
+ Runnable ticker=new Runnable(){public void run(){studyEngine.tick();}};
  final StudyInfoText studyInfoText=new StudyInfoText();
  void updateInfo(){updateInfo(true);}
  void updateInfo(boolean immediate){
