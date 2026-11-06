@@ -108,41 +108,7 @@ public class MainActivity extends Activity {
   // Keep screen awake only while the app is visible (no persistent wakelock).
   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
   prefs=getSharedPreferences("piano_data",MODE_PRIVATE);
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("backup_selftest",false)){
-   try{
-    int verified=BackupArchiveSelfTest.run(this);
-    android.util.Log.i("PianoLivreBackup","BACKUP_SELFTEST_PASS assertions="+verified);
-   }catch(Exception ex){
-    android.util.Log.e("PianoLivreBackup","BACKUP_SELFTEST_FAILED",ex);
-    throw new IllegalStateException("Backup self-test failed",ex);
-   }
-  }
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("profiles_selftest",false)){
-   try{android.util.Log.i("PianoLivreProfiles","PROFILES_SELFTEST_PASS assertions="+ProfilesSelfTest.run(this));}
-   catch(Exception ex){throw new IllegalStateException("Profile self-test failed",ex);}
-  }
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("library_selftest",false)){
-   try{android.util.Log.i("PianoLivreLibrary","LIBRARY_SELFTEST_PASS assertions="+LibrarySelfTest.run(this));}
-   catch(Exception ex){throw new IllegalStateException("Library self-test failed",ex);}
-  }
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("history_selftest",false)){
-   try{android.util.Log.i("PianoLivreHistory","HISTORY_SELFTEST_PASS assertions="+HistorySelfTest.run(this));}
-   catch(Exception ex){throw new IllegalStateException("History self-test failed",ex);}
-  }
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("midifile_selftest",false)){
-   try{android.util.Log.i("PianoLivreMidiFile","MIDIFILE_SELFTEST_PASS assertions="+MidiFileSelfTest.run(this));}
-   catch(Exception ex){throw new IllegalStateException("MIDI file self-test failed",ex);}
-  }
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("xml_input_selftest",false)){
-   try{android.util.Log.i("PianoLivreXmlInput","XML_INPUT_SELFTEST_PASS assertions="+XmlInputSelfTest.run());}
-   catch(Exception ex){throw new IllegalStateException("XML input self-test failed",ex);}
-  }
+  ZDebugSelfTests.runPreRecovery(this);
   try{BackupArchive.recover(prefs,getFilesDir());ImportedScoreDeletion.recover(getFilesDir(),scoreKey->LibraryStore.removeImportedEveryProfile(prefs,scoreKey));CreationScoreDeletion.recover(getFilesDir(),id->LibraryStore.removeCreationEveryProfile(prefs,id));}
   catch(Exception recovery){
    android.util.Log.e("PianoLivreBackup","Não foi possível recuperar restauração anterior",recovery);
@@ -151,16 +117,8 @@ public class MainActivity extends Activity {
     .setPositiveButton("Fechar",(d,w)->finish()).setCancelable(false).show();
    return;
   }
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("upgrade_selftest",false)){
-   try{android.util.Log.i("PianoLivreUpgrade","UPGRADE_SELFTEST_PASS assertions="+UpgradeSelfTest.run(this,prefs));}
-   catch(Exception ex){throw new IllegalStateException("Upgrade self-test failed",ex);}
-  }
-  // Device-side MIDI tests use separate preferences, never the user's session.
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&(getIntent().getBooleanExtra("midi_selftest",false)||getIntent().getBooleanExtra("midi_connection_selftest",false))){
-   prefs=getSharedPreferences(getIntent().getBooleanExtra("midi_connection_selftest",false)?"piano_midi_connection_selftest":"piano_midi_selftest",MODE_PRIVATE);prefs.edit().clear().commit();
-  }
+  ZDebugSelfTests.runUpgrade(this);
+  ZDebugSelfTests.redirectMidiSelfTestPrefs(this);
   midiManager=(MidiManager)getSystemService(MIDI_SERVICE);try{catalog=new JSONArray(readAsset("catalog.json"));}catch(Exception e){catalog=new JSONArray();}
   buildUi();loadProfiles();
   // Since 0.9.60 the launcher opens Home, not Study. Restore the active
@@ -177,15 +135,6 @@ public class MainActivity extends Activity {
   // renders the visual keyboard guide. Keep it when opening a new score.
   studyState.showKeyboard=prefs.getBoolean(studyPrefix+"keyboard",false);
   String previous=prefs.getString("user_"+user+"_file","");
-  boolean contextSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("engraving_context_selftest",false);
-  boolean complexEngravingSelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("engraving_complex_selftest",false);
-  boolean polyphonySelfTest=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("engraving_polyphony_selftest",false);
-  String notation06=(getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     ?getIntent().getStringExtra("engraving_notation06_selftest"):null;
-  boolean notation06SelfTest=notation06!=null&&java.util.Arrays.asList("accidentals","beams","tuplets","grace","adversarial").contains(notation06);
   // Every new Activity starts on Home, even when a profile has a saved score.
   // Keep user_N_file, position and all study preferences untouched. Loading a
   // score remains an explicit user action; debug engraving fixtures below may
@@ -193,55 +142,8 @@ public class MainActivity extends Activity {
   android.util.Log.i("PianoLivreUI","STARTUP_HOME lastScoreSaved="+!previous.isEmpty());
   setupMidi();
   handler.post(ticker);
-  if(contextSelfTest){
-   android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_INTENT accepted previousPath="+previous);
-   handler.post(()->{
-    String fixture="scores/engraving-context-change.musicxml";
-    loadScore(fixture,true);
-    if(score==null||!fixture.equals(currentFile))
-     android.util.Log.e("PianoLivreContext","CONTEXT_FIXTURE_LOAD_FAILED currentFile="+currentFile+" score="+(score==null?"null":score.title));
-    else android.util.Log.i("PianoLivreContext","CONTEXT_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size());
-   });
-  }
-  if(complexEngravingSelfTest){
-   handler.post(()->{
-    String fixture="scores/engraving-complex-synthetic.musicxml";
-    loadScore(fixture,true);
-    if(score==null||!fixture.equals(currentFile))
-     android.util.Log.e("PianoLivreContext","COMPLEX_FIXTURE_LOAD_FAILED currentFile="+currentFile+" score="+(score==null?"null":score.title));
-    else android.util.Log.i("PianoLivreContext","COMPLEX_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size());
-   });
-  }
-  if(notation06SelfTest){
-   final String fixture="scores/engraving-"+notation06+"-06.musicxml";
-   handler.post(()->{
-    loadScore(fixture,true);
-    if(score==null||!fixture.equals(currentFile))android.util.Log.e("PianoLivreNotation06","NOTATION06_LOAD_FAILED");
-    else android.util.Log.i("PianoLivreNotation06","NOTATION06_LOAD_OK written="+score.writtenEvents.size()+" attacks="+score.events.size());
-   });
-  }
-  if(polyphonySelfTest){
-   handler.post(()->{
-    String fixture="scores/engraving-polyphony-synthetic.musicxml";
-    loadScore(fixture,true);
-    if(score==null||!fixture.equals(currentFile))
-     android.util.Log.e("PianoLivrePolyphony","POLYPHONY_FIXTURE_LOAD_FAILED currentFile="+currentFile);
-    else android.util.Log.i("PianoLivrePolyphony","POLYPHONY_FIXTURE_LOAD_OK title="+score.title+" measures="+score.measures+" writtenHeads="+score.writtenEvents.size()+" attacks="+score.events.size());
-   });
-  }
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("midi_selftest",false))handler.post(()->MidiSessionSelfTest.run(this));
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("midi_connection_selftest",false))handler.post(()->MidiInterfaceSelfTest.run(this));
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("discovery_layout_selftest",false))handler.post(()->DiscoveryLayoutSelfTest.run(this));
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&(getIntent().getBooleanExtra("creation_selftest",false)||getIntent().getBooleanExtra("creation_reopen_selftest",false)))handler.post(()->CreationSelfTest.run(this,getIntent().getBooleanExtra("creation_reopen_selftest",false)));
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0&&getIntent().getBooleanExtra("creation_export_selftest",false))handler.post(()->CreationSelfTest.export(this));
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("discovery_selftest",false))handler.post(()->{android.util.Log.i("PianoLivreDiscovery","DISCOVERY_UI_SELFTEST_BEGIN");MusicLabDiscoverySelfTest.run(this);});
-  if((getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)!=0
-     &&getIntent().getBooleanExtra("creation_c2_d_smoke",false))handler.post(()->CreationC2DProbe.run(this));
+  ZDebugSelfTests.launchEngravingFixtures(this,previous);
+  ZDebugSelfTests.postRuntimeSelfTests(this);
  }
  private String readAsset(String asset)throws IOException{try(InputStream in=getAssets().open(asset)){return new String(all(in),StandardCharsets.UTF_8);}}
  private byte[] all(InputStream in)throws IOException{ByteArrayOutputStream o=new ByteArrayOutputStream();byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)o.write(b,0,n);return o.toByteArray();}
