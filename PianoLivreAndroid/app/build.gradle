@@ -35,6 +35,15 @@ android {
       applicationIdSuffix '.opensource'
       if (hasPublicSigning) signingConfig signingConfigs.publicBeta
     }
+    // Variante de teste da refatoração: instala junto com o APK principal
+    // (ID diferente) e se identifica visualmente por nome, ícone e arte próprios.
+    refatorado {
+      applicationIdSuffix '.refatorado'
+      versionNameSuffix '-ref'
+      debuggable false
+      minifyEnabled false
+      signingConfig signingConfigs.debug
+    }
   }
   compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
