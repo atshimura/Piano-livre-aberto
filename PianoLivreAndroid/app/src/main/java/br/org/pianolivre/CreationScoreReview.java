@@ -60,16 +60,16 @@ public final class CreationScoreReview {
             CreationScoreTranscriber.StaffMode mode,int split,
             Map<String,Integer> staff,CreationScoreTranscriber.Regularization regular,
             Map<String,Integer> hands,Map<String,Integer> voices,
-            Map<String,CreationScoreTranscriber.Timing> rhythm,boolean legacy){
+            Map<String,CreationScoreTranscriber.Timing> rhythm,boolean legacy,int keyFifths){
         return new CreationScoreTranscriber.Options(bpm,beats,beatType,grid,mode,split,staff,
-            regular,hands,voices,rhythm,legacy);
+            regular,hands,voices,rhythm,legacy,keyFifths);
     }
     private CreationScoreTranscriber.Options with(Map<String,Integer> staff,
             Map<String,Integer> hands,Map<String,Integer> voices,
             Map<String,CreationScoreTranscriber.Timing> rhythm){
         return copy(options.bpm,options.beats,options.beatType,options.grid,
             options.staffMode,options.splitPitch,staff,options.regularization,hands,voices,
-            rhythm,options.legacyTiming);
+            rhythm,options.legacyTiming,options.keyFifths);
     }
     private void retainSelection(){
         Set<String> valid=new HashSet<>();
@@ -81,17 +81,31 @@ public final class CreationScoreReview {
     }
     public synchronized void configure(int bpm,int beats,int beatType,int grid,
                                         CreationScoreTranscriber.Regularization regular)throws IOException{
+        configure(bpm,beats,beatType,grid,regular,options.keyFifths);
+    }
+    public synchronized void configure(int bpm,int beats,int beatType,int grid,
+                                        CreationScoreTranscriber.Regularization regular,int keyFifths)throws IOException{
         if(bpm==options.bpm&&beats==options.beats&&beatType==options.beatType&&grid==options.grid
-           &&regular==options.regularization&&!options.legacyTiming)return;
+           &&regular==options.regularization&&keyFifths==options.keyFifths&&!options.legacyTiming)return;
         apply(copy(bpm,beats,beatType,grid,options.staffMode,options.splitPitch,
             options.staffOverrides,regular,options.handOverrides,options.voiceOverrides,
-            options.rhythmOverrides,false));
+            options.rhythmOverrides,false,keyFifths));
+    }
+    /** Escolha de tom (armadura) e grafia das notas; nunca altera o MIDI. */
+    public synchronized void setKeyFifths(int keyFifths)throws IOException{
+        if(keyFifths<CreationScoreTranscriber.MIN_FIFTHS||keyFifths>CreationScoreTranscriber.MAX_FIFTHS)
+            throw new IOException("Tom inválido");
+        if(keyFifths==options.keyFifths)return;
+        apply(copy(options.bpm,options.beats,options.beatType,options.grid,
+            options.staffMode,options.splitPitch,options.staffOverrides,options.regularization,
+            options.handOverrides,options.voiceOverrides,options.rhythmOverrides,
+            options.legacyTiming,keyFifths));
     }
     public synchronized void split(CreationScoreTranscriber.StaffMode mode,int pitch)throws IOException{
         if(options.staffMode==mode&&options.splitPitch==pitch)return;
         apply(copy(options.bpm,options.beats,options.beatType,options.grid,
             mode,pitch,options.staffOverrides,options.regularization,options.handOverrides,
-            options.voiceOverrides,options.rhythmOverrides,options.legacyTiming));
+            options.voiceOverrides,options.rhythmOverrides,options.legacyTiming,options.keyFifths));
     }
     public synchronized boolean toggle(String sourceId){
         boolean found=false;

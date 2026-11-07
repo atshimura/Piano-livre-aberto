@@ -23,8 +23,53 @@ public final class CreationScoreTranscriber {
     private static final int[] DURATIONS = {5760,3840,2880,1920,1440,960,720,480,360,240,180,120};
     private static final String[] TYPES = {"whole","whole","half","half","quarter","quarter","eighth","eighth","16th","16th","32nd","32nd"};
     private static final boolean[] DOTS = {true,false,true,false,true,false,true,false,true,false,true,false};
-    private static final String[] STEPS = {"C","C","D","D","E","F","F","G","G","A","A","B"};
-    private static final int[] ALTERS = {0,1,0,1,0,0,1,0,1,0,1,0};
+    private static final int[] SHARP_ALTER = {0,1,0,1,0,0,1,0,1,0,1,0};
+    private static final String[] STEP_NAMES = {"C","D","E","F","G","A","B"};
+    /** Letra (índice 0–6 em STEP_NAMES) de cada classe de altura natural. */
+    private static final int[] LETTER_INDEX = {0,0,1,1,2,3,3,4,4,5,5,6};
+    /** Classes de altura alteradas por armaduras: F# C# G# D# A# E# B#. */
+    private static final int[] SHARP_PCS = {6,1,8,3,10,5,0};
+    /** Classes de altura alteradas por armaduras de bemóis: Bb Eb Ab Db Gb Cb Fb. */
+    private static final int[] FLAT_PCS = {10,3,8,1,6,11,4};
+    /** Letra escrita por classe de altura em tons com sustenidos. Mi♯ (pc 5)
+     * escreve-se E e Si♯ (pc 0) escreve-se B, uma oitava abaixo do som. */
+    private static final int[] SHARP_STEP = {11,0,2,2,4,4,5,7,7,9,9,11};
+    /** Letra escrita por classe de altura em tons com bemóis/naturais. */
+    private static final int[] FLAT_STEP = {0,2,2,4,4,5,7,7,9,9,11,0};
+    public static final int MIN_FIFTHS = -7, MAX_FIFTHS = 7;
+    /** Tons maiores oferecidos na interface, em ordem do ciclo de quintas. */
+    public static final int[] KEY_FIFTHS = {0,1,2,3,4,5,6,7,-1,-2,-3,-4,-5,-6,-7};
+    public static final String[] KEY_LABELS = {
+        "Dó (sem alterações)","Sol (1 sustenido)","Ré (2 sustenidos)",
+        "Lá (3 sustenidos)","Mi (4 sustenidos)","Si (5 sustenidos)",
+        "Fá♯ (6 sustenidos)","Dó♯ (7 sustenidos)",
+        "Fá (1 bemol)","Si♭ (2 bemóis)","Mi♭ (3 bemóis)","Lá♭ (4 bemóis)",
+        "Ré♭ (5 bemóis)","Sol♭ (6 bemóis)","Dó♭ (7 bemóis)"};
+
+    /** Grafia escrita [letra, alteração, ajuste de oitava] de uma classe de
+     * altura no tom escolhido. B# soa uma oitava abaixo da escrita e Cb uma
+     * acima; as demais grafias preservam a oitava MIDI. */
+    static int[] writtenSpelling(int pitchClass,int fifths){
+        int pc=((pitchClass%12)+12)%12;
+        if(fifths>0){
+            for(int i=0;i<Math.min(fifths,MAX_FIFTHS);i++)if(SHARP_PCS[i]==pc)
+                return new int[]{SHARP_STEP[pc],1,pc==0?-1:0};
+            return new int[]{pc,0,0};
+        }
+        if(fifths<0){
+            for(int i=0;i<Math.min(-fifths,MAX_FIFTHS);i++)if(FLAT_PCS[i]==pc)
+                return new int[]{FLAT_STEP[pc],-1,pc==11?1:0};
+            return new int[]{pc,0,0};
+        }
+        // Sem tom escolhido: mantém a grafia histórica por sustenidos, com a
+        // qual as partituras salvas regeneram byte a byte.
+        return new int[]{pc,SHARP_ALTER[pc],0};
+    }
+    /** Nome legível do tom a partir das alterações da armadura. */
+    public static String keyName(int fifths){
+        for(int i=0;i<KEY_FIFTHS.length;i++)if(KEY_FIFTHS[i]==fifths)return KEY_LABELS[i];
+        return KEY_LABELS[0];
+    }
 
     public enum StaffMode { SUGGESTED, PITCH_THRESHOLD }
     public enum Regularization { RIGOROUS, BALANCED, FLEXIBLE }
@@ -46,7 +91,7 @@ public final class CreationScoreTranscriber {
     }
 
     public static final class Options {
-        public final int bpm,beats,beatType,grid,splitPitch;
+        public final int bpm,beats,beatType,grid,splitPitch,keyFifths;
         public final StaffMode staffMode;
         public final Regularization regularization;
         public final Map<String,Integer> staffOverrides,handOverrides,voiceOverrides;
@@ -61,11 +106,21 @@ public final class CreationScoreTranscriber {
                        Map<String,Integer> staffOverrides,Regularization regularization,
                        Map<String,Integer> hands,Map<String,Integer> voices,Map<String,Timing> rhythms,
                        boolean legacyTiming){
+            this(bpm,beats,beatType,grid,mode,splitPitch,staffOverrides,regularization,
+                 hands,voices,rhythms,legacyTiming,0);
+        }
+        public Options(int bpm,int beats,int beatType,int grid,StaffMode mode,int splitPitch,
+                       Map<String,Integer> staffOverrides,Regularization regularization,
+                       Map<String,Integer> hands,Map<String,Integer> voices,Map<String,Timing> rhythms,
+                       boolean legacyTiming,int keyFifths){
             if(bpm<30||bpm>240||!((beats==2||beats==3||beats==4)&&beatType==4||beats==6&&beatType==8)
                     ||!(grid==8||grid==16||grid==32)||mode==null||splitPitch<0||splitPitch>127||regularization==null)
                 throw new IllegalArgumentException("Parâmetros de transcrição inválidos");
+            if(keyFifths<MIN_FIFTHS||keyFifths>MAX_FIFTHS)
+                throw new IllegalArgumentException("Tom inválido");
             this.bpm=bpm;this.beats=beats;this.beatType=beatType;this.grid=grid;
             staffMode=mode;this.splitPitch=splitPitch;this.regularization=regularization;
+            this.keyFifths=keyFifths;
             this.legacyTiming=legacyTiming;
             this.staffOverrides=immutable(staffOverrides);
             handOverrides=immutable(hands);voiceOverrides=immutable(voices);
@@ -313,12 +368,19 @@ public final class CreationScoreTranscriber {
         for(int m=0;m<count;m++){
             long begin=m*(long)bar,stop=begin+bar;
             xml.append("<measure number=\"").append(m+1).append("\">");
-            if(m==0){xml.append("<attributes><divisions>").append(DIVISIONS).append("</divisions><time><beats>")
+            if(m==0){xml.append("<attributes><divisions>").append(DIVISIONS).append("</divisions>");
+                if(options.keyFifths!=0)xml.append("<key><fifths>").append(options.keyFifths)
+                    .append("</fifths><mode>major</mode></key>");
+                xml.append("<time><beats>")
                 .append(options.beats).append("</beats><beat-type>").append(options.beatType)
                 .append("</beat-type></time><staves>2</staves><clef number=\"1\"><sign>G</sign><line>2</line></clef>")
-                .append("<clef number=\"2\"><sign>F</sign><line>4</line></clef></attributes>")
-                .append("<direction placement=\"above\"><direction-type><words>Partitura derivada da gravação MIDI</words></direction-type><sound tempo=\"")
-                .append(options.bpm).append("\"/></direction>");}
+                .append("<clef number=\"2\"><sign>F</sign><line>4</line></clef></attributes>");
+                if(options.keyFifths==0)
+                    xml.append("<direction placement=\"above\"><direction-type><words>Partitura derivada da gravação MIDI</words></direction-type><sound tempo=\"")
+                       .append(options.bpm).append("\"/></direction>");
+                else
+                    xml.append("<direction placement=\"above\"><direction-type><words></words></direction-type><sound tempo=\"")
+                       .append(options.bpm).append("\"/></direction>");}
             boolean first=true;
             for(int staff=1;staff<=2;staff++){
                 List<List<Group>> staffVoices=voices[staff-1];
@@ -332,7 +394,7 @@ public final class CreationScoreTranscriber {
                         if(s>cursor)emitRest(xml,s-cursor,voiceId,staff);
                         long pos=s;
                         while(pos<e){int len=chooseLength(e-pos);boolean stopTie=pos>g.start,startTie=pos+len<g.end;
-                            for(int i=0;i<g.notes.size();i++)emitNote(xml,g.notes.get(i),len,voiceId,i>0,stopTie,startTie);
+                            for(int i=0;i<g.notes.size();i++)emitNote(xml,g.notes.get(i),len,voiceId,i>0,stopTie,startTie,options.keyFifths);
                             pos+=len;
                         }
                         cursor=e;
@@ -397,12 +459,14 @@ public final class CreationScoreTranscriber {
             if(DOTS[idx])xml.append("<dot/>");xml.append("<staff>").append(staff).append("</staff></note>");length-=d;
         }
     }
-    private static void emitNote(StringBuilder xml,Note n,int len,int voice,boolean chord,boolean stop,boolean start){
+    private static void emitNote(StringBuilder xml,Note n,int len,int voice,boolean chord,boolean stop,boolean start,int fifths){
         int pitch=n.a.pitch,idx=durationIndex(len);xml.append("<note");
         xml.append(" dynamics=\"").append(Math.min(127,Math.round(n.a.velocity/0.9f))).append("\">");
-        if(chord)xml.append("<chord/>");xml.append("<pitch><step>").append(STEPS[pitch%12]).append("</step>");
-        if(ALTERS[pitch%12]!=0)xml.append("<alter>1</alter>");
-        xml.append("<octave>").append(pitch/12-1).append("</octave></pitch><duration>").append(len)
+        if(chord)xml.append("<chord/>");
+        int[] written=writtenSpelling(pitch%12,fifths);
+        xml.append("<pitch><step>").append(STEP_NAMES[LETTER_INDEX[written[0]]]).append("</step>");
+        if(written[1]!=0)xml.append("<alter>").append(written[1]).append("</alter>");
+        xml.append("<octave>").append(pitch/12-1+written[2]).append("</octave></pitch><duration>").append(len)
            .append("</duration>");
         if(stop)xml.append("<tie type=\"stop\"/>");if(start)xml.append("<tie type=\"start\"/>");
         xml.append("<voice>").append(voice).append("</voice><type>").append(TYPES[idx]).append("</type>");

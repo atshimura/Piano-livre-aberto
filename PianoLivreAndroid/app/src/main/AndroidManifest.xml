@@ -5,5 +5,6 @@
   <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="landscape">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
   </activity>
+  <provider android:name=".ScoreExportProvider" android:authorities="${applicationId}.files" android:exported="false" android:grantUriPermissions="true"/>
  </application>
 </manifest>

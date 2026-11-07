@@ -13,7 +13,7 @@ import java.util.*;
  */
 public final class CreationScoreStore {
  public static final int MAX_SCORE_BYTES=2*1024*1024, MAX_TOTAL_BYTES=8*1024*1024;
- private static final int MAGIC=0x504c5331, FORMAT=2, FORMAT_LEGACY=1, MAX_OVERRIDES=CreationScoreTranscriber.MAX_NOTES;
+ private static final int MAGIC=0x504c5331, FORMAT=3, FORMAT_LEGACY=1, MAX_OVERRIDES=CreationScoreTranscriber.MAX_NOTES;
  public static final String DIRECTORY="creation-scores", EXT=".pls";
  private final File directory;
  private final CreationProjectStore projects;
@@ -117,6 +117,10 @@ public final class CreationScoreStore {
    CreationScoreTranscriber.Timing time=o.rhythmOverrides.get(key);
    data.writeUTF(key);data.writeLong(time.startTick);data.writeLong(time.endTick);
   }
+  // PLS1 format 3 adds the written key (armadura) chosen for this score.
+  if(o.keyFifths<CreationScoreTranscriber.MIN_FIFTHS||o.keyFifths>CreationScoreTranscriber.MAX_FIFTHS)
+   throw new IOException("Tom inválido");
+  data.writeInt(o.keyFifths);
   data.writeInt(music.length);data.write(music);data.flush();
   byte[] raw=buffer.toByteArray();if(raw.length+32>MAX_SCORE_BYTES)throw new IOException("Partitura excede o limite");
   buffer.write(hash(raw));return buffer.toByteArray();
@@ -128,7 +132,7 @@ public final class CreationScoreStore {
   DataInputStream in=new DataInputStream(new ByteArrayInputStream(body));
   if(in.readInt()!=MAGIC)throw new IOException("Partitura não reconhecida");
   int format=in.readInt();
-  if(format!=FORMAT&&format!=FORMAT_LEGACY)throw new IOException("Formato de partitura desconhecido");
+  if(format!=FORMAT&&format!=2&&format!=FORMAT_LEGACY)throw new IOException("Formato de partitura desconhecido");
   String projectId=id(in.readUTF());int profile=in.readInt();String expected=in.readUTF();String savedTitle=in.readUTF();
   if(savedTitle.length()>255)throw new IOException("Título da transcrição inválido");
   if(!projectId.equals(id(p.id))||profile!=p.profileId||!expected.equals(fingerprint(p)))
@@ -159,9 +163,15 @@ public final class CreationScoreStore {
     if(key.length()>110||rhythms.put(key,new CreationScoreTranscriber.Timing(start,end))!=null)
      throw new IOException("Ajuste rítmico duplicado");
    }
+   int keyFifths=0;
+   if(format>=3){
+    keyFifths=in.readInt();
+    if(keyFifths<CreationScoreTranscriber.MIN_FIFTHS||keyFifths>CreationScoreTranscriber.MAX_FIFTHS)
+     throw new IOException("Tom inválido");
+   }
    o=new CreationScoreTranscriber.Options(bpm,beats,type,grid,
     CreationScoreTranscriber.StaffMode.values()[mode],split,overrides,
-    CreationScoreTranscriber.Regularization.values()[reg],hands,voices,rhythms,legacy);
+    CreationScoreTranscriber.Regularization.values()[reg],hands,voices,rhythms,legacy,keyFifths);
   }
   int size=in.readInt();if(size<40||size>MAX_SCORE_BYTES||size!=in.available())throw new IOException("Conteúdo MusicXML inválido");
   byte[] music=new byte[size];in.readFully(music);String xml=new String(music,StandardCharsets.UTF_8);

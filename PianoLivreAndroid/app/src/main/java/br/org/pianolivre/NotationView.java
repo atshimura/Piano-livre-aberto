@@ -310,6 +310,22 @@ public final class NotationView extends WebView {
  public void resizeToFit(){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)resizeWhenViewportReady(++resizeSequence,scoreGeneration,0);
  }
+ /** Free-layout zoom helpers for the Creation preview. The WebView pinch
+  * gesture remains available; these buttons work regardless of viewport quirks
+  * and are the only reliable way to zoom OUT below the fitted width. Named
+  * scoreZoom* to avoid clashing with WebView.zoomIn/zoomOut. */
+ public void scoreZoomIn(){if(!disposed&&freeLayout)zoomBy(1.25f);}
+ public void scoreZoomOut(){if(!disposed&&freeLayout)zoomBy(0.8f);}
+ public void scoreZoomReset(){
+  if(disposed||!freeLayout)return;
+  evaluateJavascript("(function(){var v=window.visualViewport;return v?String(v.scale):'1'})()",
+   value->post(()->{
+    if(disposed||value==null)return;
+    try{float scale=Float.parseFloat(value.replace("\"","").trim());
+     if(scale>0.05f&&Math.abs(scale-1f)>0.02f)zoomBy(1f/scale);}
+    catch(Exception ignored){}
+   }));
+ }
  private void resizeWhenViewportReady(long sequence,long generation,int attempt){
   if(disposed||sequence!=resizeSequence||generation!=scoreGeneration||!scoreRendered||getWidth()<=0||getHeight()<=0)return;
   float density=getResources().getDisplayMetrics().density;
