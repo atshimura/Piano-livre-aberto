@@ -32,11 +32,16 @@ final class ZStudyHistoryUi{
   if(pendingHistoryError!=null){String error=pendingHistoryError;pendingHistoryError=null;a.message(error);return;}
   try{
    StudyHistory store=new StudyHistory(a.prefs,a.user);JSONObject data=store.snapshot(),pieces=data.getJSONObject("pieces");
-   List<String> keys=new ArrayList<>();Iterator<String> iterator=pieces.keys();long total=0,periods=0;
-   while(iterator.hasNext()){String key=iterator.next();keys.add(key);total=Math.addExact(total,pieces.getJSONObject(key).getLong("timeMs"));periods=Math.addExact(periods,pieces.getJSONObject(key).getLong("periods"));}
+   List<String> keys=new ArrayList<>();Iterator<String> iterator=pieces.keys();long total=0,periods=0,lastAt=0;
+   while(iterator.hasNext()){String key=iterator.next();keys.add(key);JSONObject piece=pieces.getJSONObject(key);
+    total=Math.addExact(total,piece.getLong("timeMs"));periods=Math.addExact(periods,piece.getLong("periods"));
+    lastAt=Math.max(lastAt,piece.optLong("lastAt"));}
    keys.sort((left,right)->Long.compare(pieces.optJSONObject(right).optLong("lastAt"),pieces.optJSONObject(left).optLong("lastAt")));
    if(keys.isEmpty()){a.message("Ainda não há registros. O tempo é registrado quando uma partitura fica aberta em primeiro plano.");return;}
-   String[] items=new String[keys.size()+1];items[0]="Tempo na tela de estudo: "+StudyHistory.duration(total)+" · "+periods+" períodos";
+   java.text.DateFormat shortDate=java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT);
+   String[] items=new String[keys.size()+1];items[0]="Tempo na tela de estudo: "+StudyHistory.duration(total)+" · "+periods+" períodos"
+    +" · "+keys.size()+(keys.size()==1?" partitura":" partituras")
+    +(lastAt>0?" · última prática "+shortDate.format(new Date(lastAt)):"");
    for(int i=0;i<keys.size();i++){
     JSONObject piece=pieces.getJSONObject(keys.get(i));long goal=piece.getLong("goalMinutes"),time=piece.getLong("timeMs");
     items[i+1]=piece.getString("title")+"\n"+StudyHistory.duration(time)+(goal>0?" · meta: "+goal+" min"+(time>=goal*60000L?" ✓":""):"");

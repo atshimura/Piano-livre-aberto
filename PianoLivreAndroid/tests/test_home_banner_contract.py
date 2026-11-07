@@ -22,7 +22,7 @@ class BannerShortcutsTest(unittest.TestCase):
 
     def test_equal_width_height_and_blue_green(self):
         b=self.banner
-        self.assertEqual(b.count('new LinearLayout.LayoutParams(0,d(44),1)'),2)
+        self.assertEqual(b.count('new LinearLayout.LayoutParams(0,d(48),1)'),2)
         self.assertIn('libraryAction.setBackground(bg(blue,12,0))',b)
         self.assertIn('labAction.setBackground(bg(0xff128263,12,0))',b)
         self.assertIn('libraryAction.setTextColor(Color.WHITE)',b)

@@ -164,6 +164,15 @@ class PianoScreens {
   hero.setTag("home-banner");art.setTag("home-art");
   FrameLayout.LayoutParams artLp=new FrameLayout.LayoutParams(d(artWidth),-1,Gravity.RIGHT|Gravity.CENTER_VERTICAL);
   hero.addView(art,artLp);
+  if(a.getResources().getBoolean(R.bool.beta_variant)){
+   TextView betaTag=new TextView(a);betaTag.setText("VERSÃO DE TESTE β");
+   betaTag.setTextSize(10);betaTag.setTypeface(null,Typeface.BOLD);betaTag.setTextColor(Color.WHITE);
+   betaTag.setBackground(bg(0xff96771c,10,0));betaTag.setPadding(d(7),d(2),d(7),d(2));
+   betaTag.setContentDescription("Versão de teste da refatoração");
+   FrameLayout.LayoutParams betaLp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.RIGHT);
+   betaLp.topMargin=d(8);betaLp.rightMargin=d(10);
+   hero.addView(betaTag,betaLp);
+  }
   View fade=new View(a);android.graphics.drawable.GradientDrawable fadeDrawable=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,new int[]{0xffDFEDFC,0xffDFEDFC,0x00DFEDFC});fade.setBackground(fadeDrawable);
   hero.addView(fade,new FrameLayout.LayoutParams(d(Math.round(heroWidth*(compact?.78f:.60f))),-1,Gravity.LEFT));
   LinearLayout copy=column();copy.setGravity(Gravity.CENTER_VERTICAL);copy.setPadding(d(compact?12:20),d(8),d(12),d(8));
@@ -186,9 +195,9 @@ class PianoScreens {
    action.setPadding(d(compact?4:8),0,d(compact?4:8),0);
    action.setAllCaps(false);action.setMaxLines(2);
   }
-  actions.addView(libraryAction,new LinearLayout.LayoutParams(0,d(44),1));
+  actions.addView(libraryAction,new LinearLayout.LayoutParams(0,d(48),1));
   addGap(actions,8);
-  actions.addView(labAction,new LinearLayout.LayoutParams(0,d(44),1));
+  actions.addView(labAction,new LinearLayout.LayoutParams(0,d(48),1));
   copy.addView(actions,lp(-1,-2));
   LinearLayout.LayoutParams heroParams=lp(-1,heroHeight);heroParams.topMargin=d(12);libraryInner.addView(hero,heroParams);
  }

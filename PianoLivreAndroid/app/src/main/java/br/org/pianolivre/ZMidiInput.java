@@ -105,7 +105,6 @@ final class ZMidiInput{
   }else{
    a.lastMidiMessage="MIDI 0x"+Integer.toHexString(statusCode)+" · "+data1+" · "+data2;
   }
-  android.util.Log.i("PianoLivreMIDI","RX "+a.lastMidiMessage);
   refreshMidiDiagnostics();
  }
  String midiNoteName(int n){

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Variante de teste da refatoração: sinaliza ao código comum quando o
+     selo "VERSÃO DE TESTE β" deve ser exibido sobre a arte original. -->
+<resources><bool name="beta_variant">false</bool></resources>

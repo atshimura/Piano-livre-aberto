@@ -247,6 +247,8 @@ final class ZStudyEngine {
    a.updateInfo(!a.running&&!a.waitTraveling);
    if(!a.running&&a.screens!=null)a.screens.updateSelections();
   }
-  a.handler.postDelayed(a.ticker,25);
+  // Re-agendação adaptativa: 25 ms com reprodução/viagem em curso; 250 ms
+  // quando ocioso, para poupar bateria sem mudar o comportamento visível.
+  a.handler.postDelayed(a.ticker,(a.running||a.waitTraveling)?25:250);
  }
 }

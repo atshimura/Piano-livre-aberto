@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Overlay da variante refatorado: mantém a arte da tela principal idêntica
+     à da versão oficial e adiciona apenas o selo "VERSÃO DE TESTE β". -->
+<resources><bool name="beta_variant">true</bool></resources>
