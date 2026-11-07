@@ -32,7 +32,11 @@ final class ZStudyHistoryUi{
   if(pendingHistoryError!=null){String error=pendingHistoryError;pendingHistoryError=null;a.message(error);return;}
   try{
    StudyHistory store=new StudyHistory(a.prefs,a.user);JSONObject data=store.snapshot(),pieces=data.getJSONObject("pieces");
-   List<String> keys=new ArrayList<>();Iterator<String> iterator=pieces.keys();long total=0,periods=0,lastAt=0;
+   List<String> keys=new ArrayList<>();Iterator<String> iterator=pieces.keys();long total=0,periods=0,lastAt=0,weekMs=0;
+   long weekCut=System.currentTimeMillis()-7*86400000L;
+   JSONArray records=data.optJSONArray("records");
+   if(records!=null)for(int i=0;i<records.length();i++){JSONObject record=records.getJSONObject(i);
+    if(record.optLong("at")>=weekCut)weekMs=Math.addExact(weekMs,record.optLong("elapsedMs"));}
    while(iterator.hasNext()){String key=iterator.next();keys.add(key);JSONObject piece=pieces.getJSONObject(key);
     total=Math.addExact(total,piece.getLong("timeMs"));periods=Math.addExact(periods,piece.getLong("periods"));
     lastAt=Math.max(lastAt,piece.optLong("lastAt"));}
@@ -41,7 +45,8 @@ final class ZStudyHistoryUi{
    java.text.DateFormat shortDate=java.text.DateFormat.getDateInstance(java.text.DateFormat.SHORT);
    String[] items=new String[keys.size()+1];items[0]="Tempo na tela de estudo: "+StudyHistory.duration(total)+" · "+periods+" períodos"
     +" · "+keys.size()+(keys.size()==1?" partitura":" partituras")
-    +(lastAt>0?" · última prática "+shortDate.format(new Date(lastAt)):"");
+    +(lastAt>0?" · última prática "+shortDate.format(new Date(lastAt)):"")
+    +(weekMs>0?" · últimos 7 dias: "+StudyHistory.duration(weekMs):"");
    for(int i=0;i<keys.size();i++){
     JSONObject piece=pieces.getJSONObject(keys.get(i));long goal=piece.getLong("goalMinutes"),time=piece.getLong("timeMs");
     items[i+1]=piece.getString("title")+"\n"+StudyHistory.duration(time)+(goal>0?" · meta: "+goal+" min"+(time>=goal*60000L?" ✓":""):"");

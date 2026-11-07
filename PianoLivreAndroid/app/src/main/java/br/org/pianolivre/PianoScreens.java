@@ -782,6 +782,31 @@ class PianoScreens {
   if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
   if(creation!=null)creation.setVisibility(View.GONE);
   library.setVisibility(View.VISIBLE);refreshLibrary();updateMidiIndicator();
+  maybeFirstRunWelcome();
+ }
+ /** Onda 3 — boas-vindas de primeiro uso. Exibida uma única vez por instalação
+  * e somente na variante β (R.bool.beta_variant), para não alterar o app
+  * principal nem os builds do CI enquanto o recurso é validado em teste. */
+ void maybeFirstRunWelcome(){
+  if(a.prefs==null||a.prefs.getBoolean("onboarding_seen_v1",false))return;
+  if(!a.getResources().getBoolean(R.bool.beta_variant))return;
+  a.prefs.edit().putBoolean("onboarding_seen_v1",true).apply();
+  try{
+   LinearLayout body=column();body.setPadding(d(20),d(6),d(20),d(4));
+   TextView intro=text("Esta é a versão de teste da nova geração do Piano Livre. Ela funciona sem internet: suas músicas, perfis e progresso ficam somente no aparelho.",13,ink,false);
+   intro.setPadding(0,d(2),0,d(8));body.addView(intro,lp(-1,-2));
+   String[] steps={
+    "♪  Toque em uma partitura na Biblioteca Musical para começar a estudar.",
+    "♪  No Laboratório Musical você explora notas, escalas e acordes livremente.",
+    "♪  Conecte um teclado MIDI (USB ou Bluetooth) para o app acompanhar sua execução.",
+    "♪  Em ⚙ Opções ficam os perfis, o histórico de estudo e o backup."};
+   for(String step:steps){TextView line=text(step,13,muted,false);line.setPadding(0,d(3),0,d(3));body.addView(line,lp(-1,-2));}
+   TextView outro=text("Encontrou algo estranho? Anote e reporte ao responsável: é para isso que esta versão existe.",12,muted,false);
+   outro.setPadding(0,d(8),0,d(2));body.addView(outro,lp(-1,-2));
+   android.widget.ScrollView scroll=new android.widget.ScrollView(a);scroll.addView(body);
+   new AlertDialog.Builder(a).setTitle("Bem-vindo ao Piano Livre β").setView(scroll)
+    .setPositiveButton("Começar a usar",null).show();
+  }catch(RuntimeException ex){android.util.Log.w("PianoLivreUI","Boas-vindas não exibidas",ex);}
  }
  void backFromStudy(){
   // All scores now enter Study through the Library; keep navigation uniform.
