@@ -30,6 +30,11 @@ import java.util.concurrent.Executors;
  * C2-B modal, temporary MusicXML preview. Does not persist or modify a C1 take.
  * OSMD head taps are matched conservatively to original MIDI attack IDs.
  * Ambiguous graphical unisons are selected through the accessible note list.
+ *
+ * Leitura ampliada: em modo composição a partitura ocupa a maior parte da
+ * tela (peso 1), com zoom livre (botões e pinça), nomes dentro das notas e
+ * exportação (PDF/PNG/MusicXML). O modo ajuste fino (divisão entre pautas)
+ * mantém a janela com painel de seleção. O MIDI original nunca muda.
  */
 final class CreationScorePreviewScreen extends LinearLayout {
     private final MainActivity activity;
@@ -37,6 +42,8 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final LinearLayout contents;
     private final ScrollView scroll;
+    private final LinearLayout stage;
+    private final LinearLayout stageBody;
     private Dialog window;
     private NotationView notation;
     private volatile boolean closed,busy;
@@ -47,9 +54,9 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private TextView selectionCount;
     private final java.util.Map<String,CheckBox> noteBoxes=new java.util.HashMap<>();
     private boolean refreshingSelection;
-    private boolean fullSheet;
-    private Button expandButton;
-    private AlertDialog progressWindow;
+    private Score currentScore;
+    private boolean noteNamesOn=false;
+    private boolean editModeOn=false;
     private void syncSelection(){
         if(review==null)return;
         if(selectionCount!=null)selectionCount.setText(review.selectedCount()+" selecionada(s)");
@@ -60,7 +67,9 @@ final class CreationScorePreviewScreen extends LinearLayout {
         finally{refreshingSelection=false;}
     }
     private void tapGraphicalNote(String sourceId){
-        if(closed||busy||review==null||!review.toggle(sourceId))return;
+        if(closed||busy||review==null)return;
+        if(editModeOn){openNoteEditor(sourceId);return;}
+        if(!review.toggle(sourceId))return;
         if(!splitView){render(true);return;}
         syncSelection();
     }
@@ -108,26 +117,14 @@ final class CreationScorePreviewScreen extends LinearLayout {
         contents=vertical();contents.setPadding(dp(14),dp(12),dp(14),dp(24));
         scroll=new ScrollView(a);scroll.setFillViewport(true);scroll.addView(contents);
         addView(scroll,new LayoutParams(-1,0,1));
+        stage=vertical();stage.setPadding(dp(14),dp(10),dp(14),dp(10));
+        stageBody=vertical();stage.addView(stageBody,new LayoutParams(-1,-2));
+        addView(stage,new LayoutParams(-1,0,1));
+        // Leitura ampliada é o padrão; o painel de ajustes assume no modo divisão.
+        scroll.setVisibility(GONE);
         addText("Preparando a gravação…",16,true,12);
     }
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
-    /** Altura da caixa da partitura: três quartos da tela na leitura e quase
-     * toda a tela no modo ampliado. A janelinha fixa antiga espremia o desenho. */
-    private int sheetHeightDp(){
-        android.util.DisplayMetrics m=getResources().getDisplayMetrics();
-        int screen=Math.round(m.heightPixels/m.density);
-        return Math.max(180,Math.round(screen*(fullSheet?0.93f:0.75f)));
-    }
-    private void toggleSheet(){
-        fullSheet=!fullSheet;
-        if(expandButton!=null)expandButton.setText(fullSheet?"Reduzir":"Ampliar");
-        if(notation!=null){
-            LayoutParams lp=(LayoutParams)notation.getLayoutParams();
-            lp.height=dp(sheetHeightDp());
-            notation.requestLayout();
-        }
-        if(scroll!=null)scroll.post(()->scroll.smoothScrollTo(0,0));
-    }
     private LinearLayout vertical(){LinearLayout v=new LinearLayout(activity);v.setOrientation(VERTICAL);return v;}
     private LinearLayout horizontal(){LinearLayout v=new LinearLayout(activity);v.setOrientation(HORIZONTAL);v.setGravity(Gravity.CENTER_VERTICAL);return v;}
     private TextView label(String s,int size,boolean bold,int color){
@@ -135,11 +132,12 @@ final class CreationScorePreviewScreen extends LinearLayout {
         if(bold)t.setTypeface(null,android.graphics.Typeface.BOLD);
         t.setGravity(Gravity.CENTER_VERTICAL);return t;
     }
+    private LinearLayout body(){return splitView?contents:stageBody;}
     private void attach(LinearLayout parent,View v,int height,int bottom){
         LayoutParams lp=new LayoutParams(-1,height<0?height:dp(height));lp.bottomMargin=dp(bottom);parent.addView(v,lp);
     }
     private void addText(String s,int size,boolean bold,int margin){
-        attach(contents,label(s,size,bold,bold?0xff172A44:0xff57708A),-2,margin);
+        attach(body(),label(s,size,bold,bold?0xff172A44:0xff57708A),-2,margin);
     }
     private LinearLayout card(){
         LinearLayout c=vertical();c.setPadding(dp(12),dp(11),dp(12),dp(11));
@@ -213,7 +211,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
   });
  }
     private void shutdown(){
-        closed=true;generation++;if(progressWindow!=null){progressWindow.dismiss();progressWindow=null;}
+        closed=true;generation++;
         if(notation!=null){notation.dispose();notation=null;}
         worker.shutdownNow();
     }
@@ -246,9 +244,13 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private void failure(int id,Exception ex){
         if(closed||id!=generation)return;busy=false;clear();
         addText("Não foi possível gerar a partitura: "+ex.getMessage(),14,false,12);
-        attach(contents,button("Fechar prévia",true,()->window.dismiss()),48,0);
+        attach(body(),button("Fechar prévia",true,()->window.dismiss()),48,0);
     }
-    private void clear(){noteBoxes.clear();selectionCount=null;if(notation!=null){notation.dispose();notation=null;}contents.removeAllViews();}
+    private void clear(){
+        noteBoxes.clear();selectionCount=null;
+        if(notation!=null){notation.dispose();notation=null;}
+        contents.removeAllViews();stageBody.removeAllViews();
+    }
     private void render(boolean split){
         if(review==null||closed)return;
         splitView=split;final int id=++generation;busy=true;
@@ -264,13 +266,19 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private void paint(Score score,boolean split){
         clear();CreationScoreTranscriber.Options o=review.options();
         CreationScoreTranscriber.Result r=review.result();
+        currentScore=score;
+        scroll.setVisibility(split?View.VISIBLE:View.GONE);
+        stage.setVisibility(split?View.GONE:View.VISIBLE);
         addText(project.title,21,true,3);
         addText(r.measures+" compassos · "+o.beats+"/"+o.beatType+" · "+o.bpm+" BPM · 1/"+o.grid
+            +(o.keyTonic>=0?" · Tom "+CreationScoreTranscriber.displayPitchName(o.keyTonic,o.keyMode,
+                keyTonicMidi(o))+(o.transpose!=0?" (transportado)":""):"")
             +" · Ritmo "+(o.legacyTiming?"legado":o.regularization==CreationScoreTranscriber.Regularization.RIGOROUS?"rigoroso":
                 o.regularization==CreationScoreTranscriber.Regularization.FLEXIBLE?"flexível":"equilibrado"),13,false,9);
         LinearLayout sheet=card();sheet.setPadding(dp(4),dp(4),dp(4),dp(4));
         NotationView view=new NotationView(activity,new NotationView.Listener(){
-            public void onRendered(){if(!closed&&notation!=null)notation.setCreationSelected(review.selection());}
+            public void onRendered(){if(!closed&&notation!=null){notation.setCreationSelected(review.selection());
+                notation.showNoteNames(noteNamesOn);}}
             public void onCreationNoteTapped(String id){tapGraphicalNote(id);}
             public void onError(String text){
                 if(!closed)activity.reportNotationIssue("PL-NOT-RENDER",
@@ -283,38 +291,34 @@ final class CreationScorePreviewScreen extends LinearLayout {
                     ()->{if(window!=null)window.dismiss();});
             }
         });
-        notation=view;view.setCreationSourceNotes(r.notes);view.setCreationSelected(review.selection());
-        attach(sheet,view,split?218:sheetHeightDp(),0);
-        attach(contents,sheet,-2,11);
-        view.post(()->{if(!closed&&notation==view)view.loadScore(score,0,true);});
-        if(!split){
-            LinearLayout tools=horizontal();
-            Button zoomOut=button("Zoom −",false,view::scoreZoomOut);
-            Button zoomIn=button("Zoom +",false,view::scoreZoomIn);
-            Button fit=button("Ajustar",false,view::scoreZoomReset);
-            expandButton=button("Ampliar",false,this::toggleSheet);
-            Button[] toolButtons={zoomOut,zoomIn,fit,expandButton};
-            for(int i=0;i<toolButtons.length;i++){
-                toolButtons[i].setTextSize(12);
-                LayoutParams toolParams=new LayoutParams(0,dp(48),1);
-                if(i<toolButtons.length-1)toolParams.rightMargin=dp(8);
-                tools.addView(toolButtons[i],toolParams);
-            }
-            attach(contents,tools,48,8);
+        notation=view;
+        view.setCreationSourceNotes(r.notes,noteNames(review.options(),r));
+        view.setCreationSelected(review.selection());
+        if(split){
+            attach(sheet,view,218,0);
+            attach(contents,sheet,238,11);
+        }else{
+            // Leitura ampliada: a partitura ocupa todo o espaço restante da tela.
+            LinearLayout sheetRow=new LinearLayout(activity);sheetRow.setOrientation(VERTICAL);
+            sheetRow.addView(sheet,new LayoutParams(-1,0,1f));
+            attach(stageBody,sheetRow,-1,8);
+            view.post(()->{if(!closed&&notation==view)view.loadScore(score,0,true);});
+            readingControls(o);
+            return;
         }
-        addText("Use Zoom −/+ ou a pinça para ajustar a leitura; Ampliar mostra a partitura quase na tela inteira. Toque em uma nota para selecioná-la; notas sobrepostas ambíguas também podem ser selecionadas na lista. O MIDI original não muda.",12,false,9);
+        view.post(()->{if(!closed&&notation==view)view.loadScore(score,0,true);});
+        addText("Toque diretamente em uma nota da partitura para selecioná-la; notas sobrepostas ambíguas também podem ser selecionadas na lista. O MIDI original não muda.",12,false,9);
         if(!r.warnings.isEmpty())addText(r.warnings.size()+" avisos de interpretação MIDI — consulte a gravação original em caso de dúvida.",12,false,8);
         if(split)splitControls();
         else{
             actions(contents,button("Ajustar ritmo",false,this::editRhythm),
                     button("Divisão entre pautas",true,()->render(true)));
-            Button export=button("Exportar (PDF ou imagem)",true,this::chooseExport);
             Button back=button("Voltar à composição",false,this::confirmClose);
             Button save=button(saved?"Partitura salva ✓":"Salvar partitura",true,this::saveCurrent);
             if(saved){
                 boolean added=new LibraryStore(activity.prefs,activity.user).hasCreation(project.id);
                 if(added){
-                    actions(contents,back,save,export);
+                    actions(contents,back,save);
                     addText("✓ Na Biblioteca Musical · abra a Biblioteca para estudar.",13,false,4);
                 }else{
                     Button add=button("Adicionar à Biblioteca",true,()->{
@@ -323,48 +327,114 @@ final class CreationScorePreviewScreen extends LinearLayout {
                             if(closed)return;busy=false;if(ok)render(false);
                         });
                     });
-                    actions(contents,back,save,add,export);
+                    actions(contents,back,save,add);
                 }
                 addText("Partitura salva neste projeto e incluída no backup v4.",12,false,3);
             }else{
-                actions(contents,back,save,export);
+                actions(contents,back,save);
                 addText("Salve a partitura antes de adicioná-la à Biblioteca Musical.",12,false,3);
             }
         }
     }
-    private void chooseExport(){
-        if(notation==null||!notation.isRendered()){activity.message("A partitura ainda não está pronta para exportar.");return;}
-        new AlertDialog.Builder(activity).setTitle("Exportar partitura")
-            .setMessage("Gerar um arquivo da partitura atual para compartilhar, guardar ou imprimir.")
-            .setPositiveButton("PDF",(d,w)->startExport(true))
-            .setNeutralButton("Imagem (PNG)",(d,w)->startExport(false))
-            .setNegativeButton("Cancelar",null).show();
+    /** Armadura atual em MIDI (para mostrar o nome do tom no resumo). */
+    private static int keyTonicMidi(CreationScoreTranscriber.Options o){
+        int[] majors={0,2,4,5,7,9,11,1,3,6,8,10};
+        return o.keyMode==0?majors[o.keyTonic%12]:(o.keyTonic+3)%12;
     }
-    private void startExport(boolean pdf){
+    /** Nomes escritos das notas (armadura/transporte), para os rótulos e o
+     * nome dentro da bolinha. */
+    private java.util.Map<String,String> noteNames(CreationScoreTranscriber.Options o,CreationScoreTranscriber.Result r){
+        java.util.Map<String,String> names=new java.util.HashMap<>();
+        for(CreationScoreTranscriber.WrittenNote n:r.notes)
+            names.put(n.sourceId,CreationScoreTranscriber.displayPitchName(
+                o.spellingModel,o.keyTonic,o.keyMode,n.writtenPitch));
+        return names;
+    }
+    /** Controles da leitura ampliada (modo composição, sem painel de ajustes). */
+    private void readingControls(CreationScoreTranscriber.Options o){
+        if(!o.modern){
+            addText("Esta partitura foi gerada por uma versão anterior. Atualize para a nova notação: pausas reais, pedal, tríolos, nomes nas notas e editor.",13,true,6);
+            attach(stageBody,button("Atualizar notação",true,()->mutate(()->review.setModern(true),false)),48,4);
+        }
+        LinearLayout tools=horizontal();
+        Button zoomOut=button("Zoom −",false,()->{if(notation!=null)notation.scoreZoomOut();});
+        Button zoomFit=button("Ajustar",false,()->{if(notation!=null)notation.scoreZoomReset();});
+        Button zoomIn=button("Zoom +",false,()->{if(notation!=null)notation.scoreZoomIn();});
+        Button names=button(noteNamesOn?"Ocultar nomes":"Nomes nas notas",false,()->{
+            noteNamesOn=!noteNamesOn;if(notation!=null)notation.showNoteNames(noteNamesOn);});
+        Button edit=button(editModeOn?"Sair da edição":"Editar notas",false,()->{
+            editModeOn=!editModeOn;render(false);
+            activity.message(editModeOn
+                ?"Modo de edição ativo: toque em uma nota para mudar a altura, dobrar/reduzir a duração, apagar ou restaurar."
+                :"Modo de edição desativado: toques voltam a selecionar notas.");});
+        tools.addView(zoomOut,new LayoutParams(0,dp(48),1f));
+        tools.addView(zoomFit,new LayoutParams(0,dp(48),1f));
+        tools.addView(zoomIn,new LayoutParams(0,dp(48),1f));
+        ((LayoutParams)zoomOut.getLayoutParams()).rightMargin=dp(6);
+        ((LayoutParams)zoomFit.getLayoutParams()).rightMargin=dp(6);
+        attach(stageBody,tools,48,6);
+        actions(stageBody,names,edit,
+                button("Exportar",false,this::chooseExport),
+                button("Ajustar partitura",false,this::editRhythm),
+                button("Divisão entre pautas",true,()->render(true)));
+        Button back=button("Voltar à composição",false,this::confirmClose);
+        Button save=button(saved?"Partitura salva ✓":"Salvar partitura",true,this::saveCurrent);
+        if(saved&&new LibraryStore(activity.prefs,activity.user).hasCreation(project.id)){
+            actions(stageBody,back,save);
+            addText("✓ Na Biblioteca Musical · abra a Biblioteca para estudar.",13,false,4);
+        }else if(saved){
+            Button add=button("Adicionar à Biblioteca",true,()->{
+                if(closed||busy)return;busy=true;
+                activity.addCreationScoreToLibrary(project.id,ok->{
+                    if(closed)return;busy=false;if(ok)render(false);
+                });
+            });
+            actions(stageBody,back,save,add);
+            addText("Partitura salva neste projeto e incluída no backup v4.",12,false,3);
+        }else{
+            actions(stageBody,back,save);
+            addText("Salve a partitura antes de adicioná-la à Biblioteca Musical.",12,false,3);
+        }
+        CreationScoreTranscriber.Result r=review.result();
+        if(!r.warnings.isEmpty())addText(r.warnings.size()+" avisos de interpretação MIDI — o MIDI original não muda.",12,false,4);
+    }
+    /** Escolha do formato de exportação (PDF/PNG pela gravura renderizada;
+     * MusicXML salva o arquivo para editores externos). */
+    private void chooseExport(){
+        LinearLayout panel=vertical();panel.setPadding(dp(16),dp(8),dp(16),0);
+        attach(panel,label("PDF: várias páginas A4 para imprimir ou enviar por WhatsApp/e-mail. "
+            +"PNG: imagem da partitura. MusicXML: arquivo para editar no MuseScore, Finale ou Flat.",
+            13,false,0xff57708A),-2,6);
+        new AlertDialog.Builder(activity).setTitle("Exportar partitura").setView(scrollableSettings(panel))
+            .setPositiveButton("PDF",(d,w)->exportSheet(true))
+            .setNeutralButton("PNG",(d,w)->exportSheet(false))
+            .setNegativeButton("MusicXML",(d,w)->exportMusicXml())
+            .show();
+    }
+    private void exportSheet(boolean pdf){
         if(closed||busy||notation==null)return;
         busy=true;
         AlertDialog progress=new AlertDialog.Builder(activity).setTitle("Exportando")
             .setMessage("Gerando o arquivo da partitura…").setCancelable(false).show();
-        progressWindow=progress;
         String base=project.title==null||project.title.trim().isEmpty()?"partitura":project.title.trim();
         CreationScoreExport.export(notation,activity.getExternalFilesDir(null),base,pdf,
             new CreationScoreExport.Callback(){
-                public void done(java.util.List<File> files,boolean truncated){
+                public void done(List<File> files,boolean truncated){
                     if(closed)return;
-                    busy=false;if(progressWindow!=null){progressWindow.dismiss();progressWindow=null;}
+                    busy=false;if(progress.isShowing())progress.dismiss();
                     if(files==null||files.isEmpty()){activity.message("Não foi possível gerar o arquivo.");return;}
                     shareFiles(files,pdf,truncated);
                 }
                 public void error(String message){
                     if(closed)return;
-                    busy=false;if(progressWindow!=null){progressWindow.dismiss();progressWindow=null;}
+                    busy=false;if(progress.isShowing())progress.dismiss();
                     activity.message(message);
                 }
             });
     }
-    private void shareFiles(java.util.List<File> files,boolean pdf,boolean truncated){
+    private void shareFiles(List<File> files,boolean pdf,boolean truncated){
         if(truncated)activity.message(pdf
-            ?"A partitura é muito longa: o PDF contém as primeiras 200 páginas."
+            ?"A partitura é muito longa: o PDF contém as primeiras páginas."
             :"A partitura é muito longa: a imagem mostra apenas o começo. Prefira o PDF.");
         try{
             ArrayList<android.net.Uri> uris=new ArrayList<>();
@@ -386,6 +456,59 @@ final class CreationScorePreviewScreen extends LinearLayout {
             activity.message("Arquivo gerado, mas não foi possível abrir o compartilhamento: "
                 +ex.getMessage());
         }
+    }
+    private void exportMusicXml(){
+        if(closed||busy||review==null)return;
+        busy=true;final int id=++generation;
+        worker.execute(()->{
+            try{
+                byte[] xml=review.result().xml.getBytes(StandardCharsets.UTF_8);
+                post(()->{if(closed||id!=generation)return;busy=false;
+                    activity.sheetExport.exportMusicXml(xml,project.title);});
+            }catch(Exception ex){post(()->{if(closed||id!=generation)return;busy=false;
+                activity.message("Não foi possível preparar o MusicXML: "+ex.getMessage());});}
+        });
+    }
+    /** Editor de notas: altera altura, duração, apaga ou restaura. */
+    private void openNoteEditor(String sourceId){
+        if(review==null||closed)return;
+        CreationScoreTranscriber.WrittenNote target=null;
+        for(CreationScoreTranscriber.WrittenNote n:review.result().notes)
+            if(n.sourceId.equals(sourceId)){target=n;break;}
+        if(target==null){activity.message("Nota não encontrada nesta versão da partitura.");return;}
+        CreationScoreTranscriber.Options o=review.options();
+        String name=CreationScoreTranscriber.displayPitchName(o.spellingModel,o.keyTonic,o.keyMode,target.writtenPitch)
+            +(target.writtenPitch/12-1);
+        LinearLayout panel=vertical();panel.setPadding(dp(16),dp(8),dp(16),0);
+        attach(panel,label(name+" · compasso "+(1+target.startTick/o.barTicks())
+            +(target.pitch!=target.writtenPitch?" · ajustada":"")
+            +(target.hand==1?" · mão direita":target.hand==2?" · mão esquerda":""),15,true,0xff172A44),-2,8);
+        LinearLayout pitchRow=horizontal();
+        pitchRow.addView(button("↓ Meio tom",false,()->editAction(()->review.adjustPitch(sourceId,-1))),new LayoutParams(0,dp(48),1));
+        pitchRow.addView(button("↑ Meio tom",false,()->editAction(()->review.adjustPitch(sourceId,1))),new LayoutParams(0,dp(48),1));
+        pitchRow.setPadding(0,0,0,dp(6));
+        attach(panel,pitchRow,54,4);
+        LinearLayout octaveRow=horizontal();
+        octaveRow.addView(button("↓ Oitava",false,()->editAction(()->review.adjustPitch(sourceId,-12))),new LayoutParams(0,dp(48),1));
+        octaveRow.addView(button("↑ Oitava",false,()->editAction(()->review.adjustPitch(sourceId,12))),new LayoutParams(0,dp(48),1));
+        octaveRow.setPadding(0,0,0,dp(6));
+        attach(panel,octaveRow,54,4);
+        LinearLayout durationRow=horizontal();
+        durationRow.addView(button("Metade da duração",false,()->editAction(()->review.scaleDuration(sourceId,-2))),new LayoutParams(0,dp(48),1));
+        durationRow.addView(button("Dobrar duração",false,()->editAction(()->review.scaleDuration(sourceId,2))),new LayoutParams(0,dp(48),1));
+        durationRow.setPadding(0,0,0,dp(6));
+        attach(panel,durationRow,54,4);
+        new AlertDialog.Builder(activity).setTitle("Editar nota").setView(scrollableSettings(panel))
+            .setPositiveButton("Apagar",(d,w)->new AlertDialog.Builder(activity)
+                .setTitle("Apagar nota?").setMessage("A nota sai da partitura escrita. A gravação MIDI original não muda.")
+                .setPositiveButton("Apagar",(x,y)->editAction(()->review.removeNote(sourceId)))
+                .setNegativeButton("Cancelar",null).show())
+            .setNeutralButton("Restaurar",(d,w)->editAction(()->review.restoreNote(sourceId)))
+            .setNegativeButton("Fechar",null)
+            .show();
+    }
+    private void editAction(Change action){
+        mutate(action,false);
     }
     // AlertDialog does not automatically constrain a custom LinearLayout in landscape.
     // Keep controls scrollable and native confirm/cancel actions outside the viewport.
@@ -418,13 +541,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         final String[] grids={"1/8","1/16","1/32"};
         Spinner grid=new Spinner(activity);grid.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,grids));
         grid.setSelection(o.grid==8?0:o.grid==16?1:2);
-        final int[] keys=CreationScoreTranscriber.KEY_FIFTHS;
-        Spinner key=new Spinner(activity);key.setAdapter(new ArrayAdapter<>(activity,
-            android.R.layout.simple_spinner_dropdown_item,CreationScoreTranscriber.KEY_LABELS));
-        int currentKey=0;for(int i=0;i<keys.length;i++)if(keys[i]==o.keyFifths){currentKey=i;break;}
-        key.setSelection(currentKey);
-        responsiveFields(content,new String[]{"Andamento (BPM)","Compasso","Precisão rítmica","Tom (armadura)"},
-            new View[]{tempo,meter,grid,key});
+        responsiveFields(content,new String[]{"Andamento (BPM)","Compasso","Precisão rítmica"},new View[]{tempo,meter,grid});
         final String[] names={"Rigorosa","Equilibrada","Flexível"};
         Spinner regular=new Spinner(activity);regular.setAdapter(new ArrayAdapter<>(activity,
             android.R.layout.simple_spinner_dropdown_item,names));
@@ -435,6 +552,37 @@ final class CreationScorePreviewScreen extends LinearLayout {
         attach(level,label("Corrige variações entre ataques da mesma voz. A gravação MIDI original permanece intacta.",
             12,false,0xff57708A),-2,4);
         attach(content,level,-2,4);
+        attach(content,button("Detectar compasso e BPM da gravação",false,()->{
+            int[] suggestion=review.suggestMeter();
+            if(suggestion==null){activity.message("Não foi possível detectar o compasso desta gravação. Ajuste manualmente.");return;}
+            tempo.setText(String.valueOf(suggestion[2]));
+            meter.setSelection(suggestion[1]==8?3:suggestion[0]==4?2:suggestion[0]==3?1:0);
+            activity.message("Sugestão: compasso "+suggestion[0]+"/"+suggestion[1]+" e "+suggestion[2]+" BPM. Confira antes de aplicar.");
+        }),48,6);
+        // Armadura de tom (ex.: Mi♭ maior escreve Si♭, Mi♭ e Lá♭ na armadura).
+        final int[] keyTonics={-1,0,7,2,9,4,11,6,1,5,10,3,8,9,4,11,6,1,8,3,10,2,7,0,5,10,3,8};
+        final int[] keyModes={0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+        final String[] keyNames={"Sem tom definido",
+            "Dó maior","Sol maior","Ré maior","Lá maior","Mi maior","Si maior","Fá♯ maior","Ré♭ maior","Fá maior","Si♭ maior","Mi♭ maior","Lá♭ maior",
+            "Lá menor","Mi menor","Si menor","Fá♯ menor","Dó♯ menor","Sol♯ menor","Ré♯ menor","Ré menor","Sol menor","Dó menor","Fá menor","Si♭ menor","Mi♭ menor"};
+        Spinner key=new Spinner(activity);key.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,keyNames));
+        int currentKey=-1;
+        for(int i=0;i<keyTonics.length;i++)if(keyTonics[i]==o.keyTonic&&keyModes[i]==o.keyMode)currentKey=i;
+        key.setSelection(Math.max(0,currentKey));
+        LinearLayout keyRow=vertical();
+        attach(keyRow,label("Tom da música (armadura)",14,true,0xff172A44),-2,4);
+        attach(keyRow,key,48,4);
+        attach(keyRow,label("Escreve as notas com os nomes do tom escolhido (ex.: Mi♭ maior mostra 3 bemóis e as notas Si♭, Mi♭, Lá♭).",
+            12,false,0xff57708A),-2,4);
+        attach(content,keyRow,-2,4);
+        final CheckBox transpose=new CheckBox(activity);
+        transpose.setText("Transportar para Dó maior (escrita)");
+        transpose.setChecked(o.transpose!=0);
+        attach(content,transpose,-2,4);
+        final CheckBox easy=new CheckBox(activity);
+        easy.setText("Modo fácil: só melodia e baixo");
+        easy.setChecked(o.easyMode);
+        attach(content,easy,-2,4);
         new AlertDialog.Builder(activity).setTitle("Ajustar partitura").setView(scrollableSettings(content))
             .setPositiveButton("Atualizar",(d,w)->{
                 try{
@@ -442,8 +590,20 @@ final class CreationScorePreviewScreen extends LinearLayout {
                     int m=meter.getSelectedItemPosition(),beats=m==3?6:m+2,beatType=m==3?8:4;
                     int step=new int[]{8,16,32}[grid.getSelectedItemPosition()];
                     CreationScoreTranscriber.Regularization chosenRegularization=CreationScoreTranscriber.Regularization.values()[regular.getSelectedItemPosition()];
-                    int chosenKey=keys[key.getSelectedItemPosition()];
-                    mutate(()->review.configure(bpm,beats,beatType,step,chosenRegularization,chosenKey),false);
+                    int chosenTonic=keyTonics[key.getSelectedItemPosition()];
+                    int chosenMode=keyModes[key.getSelectedItemPosition()];
+                    int chosenTranspose=0;
+                    if(transpose.isChecked()&&chosenTonic>=0){
+                        chosenTranspose=(12-chosenTonic)%12;
+                        if(chosenTranspose>6)chosenTranspose-=12;
+                    }
+                    final int finalTonic=chosenTonic,finalMode=chosenMode,finalTranspose=chosenTranspose;
+                    mutate(()->{
+                        review.configure(bpm,beats,beatType,step,chosenRegularization);
+                        review.setKey(finalTonic,finalMode);
+                        review.setTranspose(finalTranspose);
+                        review.setEasyMode(easy.isChecked());
+                    },false);
                 }catch(Exception ex){activity.message("Andamento inválido: "+ex.getMessage());}
             }).setNegativeButton("Cancelar",null).show();
     }
@@ -580,8 +740,11 @@ final class CreationScorePreviewScreen extends LinearLayout {
         addText("Toque nas notas da pauta ou marque na lista. Quando duas notas sobrepostas forem indistinguíveis, use a lista para escolher sem ambiguidade.",12,false,0);
     }
     private String noteLabel(CreationScoreTranscriber.WrittenNote n,CreationScoreTranscriber.Options o){
-        String[] names={"Dó","Dó♯","Ré","Ré♯","Mi","Fá","Fá♯","Sol","Sol♯","Lá","Lá♯","Si"};
-        return names[n.pitch%12]+(n.pitch/12-1)+" · compasso "+(1+n.startTick/o.barTicks())
+        String name=CreationScoreTranscriber.displayPitchName(o.spellingModel,o.keyTonic,o.keyMode,n.writtenPitch)
+            +(n.writtenPitch/12-1);
+        if(n.pitch!=n.writtenPitch)name+=" (gravada como "
+            +CreationScoreTranscriber.displayPitchName(o.spellingModel,o.keyTonic,o.keyMode,n.pitch)+(n.pitch/12-1)+")";
+        return name+" · compasso "+(1+n.startTick/o.barTicks())
             +" · pauta "+n.staff+" · voz "+n.voice+" · "
             +(n.hand==1?"mão direita":n.hand==2?"mão esquerda":"mão não atribuída");
     }

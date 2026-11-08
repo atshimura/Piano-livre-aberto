@@ -51,6 +51,7 @@
  let opticalLoopEditing=false,opticalLoopStart=null,opticalWaitRaf=0,opticalWaitDeadline=0,opticalWaitDuration=0;
  let opticalHand=0,opticalCueKey='',opticalCueSvg=null;
  let opticalContextState=null,opticalContextMeasure=-1;
+ let noteNamesOn=false;
  const viewport=document.getElementById('viewport'), message=document.getElementById('loading');
  function inform(s){message.textContent=s;message.style.display='block';}
  function reportFailure(token,code,stage,error){
@@ -1178,6 +1179,40 @@
   });
   console.log('C2_NOTE_PICKER '+JSON.stringify({matched:creationPicker.matched,
    ambiguous:creationPicker.ambiguous,missing:creationPicker.missing}));
+  paintNoteNames();
+ }
+ /* Nome da nota dentro da bolinha: rótulos desenhados com a grafia da
+  * armadura informada pelo app (campo "name"), sem alterar a partitura. */
+ function paintNoteNames(){
+  const svg=document.querySelector('#score svg');
+  if(!svg)return;
+  const former=svg.querySelector('#pl-note-names');
+  if(former)former.remove();
+  if(!noteNamesOn||!creationSource.length||!window.CreationNotePicker)return;
+  const heads=CreationNotePicker.collect(osmd&&osmd.graphic);
+  if(!heads.length)return;
+  const byName=new Map();
+  creationSource.forEach(function(n){if(n&&n.id&&n.name)byName.set(n.id,n.name);});
+  if(!byName.size)return;
+  CreationNotePicker.reconcile(heads,creationSource);
+  const layer=document.createElementNS('http://www.w3.org/2000/svg','g');
+  layer.id='pl-note-names';layer.style.pointerEvents='none';
+  let drawn=0;
+  heads.forEach(function(h){
+   if(!h.id)return;
+   const name=byName.get(h.id);
+   if(!name)return;
+   const text=document.createElementNS('http://www.w3.org/2000/svg','text');
+   text.setAttribute('x',String(h.x));text.setAttribute('y',String(h.y+4.2));
+   text.setAttribute('text-anchor','middle');
+   text.setAttribute('font-size','10.5');
+   text.setAttribute('font-family','system-ui,sans-serif');
+   text.setAttribute('fill','#16324e');
+   text.textContent=name;
+   layer.appendChild(text);drawn++;
+  });
+  svg.appendChild(layer);
+  console.log('PL_NOTE_NAMES '+JSON.stringify({drawn:drawn}));
  }
  window.PianoNotation={
    load:render,
@@ -1189,6 +1224,10 @@
    creationSelect:function(selected){
     creationSelected=Array.isArray(selected)?selected:[];
     if(creationPicker)creationPicker.select(creationSelected);
+   },
+   noteNames:function(enabled){
+    noteNamesOn=!!enabled;
+    paintNoteNames();
    },
    analysis:function(){return {context:opticalContextState?{measure:opticalContextMeasure+1,railWidthCss:opticalContextState.railWidthCss,sourceMeasures:opticalContextState.active.map(function(a){return {clef:a.clef&&a.clef.sourceMeasure,key:a.key&&a.key.sourceMeasure,time:a.time&&a.time.sourceMeasure};})}:null,windowPlan:studyWindow?{windows:studyWindow.windows,current:studyWindow.current,fullScale:studyWindow.fullScale}:null,profile:studyProfile,geometry:studyAnalysis,mapping:opticalReconciliation,layoutAdaptation:studyVerticalAdaptation,notes:osmd&&osmd.graphic?EngravingAudit.inspect(osmd.graphic,Infinity):[]};},
    seek:function(beat,animated,bpm,playing){

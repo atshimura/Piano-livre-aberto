@@ -77,8 +77,15 @@ public final class CreationScoreTranscriberTest {
             e(0x90,48,80,0,0),e(0xB0,64,127,50_000_000L,1),
             e(0x80,48,0,600_000_000L,2),e(0xB0,64,0,1_500_000_000L,3));
         CreationScoreTranscriber.Result ped=read(pedal,seg(0,1_600_000_000L),defaults);
-        ok(ped.notes.get(0).endTick==960&&ped.notes.get(0).staff==2,
-                "sustain pedal must not extend written note");
+        // Notação moderna: a nota dura o que se ouve — o pedal prolonga até a
+        // liberação do pedal (1,5 s = 2400 ticks a 100 BPM).
+        ok(ped.notes.get(0).endTick==2400&&ped.notes.get(0).staff==2,
+                "sustain pedal extends the written note until the sound ends");
+        CreationScoreTranscriber.Result pedLegacy=read(pedal,seg(0,1_600_000_000L),
+            CreationScoreTranscriber.Options.legacy(100,4,4,16,
+                CreationScoreTranscriber.StaffMode.SUGGESTED,60,null));
+        ok(pedLegacy.notes.get(0).endTick==960,
+                "legacy model keeps the pedal out of the written note");
         List<MidiTakeRecorder.Event> longNote=Arrays.asList(e(0x90,60,80,0,0),e(0x80,60,0,4_500_000_000L,1));
         CreationScoreTranscriber.Result tied=read(longNote,seg(0,5_000_000_000L),defaults);
         ok(tied.measures==2&&tied.xml.contains("<tied type=\"start\"/>")&&tied.xml.contains("<tied type=\"stop\"/>"),

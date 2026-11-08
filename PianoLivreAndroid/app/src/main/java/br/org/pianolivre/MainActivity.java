@@ -16,8 +16,10 @@ import java.util.*;
 
 /** Prototype native Android piano trainer. Needs real-device USB MIDI testing. */
 public class MainActivity extends Activity {
- static final int IMPORT=100,EXPORT=101,RESTORE=102,CREATION_MIDI_EXPORT=103;
+ static final int IMPORT=100,EXPORT=101,RESTORE=102,CREATION_MIDI_EXPORT=103,CREATION_SHEET_EXPORT=104;
  private final ZCreationExport creationExport=new ZCreationExport(this);
+ /** Partitura gerada: MusicXML para editores externos (MuseScore/Finale/Flat). */
+ final ZSheetExport sheetExport=new ZSheetExport(this);
  private final ZStudyHistoryUi studyHistory=new ZStudyHistoryUi(this);
  private final ZProfilesUi profilesUi=new ZProfilesUi(this);
  private final ZChordCalibrationUi chordUi=new ZChordCalibrationUi(this);
@@ -77,7 +79,7 @@ public class MainActivity extends Activity {
   return midiInput.createReceiver(generation);
  }
  void rearmWaitIfStudying(){studyEngine.rearmWaitIfStudying();}
- @Override public void onCreate(Bundle state){super.onCreate(state);if(state!=null)creationExport.restoreState(state);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);ZEdgeInsets.apply(this);
+ @Override public void onCreate(Bundle state){super.onCreate(state);if(state!=null){creationExport.restoreState(state);sheetExport.restoreState(state);}getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);ZEdgeInsets.apply(this);
   // Keep screen awake only while the app is visible (no persistent wakelock).
   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
   prefs=getSharedPreferences("piano_data",MODE_PRIVATE);
@@ -185,6 +187,7 @@ public class MainActivity extends Activity {
  @Override protected void onActivityResult(int request,int result,Intent data){
   super.onActivityResult(request,result,data);
   if(creationExport.onActivityResult(request,result,data))return;
+  if(sheetExport.onActivityResult(request,result,data))return;
   if(ZBackupFlow.onActivityResult(this,request,result,data))return;
   if(result!=RESULT_OK||data==null)return;
   Uri uri=data.getData();if(uri==null)return;
@@ -292,7 +295,7 @@ public class MainActivity extends Activity {
  void exportCreationMidi(String id,String title){creationExport.exportMidi(id,title);}
  void exportCreationTake(CreationProjectStore.Project p){creationExport.exportTake(p);}
  static String sha256Creation(byte[] bytes)throws Exception{return ZCreationExport.sha256(bytes);}
- @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);creationExport.saveState(state);}
+ @Override protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);creationExport.saveState(state);sheetExport.saveState(state);}
  void restoreBackup(){ZBackupFlow.restore(this);}
  // Textos do fluxo de falhas de notação: fonte da verdade permanece aqui
  // (contratos tests/test_impl4_osmd_contract.py verificam estes literais);
@@ -365,7 +368,7 @@ public class MainActivity extends Activity {
   midiDestroyed=true;
   if(midiManager!=null&&midiDeviceCallback!=null)midiManager.unregisterDeviceCallback(midiDeviceCallback);
   handler.removeCallbacks(ticker);midiConnection.destroy();
-  if(screens!=null)screens.destroyNotation();creationExport.shutdown();
+  if(screens!=null)screens.destroyNotation();creationExport.shutdown();sheetExport.shutdown();
   super.onDestroy();
  }
 }

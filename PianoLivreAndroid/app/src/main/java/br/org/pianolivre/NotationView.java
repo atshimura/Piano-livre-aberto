@@ -45,14 +45,22 @@ public final class NotationView extends WebView {
  private final int originalLayerType;
  private final java.util.Set<String> creationSourceIds=new java.util.HashSet<>();
  private String creationSourceJson="[]",creationSelectionJson="[]";
- /** C2-B only: bind graphical noteheads to stable MIDI Note On identities. */
+ /** C2-B only: bind graphical noteheads to stable MIDI Note On identities.
+  * O nome escrito (armadura/transporte) acompanha cada nota para os rótulos. */
  public void setCreationSourceNotes(java.util.List<CreationScoreTranscriber.WrittenNote> notes){
+  setCreationSourceNotes(notes,null);
+ }
+ public void setCreationSourceNotes(java.util.List<CreationScoreTranscriber.WrittenNote> notes,
+                                    java.util.Map<String,String> displayNames){
   creationSourceIds.clear();org.json.JSONArray result=new org.json.JSONArray();
   if(notes!=null)for(CreationScoreTranscriber.WrittenNote n:notes){
    if(n==null||n.sourceId==null||!creationSourceIds.add(n.sourceId))continue;
    org.json.JSONObject item=new org.json.JSONObject();
-   try{item.put("id",n.sourceId);item.put("pitch",n.pitch);item.put("staff",n.staff);
-       item.put("start",n.startTick);item.put("end",n.endTick);result.put(item);}
+   try{item.put("id",n.sourceId);item.put("pitch",n.writtenPitch);item.put("staff",n.staff);
+       item.put("start",n.startTick);item.put("end",n.endTick);
+       if(displayNames!=null&&displayNames.containsKey(n.sourceId))
+        item.put("name",displayNames.get(n.sourceId));
+       result.put(item);}
    catch(org.json.JSONException ex){android.util.Log.w("PianoLivreNotation","C2_MAP_SKIP",ex);}
   }
   creationSourceJson=result.toString();creationSelectionJson="[]";
@@ -309,6 +317,11 @@ public final class NotationView extends WebView {
  }
  public void resizeToFit(){
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)resizeWhenViewportReady(++resizeSequence,scoreGeneration,0);
+ }
+ /** Nome da nota dentro da bolinha (opção do compositor). */
+ public void showNoteNames(boolean enabled){
+  if(!disposed&&freeLayout&&htmlReady&&scoreRendered)
+   evaluateJavascript("PianoNotation.noteNames("+(enabled?"true":"false")+")",null);
  }
  /** Free-layout zoom helpers for the Creation preview. The WebView pinch
   * gesture remains available; these buttons work regardless of viewport quirks

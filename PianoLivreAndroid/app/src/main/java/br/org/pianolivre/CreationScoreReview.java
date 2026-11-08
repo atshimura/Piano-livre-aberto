@@ -60,16 +60,17 @@ public final class CreationScoreReview {
             CreationScoreTranscriber.StaffMode mode,int split,
             Map<String,Integer> staff,CreationScoreTranscriber.Regularization regular,
             Map<String,Integer> hands,Map<String,Integer> voices,
-            Map<String,CreationScoreTranscriber.Timing> rhythm,boolean legacy,int keyFifths){
-        return new CreationScoreTranscriber.Options(bpm,beats,beatType,grid,mode,split,staff,
-            regular,hands,voices,rhythm,legacy,keyFifths);
+            Map<String,CreationScoreTranscriber.Timing> rhythm,boolean legacy){
+        return full(bpm,beats,beatType,grid,mode,split,staff,
+            regular,hands,voices,rhythm,legacy,options.keyTonic,options.keyMode,
+            options.modern,options.transpose,options.easyMode,options.pitchOffsets,options.removedNotes);
     }
     private CreationScoreTranscriber.Options with(Map<String,Integer> staff,
             Map<String,Integer> hands,Map<String,Integer> voices,
             Map<String,CreationScoreTranscriber.Timing> rhythm){
         return copy(options.bpm,options.beats,options.beatType,options.grid,
             options.staffMode,options.splitPitch,staff,options.regularization,hands,voices,
-            rhythm,options.legacyTiming,options.keyFifths);
+            rhythm,options.legacyTiming);
     }
     private void retainSelection(){
         Set<String> valid=new HashSet<>();
@@ -81,31 +82,126 @@ public final class CreationScoreReview {
     }
     public synchronized void configure(int bpm,int beats,int beatType,int grid,
                                         CreationScoreTranscriber.Regularization regular)throws IOException{
-        configure(bpm,beats,beatType,grid,regular,options.keyFifths);
-    }
-    public synchronized void configure(int bpm,int beats,int beatType,int grid,
-                                        CreationScoreTranscriber.Regularization regular,int keyFifths)throws IOException{
         if(bpm==options.bpm&&beats==options.beats&&beatType==options.beatType&&grid==options.grid
-           &&regular==options.regularization&&keyFifths==options.keyFifths&&!options.legacyTiming)return;
+           &&regular==options.regularization&&!options.legacyTiming)return;
         apply(copy(bpm,beats,beatType,grid,options.staffMode,options.splitPitch,
             options.staffOverrides,regular,options.handOverrides,options.voiceOverrides,
-            options.rhythmOverrides,false,keyFifths));
+            options.rhythmOverrides,false));
     }
-    /** Escolha de tom (armadura) e grafia das notas; nunca altera o MIDI. */
-    public synchronized void setKeyFifths(int keyFifths)throws IOException{
-        if(keyFifths<CreationScoreTranscriber.MIN_FIFTHS||keyFifths>CreationScoreTranscriber.MAX_FIFTHS)
-            throw new IOException("Tom inválido");
-        if(keyFifths==options.keyFifths)return;
-        apply(copy(options.bpm,options.beats,options.beatType,options.grid,
+    private CreationScoreTranscriber.Options full(int bpm,int beats,int beatType,int grid,
+            CreationScoreTranscriber.StaffMode mode,int split,
+            Map<String,Integer> staff,CreationScoreTranscriber.Regularization regular,
+            Map<String,Integer> hands,Map<String,Integer> voices,
+            Map<String,CreationScoreTranscriber.Timing> rhythm,boolean legacy,
+            int keyTonic,int keyMode,boolean modern,int transpose,boolean easyMode,
+            Map<String,Integer> pitches,Set<String> removed){
+        int model=modern?CreationScoreTranscriber.SPELLING_MODERN
+            :keyTonic>=0&&options.spellingModel==CreationScoreTranscriber.SPELLING_MODERN
+                ?CreationScoreTranscriber.SPELLING_ONDA4:options.spellingModel;
+        return new CreationScoreTranscriber.Options(bpm,beats,beatType,grid,mode,split,staff,
+            regular,hands,voices,rhythm,legacy,keyTonic,keyMode,modern,transpose,easyMode,pitches,removed,model);
+    }
+    private CreationScoreTranscriber.Options withAll(int keyTonic,int keyMode,boolean modern,int transpose,
+            boolean easyMode,Map<String,Integer> pitches,Set<String> removed){
+        return full(options.bpm,options.beats,options.beatType,options.grid,
             options.staffMode,options.splitPitch,options.staffOverrides,options.regularization,
-            options.handOverrides,options.voiceOverrides,options.rhythmOverrides,
-            options.legacyTiming,keyFifths));
+            options.handOverrides,options.voiceOverrides,options.rhythmOverrides,options.legacyTiming,
+            keyTonic,keyMode,modern,transpose,easyMode,pitches,removed);
+    }
+    /** Armadura de tom escolhida pelo compositor (ex.: Mi♭ maior). Escolher um
+     * tom em uma partitura antiga adota a grafia moderna (escala do tom). */
+    public synchronized void setKey(int tonic,int mode)throws IOException{
+        if(tonic<-1||tonic>11||mode<0||mode>1)throw new IOException("Tom inválido");
+        if(options.keyTonic==tonic&&options.keyMode==mode)return;
+        apply(withAll(tonic,mode,options.modern||tonic>=0,options.transpose,
+            options.easyMode,options.pitchOffsets,options.removedNotes));
+    }
+    /** Atualiza partituras antigas para o modelo atual de notação. */
+    public synchronized void setModern(boolean modern)throws IOException{
+        if(options.modern==modern)return;
+        apply(withAll(options.keyTonic,options.keyMode,modern,options.transpose,
+            options.easyMode,options.pitchOffsets,options.removedNotes));
+    }
+    /** Transporte escrito para o tom escolhido (o MIDI original permanece intacto). */
+    public synchronized void setTranspose(int transpose)throws IOException{
+        if(transpose<-11||transpose>11)throw new IOException("Transporte inválido");
+        if(options.transpose==transpose)return;
+        apply(withAll(options.keyTonic,options.keyMode,options.modern,transpose,
+            options.easyMode,options.pitchOffsets,options.removedNotes));
+    }
+    /** Modo fácil: mantém só a melodia (nota mais aguda) e o baixo (mais grave). */
+    public synchronized void setEasyMode(boolean easyMode)throws IOException{
+        if(options.easyMode==easyMode)return;
+        apply(withAll(options.keyTonic,options.keyMode,options.modern,options.transpose,
+            easyMode,options.pitchOffsets,options.removedNotes));
+    }
+    /** Editor: desloca a altura escrita de uma nota em semitons. */
+    public synchronized void adjustPitch(String sourceId,int deltaSemis)throws IOException{
+        if(Math.abs(deltaSemis)>24)throw new IOException("Deslocamento inválido");
+        requireExisting(sourceId);
+        Map<String,Integer> pitches=new HashMap<>(options.pitchOffsets);
+        int updated=pitches.getOrDefault(sourceId,0)+deltaSemis;
+        if(updated==0)pitches.remove(sourceId);else pitches.put(sourceId,updated);
+        apply(withAll(options.keyTonic,options.keyMode,options.modern,options.transpose,
+            options.easyMode,pitches,options.removedNotes));
+    }
+    /** Editor: restaura a nota original (remove ajustes de altura e ritmo). */
+    public synchronized void restoreNote(String sourceId)throws IOException{
+        requireExisting(sourceId);
+        if(!options.pitchOffsets.containsKey(sourceId)&&!options.rhythmOverrides.containsKey(sourceId))return;
+        Map<String,Integer> pitches=new HashMap<>(options.pitchOffsets);pitches.remove(sourceId);
+        Map<String,CreationScoreTranscriber.Timing> rhythms=new HashMap<>(options.rhythmOverrides);rhythms.remove(sourceId);
+        apply(full(options.bpm,options.beats,options.beatType,options.grid,options.staffMode,
+            options.splitPitch,options.staffOverrides,options.regularization,options.handOverrides,
+            options.voiceOverrides,rhythms,options.legacyTiming,options.keyTonic,options.keyMode,
+            options.modern,options.transpose,options.easyMode,pitches,options.removedNotes));
+    }
+    /** Editor: apaga uma nota escrita (o MIDI original permanece intacto). */
+    public synchronized void removeNote(String sourceId)throws IOException{
+        requireExisting(sourceId);
+        if(options.removedNotes.contains(sourceId))return;
+        Set<String> removed=new HashSet<>(options.removedNotes);removed.add(sourceId);
+        apply(withAll(options.keyTonic,options.keyMode,options.modern,options.transpose,
+            options.easyMode,options.pitchOffsets,removed));
+    }
+    /** Editor: dobra ou reduz à metade a duração escrita de uma nota, sem
+     * ultrapassar o próximo ataque da mesma linha rítmica. */
+    public synchronized void scaleDuration(String sourceId,int factor)throws IOException{
+        if(factor!=2&&factor!=-2)throw new IOException("Fator de duração inválido");
+        requireExisting(sourceId);
+        CreationScoreTranscriber.WrittenNote target=null;
+        for(CreationScoreTranscriber.WrittenNote n:result.notes)if(n.sourceId.equals(sourceId)){target=n;break;}
+        if(target==null)throw new IOException("Nota não encontrada");
+        long start=target.startTick,end=target.endTick,length=end-start;
+        long nextStart=Long.MAX_VALUE;
+        for(CreationScoreTranscriber.WrittenNote n:result.notes)
+            if(n.rhythmLane.equals(target.rhythmLane)&&n.staff==target.staff
+               &&n.startTick>start&&(factor==2?n.startTick<end+length:n.startTick<end))
+                nextStart=Math.min(nextStart,n.startTick);
+        long newEnd=factor==2?end+length:start+length/2;
+        if(factor==-2&&length<240)throw new IOException("A nota já é muito curta para reduzir");
+        if(newEnd>nextStart)throw new IOException("A duração nova se sobreporia à nota seguinte");
+        Map<String,CreationScoreTranscriber.Timing> rhythms=new HashMap<>(options.rhythmOverrides);
+        rhythms.put(sourceId,new CreationScoreTranscriber.Timing(start,newEnd));
+        apply(full(options.bpm,options.beats,options.beatType,options.grid,options.staffMode,
+            options.splitPitch,options.staffOverrides,options.regularization,options.handOverrides,
+            options.voiceOverrides,rhythms,options.legacyTiming,options.keyTonic,options.keyMode,
+            options.modern,options.transpose,options.easyMode,options.pitchOffsets,options.removedNotes));
+    }
+    private void requireExisting(String sourceId)throws IOException{
+        for(CreationScoreTranscriber.WrittenNote n:result.notes)
+            if(n.sourceId.equals(sourceId))return;
+        throw new IOException("Nota não encontrada nesta versão da partitura");
+    }
+    /** Sugestão de compasso e BPM extraída dos intervalos da gravação. */
+    public synchronized int[] suggestMeter(){
+        return CreationScoreTranscriber.suggestMeterAndBpm(events,segments);
     }
     public synchronized void split(CreationScoreTranscriber.StaffMode mode,int pitch)throws IOException{
         if(options.staffMode==mode&&options.splitPitch==pitch)return;
         apply(copy(options.bpm,options.beats,options.beatType,options.grid,
             mode,pitch,options.staffOverrides,options.regularization,options.handOverrides,
-            options.voiceOverrides,options.rhythmOverrides,options.legacyTiming,options.keyFifths));
+            options.voiceOverrides,options.rhythmOverrides,options.legacyTiming));
     }
     public synchronized boolean toggle(String sourceId){
         boolean found=false;

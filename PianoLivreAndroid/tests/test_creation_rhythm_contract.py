@@ -25,8 +25,13 @@ class RhythmContracts(unittest.TestCase):
         self.assertIn("syncSelection()",screen)
     def test_sidecar_backwards_compatibility(self):
         store=java("CreationScoreStore.java")
-        self.assertIn("FORMAT=2, FORMAT_LEGACY=1",store)
+        # Formato 4 guarda o modelo moderno completo (grafia/transporte/editor);
+        # formatos 1 e 2 (legados) e 3 (Onda 4, quintas da armadura) continuam
+        # sendo lidos e regenerados byte a byte.
+        self.assertIn("FORMAT=4, FORMAT_LEGACY=1",store)
+        self.assertIn("format!=FORMAT_LEGACY&&format!=2&&format!=3",store)
         self.assertIn("Options.legacy(",store)
+        self.assertIn("Options.onda4(",store)
         self.assertIn("writeIntMap(data,o.handOverrides)",store)
         self.assertIn("o.rhythmOverrides.size()",store)
         self.assertIn("CreationScoreTranscriber.transcribe(p.events,p.segments,o,savedTitle).xml",store)

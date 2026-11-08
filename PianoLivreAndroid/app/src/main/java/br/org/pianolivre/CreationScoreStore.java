@@ -13,7 +13,10 @@ import java.util.*;
  */
 public final class CreationScoreStore {
  public static final int MAX_SCORE_BYTES=2*1024*1024, MAX_TOTAL_BYTES=8*1024*1024;
- private static final int MAGIC=0x504c5331, FORMAT=3, FORMAT_LEGACY=1, MAX_OVERRIDES=CreationScoreTranscriber.MAX_NOTES;
+ /** Formato 3: Onda 4 (0.9.67) — guardava apenas as quintas da armadura.
+  * Formato 4: modelo moderno completo (grafia/tom/transporte/editor).
+  * Formatos 1 e 2 continuam lidos e regenerados byte a byte. */
+ private static final int MAGIC=0x504c5331, FORMAT=4, FORMAT_LEGACY=1, MAX_OVERRIDES=CreationScoreTranscriber.MAX_NOTES;
  public static final String DIRECTORY="creation-scores", EXT=".pls";
  private final File directory;
  private final CreationProjectStore projects;
@@ -117,10 +120,17 @@ public final class CreationScoreStore {
    CreationScoreTranscriber.Timing time=o.rhythmOverrides.get(key);
    data.writeUTF(key);data.writeLong(time.startTick);data.writeLong(time.endTick);
   }
-  // PLS1 format 3 adds the written key (armadura) chosen for this score.
-  if(o.keyFifths<CreationScoreTranscriber.MIN_FIFTHS||o.keyFifths>CreationScoreTranscriber.MAX_FIFTHS)
-   throw new IOException("Tom inválido");
-  data.writeInt(o.keyFifths);
+  // PLS1 format 4 adds the modern notation model (grafia/tom/transporte/editor).
+  data.writeInt(o.spellingModel);
+  data.writeInt(o.keyTonic);data.writeInt(o.keyMode);data.writeBoolean(o.modern);
+  data.writeInt(o.transpose);data.writeBoolean(o.easyMode);
+  writeIntMap(data,o.pitchOffsets);
+  if(o.removedNotes.size()>MAX_OVERRIDES)throw new IOException("Muitas notas apagadas");
+  data.writeInt(o.removedNotes.size());
+  List<String> removedIds=new ArrayList<>(o.removedNotes);Collections.sort(removedIds);
+  for(String key:removedIds){
+   if(key.length()>110)throw new IOException("ID de nota apagada inválido");data.writeUTF(key);
+  }
   data.writeInt(music.length);data.write(music);data.flush();
   byte[] raw=buffer.toByteArray();if(raw.length+32>MAX_SCORE_BYTES)throw new IOException("Partitura excede o limite");
   buffer.write(hash(raw));return buffer.toByteArray();
@@ -132,7 +142,7 @@ public final class CreationScoreStore {
   DataInputStream in=new DataInputStream(new ByteArrayInputStream(body));
   if(in.readInt()!=MAGIC)throw new IOException("Partitura não reconhecida");
   int format=in.readInt();
-  if(format!=FORMAT&&format!=2&&format!=FORMAT_LEGACY)throw new IOException("Formato de partitura desconhecido");
+  if(format!=FORMAT&&format!=FORMAT_LEGACY&&format!=2&&format!=3)throw new IOException("Formato de partitura desconhecido");
   String projectId=id(in.readUTF());int profile=in.readInt();String expected=in.readUTF();String savedTitle=in.readUTF();
   if(savedTitle.length()>255)throw new IOException("Título da transcrição inválido");
   if(!projectId.equals(id(p.id))||profile!=p.profileId||!expected.equals(fingerprint(p)))
@@ -163,15 +173,38 @@ public final class CreationScoreStore {
     if(key.length()>110||rhythms.put(key,new CreationScoreTranscriber.Timing(start,end))!=null)
      throw new IOException("Ajuste rítmico duplicado");
    }
-   int keyFifths=0;
-   if(format>=3){
-    keyFifths=in.readInt();
-    if(keyFifths<CreationScoreTranscriber.MIN_FIFTHS||keyFifths>CreationScoreTranscriber.MAX_FIFTHS)
-     throw new IOException("Tom inválido");
-   }
    o=new CreationScoreTranscriber.Options(bpm,beats,type,grid,
     CreationScoreTranscriber.StaffMode.values()[mode],split,overrides,
-    CreationScoreTranscriber.Regularization.values()[reg],hands,voices,rhythms,legacy,keyFifths);
+    CreationScoreTranscriber.Regularization.values()[reg],hands,voices,rhythms,legacy);
+   if(format==3){
+    // Onda 4 (0.9.67): quintas da armadura maior; grafia preservada byte a byte.
+    int fifths=in.readInt();
+    if(fifths<CreationScoreTranscriber.MIN_FIFTHS||fifths>CreationScoreTranscriber.MAX_FIFTHS)
+     throw new IOException("Tom da armadura inválido");
+    o=CreationScoreTranscriber.Options.onda4(fifths,bpm,beats,type,grid,
+     CreationScoreTranscriber.StaffMode.values()[mode],split,overrides,
+     CreationScoreTranscriber.Regularization.values()[reg],hands,voices,rhythms,legacy);
+   }
+   if(format==FORMAT){
+    int spellingModel=in.readInt();
+    int tonic=in.readInt(),keyMode=in.readInt();
+    if(tonic<-1||tonic>11||keyMode<0||keyMode>1)throw new IOException("Tom da armadura inválido");
+    boolean modern=in.readBoolean();int transpose=in.readInt();
+    if(transpose<-11||transpose>11)throw new IOException("Transporte inválido");
+    boolean easy=in.readBoolean();
+    Map<String,Integer> pitches=readIntMap(in);
+    int removedCount=in.readInt();
+    if(removedCount<0||removedCount>MAX_OVERRIDES)throw new IOException("Notas apagadas inválidas");
+    Set<String> removed=new HashSet<>();
+    for(int i=0;i<removedCount;i++){
+     String key=in.readUTF();
+     if(key.isEmpty()||key.length()>110||!removed.add(key))throw new IOException("Nota apagada duplicada");
+    }
+    o=new CreationScoreTranscriber.Options(bpm,beats,type,grid,
+     CreationScoreTranscriber.StaffMode.values()[mode],split,overrides,
+     CreationScoreTranscriber.Regularization.values()[reg],hands,voices,rhythms,legacy,
+     tonic,keyMode,modern,transpose,easy,pitches,removed,spellingModel);
+   }
   }
   int size=in.readInt();if(size<40||size>MAX_SCORE_BYTES||size!=in.available())throw new IOException("Conteúdo MusicXML inválido");
   byte[] music=new byte[size];in.readFully(music);String xml=new String(music,StandardCharsets.UTF_8);
