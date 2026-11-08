@@ -242,6 +242,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         LinearLayout sheet=card();sheet.setPadding(dp(4),dp(4),dp(4),dp(4));
         int sheetHeight=Math.max(dp(240),Math.round(getResources().getDisplayMetrics().heightPixels*0.42f));
         NotationView view=new NotationView(activity,new NotationView.Listener(){
+            public void onRendered(){/* zoom é aplicado sob demanda pelo usuário */}
             public void onError(String text){
                 if(!closed)activity.reportNotationIssue("PL-NOT-RENDER",
                     "Prévia de Criação",text,xml,
