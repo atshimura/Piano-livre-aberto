@@ -13,8 +13,7 @@
 | `631001f` | Z-P3 | Prévia limpa, PLS2, remoção física do motor C2 e adaptação de UI/backup/workflows/contratos |
 | `4eae250` | Z-P4 | Correções da validação Android e compilação real (compile + assembleDebug) |
 
-**PR:** a ser aberto de `zai/feat/reinicio-gerador-partituras` para `zai/lab` (o sandbox não possui
-credenciais GitHub; os commits estão prontos localmente — ver §6).
+**PR:** [#111](https://github.com/atshimura/Piano-livre-aberto/pull/111) — `zai/feat/reinicio-gerador-partituras` → `zai/lab`, aberto em 08/11/2026 (branch enviada e PR criado via API com token efêmero do mantenedor, revogado em seguida).
 
 ## 2. O que foi implementado
 
@@ -115,7 +114,7 @@ classify-pr-risk) + `py_compile` dos smokes + `verify_public_snapshot.py` **PASS
 
 ## 6. Próximos passos
 
-1. Push da branch e PR `zai/feat/reinicio-gerador-partituras` → `zai/lab`.
+1. ~~Push da branch e PR `zai/feat/reinicio-gerador-partituras` → `zai/lab`~~ — **concluído: PR #111**.
 2. Rerun local dos comandos acima ou acionar um workflow dedicado da linha Z (ex.: `zai-basic.yml`),
    se autorizado, para reproduzir a bateria no SHA do PR.
 3. Smoke de emulador (`c2_d_ui_smoke.py`) num runner com KVM.
