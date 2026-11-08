@@ -7,3 +7,4 @@ PianoLivreAndroid/local.properties
 *.jks
 *.keystore
 PianoLivreAndroid/app/src/main/assets/osmd/
+PianoLivreAndroid/tests/__pycache__/

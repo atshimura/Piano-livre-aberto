@@ -207,7 +207,14 @@ public final class BackupArchive {
    if(!owners.contains(owner.profileId))throw new IOException("Partitura vinculada a perfil ausente");
    if(generated.length()>=MAX_SCORES)throw new IOException("Muitas partituras derivadas");
    byte[] bytes=scoreStore.raw(id);
-   try{CreationScoreStore.verified(bytes,owner);}catch(Exception error){throw new IOException("Partitura derivada inválida: "+id,error);}
+   try{CreationScoreStore.verified(bytes,owner);}
+   catch(CreationScoreStore.LegacyScoreException legacy){
+    // Old-generator derivatives are preserved in the backup, never silently dropped.
+    generated.put(new JSONObject().put("id",id).put("content",Base64.encodeToString(bytes,Base64.NO_WRAP))
+       .put("sha256",sha256(bytes)).put("legacy",true));
+    continue;
+   }
+   catch(Exception error){throw new IOException("Partitura derivada inválida: "+id,error);}
    scoreTotal+=bytes.length;if(scoreTotal>MAX_SCORE_TOTAL)throw new IOException("Partituras derivadas excedem limite do backup");
    generated.put(new JSONObject().put("id",id).put("content",Base64.encodeToString(bytes,Base64.NO_WRAP))
       .put("sha256",sha256(bytes)));
@@ -283,8 +290,11 @@ public final class BackupArchive {
  }
  public static String summary(JSONObject backup)throws Exception{
   Validated v=validate(backup);
+  int legacy=0;
+  for(int i=0;i<v.scores.length();i++)if(v.scores.getJSONObject(i).optBoolean("legacy"))legacy++;
   return "Perfis e preferências: "+v.prefs.size()+" registros. Partituras importadas: "+v.files.size()+". Composições no backup: "+v.creations.size()+
-    ". Partituras geradas no backup: "+v.scores.size()+". Composições locais serão mantidas e mescladas; partituras derivadas compatíveis serão preservadas. Preferências e partituras importadas serão substituídas.";
+    ". Partituras geradas no backup: "+v.scores.size()+
+    (legacy>0?" ("+legacy+" do gerador anterior serão mantidas no backup, mas não restauradas; gere novamente pela gravação)":"")+". Composições locais serão mantidas e mescladas; partituras derivadas compatíveis serão preservadas. Preferências e partituras importadas serão substituídas.";
  }
  private static void deleteTree(File dir)throws IOException{
   if(!dir.exists())return;
@@ -387,6 +397,10 @@ public final class BackupArchive {
     CreationProjectStore.Project p=incomingStore.get(id);
     if(!targetProfiles.contains(p.profileId))throw new IOException("Partitura vinculada a perfil ausente: "+id);
     try{CreationScoreStore.verified(entry.getValue(),p);}
+    catch(CreationScoreStore.LegacyScoreException legacy){
+     // Keep the recording; the old derivative is left out instead of failing the restore.
+     continue;
+    }
     catch(Exception e){throw new IOException("Partitura do backup não corresponde à gravação: "+id,e);}
     File existing=new File(scoreDest,id+CreationScoreStore.EXT);
     if(existing.exists()){

@@ -122,6 +122,6 @@ final class ZDebugSelfTests {
   if(a.getIntent().getBooleanExtra("creation_selftest",false)||a.getIntent().getBooleanExtra("creation_reopen_selftest",false))a.handler.post(()->CreationSelfTest.run(a,a.getIntent().getBooleanExtra("creation_reopen_selftest",false)));
   if(a.getIntent().getBooleanExtra("creation_export_selftest",false))a.handler.post(()->CreationSelfTest.export(a));
   if(a.getIntent().getBooleanExtra("discovery_selftest",false))a.handler.post(()->{android.util.Log.i("PianoLivreDiscovery","DISCOVERY_UI_SELFTEST_BEGIN");MusicLabDiscoverySelfTest.run(a);});
-  if(a.getIntent().getBooleanExtra("creation_c2_d_smoke",false))a.handler.post(()->CreationC2DProbe.run(a));
+  if(a.getIntent().getBooleanExtra("creation_c2_d_smoke",false))a.handler.post(()->CreationScoreProbe.run(a));
  }
 }

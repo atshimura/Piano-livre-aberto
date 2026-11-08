@@ -29,29 +29,35 @@ jobs:
       - name: Preparar SDK Android 35
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
-      - name: Testes JVM exclusivos C2-A e C2-B (sem suite)
+      - name: Testes JVM exclusivos do gerador de partituras (sem suite)
         working-directory: PianoLivreAndroid
         run: |
           mkdir -p build/c2-basic
           javac -encoding UTF-8 -d build/c2-basic \
             app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
-            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
-            app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
+            app/src/main/java/br/org/pianolivre/ScoreMidiPairer.java \
+            app/src/main/java/br/org/pianolivre/ScoreTempoEstimator.java \
+            app/src/main/java/br/org/pianolivre/ScoreRhythmQuantizer.java \
+            app/src/main/java/br/org/pianolivre/ScoreXmlComposer.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreGenerator.java \
             app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
             app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
             app/src/main/java/br/org/pianolivre/SessionFiles.java \
             app/src/main/java/br/org/pianolivre/Score.java \
-            tests/CreationScoreTranscriberTest.java \
-            tests/CreationScoreReviewTest.java \
+            tests/ZScoreGeneratorRhythmTest.java \
+            tests/ZScoreGeneratorXmlTest.java \
             tests/CreationScoreStoreTest.java \
             tests/CreationC2DCorpusTest.java
-          java -cp build/c2-basic br.org.pianolivre.CreationScoreTranscriberTest
-          java -cp build/c2-basic br.org.pianolivre.CreationScoreReviewTest
+          java -cp build/c2-basic br.org.pianolivre.ZScoreGeneratorRhythmTest
+          java -cp build/c2-basic br.org.pianolivre.ZScoreGeneratorXmlTest
           java -cp build/c2-basic br.org.pianolivre.CreationScoreStoreTest
           java -cp build/c2-basic br.org.pianolivre.CreationC2DCorpusTest
-      - name: Teste basico do toque na partitura
+      - name: Contratos de interface da Criação
         working-directory: PianoLivreAndroid
-        run: node tests/CreationNotePickerTest.js
+        run: |
+          python3 tests/test_creation_responsive_contract.py
+          python3 tests/test_creation_score_deletion_contract.py
+          python3 tests/test_creation_library_contract.py
       - name: Compilar apenas APK de depuracao (sem suite Android/emulador)
         working-directory: PianoLivreAndroid
         run: gradle --no-daemon :app:assembleDebug

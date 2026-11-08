@@ -416,12 +416,16 @@ a.handler.postDelayed(this,100);}};ticker.run();
    // A stored score follows a trashed project, but it cannot be opened or studied
    // until the original recording is explicitly restored.
    if(!p.recoverable&&!p.trash){
-    boolean hasScore=new CreationScoreStore(a.getFilesDir()).has(id);
+    CreationScoreStore scoreStore=new CreationScoreStore(a.getFilesDir());
+    boolean hasScore=scoreStore.has(id);
+    boolean legacyScore=false;
+    if(hasScore)try{legacyScore=scoreStore.isLegacy(id);}catch(IOException ignored){}
     LinearLayout scoreCard=card();label(scoreCard,"Partitura",17,true,6);
     attach(scoreCard,mutedText(hasScore?
-      "Partitura vinculada à gravação original. Adicione à Biblioteca para estudar sem alterar o MIDI.":
+      (legacyScore?"Partitura do gerador anterior. Gere novamente a partir da gravação; nada será apagado.":
+      "Partitura vinculada à gravação original. Adicione à Biblioteca para estudar sem alterar o MIDI."):
       "Transforme a gravação em partitura com duas pautas.",13),-2,8);
-    Button viewScore=button(hasScore?"Visualizar e ajustar partitura":"Gerar partitura",
+    Button viewScore=button(legacyScore?"Gerar nova partitura":hasScore?"Visualizar partitura":"Gerar partitura",
       true,()->CreationScorePreviewScreen.open(a,p));
     if(hasScore&&!new LibraryStore(a.prefs,a.user).hasCreation(id)){
      Button add=button("Adicionar à Biblioteca",false,()->
@@ -463,7 +467,7 @@ a.handler.postDelayed(this,100);}};ticker.run();
  }
  private void confirmDeleteOnlyScore(CreationProjectStore.Project project){
   activeDialog=new AlertDialog.Builder(a).setTitle("Excluir somente a partitura?")
-   .setMessage("A partitura gerada e seus ajustes manuais serão excluídos definitivamente, incluindo seu vínculo com a Biblioteca Musical, Favoritos e Coleções. A gravação MIDI original será preservada. Você poderá gerar outra partitura a partir dela. Faça backup antes se quiser guardar os ajustes.")
+   .setMessage("A partitura gerada será excluída definitivamente, incluindo seu vínculo com a Biblioteca Musical, Favoritos e Coleções. A gravação MIDI original será preservada. Você poderá gerar outra partitura a partir dela. Faça backup antes se quiser guardá-la.")
    .setPositiveButton("Excluir partitura",(dialog,which)->deleteOnlyScore(project.id,project.profileId))
    .setNegativeButton("Cancelar",null).show();
  }

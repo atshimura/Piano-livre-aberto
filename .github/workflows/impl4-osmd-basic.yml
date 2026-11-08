@@ -18,7 +18,6 @@ jobs:
         run: |
           python3 scripts/verify_public_snapshot.py
           python3 tests/test_impl4_osmd_contract.py
-          python3 tests/test_creation_rhythm_contract.py
           python3 tests/test_creation_score_deletion_contract.py
           python3 tests/test_creation_library_contract.py
           python3 tests/test_creation_responsive_contract.py
@@ -33,7 +32,6 @@ jobs:
           node tests/VerticalNavigationTest.js
           node tests/OpticalTimeMapTest.js
           node tests/StudyLoopTransportContractTest.js
-          node tests/CreationNotePickerTest.js
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -46,22 +44,27 @@ jobs:
           mkdir -p build/impl4-jvm
           javac -encoding UTF-8 -d build/impl4-jvm \
             app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
-            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
-            app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
+            app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
+            app/src/main/java/br/org/pianolivre/SessionFiles.java \
+            app/src/main/java/br/org/pianolivre/Score.java \
+            app/src/main/java/br/org/pianolivre/ScoreMidiPairer.java \
+            app/src/main/java/br/org/pianolivre/ScoreTempoEstimator.java \
+            app/src/main/java/br/org/pianolivre/ScoreRhythmQuantizer.java \
+            app/src/main/java/br/org/pianolivre/ScoreXmlComposer.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreGenerator.java \
             app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
             app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
             app/src/main/java/br/org/pianolivre/SessionFiles.java \
             app/src/main/java/br/org/pianolivre/Score.java \
             tests/CreationOSMDCompatibilityFixture.java \
-            tests/CreationRhythmUniformizeTest.java \
-            tests/CreationScoreTranscriberTest.java \
-            tests/CreationScoreReviewTest.java \
+            tests/ZScoreGeneratorRhythmTest.java \
+            tests/ZScoreGeneratorXmlTest.java \
             tests/CreationScoreStoreTest.java \
             tests/CreationC2DCorpusTest.java
           java -cp build/impl4-jvm br.org.pianolivre.CreationOSMDCompatibilityFixture
-          java -cp build/impl4-jvm br.org.pianolivre.CreationRhythmUniformizeTest
-          java -cp build/impl4-jvm br.org.pianolivre.CreationScoreTranscriberTest
-          java -cp build/impl4-jvm br.org.pianolivre.CreationScoreReviewTest
+          java -cp build/impl4-jvm br.org.pianolivre.ZScoreGeneratorRhythmTest
+          java -cp build/impl4-jvm br.org.pianolivre.ZScoreGeneratorXmlTest
           java -cp build/impl4-jvm br.org.pianolivre.CreationScoreStoreTest
           java -cp build/impl4-jvm br.org.pianolivre.CreationC2DCorpusTest
       - name: Prepare bundled OSMD assets for browser (no APK)

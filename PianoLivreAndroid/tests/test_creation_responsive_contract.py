@@ -57,59 +57,41 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('A gravação MIDI original será preservada.',details)
         self.assertIn('CreationScoreDeletion.delete(a.getFilesDir()',details)
 
-    def test_block_c_preview_commands_and_note_rows(self):
+    def test_block_c_preview_is_clean_and_zoomable(self):
+        # Z-P3: preview without musical adjustments, with zoom and fit-to-width.
         self.assertIn('private void actions(LinearLayout parent,Button... buttons)',SCORE)
-        self.assertEqual(SCORE.count('reflow.accept(0)'),2)
         self.assertIn('((android.view.ViewGroup)button.getParent()).removeView(button)',SCORE)
-        self.assertIn('((android.view.ViewGroup)field.getParent()).removeView(field)',SCORE)
         self.assertIn('group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());})',SCORE)
         self.assertIn('button.setSingleLine(false);button.setMaxLines(2)',SCORE)
         self.assertIn('b.setTextSize(13)',SCORE)
         self.assertIn('b.setMinHeight(dp(48))',SCORE)
         self.assertIn('actions(contents,back,save,add)',SCORE)
         self.assertIn('actions(contents,back,save)',SCORE)
-        self.assertIn('creation-score-note-row',SCORE)
-        self.assertIn('noteRow.addView(select,new LayoutParams(0,dp(52),1))',SCORE)
-        self.assertIn('Button chord=button("Acorde"',SCORE)
-        self.assertIn('chord.setContentDescription("Marcar acorde que contém a nota "',SCORE)
-        self.assertIn('review.selectChord(n.sourceId);render(true)',SCORE)
-        self.assertIn('actions(list,button("Selecionar intervalo de compassos"',SCORE)
-        for label in ('Desfazer','Refazer','Pauta superior (Sol)',
-                      'Pauta inferior (Fá)','Restaurar sugestão','Concluir ajustes'):
-            self.assertIn(label,SCORE)
+        self.assertIn('button("A−",false,()->applyZoom(zoom/1.25f))',SCORE)
+        self.assertIn('button("A+",false,()->applyZoom(zoom*1.25f))',SCORE)
+        self.assertIn('button("Ajustar à largura",false,()->applyZoom(1.0f))',SCORE)
+        self.assertIn('setCreationZoom(zoom)',SCORE)
+        self.assertIn('Andamento estimado: ',SCORE)
+        self.assertIn('Andamento não identificado com segurança — prévia a 120 BPM (provisória)',SCORE)
+        self.assertIn('getResources().getDisplayMetrics().heightPixels*0.42f',SCORE)
+        # Retired C2 controls must not return in another screen of the preview.
+        for retired in ('creation-score-note-row','Button chord=button("Acorde"','Selecionar intervalo de compassos',
+                        'Desfazer','Refazer','Restaurar sugestão','Concluir ajustes',
+                        'responsiveFields','scrollableSettings','Uniformizar trecho','Atribuir mão / voz'):
+            self.assertNotIn(retired,SCORE)
 
-    def test_block_c_settings_and_range_fields(self):
-        self.assertIn('private void responsiveFields(LinearLayout parent,String[] labels,View[] fields)',SCORE)
-        self.assertIn('int cell=dp(Math.max(168,Math.round(168*scale)))',SCORE)
-        self.assertIn('responsiveFields(content,new String[]{"Andamento (BPM)","Compasso","Precisão rítmica"}',SCORE)
-        self.assertIn('responsiveFields(panel,new String[]{"Do compasso","Até o compasso (inclusive)"}',SCORE)
-        self.assertIn('attach(field,fields[i],48,0)',SCORE)
-        self.assertIn('title.setMaxLines(2)',SCORE)
-        self.assertIn('review.configure(bpm,beats,beatType,step,chosenRegularization)',SCORE)
-        self.assertIn('button("Uniformizar trecho"',SCORE)
-        self.assertIn('button("Atribuir mão / voz"',SCORE)
-        self.assertIn('previewUniformize(duration,hand,voice)',SCORE)
-        self.assertIn('applyUniformize(plan)',SCORE)
-        self.assertIn('review.selectMeasures(',SCORE)
-
-
-    def test_score_setting_dialogs_scroll_without_hiding_native_actions(self):
-        self.assertIn('private ScrollView scrollableSettings(LinearLayout panel)', SCORE)
-        self.assertIn('getDisplayMetrics().heightPixels*0.55f', SCORE)
-        self.assertIn('View.MeasureSpec.AT_MOST', SCORE)
-        self.assertIn('scrolling.setVerticalScrollBarEnabled(true)', SCORE)
-        self.assertIn('scrolling.setScrollbarFadingEnabled(false)', SCORE)
-        for title, panel in (('Ajustar partitura','content'),
-                             ('Atribuir mão e voz','panel'),
-                             ('Uniformizar trecho','panel'),
-                             ('Selecionar compassos','panel')):
-            self.assertIn('.setTitle("'+title+'").setView(scrollableSettings('+panel+'))', SCORE)
-        self.assertIn('.setPositiveButton("Atualizar"', SCORE)
-        self.assertIn('.setNegativeButton("Cancelar",null).show()', SCORE)
+    def test_block_c_retired_adjustment_pipeline_is_gone(self):
+        self.assertNotIn('review.configure(bpm,beats,beatType,step,chosenRegularization)',SCORE)
+        self.assertNotIn('previewUniformize(',SCORE)
+        self.assertNotIn('applyUniformize(',SCORE)
+        self.assertNotIn('review.selectMeasures(',SCORE)
+        self.assertNotIn('Ajustar ritmo',SCORE)
+        self.assertNotIn('Divisão entre pautas',SCORE)
 
     def test_musical_data_logic_untouched_by_ui_reflow(self):
         self.assertIn('new CreationScoreStore(activity.getFilesDir()).save(',SCORE)
-        self.assertIn('review.markSaved()',SCORE)
+        self.assertIn('CreationScoreGenerator.generate(',SCORE)
+        self.assertIn('CreationStudyCompatibility.check(activity,target',SCORE)
         self.assertIn('new CreationJournal(a.getFilesDir()',CREATION)
         self.assertIn('store.saveRecoverable(',CREATION)
         self.assertIn('a.exportCreationTake(',CREATION)

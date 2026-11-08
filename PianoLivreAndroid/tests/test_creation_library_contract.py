@@ -25,7 +25,7 @@ class CreationLibraryContracts(unittest.TestCase):
         self.assertIn('validateCreationId(key.substring(15))',LIB)
 
     def test_ui_requires_saved_score_and_has_no_study_shortcut(self):
-        self.assertIn('if(saved){',PREVIEW)
+        self.assertIn('saved&&!inLibrary',PREVIEW)
         self.assertIn('Button add=button("Adicionar à Biblioteca"',PREVIEW)
         self.assertIn('Button add=button("Adicionar à Biblioteca"',CREATE)
         self.assertIn('if(hasScore&&!new LibraryStore(a.prefs,a.user).hasCreation(id))',CREATE)
@@ -33,6 +33,10 @@ class CreationLibraryContracts(unittest.TestCase):
         self.assertNotIn('button("Estudar esta partitura"',CREATE)
         self.assertIn('Salve a partitura antes de adicioná-la',PREVIEW)
         self.assertIn('✓ Na Biblioteca Musical',PREVIEW)
+        # Z-P3: no musical adjustments remain in the preview.
+        self.assertNotIn('Regularização',PREVIEW)
+        self.assertNotIn('Uniformizar',PREVIEW)
+        self.assertNotIn('creationBind',PREVIEW)
 
     def test_addition_verifies_owner_integrity_and_thread_context(self):
         self.assertIn('new Thread(()->{',MAIN)

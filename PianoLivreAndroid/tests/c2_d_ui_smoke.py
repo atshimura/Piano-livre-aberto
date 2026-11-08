@@ -139,76 +139,21 @@ def main():
         "--ez", "creation_c2_d_smoke", "true", timeout=45)
     wait_log("C2_D_FIXTURE_PASS")
     find("C2-D partitura de teste")
-    find("Visualizar e ajustar partitura", clickable=True)
+    find("Visualizar partitura", clickable=True)
     find("Exportar MIDI", clickable=True)
     screenshot("01-detalhes-sinteticos")
-    click("Visualizar e ajustar partitura")
-    find("Transformar em partitura")
-    find("Partitura salva")
+    click("Visualizar partitura")
+    # Z-P3 clean preview: recognized tempo, zoom commands, no musical adjustments.
+    find("Andamento estimado")
+    find("Ajustar à largura", clickable=True)
     screenshot("02-previa-osmd")
-    # On short landscape displays the old custom AlertDialog clipped regularization.
-    # The new scroll container must expose every field without moving native actions.
-    click("Ajustar ritmo")
-    find("Ajustar partitura", max_scroll=0)
-    find("Andamento (BPM)", max_scroll=0)
-    find("Precisão rítmica", max_scroll=0)
-    find("Cancelar", clickable=True, max_scroll=0)
-    screenshot("02a-ajustar-ritmo-inicio")
-    dialog_scrolls=[n for n in dump().iter("node")
-                    if n.attrib.get("class")=="android.widget.ScrollView"
-                    and n.attrib.get("scrollable")=="true"]
-    if dialog_scrolls:
-        found=re.search(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",
-                        dialog_scrolls[0].attrib.get("bounds",""))
-        assert found, "Scrollable settings panel has no bounds"
-        x1,y1,x2,y2=map(int,found.groups())
-        assert y2-y1>50, "Scrollable settings viewport collapsed"
-        x=(x1+x2)//2
-        adb("shell","input","swipe",str(x),str(y1+(y2-y1)*4//5),
-            str(x),str(y1+(y2-y1)//5),"420")
-        time.sleep(.5)
-    find("Regularização rítmica", max_scroll=0)
-    find("Equilibrada", max_scroll=0)
-    find("Atualizar", clickable=True, max_scroll=0)
-    find("Cancelar", clickable=True, max_scroll=0)
-    screenshot("02a-ajustar-ritmo-final")
-    click("Cancelar")
-    find("Ajustar ritmo", clickable=True)
-    if os.environ.get("PIANO_DIALOG_SCROLL_ONLY") == "1":
-        print("CREATION_DIALOG_SCROLL_EMULATOR_PASS fields=tempo,meter,grid,regularization actions=update,cancel")
-        return
-    click("Divisão entre pautas")
-    find("Selecionar notas e acordes")
-    find("Nota 1 de 4")
-    screenshot("02b-ajustes-pautas-acessibilidade")
-    # Implementation 3: reuse the single synthetic C2-D recording, with no
-    # additional fixture, emulator session, or change to the captured MIDI.
-    click("Selecionar intervalo de compassos")
-    find("Selecionar compassos")
-    click("Marcar")  # Default 1..N, includes all four source attacks
-    find("4 selecionada(s)")
-    click("Atribuir mão / voz")
-    find("Mão real atribuída pelo compositor")
-    click("Cancelar")  # Assignment UI must never silently change the MIDI
-    click("Uniformizar trecho")
-    find("Figura musical para o trecho")
-    click("Cancelar")
-    click("Uniformizar trecho")
-    click("Ver prévia")
-    find("Prévia — Semínima")
-    find("Notas afetadas:")
-    click("Cancelar")
-    click("Uniformizar trecho")
-    click("Ver prévia")
-    find("Prévia — Semínima")
-    click("Aplicar")
-    find("Selecionar notas e acordes")
-    click("Desfazer")
-    find("Selecionar notas e acordes")
-    click("Refazer")
-    find("Selecionar notas e acordes")
-    screenshot("02c-uniformizar-ritmo")
-    click("Concluir ajustes")
+    click("A+")
+    time.sleep(1.0)
+    screenshot("02a-zoom-mais")
+    click("Ajustar à largura")
+    time.sleep(1.0)
+    for retired in ("Ajustar ritmo","Divisão entre pautas","Uniformizar trecho","Atribuir mão / voz"):
+        assert not nodes(retired), "Retired adjustment control still shown: "+retired
     # IMPL4: the save path must complete a REAL OSMD Study-path render.
     before_study_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     click("Salvar partitura")
@@ -226,7 +171,7 @@ def main():
     find("Na Biblioteca Musical")
     screenshot("03-adicionada-a-biblioteca")
     click("Voltar à composição")
-    find("Visualizar e ajustar partitura", clickable=True)
+    find("Visualizar partitura", clickable=True)
     find("Na Biblioteca Musical")
     screenshot("04-retorno-criacao")
     # Creation has nested project/list/home pages. Android BACK is not a
@@ -293,7 +238,7 @@ def main():
     click("Minhas Criações")
     click("C2-D partitura de teste")
     find("Detalhes da composição")
-    find("Visualizar e ajustar partitura",clickable=True)
+    find("Visualizar partitura",clickable=True)
     # Re-linking the saved score must revalidate the OSMD Study path too.
     before_relink_proof=adb("logcat","-d","-v","brief").count("POC_OSMD_READY {")
     click("Adicionar à Biblioteca")
@@ -325,8 +270,8 @@ def main():
     assert entry is not None and project_id not in json.loads(entry.text).get("addedCreations",[]), "Deleted score retained Library link"
     (DEST / "memory.txt").write_text(adb("shell", "dumpsys", "meminfo", PACKAGE),
                                       encoding="utf-8")
-    print("CREATION_C2_D_UI_PASS screenshots=7 actions=preview,split,add-library,study-via-library,back,landscape,unlink,score-delete-cancel-confirm,original-midi-preserved"
-          " rhythm-uniformize=true synthetic=true emulator=true")
+    print("CREATION_C2_D_UI_PASS screenshots=6 actions=preview,zoom,add-library,study-via-library,back,landscape,unlink,score-delete-cancel-confirm,original-midi-preserved"
+          " clean-preview=true synthetic=true emulator=true")
     adb("shell", "pm", "clear", PACKAGE)
     adb("shell","settings","put","system","user_rotation",orientation if orientation not in ("","null") else "0")
     adb("shell","settings","put","system","accelerometer_rotation",rotation if rotation not in ("","null") else "1")

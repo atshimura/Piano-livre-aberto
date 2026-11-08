@@ -181,14 +181,17 @@ public final class ScoreRhythmQuantizer {
                     }
                     drafts.sort(Comparator.comparingLong((Draft d) -> d.pos).thenComparingInt(d -> d.chord ? 1 : 0));
                     ArrayList<Token> tokens = new ArrayList<>();
-                    long cursor = 0;
+                    long cursor = 0, lastHeadPos = Long.MIN_VALUE;
                     for (Draft d : drafts) {
-                        if (d.chord) { tokens.add(d.token()); continue; } // stacked; does not advance
+                        // Same voice at the same written position is by definition a chord member;
+                        // this also keeps tied chord continuations stacked after barline slices.
+                        boolean chord = !tokens.isEmpty() && lastHeadPos == d.pos;
                         if (d.pos > cursor) { fillRests(tokens, cursor, d.pos, warnings); cursor = d.pos; }
-                        else if (d.pos < cursor)
+                        else if (d.pos < cursor && !chord)
                             throw new IOException("Sobreposição rítmica não resolvida na pauta " + (s + 1));
-                        tokens.add(d.token());
-                        cursor += d.cells;
+                        tokens.add(new Token(false, d.source.pitch, d.cells, chord, d.tieStart, d.tieStop, d.source));
+                        if (!chord) cursor += d.cells;
+                        lastHeadPos = d.pos;
                     }
                     if (cursor < CELLS_PER_MEASURE) fillRests(tokens, cursor, CELLS_PER_MEASURE, warnings);
                     if (cursor > CELLS_PER_MEASURE)
