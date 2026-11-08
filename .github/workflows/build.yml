@@ -47,7 +47,7 @@ jobs:
           python3 tests/test_creation_responsive_contract.py
           python3 tests/test_creation_library_contract.py
           python3 tests/test_suite_six_changes_contract.py
-          python3 tests/test_creation_rhythm_contract.py
+          python3 tests/test_workflow_contract_audit.py
           python3 tests/test_impl4_osmd_contract.py
           python3 -m py_compile tests/emulator_midi_interfaces.py tests/emulator_study_layout.py tests/emulator_ui.py tests/emulator_creation_navigation.py tests/c2_d_ui_smoke.py
       - name: Adaptive Study profile and complete corpus (desktop Chromium)
@@ -62,7 +62,11 @@ jobs:
           gradle --no-daemon :app:prepareOfflineNotation
           javac -encoding UTF-8 -d build/score-tests \
             app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
-            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
+            app/src/main/java/br/org/pianolivre/ScoreMidiPairer.java \
+            app/src/main/java/br/org/pianolivre/ScoreTempoEstimator.java \
+            app/src/main/java/br/org/pianolivre/ScoreRhythmQuantizer.java \
+            app/src/main/java/br/org/pianolivre/ScoreXmlComposer.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreGenerator.java \
             app/src/main/java/br/org/pianolivre/Score.java \
             app/src/main/java/br/org/pianolivre/MidiFileImport.java \
             tests/CreationOSMDCompatibilityFixture.java
@@ -192,28 +196,28 @@ jobs:
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/StudyChromeState.java tests/StudyChromeStateTest.java
           java -cp build/score-tests StudyChromeStateTest
-      - name: Criação C2-A/B/C/D — corpus e persistência dirigidos (JVM + JavaScript)
+      - name: Gerador de partituras Z — ritmo, notas, persistência e corpus dirigidos (JVM)
         run: |
           mkdir -p build/score-tests
           javac -encoding UTF-8 -d build/score-tests \
             app/src/main/java/br/org/pianolivre/MidiTakeRecorder.java \
-            app/src/main/java/br/org/pianolivre/CreationScoreTranscriber.java \
-            app/src/main/java/br/org/pianolivre/CreationScoreReview.java \
+            app/src/main/java/br/org/pianolivre/ScoreMidiPairer.java \
+            app/src/main/java/br/org/pianolivre/ScoreTempoEstimator.java \
+            app/src/main/java/br/org/pianolivre/ScoreRhythmQuantizer.java \
+            app/src/main/java/br/org/pianolivre/ScoreXmlComposer.java \
+            app/src/main/java/br/org/pianolivre/CreationScoreGenerator.java \
             app/src/main/java/br/org/pianolivre/CreationProjectStore.java \
             app/src/main/java/br/org/pianolivre/CreationScoreStore.java \
             app/src/main/java/br/org/pianolivre/SessionFiles.java \
             app/src/main/java/br/org/pianolivre/Score.java \
-            tests/CreationScoreTranscriberTest.java \
-            tests/CreationRhythmUniformizeTest.java \
-            tests/CreationScoreReviewTest.java \
+            tests/ZScoreGeneratorRhythmTest.java \
+            tests/ZScoreGeneratorXmlTest.java \
             tests/CreationScoreStoreTest.java \
             tests/CreationC2DCorpusTest.java
-          java -cp build/score-tests br.org.pianolivre.CreationRhythmUniformizeTest
-          java -cp build/score-tests br.org.pianolivre.CreationScoreTranscriberTest
-          java -cp build/score-tests br.org.pianolivre.CreationScoreReviewTest
+          java -cp build/score-tests br.org.pianolivre.ZScoreGeneratorRhythmTest
+          java -cp build/score-tests br.org.pianolivre.ZScoreGeneratorXmlTest
           java -cp build/score-tests br.org.pianolivre.CreationScoreStoreTest
           java -cp build/score-tests br.org.pianolivre.CreationC2DCorpusTest
-          node tests/CreationNotePickerTest.js
       - name: Test shared MIDI connection lifecycle and async races (JVM)
         run: |
           javac -d build/score-tests app/src/main/java/br/org/pianolivre/MidiConnection.java app/src/main/java/br/org/pianolivre/HomeMidiIndicator.java tests/MidiConnectionTest.java

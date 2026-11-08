@@ -65,7 +65,8 @@ public final class MidiFileImport {
  /** Keep each staff's timeline complete and each overlapping MIDI note in
   * its own stable voice. OSMD can reject an empty top staff plus a trailing
   * <forward> as a score with no graphical note anchors. Explicit rests and
-  * full-bar backups follow the same convention as CreationScoreTranscriber.
+  * full-bar backups follow the same two-staff convention as the Creation
+ * score generator (ZAI-001).
   * MIDI original bytes never enter this representation and remain untouched. */
  private static void appendRest(StringBuilder xml,long ticks,int voice,int staff,int ppqn){
   if(ticks<=0)return;

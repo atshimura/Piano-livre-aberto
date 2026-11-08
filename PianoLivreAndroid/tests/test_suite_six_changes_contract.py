@@ -80,7 +80,10 @@ class SixChangesSuiteContracts(unittest.TestCase):
         self.assertIn("Creation shortcuts unequal width",nav)
         self.assertIn("Creation shortcuts must share a row",nav)
         self.assertIn("creation-responsive-actions",creation)
-        self.assertIn("creation-score-note-row",preview)
+        # Z-P3: the adjustable note list is retired; the clean preview keeps
+        # responsive actions, zoom and the fit-to-width command.
+        self.assertIn("creation-score-responsive-actions",preview)
+        self.assertIn("Ajustar à largura",preview)
         self.assertIn("Excluir definitivamente?",creation)
 
     def test_generated_score_studied_from_library_only(self):

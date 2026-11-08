@@ -50,24 +50,15 @@ public final class BackupArchiveSelfTest {
    CreationProjectStore projects=new CreationProjectStore(root);MidiTakeRecorder take=new MidiTakeRecorder();take.start(1,1_000_000_000L);take.accept(0x90,60,88,1_100_000_000L,1);take.accept(0x80,60,0,1_300_000_000L,1);take.stop(1_400_000_000L);
    CreationProjectStore.Project backed=projects.save("Backup test",0,1,take.durationNs(),take.events(),take.segments());
    CreationScoreStore savedScores=new CreationScoreStore(root);
-   String sourceId=CreationScoreTranscriber.transcribe(backed.events,backed.segments,
-      CreationScoreTranscriber.Options.defaults(),backed.title).notes.get(0).sourceId;
-   CreationScoreTranscriber.Options settings=new CreationScoreTranscriber.Options(
-      100,4,4,16,CreationScoreTranscriber.StaffMode.SUGGESTED,60,null,
-      CreationScoreTranscriber.Regularization.FLEXIBLE,
-      Collections.singletonMap(sourceId,1),Collections.singletonMap(sourceId,2),
-      Collections.singletonMap(sourceId,new CreationScoreTranscriber.Timing(0,960)),false);
-   String derived=CreationScoreTranscriber.transcribe(backed.events,backed.segments,settings,backed.title).xml;
-   savedScores.save(backed.id,backed.profileId,settings,derived);
+   CreationScoreGenerator.Generation generated=CreationScoreGenerator.generate(backed.events,backed.segments,backed.title);
+   String derived=generated.xml;
+   savedScores.save(backed.id,backed.profileId,derived,(int)Math.round(generated.bpm));
    JSONObject original=BackupArchive.create(prefs,root);
    ok(original.getInt("version")==4,"v4");ok(original.getJSONArray("imported").length()==1,"saved one file");
    ok(original.getJSONArray("creations").length()==1,"v4 includes saved projects");
    ok(original.getJSONArray("creationScores").length()==1,"v4 includes derived score");
-   ok(savedScores.read(backed.id).options.grid==16,"v4 saved rhythmic settings");
-   ok(savedScores.read(backed.id).options.rhythmOverrides.size()==1
-      &&savedScores.read(backed.id).options.handOverrides.get(sourceId)==1
-      &&savedScores.read(backed.id).options.voiceOverrides.get(sourceId)==2,
-      "v4 backed score preserves manual rhythm and explicit hands/voices");
+   ok(savedScores.read(backed.id).xml.equals(derived)&&savedScores.read(backed.id).bpm==(int)Math.round(generated.bpm),
+      "v4 saved score bytes and estimated tempo");
    // Capture v4 with a project and score, then add local work before restoring.
    CreationProjectStore.Project newer=projects.save("Created later",0,2,take.durationNs(),take.events(),take.segments());
    prefs.edit().putInt("user_0_mode",0).commit();
@@ -89,19 +80,16 @@ public final class BackupArchiveSelfTest {
    BackupArchive.restore(prefs,root,original);
    ok(savedScores.has(backed.id)&&savedScores.read(backed.id).xml.equals(derived),
       "v4 restores missing score from validated source");
-   ok(savedScores.read(backed.id).options.rhythmOverrides.size()==1
-      &&savedScores.read(backed.id).options.handOverrides.get(sourceId)==1,
-      "v4 restore retains all manual rhythm decisions");
-   CreationScoreTranscriber.Options alternative=new CreationScoreTranscriber.Options(
-      120,4,4,16,CreationScoreTranscriber.StaffMode.SUGGESTED,60,null);
-   String changed=CreationScoreTranscriber.transcribe(
-      projects.get(backed.id).events,projects.get(backed.id).segments,alternative,projects.get(backed.id).title).xml;
-   savedScores.save(backed.id,0,alternative,changed);
+   ok(savedScores.read(backed.id).fingerprint.equals(CreationScoreStore.fingerprint(projects.get(backed.id))),
+      "v4 restore retains the recording fingerprint");
+   String changed=CreationScoreGenerator.generate(
+      projects.get(backed.id).events,projects.get(backed.id).segments,"Título alternativo").xml;
+   savedScores.save(backed.id,0,changed,(int)Math.round(generated.bpm));
    boolean scoreCollision=false;
    try{BackupArchive.restore(prefs,root,original);}catch(Exception expected){scoreCollision=true;}
-   ok(scoreCollision&&savedScores.read(backed.id).options.bpm==120,
-      "v4 score collision preserves newer local interpretation");
-   savedScores.save(backed.id,0,settings,derived);
+   ok(scoreCollision&&savedScores.read(backed.id).xml.equals(changed),
+      "v4 score collision preserves newer local derivation");
+   savedScores.save(backed.id,0,derived,(int)Math.round(generated.bpm));
    JSONObject corruptedScore=new JSONObject(original.toString());
    corruptedScore.getJSONArray("creationScores").getJSONObject(0).put(
       "content",Base64.encodeToString(bytes("invalid derivative"),Base64.NO_WRAP));
@@ -111,7 +99,7 @@ public final class BackupArchiveSelfTest {
       "v4 altered derivative checksum rejected before mutations");
    JSONObject legacyV3=new JSONObject(original.toString());legacyV3.put("version",3).remove("creationScores");
    BackupArchive.restore(prefs,root,legacyV3);
-   ok(savedScores.has(backed.id)&&savedScores.read(backed.id).options.grid==16,"legacy v3 keeps local generated score");
+   ok(savedScores.has(backed.id)&&savedScores.read(backed.id).xml.equals(derived),"legacy v3 keeps local generated score");
    JSONObject legacyV2=new JSONObject(original.toString());legacyV2.put("version",2);legacyV2.remove("creations");legacyV2.remove("creationScores");
    BackupArchive.restore(prefs,root,legacyV2);
    ok(projects.get(backed.id)!=null&&projects.get(newer.id)!=null,"legacy v2 restore preserves newer compositions");

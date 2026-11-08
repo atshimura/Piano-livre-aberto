@@ -207,7 +207,14 @@ public final class BackupArchive {
    if(!owners.contains(owner.profileId))throw new IOException("Partitura vinculada a perfil ausente");
    if(generated.length()>=MAX_SCORES)throw new IOException("Muitas partituras derivadas");
    byte[] bytes=scoreStore.raw(id);
-   try{CreationScoreStore.verified(bytes,owner);}catch(Exception error){throw new IOException("Partitura derivada inválida: "+id,error);}
+   try{CreationScoreStore.verified(bytes,owner);}
+   catch(CreationScoreStore.LegacyScoreException legacy){
+    // Old-generator derivatives are preserved in the backup, never silently dropped.
+    generated.put(new JSONObject().put("id",id).put("content",Base64.encodeToString(bytes,Base64.NO_WRAP))
+       .put("sha256",sha256(bytes)).put("legacy",true));
+    continue;
+   }
+   catch(Exception error){throw new IOException("Partitura derivada inválida: "+id,error);}
    scoreTotal+=bytes.length;if(scoreTotal>MAX_SCORE_TOTAL)throw new IOException("Partituras derivadas excedem limite do backup");
    generated.put(new JSONObject().put("id",id).put("content",Base64.encodeToString(bytes,Base64.NO_WRAP))
       .put("sha256",sha256(bytes)));
@@ -229,8 +236,8 @@ public final class BackupArchive {
  private static final class Validated {
   final Map<String,Object> prefs;
   final LinkedHashMap<String,byte[]> files;
-  final LinkedHashMap<String,byte[]> creations,scores;final int version;
-  Validated(Map<String,Object> p,LinkedHashMap<String,byte[]> f,LinkedHashMap<String,byte[]> c,LinkedHashMap<String,byte[]> s,int v){prefs=p;files=f;creations=c;scores=s;version=v;}
+  final LinkedHashMap<String,byte[]> creations,scores;final int version;final int legacyScores;
+  Validated(Map<String,Object> p,LinkedHashMap<String,byte[]> f,LinkedHashMap<String,byte[]> c,LinkedHashMap<String,byte[]> s,int v,int legacy){prefs=p;files=f;creations=c;scores=s;version=v;legacyScores=legacy;}
  }
  private static Validated validate(JSONObject backup)throws Exception{
   if(backup==null)throw new IOException("Backup vazio");
@@ -262,7 +269,7 @@ public final class BackupArchive {
   if(version>=3){JSONArray entries=backup.optJSONArray("creations");if(entries==null||entries.length()>MAX_CREATIONS)throw new IOException("Lista de composições ausente ou grande demais");long creationTotal=0;
    for(int i=0;i<entries.length();i++){JSONObject item=entries.getJSONObject(i);String id=item.getString("id");if(id==null||!id.matches("[0-9a-fA-F-]{36}")||projects.containsKey(id))throw new IOException("ID de composição repetido ou inválido");String content=item.getString("content");if(content.length()>CreationProjectStore.MAX_PROJECT_BYTES*4L/3L+100)throw new IOException("Composição grande demais");byte[] bytes;try{bytes=Base64.decode(content,Base64.DEFAULT);}catch(IllegalArgumentException ex){throw new IOException("Dados de composição inválidos",ex);}creationTotal+=bytes.length;if(bytes.length>CreationProjectStore.MAX_PROJECT_BYTES+12||creationTotal>MAX_CREATION_TOTAL)throw new IOException("Composições excedem o limite");if(!sha256(bytes).equalsIgnoreCase(item.getString("sha256")))throw new IOException("Integridade incorreta na composição "+id);projects.put(id,bytes);}
   }
-  LinkedHashMap<String,byte[]> scores=new LinkedHashMap<>();
+  LinkedHashMap<String,byte[]> scores=new LinkedHashMap<>();int legacyScores=0;
   if(version>=4){
    JSONArray entries=backup.optJSONArray("creationScores");
    if(entries==null||entries.length()>MAX_SCORES)throw new IOException("Lista de partituras derivadas ausente ou excedida");
@@ -270,6 +277,7 @@ public final class BackupArchive {
    for(int i=0;i<entries.length();i++){
     JSONObject item=entries.getJSONObject(i);String id=item.getString("id");
     if(!id.matches("[0-9a-fA-F-]{36}")||scores.containsKey(id))throw new IOException("Identificador de partitura inválido");
+    if(item.optBoolean("legacy"))legacyScores++;
     String content=item.getString("content");if(content.length()>CreationScoreStore.MAX_SCORE_BYTES*4L/3L+100)throw new IOException("Partitura excede limite");
     byte[] bytes;try{bytes=Base64.decode(content,Base64.DEFAULT);}
     catch(IllegalArgumentException ex){throw new IOException("Conteúdo da partitura inválido",ex);}
@@ -279,12 +287,13 @@ public final class BackupArchive {
     scores.put(id,bytes);
    }
   }
-  return new Validated(p,files,projects,scores,version);
+  return new Validated(p,files,projects,scores,version,legacyScores);
  }
  public static String summary(JSONObject backup)throws Exception{
   Validated v=validate(backup);
   return "Perfis e preferências: "+v.prefs.size()+" registros. Partituras importadas: "+v.files.size()+". Composições no backup: "+v.creations.size()+
-    ". Partituras geradas no backup: "+v.scores.size()+". Composições locais serão mantidas e mescladas; partituras derivadas compatíveis serão preservadas. Preferências e partituras importadas serão substituídas.";
+    ". Partituras geradas no backup: "+v.scores.size()+
+    (v.legacyScores>0?" ("+v.legacyScores+" do gerador anterior serão mantidas no backup, mas não restauradas; gere novamente pela gravação)":"")+". Composições locais serão mantidas e mescladas; partituras derivadas compatíveis serão preservadas. Preferências e partituras importadas serão substituídas.";
  }
  private static void deleteTree(File dir)throws IOException{
   if(!dir.exists())return;
@@ -387,6 +396,10 @@ public final class BackupArchive {
     CreationProjectStore.Project p=incomingStore.get(id);
     if(!targetProfiles.contains(p.profileId))throw new IOException("Partitura vinculada a perfil ausente: "+id);
     try{CreationScoreStore.verified(entry.getValue(),p);}
+    catch(CreationScoreStore.LegacyScoreException legacy){
+     // Keep the recording; the old derivative is left out instead of failing the restore.
+     continue;
+    }
     catch(Exception e){throw new IOException("Partitura do backup não corresponde à gravação: "+id,e);}
     File existing=new File(scoreDest,id+CreationScoreStore.EXT);
     if(existing.exists()){
