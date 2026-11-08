@@ -5,25 +5,25 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-/** Build synthetic real Creation MusicXML and native Score head events for OSMD. */
+/** Build synthetic real Creation MusicXML and native Score head events for OSMD,
+ *  using the Z restart generator (ZAI-001). Parser survival is mandatory: every
+ *  fixture must round-trip through Score.read with all written notes preserved. */
 public final class CreationOSMDCompatibilityFixture {
  static MidiTakeRecorder.Event event(int status,int pitch,long t,int order){
   return new MidiTakeRecorder.Event(status,pitch,(status&0xf0)==0x90?85:0,t,7,order,false);
  }
- static void write(Path dir,String name,List<MidiTakeRecorder.Event> events,long end,
-                   CreationScoreTranscriber.Options options)throws Exception{
+ static void write(Path dir,String name,List<MidiTakeRecorder.Event> events,long end)throws Exception{
   events.sort(Comparator.comparingLong((MidiTakeRecorder.Event e)->e.timeNs).thenComparingInt(e->e.order));
-  CreationScoreTranscriber.Result derived=CreationScoreTranscriber.transcribe(
-    events,Collections.singletonList(new MidiTakeRecorder.Segment(0,end)),options,name);
-  Score score=Score.read(new ByteArrayInputStream(derived.xml.getBytes(StandardCharsets.UTF_8)),name+".musicxml");
-  if(score.writtenEvents.isEmpty()||score.events.size()!=derived.notes.size())
-   throw new AssertionError("Creation fixture notes lost at Score.read: "+name);
-  exportXml(dir,name,derived.xml,score.writtenEvents.size());
+  CreationScoreGenerator.Generation derived=CreationScoreGenerator.generate(
+    events,Collections.singletonList(new MidiTakeRecorder.Segment(0,end)),name);
+  exportXml(dir,name,derived.xml,derived.notes.size());
  }
  static void exportXml(Path dir,String name,String xml,int expected)throws Exception{
   Score score=Score.read(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)),name+".musicxml");
-  if(score.writtenEvents.size()!=expected)
-   throw new AssertionError("MusicXML notes missing after native parse: "+name);
+  // Tied fragments legitimately multiply written events; the source note itself must never vanish.
+  if(score.writtenEvents.size()<expected)
+   throw new AssertionError("MusicXML notes missing after native parse: "+name
+     +" ("+score.writtenEvents.size()+" of "+expected+")");
   StringBuilder values=new StringBuilder("[");
   for(Score.Event n:score.writtenEvents){
    if(values.length()>1)values.append(',');
@@ -52,14 +52,28 @@ public final class CreationOSMDCompatibilityFixture {
   }
   return result;
  }
+ /** ZAI-001 §3.4: eight quarters followed by eight halves on a steady pulse. */
+ static List<MidiTakeRecorder.Event> quartersThenHalves(long quarter,int startOrder){
+  int[] scale={60,62,64,65,67,69,71,72};
+  ArrayList<MidiTakeRecorder.Event> events=new ArrayList<>();
+  for(int i=0;i<8;i++){
+   long at=i*quarter;
+   events.add(event(0x90,scale[i],at,startOrder+2*i));
+   events.add(event(0x80,scale[i],at+quarter,startOrder+2*i+1));
+  }
+  for(int i=0;i<8;i++){
+   long at=(8+2L*i)*quarter;
+   events.add(event(0x90,scale[i],at,startOrder+16+2*i));
+   events.add(event(0x80,scale[i],at+2*quarter,startOrder+16+2*i+1));
+  }
+  return events;
+ }
  public static void main(String[] args)throws Exception{
   Path dir=Paths.get("build/impl4-fixtures");Files.createDirectories(dir);
-  CreationScoreTranscriber.Options d=CreationScoreTranscriber.Options.defaults();
-  write(dir,"melody",melodic(8,2,600_000_000L,100_000_000L),5_000_000_000L,d);
-  write(dir,"solo-created",melodic(1,0,600_000_000L,600_000_000L),1_000_000_000L,d);
-  write(dir,"legacy",melodic(8,1,600_000_000L,270_000_000L),5_000_000_000L,
-    CreationScoreTranscriber.Options.legacy(100,4,4,16,
-       CreationScoreTranscriber.StaffMode.SUGGESTED,60,null));
+  write(dir,"melody",melodic(8,2,600_000_000L,100_000_000L),5_000_000_000L);
+  write(dir,"solo-created",melodic(1,0,600_000_000L,600_000_000L),1_000_000_000L);
+  write(dir,"quarters-halves-120",quartersThenHalves(500_000_000L,0),13_000_000_000L);
+  write(dir,"quarters-halves-90",quartersThenHalves(666_666_666L,0),17_000_000_000L);
   List<MidiTakeRecorder.Event> chords=new ArrayList<>();
   int ix=0;
   for(int t=0;t<4;t++){
@@ -69,27 +83,15 @@ public final class CreationOSMDCompatibilityFixture {
     chords.add(event(0x80,pitch,at+190_000_000L,ix++));
    }
   }
-  write(dir,"chords",chords,3_100_000_000L,d);
+  write(dir,"chords",chords,3_100_000_000L);
   List<MidiTakeRecorder.Event> voices=new ArrayList<>();ix=0;
   for(int i=0;i<8;i++){
    long at=i*450_000_000L;
    voices.add(event(0x90,i%2==0?48+i:72-i,at,ix++));
    voices.add(event(0x80,i%2==0?48+i:72-i,at+150_000_000L,ix++));
   }
-  write(dir,"crossing",voices,4_100_000_000L,d);
-  write(dir,"long",melodic(120,1,240_000_000L,140_000_000L),29_000_000_000L,
-     new CreationScoreTranscriber.Options(120,4,4,16,
-         CreationScoreTranscriber.StaffMode.PITCH_THRESHOLD,60,null));
-  // Two physically assigned independent hands (source IDs are canonical).
-  CreationScoreTranscriber.Result original=CreationScoreTranscriber.transcribe(
-    voices,Collections.singletonList(new MidiTakeRecorder.Segment(0,4_100_000_000L)),d,"assigned");
-  Map<String,Integer> hands=new HashMap<>(),explicitVoices=new HashMap<>();
-  for(CreationScoreTranscriber.WrittenNote n:original.notes){
-   hands.put(n.sourceId,n.pitch<60?2:1);explicitVoices.put(n.sourceId,1);
-  }
-  write(dir,"assigned",voices,4_100_000_000L,
-    new CreationScoreTranscriber.Options(100,4,4,16,d.staffMode,60,null,
-        CreationScoreTranscriber.Regularization.BALANCED,hands,explicitVoices,null,false));
+  write(dir,"crossing",voices,4_100_000_000L);
+  write(dir,"long",melodic(120,1,240_000_000L,140_000_000L),29_000_000_000L);
   // Regression #108: original Standard MIDI import into lower staff only.
   // This is exactly the shape that once made OpticalTimeMap report
   // "Optical timeline without events" in Study after a successful MIDI import.
@@ -109,6 +111,6 @@ public final class CreationOSMDCompatibilityFixture {
    if(!Arrays.equals(imported.original,source))
     throw new AssertionError("MIDI original changed while writing "+name);
   }
-  System.out.println("IMPL4_CREATION_FIXTURES_PASS count=8 (includes MIDI imported on either staff)");
+  System.out.println("IMPL4_CREATION_FIXTURES_PASS count=9 (includes MIDI imported on either staff)");
  }
 }

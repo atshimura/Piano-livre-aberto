@@ -6,3 +6,4 @@ PianoLivreAndroid/app/build/
 PianoLivreAndroid/local.properties
 *.jks
 *.keystore
+PianoLivreAndroid/app/src/main/assets/osmd/

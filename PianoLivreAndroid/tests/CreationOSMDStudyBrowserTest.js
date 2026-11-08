@@ -17,7 +17,7 @@ const {chromium}=require(process.env.PIANO_PLAYWRIGHT||"playwright");
    onPresentation(){},onStudyTap(){}};
  });
  let checks=0;let token=10;const failures=[];
- for(const name of ["solo-created","melody","legacy","chords","crossing","long","assigned","midi-single-staff1","midi-single-staff2"]){
+ for(const name of ["solo-created","melody","quarters-halves-120","quarters-halves-90","chords","crossing","long","midi-single-staff1","midi-single-staff2"]){
   const dir=path.resolve("build/impl4-fixtures"),xml=fs.readFileSync(path.join(dir,name+".musicxml"),"utf8");
   const notes=JSON.parse(fs.readFileSync(path.join(dir,name+".json"),"utf8"));
   for(const layout of ["free","engraving-poc"]){
