@@ -47,6 +47,12 @@ separados.
 9. Regras de produto do [AGENTS.md](AGENTS.md) (modo Espera, teclado guia, MIDI,
    backup, dados `.plc`/`.pls`) valem integralmente para a linha Z.
 
+## Decisão de produto ZAi — gerador de partituras (08/11/2026)
+
+O mantenedor aprovou **reiniciar do zero o gerador de partituras da Criação**, sem preservar o motor de transcrição, seus ajustes ou a compatibilidade de leitura das antigas derivações .pls. O novo motor deverá reconhecer automaticamente **durações musicais** (especialmente semínima versus mínima) e pulsação a partir do MIDI, sem exigir ajustes do usuário; duas pautas Sol/Fá sempre, com divisão fixa **Dó4 (MIDI 60) ou acima → superior; abaixo de Dó4 → inferior** (inclui Si3/Si♭3 na inferior). Escalas e acordes são os primeiros alvos. A gravação fonte .plc e os demais dados/recursos não relacionados **não** podem ser apagados silenciosamente.
+
+**Contrato vigente apenas na linha ZAi:** [ZAI-001 — Reinício do gerador de partituras e reconhecimento rítmico](docs/ZAI-001-REINICIO-GERADOR-PARTITURAS.md). A decisão revoga, no escopo do novo gerador ZAi, as regras históricas de interpretação e edição C2 que conflitam com ela; não altera a main nem o restante do aplicativo. Documento de planejamento, não implementação/testes.
+
 ## Estado
 
 - Base inicial: `main` em **0.9.64-open-beta** (versionCode 73), commit `55426cf`.
@@ -57,6 +63,7 @@ separados.
 
 | Data | Branch | Descrição | Estado |
 |---|---|---|---|
+| 2026-11-08 | `zai/docs/reinicio-partitura-ritmo-20261108` | Plano ZAI-001: novo gerador sem ajustes antigos, reconhecimento automático de semínimas/mínimas e duas pautas Sol/Fá com corte em C4. | Documento; código e testes não executados |
 | 2026-11-06 | `zai/lab` | Criação da base da linha Z a partir de `main` (0.9.64). | Concluído |
 | 2026-11-06 | `zai/lab` | Criação desta carta de protocolo (`ZAI-CONTINUIDADE.md`). | Concluído |
 | 2026-11-06 | `zai/feat/target-sdk-35` | `targetSdk` 28→35; novo `ZEdgeInsets` (Android 15+: oculta barra de status via `WindowInsetsController` e aplica `systemBars`/`displayCutout` como padding; Android ≤14 inalterado); `MainActivity.onCreate` ganhou 1 chamada. Validação: `verify_public_snapshot` + 4 contratos Python + `py_compile` PASS; `compileDebugJavaWithJavac` e `assembleDebug` OK (APK debug 951 KB). Pendências de validação física: comportamento do lock `landscape` em telas grandes (Android 12+ pode ignorar) e aparência edge-to-edge no Android 15+. | Concluído (aguarda validação física) |

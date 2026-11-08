@@ -11,6 +11,10 @@
 
 # Documentação do Piano Livre aberto
 
+## Linha ZAi — reinício do gerador (08/11/2026)
+
+- [ZAI-001 — Gerador de partitura simples, duas pautas e reconhecimento automático de semínimas/mínimas](ZAI-001-REINICIO-GERADOR-PARTITURAS.md). **Plano aprovado na linha ZAi; ainda sem implementação ou testes.** Substitui apenas na ZAi as regras históricas C2 de ajustes e heurísticas, preservando a gravação MIDI original e o OSMD. Protocolo em [ZAI-CONTINUIDADE](../ZAI-CONTINUIDADE.md).
+
 ## Ajustes da candidata 0.9.62 — seis alterações aprovadas
 
 - [107 — Botões iguais de Biblioteca/Laboratório no banner e Histórico/Como usar nas configurações](107-HOME-BANNER-ATALHOS.md). Alteração 1.
