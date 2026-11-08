@@ -13,6 +13,8 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-001 P5 — Integração e APK de teste assinado, GitHub Actions SUCCESS](ZAI-001-P5-INTEGRACAO-APK-TESTE.md): PRs #111/#112, run #42536602439, SHA-256 e ressalvas de testes físicos.
+
 - [ZAI-001 — Gerador de partitura simples, duas pautas e reconhecimento automático de semínimas/mínimas](ZAI-001-REINICIO-GERADOR-PARTITURAS.md). **Plano aprovado na linha ZAi; ainda sem implementação ou testes.** Substitui apenas na ZAi as regras históricas C2 de ajustes e heurísticas, preservando a gravação MIDI original e o OSMD. Protocolo em [ZAI-CONTINUIDADE](../ZAI-CONTINUIDADE.md).
 
 ## Ajustes da candidata 0.9.62 — seis alterações aprovadas
