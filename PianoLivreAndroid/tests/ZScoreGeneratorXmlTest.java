@@ -126,20 +126,20 @@ public final class ZScoreGeneratorXmlTest {
                 && count(r08g.xml, "<type>quarter</type>") >= 1,
                 "R08 whole sustain plus quarter overlay preserved");
 
-        // --- R09: half note starting on beat 4 crosses the barline with a tie. ---
-        // First note anchors time zero; the tested half starts on beat 4 of measure 1.
+        // --- R09: a long note at the end of a measure is visually shortened,
+        // never split into repeated noteheads or tied to the next measure. ---
         List<MidiTakeRecorder.Event> r09 = Arrays.asList(
                 on(60, 0, 0), off(60, q, 1),
                 on(62, 3 * q, 2), off(62, 5 * q, 3));
         CreationScoreGenerator.Generation r09g = generate(r09, 6 * q);
-        ok(r09g.measures == 2, "R09 two measures");
-        ok(r09g.xml.contains("<tie type=\"start\"/>") && r09g.xml.contains("<tie type=\"stop\"/>")
-                && r09g.xml.contains("<tied type=\"start\"/>") && r09g.xml.contains("<tied type=\"stop\"/>"),
-                "R09 tie across barline in both encodings");
-        ok(count(r09g.xml, "<step>D</step>") == 2, "R09 same pitch on both sides, no new attack");
+        ok(r09g.measures == 1, "R09 simplified representation stays in one measure");
+        ok(!r09g.xml.contains("<tie") && !r09g.xml.contains("<tied") && !r09g.xml.contains("<slur"),
+                "R09 no automatic ties or slurs");
+        ok(count(r09g.xml, "<step>D</step>") == 1, "R09 exactly one written D attack");
+        ok(r09g.notes.get(1).durationNs() == 2*q, "R09 MIDI still preserves original two beats");
         Document doc9 = parse(r09g.xml);
         NodeList measures9 = doc9.getElementsByTagName("measure");
-        ok(measures9.getLength() == 2, "R09 measure elements");
+        ok(measures9.getLength() == 1, "R09 only one measure is required visually");
 
         // --- Validity, black keys, determinism, limits. ---
         CreationScoreGenerator.Generation det = generate(Arrays.asList(
