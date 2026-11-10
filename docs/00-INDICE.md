@@ -13,6 +13,8 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-008 — Pausas legíveis e quebra automática de linhas na Criação](ZAI-008-PAUSAS-LEGIVEIS-PARTITURA-RESPONSIVA.md): minimização conservadora de pausas, MusicXML/OSMD responsivo sem rolagem horizontal e testes em Chromium 360/800/1100 px.
+
 - [ZAI-007 — Planejamento da partitura simplificada sem ligaduras](ZAI-007-PARTITURA-SIMPLIFICADA-SEM-LIGADURAS.md): uma figura por Note On, MIDI original intacto, regeneração explícita de derivados antigos e edição manual futura.
 - [ZAI-007 — Entrega do APK principal 0.9.68](ZAI-007-ENTREGA-APK-PRINCIPAL-20261110.md): 355 verificações JVM, assinatura permanente, SHA-256 e download direto no GitHub sem Library.
 

@@ -217,10 +217,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
         clear();
         addText("Partitura de uma versão anterior",21,true,3);
         addText("Esta composição possui uma partitura salva com uma versão anterior do gerador, "
-            +"que pode incluir ligaduras automáticas. A gravação MIDI original permanece intacta. "
-            +"Para aplicar a nova escrita simplificada, toque em Gerar prévia sem ligaduras. "
+            +"que pode conter pausas fragmentadas ou diagramação horizontal antiga. A gravação MIDI original permanece intacta. "
+            +"Para aplicar as pausas mais legíveis e a quebra automática de linhas, toque em Gerar prévia atualizada. "
             +"A partitura antiga não será substituída até que você escolha Salvar partitura.",14,false,10);
-        attach(contents,button("Gerar prévia sem ligaduras",true,this::regenerate),48,8);
+        attach(contents,button("Gerar prévia atualizada",true,this::regenerate),48,8);
         attach(contents,button("Voltar à composição",false,()->window.dismiss()),48,0);
     }
 
@@ -260,11 +260,11 @@ final class CreationScorePreviewScreen extends LinearLayout {
             :"Andamento não identificado com segurança — prévia a 120 BPM (provisória)";
         tempoLabel=label(measures+" compassos · 4/4 · "+tempoText,13,false,0xff57708A);
         attach(contents,tempoLabel,-2,9);
-        addText("Partitura simplificada: uma figura por nota, sem ligaduras automáticas. "
+        addText("Partitura simplificada: uma figura por nota, sem ligaduras automáticas. Pausas agrupadas e linhas ajustadas à largura. "
             +"Sustentações que ultrapassam o compasso podem aparecer abreviadas; "
             +"os tempos completos permanecem na gravação MIDI original.",12,false,8);
         LinearLayout sheet=card();sheet.setPadding(dp(4),dp(4),dp(4),dp(4));
-        int sheetHeight=Math.max(dp(240),Math.round(getResources().getDisplayMetrics().heightPixels*0.42f));
+        int sheetHeight=Math.max(dp(210),Math.round(getResources().getDisplayMetrics().heightPixels*0.65f));
         NotationView view=new NotationView(activity,new NotationView.Listener(){
             public void onRendered(){/* zoom é aplicado sob demanda pelo usuário */}
             public void onError(String text){
@@ -307,7 +307,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         try{
             Score score=Score.read(new ByteArrayInputStream(xml.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
                 "creation-score:"+project.id);
-            if(notation!=null)notation.loadScore(score,0,true);
+            if(notation!=null)notation.loadCreationScore(score,0);
         }catch(Exception error){
             if(!closed)activity.message("Partitura ilegível na prévia: "+error.getMessage());
         }

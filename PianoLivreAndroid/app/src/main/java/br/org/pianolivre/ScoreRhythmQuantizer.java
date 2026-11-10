@@ -484,17 +484,76 @@ public final class ScoreRhythmQuantizer {
                 slot.chord, false, false, slot.staccato, false, false));
     }
 
-    private static void fillRests(List<Token> tokens, long from, long to) {
-        long cursor = from;
-        while (cursor < to) {
-            int figure = 1;
-            for (int f : FIGURES)
-                if (f <= to - cursor && cursor % f == 0) {
-                    figure = f; break;
+    /**
+     * Compact an EXACT silence span with the fewest conventional rests.
+     * No onset or duration is moved: the chosen rest cells still sum exactly
+     * to [from, to) inside this 4/4 measure. The second preference favors
+     * plain figures / stable metrical boundaries over dotted figures.
+     *
+     * Package-private to exhaustively test all 136 possible silence spans.
+     */
+    static List<Integer> restFigures(int from, int to) {
+        if (from < 0 || to > CELLS_PER_MEASURE || from > to)
+            throw new IllegalArgumentException("Intervalo de pausa fora do compasso");
+        if (from == to) return Collections.emptyList();
+        final int count = CELLS_PER_MEASURE + 1;
+        int[] bestCount = new int[count], bestPenalty = new int[count], bestNext = new int[count];
+        java.util.Arrays.fill(bestCount, Integer.MAX_VALUE / 4);
+        java.util.Arrays.fill(bestPenalty, Integer.MAX_VALUE / 4);
+        bestCount[to] = 0; bestPenalty[to] = 0;
+        for (int pos = to - 1; pos >= from; pos--) {
+            for (int figure : FIGURES) {
+                if (pos + figure > to || !restFitsMeter(pos, figure)) continue;
+                int n = 1 + bestCount[pos + figure];
+                int penalty = restReadabilityPenalty(pos, figure) + bestPenalty[pos + figure];
+                if (n < bestCount[pos] || (n == bestCount[pos] && penalty < bestPenalty[pos])) {
+                    bestCount[pos] = n;
+                    bestPenalty[pos] = penalty;
+                    bestNext[pos] = figure;
                 }
-            tokens.add(new Token(true, 0, figure, false, false, false, null));
-            cursor += figure;
+            }
         }
+        if (bestCount[from] >= Integer.MAX_VALUE / 8)
+            throw new IllegalStateException("Intervalo de silêncio sem representação");
+        ArrayList<Integer> chosen = new ArrayList<>();
+        for (int pos = from; pos < to;) {
+            int figure = bestNext[pos];
+            if (figure <= 0) throw new IllegalStateException("Partição de pausas inválida");
+            chosen.add(figure);
+            pos += figure;
+        }
+        return chosen;
+    }
+
+    /** Avoid metrically confusing rests that start on arbitrary subdivisions. */
+    private static boolean restFitsMeter(int pos, int figure) {
+        // All previously admissible rest alignments remain possible.
+        // ZAI-008 adds compact alternatives; it must never increase glyphs.
+        if (pos % figure == 0) return true;
+        switch (figure) {
+            case 16: return pos == 0;
+            case 12: return pos % 4 == 0;
+            case 8: return pos % 4 == 0;
+            case 6: return pos % 4 == 0;
+            case 4: return pos % 4 == 0;
+            case 3: return pos % 4 <= 1;
+            case 2: return pos % 2 == 0;
+            case 1: return true;
+            default: return false;
+        }
+    }
+
+    private static int restReadabilityPenalty(int pos, int figure) {
+        int penalty = figure == 12 || figure == 6 || figure == 3 ? 35 : 0;
+        if (figure == 1) penalty += 20;
+        if (pos % 4 != 0) penalty += 10;
+        if (pos < 8 && pos + figure > 8) penalty += 15;
+        return penalty;
+    }
+
+    private static void fillRests(List<Token> tokens, long from, long to) {
+        for (int figure : restFigures((int) from, (int) to))
+            tokens.add(new Token(true, 0, figure, false, false, false, null));
     }
 
     private static final class Placed {

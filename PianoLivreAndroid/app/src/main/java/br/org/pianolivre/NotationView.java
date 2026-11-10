@@ -35,6 +35,7 @@ public final class NotationView extends WebView {
  private boolean disposed=false;
  private long pendingWaitDeadline=0L;
  private boolean freeLayout=false;
+ private boolean creationPage=false;
  // OSMD is the only notation renderer. Study and Free are presentation modes.
  private boolean engravingProof=true;
  private boolean rendererFailed=false,failureRecorded=false;
@@ -45,7 +46,7 @@ public final class NotationView extends WebView {
  private final int originalLayerType;
  /** Creation preview zoom (Z-P3): OSMD re-engraving factor, 1.0 = fit to width. */
  public void setCreationZoom(float factor){
-  if(!disposed&&freeLayout&&htmlReady&&scoreRendered)
+  if(!disposed&&creationPage&&htmlReady&&scoreRendered)
    evaluateJavascript("if(PianoNotation.zoom)PianoNotation.zoom("+factor+")",null);
  }
  public NotationView(Context c,Listener listener){
@@ -121,8 +122,16 @@ public final class NotationView extends WebView {
   loadScore(score,position,false);
  }
  public void loadScore(Score score,double position,boolean traditional){
+  loadScore(score,position,traditional,false);
+ }
+ /** Creation-only engraving: OSMD reflows systems within the phone width. */
+ public void loadCreationScore(Score score,double position){
+  loadScore(score,position,true,true);
+ }
+ private void loadScore(Score score,double position,boolean traditional,boolean responsiveCreation){
   scoreGeneration++;loadDispatched=false;
-  rendererFailed=false;failureRecorded=false;freeLayout=traditional;engravingProof=!traditional;
+  rendererFailed=false;failureRecorded=false;
+  freeLayout=traditional;creationPage=responsiveCreation;engravingProof=!traditional;
   if(getLayerType()!= (engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType))
    setLayerType(engravingProof?View.LAYER_TYPE_SOFTWARE:originalLayerType,null);
   getSettings().setSupportZoom(traditional);
@@ -166,7 +175,7 @@ public final class NotationView extends WebView {
   }
   // Proper JSON quoting prevents XML text being interpreted as JavaScript.
   Log.i("PianoLivreNotation","LOAD_XML "+xml.length());
-  String layout=freeLayout?"'free'":"'engraving-poc'";
+  String layout=creationPage?"'creation-page'":(freeLayout?"'free'":"'engraving-poc'");
   String nativeEvents="null";
   if(engravingProof){
    java.util.List<Score.Event> graphicEvents=pendingScore.writtenEvents.isEmpty()
@@ -284,7 +293,11 @@ public final class NotationView extends WebView {
   if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)evaluateJavascript("PianoNotation.waitCancel()",null);
  }
  public void resizeToFit(){
-  if(!disposed&&!freeLayout&&htmlReady&&scoreRendered)resizeWhenViewportReady(++resizeSequence,scoreGeneration,0);
+  if(disposed||!htmlReady||!scoreRendered)return;
+  if(creationPage){
+   // Re-engrave when viewport width changes, never pan horizontally.
+   evaluateJavascript("PianoNotation.resize()",null);
+  }else if(!freeLayout)resizeWhenViewportReady(++resizeSequence,scoreGeneration,0);
  }
  private void resizeWhenViewportReady(long sequence,long generation,int attempt){
   if(disposed||sequence!=resizeSequence||generation!=scoreGeneration||!scoreRendered||getWidth()<=0||getHeight()<=0)return;

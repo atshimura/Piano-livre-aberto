@@ -11,6 +11,10 @@
  body.continuous #score{width:100%;height:100%;min-height:0;transform:none;padding:0;overflow:hidden}
  body.free #viewport{overflow:auto;scroll-behavior:auto}
  body.free #score{width:153.846%;min-height:100%;transform:scale(0.65);transform-origin:top left}
+ /* ZAI-008: only Creation uses page-width layout with automatic system breaks. */
+ body.creation-page #viewport{width:100%;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;scroll-behavior:auto}
+ body.creation-page #score{width:100%;max-width:100%;min-width:0;min-height:100%;box-sizing:border-box;transform:none;padding:4px 0 12px;overflow-x:clip}
+ body.creation-page #score svg{max-width:100%;height:auto;overflow:visible}
  /* Research-only proof: preserve the existing Estudo renderer by default. */
  body.preview #viewport{overflow-x:auto;overflow-y:hidden;scroll-behavior:auto;overscroll-behavior-x:contain;touch-action:pan-x}
  body.preview #score{width:100%;height:100%;min-height:0;transform:none;padding:0;overflow:visible}
@@ -38,7 +42,7 @@
 <script>
 (function(){
  'use strict';
- let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false;
+ let osmd=null,loaded=false,seekBeat=0,appliedBeat=-1,freeLayout=false,studyProof=false,creationPage=false;
  let studyProfile=null,studyAnalysis=null,studyVerticalAdaptation={status:'not-evaluated'};
  let studyDynamicAdjustments=[],studyWordSourceNumbers=[],studyWindow=null,studyWindowRows=[],studyWindowGlobal=null;
  let generation=0,activeRenderToken=0,renderTimer=null,optical=null,opticalAnchor=null,opticalRaf=0,opticalOffset=0,opticalFrames=0;
@@ -874,16 +878,17 @@
   osmdRenderedWidth=0;osmdRenderedHeight=0;opticalDisplayScale=1;
   opticalContextState=null;opticalContextMeasure=-1;
   document.getElementById('optical-context-rail').innerHTML='';
-  freeLayout=(layout==='free');studyProof=(layout==='engraving-poc');
+  creationPage=(layout==='creation-page');
+   freeLayout=(layout==='free'||creationPage);studyProof=(layout==='engraving-poc');
   if(!freeLayout&&!studyProof){
    reportFailure(activeRenderToken,'PL-NOT-LOAD','Modo de apresentação','Modo OSMD não suportado');
    return;
   }
   lastNativeEvents=studyProof&&Array.isArray(nativeEvents)?nativeEvents:[];
-  document.body.className=freeLayout?'free':(studyProof?'preview':'continuous');
+  document.body.className=creationPage?'creation-page':(freeLayout?'free':(studyProof?'preview':'continuous'));
   // Native pinch zoom remains available in traditional reading mode only.
   document.querySelector('meta[name="viewport"]').setAttribute('content',
-    freeLayout?'width=device-width,initial-scale=1,minimum-scale=0.5,maximum-scale=3,user-scalable=yes'
+    freeLayout&&!creationPage?'width=device-width,initial-scale=1,minimum-scale=0.5,maximum-scale=3,user-scalable=yes'
               :'width=device-width,initial-scale=1,user-scalable=no');
   inform('Diagramando a partitura...');
   document.getElementById('score').innerHTML='';
@@ -914,7 +919,7 @@
     drawPartNames:false,
     drawingParameters:'compacttight',
     renderSingleHorizontalStaffline:studyProof,
-    newSystemFromXML:freeLayout, // respect explicit systems only in reading mode
+    newSystemFromXML:freeLayout&&!creationPage, // Creation wraps automatically at viewport width
     disableCursor:freeLayout||studyProof,
     cursorsOptions:[{type:1,color:'#008b78',alpha:0.8,follow:false}]
    });
@@ -944,6 +949,11 @@
      throw new Error('Falha OSMD de renderização (teste sintético dirigido)');
     }
     osmd.render();
+    if(creationPage)console.log('CREATION_WRAP_RENDER '+JSON.stringify({
+     viewportWidth:viewport.clientWidth,scrollWidth:viewport.scrollWidth,
+     noteheads:document.querySelectorAll('#score svg .vf-notehead').length,
+     systems:document.querySelectorAll('#score svg g.staffline').length
+    }));
     if(studyProof){
      let probe=document.querySelector('#score svg');
      if(!probe)throw Error('OSMD não produziu SVG');
@@ -1176,6 +1186,7 @@
      osmd.Zoom=target;
      osmd.render();
      osmdRenderedWidth=viewport.clientWidth;
+     if(creationPage)viewport.scrollLeft=0;
      console.log('SCORE_DRAWN','zoom=',osmd.Zoom);
     }catch(e){console.error('ZOOM_FAIL',e&&e.message||e);}
    },
@@ -1241,6 +1252,7 @@
     clearTimeout(renderTimer);
     renderTimer=setTimeout(function(){try{
      osmd.render();appliedBeat=-1;
+     if(creationPage)viewport.scrollLeft=0;
      osmdRenderedWidth=viewport.clientWidth;
      osmdRenderedHeight=viewport.clientHeight;
      if(studyProof){

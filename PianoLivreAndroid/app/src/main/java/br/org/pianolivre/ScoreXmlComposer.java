@@ -20,7 +20,7 @@ public final class ScoreXmlComposer {
     public static final int MAX_XML_CHARS = 8_000_000;
     /** Revision for safe, non-destructive detection of outdated derivatives. */
     public static final String GENERATOR_MARKER =
-            "<miscellaneous-field name=\"pianolivre-generator\">ZAI-007-tie-free</miscellaneous-field>";
+            "<miscellaneous-field name=\"pianolivre-generator\">ZAI-008-rests-wrap</miscellaneous-field>";
     public static boolean isCurrentDerivedXml(String xml) {
         return xml != null && xml.contains(GENERATOR_MARKER);
     }

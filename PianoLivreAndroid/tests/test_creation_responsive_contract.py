@@ -73,7 +73,7 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('setCreationZoom(zoom)',SCORE)
         self.assertIn('Andamento estimado: ',SCORE)
         self.assertIn('Andamento não identificado com segurança — prévia a 120 BPM (provisória)',SCORE)
-        self.assertIn('getResources().getDisplayMetrics().heightPixels*0.42f',SCORE)
+        self.assertIn('getResources().getDisplayMetrics().heightPixels*0.65f',SCORE)
         # Retired C2 controls must not return in another screen of the preview.
         for retired in ('creation-score-note-row','Button chord=button("Acorde"','Selecionar intervalo de compassos',
                         'Desfazer','Refazer','Restaurar sugestão','Concluir ajustes',
