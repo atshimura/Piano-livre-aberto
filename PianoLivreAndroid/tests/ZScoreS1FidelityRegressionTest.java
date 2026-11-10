@@ -83,8 +83,8 @@ public final class ZScoreS1FidelityRegressionTest {
             ok(generated.notes.get(i+8).pitch == new int[]{60,62,64,65,67,69,71,72}[i],
                     "S1: overlapping scale note " + i);
         }
-        ok(count(generated.xml, "<staccato/>") >= 6,
-                "S1: detached scale remains staccato, not repetitive inserted rests");
+        ok(count(generated.xml, "<staccato/>") == 0,
+                "S1: no printed staccato; rhythm and Note Off remain preserved");
         List<Score.Event> c5 = pitch(score, 72);
         ok(c5.size() == 2, "S1: precisely two C5 attacks");
         // The score is intentionally simplified. The source MIDI still
