@@ -55,8 +55,20 @@ async function main(){
     const rect=viewport.getBoundingClientRect();
     const visible=heads.filter(el=>{
       const style=getComputedStyle(el),box=el.getBoundingClientRect();
-      return style.display!=="none" && style.visibility!=="hidden" &&
-        style.opacity!=="0" && box.width>0 && box.height>0;
+      if(style.display==="none" || style.visibility==="hidden" ||
+          style.opacity==="0" || box.width===0 || box.height===0) return false;
+      // Bundled OSMD keeps invisible rest nodes in the SVG for temporal
+      // layout. They have alpha-zero glyph paths (e.g. fill="#00000000").
+      // Count only noteheads containing at least one actually painted path.
+      const paths=Array.from(el.querySelectorAll("path"));
+      return paths.some(path=>{
+        const fill=(path.getAttribute("fill")||"").toLowerCase();
+        const stroke=(path.getAttribute("stroke")||"").toLowerCase();
+        const opaque=(color)=>color && color!=="none" &&
+          !(color.length===9 && color.startsWith("#") && color.endsWith("00")) &&
+          color!=="transparent";
+        return opaque(fill)||opaque(stroke);
+      });
     });
     const lines=document.querySelectorAll("#score svg g.staffline");
     return {error:window.z9Error||null,done:window.z9Done,
@@ -72,8 +84,9 @@ async function main(){
   const visible=await render(sourceVisible,"creation-page",360,660);
   const narrow=await render(sourceHidden,"creation-page",360,660);
   const wide=await render(sourceHidden,"creation-page",800,420);
-  // Do not force a success based on DOM fixtures. The hidden rendered glyphs
-  // must be fewer than the identical score with visible rests.
+  // OSMD retains hidden rest nodes for layout, but renders them as fully
+  // transparent SVG glyphs. We compare the actual painted glyphs, not DOM
+  // element counts, so the test detects visible musical symbols.
   console.log("ZAI009_OSMD_OBSERVED "+JSON.stringify({visible,narrow,wide}));
   for(const s of [visible,narrow,wide]){
    assert.equal(s.error,null,"OSMD render failed "+JSON.stringify(s.error));
