@@ -527,6 +527,9 @@ public final class ScoreRhythmQuantizer {
 
     /** Avoid metrically confusing rests that start on arbitrary subdivisions. */
     private static boolean restFitsMeter(int pos, int figure) {
+        // All previously admissible rest alignments remain possible.
+        // ZAI-008 adds compact alternatives; it must never increase glyphs.
+        if (pos % figure == 0) return true;
         switch (figure) {
             case 16: return pos == 0;
             case 12: return pos % 4 == 0;
