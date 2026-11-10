@@ -21,9 +21,9 @@ assert "loadCreationScore(Score score,double position)" in notation
 assert "notation.loadCreationScore(score,0)" in preview
 assert "PianoNotation.resize()" in notation
 assert "getResources().getDisplayMetrics().heightPixels*0.65f" in preview
-assert "ZAI-008-rests-wrap" in composer
+assert "ZAI-009-basic-notes-duration" in composer
 assert "isCurrentDerivedXml(prior.xml)" in preview
-assert "Gerar prévia atualizada" in preview
+assert "Gerar partitura básica" in preview
 assert "A partitura antiga não será substituída até que você escolha Salvar partitura" in preview
 assert "restFigures(int from, int to)" in quant
 assert "fillRests(tokens, cursor, d.pos)" in quant

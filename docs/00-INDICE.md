@@ -13,6 +13,8 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-009 — Transcrição básica de notas e durações, sem pausas e articulações visíveis](ZAI-009-NOTAS-DURACOES-SEM-SIMBOLOS.md): alturas, ataques, ritmo e acordes; pausas temporais não imprimíveis, S1, OSMD Chromium real e regressões, APK principal 0.9.70.
+
 - [ZAI-008 — Entrega da escrita de pausas e layout responsivo, APK 0.9.69](ZAI-008-ENTREGA-APK-PRINCIPAL-20261110.md): JVM 1.065 verificações, Chromium OSMD 360/800/1100 px, certificado permanente, SHA-256 e download GitHub direto.
 
 - [ZAI-008 — Pausas legíveis e quebra automática de linhas na Criação](ZAI-008-PAUSAS-LEGIVEIS-PARTITURA-RESPONSIVA.md): minimização conservadora de pausas, MusicXML/OSMD responsivo sem rolagem horizontal e testes em Chromium 360/800/1100 px.
