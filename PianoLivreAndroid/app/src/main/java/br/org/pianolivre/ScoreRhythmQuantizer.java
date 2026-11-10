@@ -170,9 +170,22 @@ public final class ScoreRhythmQuantizer {
                 // exception is a clearly detached *very short* final note
                 // in a locally regular series (R11: 62 ms on quarter beats).
                 long previous = prevGap[i];
+                boolean precedingRepeated = false;
+                int staffNow = note.pitch >= SPLIT_MIDI ? 1 : 2;
+                for (int earlier = i - 1; earlier >= 0; earlier--) {
+                    ScoreMidiPairer.PairedNote before = ordered.get(earlier);
+                    int staffBefore = before.pitch >= SPLIT_MIDI ? 1 : 2;
+                    if (staffBefore != staffNow || start[earlier] == start[i]) continue;
+                    precedingRepeated = prevGap[earlier] > 0
+                            && Math.abs(prevGap[earlier] - previous) <= 1;
+                    break;
+                }
+                // A last detached note in a repeated rhythm (R11) keeps its
+                // musical value; a short, isolated final note (R10) does not
+                // inherit a long gap by accident.
                 boolean shortFinalStaccato = !note.syntheticEnd
-                        && previous >= 2 && previous <= 8
-                        && note.durationNs() < previous * (quarterNs / 4.0) * 0.35;
+                        && precedingRepeated && previous >= 2
+                        && note.durationNs() < previous * (quarterNs / 4.0) * 0.72;
                 length = shortFinalStaccato ? previous : physical;
             } else {
                 long physicalNs = Math.max(0, note.durationNs());
