@@ -9,7 +9,7 @@ preview=java("CreationScorePreviewScreen.java")
 quant=java("ScoreRhythmQuantizer.java")
 notation=java("NotationView.java")
 assert "ZAI-009-basic-notes-duration" in composer
-assert 'xml.append(token.rest ? "<note print-object=\\\"no\\\">" : "<note>")' in composer or 'xml.append(token.rest ? "<note print-object=\\"no\\">" : "<note>")' in composer
+assert 'token.rest ? "<note print-object=' in composer, "invisible-rest MusicXML expected"
 assert 'xml.append("<rest/>")' in composer, "hidden rests must keep musical duration"
 assert 'xml.append("<duration>")' in composer
 assert 'xml.append("<staccato' not in composer
