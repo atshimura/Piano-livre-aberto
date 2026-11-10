@@ -149,7 +149,7 @@ public final class ZScoreGeneratorRhythmTest {
         ok(r10g.measures == 1, "R10 single measure");
         okMeasureBlocksFill(r10g.xml);
 
-        // --- R11: staccato eighths at 120: literal short notes, never arbitrarily cut. ---
+        // --- R11: staccato at 120: keep musical quarter values and mark articulation. ---
         ArrayList<MidiTakeRecorder.Event> r11Events = new ArrayList<>();
         for (int i = 0; i < SCALE.length; i++) {
             long at = 1_000_000_000L + i * q120;
@@ -160,7 +160,8 @@ public final class ZScoreGeneratorRhythmTest {
         ok(r11.notes.size() == 8, "R11 all eight attacks preserved");
         for (ScoreMidiPairer.PairedNote n : r11.notes)
             ok(n.endNs > n.startNs, "R11 no zero-length notes");
-        ok(r11.xml.contains("<type>16th</type>"), "R11 staccato written literally");
+        ok(count(r11.xml,"<type>quarter</type>")==8, "R11 staccato retains eight quarter-note rhythmic values");
+        ok(count(r11.xml,"<staccato/>")>=7, "R11 staccato articulation is explicit; releases do not become rests");
         ok(r11.tempoReliable, "R11 pulse still recognized from attacks, tempo " + r11.bpm);
         okMeasureBlocksFill(r11.xml);
 
