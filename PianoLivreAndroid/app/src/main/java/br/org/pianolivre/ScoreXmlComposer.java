@@ -112,16 +112,14 @@ public final class ScoreXmlComposer {
                     xml.append("<type>").append(typeOf(token.cells)).append("</type>");
                     if (dotted(token.cells)) xml.append("<dot/>");
                     xml.append("<staff>").append(voice.staff).append("</staff>");
-                    if (!token.rest && (token.tieStart || token.tieStop
-                            || token.staccato || token.slurStart || token.slurStop)) {
+                    // Creation does NOT infer expressive slurs. Only tied
+                    // fragments of the SAME source MIDI attack are generated.
+                    // Explicit slurs from imported MusicXML remain untouched.
+                    if (!token.rest && (token.tieStart || token.tieStop || token.staccato)) {
                         xml.append("<notations>");
                         if (token.tieStop) xml.append("<tied type=\"stop\"/>");
                         if (token.tieStart) xml.append("<tied type=\"start\"/>");
-                        // Expressive slurs are NOT ties: different notes stay
-                        // separate attacks. Staccato does not shorten the
-                        // rhythmic duration of the written note.
-                        if (token.slurStop) xml.append("<slur type=\"stop\" number=\"1\"/>");
-                        if (token.slurStart) xml.append("<slur type=\"start\" number=\"1\"/>");
+                        // Staccato changes articulation, not written duration.
                         if (token.staccato) xml.append("<articulations><staccato/></articulations>");
                         xml.append("</notations>");
                     }

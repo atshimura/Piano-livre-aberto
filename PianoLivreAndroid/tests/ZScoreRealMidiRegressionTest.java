@@ -135,8 +135,10 @@ public final class ZScoreRealMidiRegressionTest {
         }
         CreationScoreGenerator.Generation leg=run(legato,2_100_000_000L);
         ok(attacks(xml(leg.xml)).size()==4,"LEGATO: four distinct attacks");
-        ok(leg.xml.contains("<slur type=\"start\" number=\"1\"/>"),"LEGATO: slur start");
-        ok(leg.xml.contains("<slur type=\"stop\" number=\"1\"/>"),"LEGATO: slur stop");
+        // ZAI-006: overlapping keys do not prove an expressive slur.
+        ok(!leg.xml.contains("<slur"),"LEGATO: no inferred expressive slur");
+        Score legStudy=Score.read(new ByteArrayInputStream(leg.xml.getBytes(StandardCharsets.UTF_8)),"leg");
+        ok(legStudy.events.size()==4,"LEGATO: notes remain four attacks despite physical overlap");
 
         // --- Genuine sustained overlap requires another voice, not truncation.
         List<MidiTakeRecorder.Event> overlap=Arrays.asList(
