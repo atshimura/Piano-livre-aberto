@@ -75,11 +75,13 @@ jobs:
             tests/ZScoreGeneratorRhythmTest.java \
             tests/ZScoreGeneratorXmlTest.java \
             tests/CreationScoreStoreTest.java \
-            tests/CreationC2DCorpusTest.java
+            tests/CreationC2DCorpusTest.java \
+            tests/ZScoreRealMidiRegressionTest.java
           java -cp build/zai-test-jvm br.org.pianolivre.ZScoreGeneratorRhythmTest
           java -cp build/zai-test-jvm br.org.pianolivre.ZScoreGeneratorXmlTest
           java -cp build/zai-test-jvm br.org.pianolivre.CreationScoreStoreTest
           java -cp build/zai-test-jvm br.org.pianolivre.CreationC2DCorpusTest
+          java -cp build/zai-test-jvm br.org.pianolivre.ZScoreRealMidiRegressionTest
 
       - name: Configurar chave publica permanente
         env:
