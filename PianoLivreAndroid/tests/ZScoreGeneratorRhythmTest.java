@@ -161,7 +161,7 @@ public final class ZScoreGeneratorRhythmTest {
         for (ScoreMidiPairer.PairedNote n : r11.notes)
             ok(n.endNs > n.startNs, "R11 no zero-length notes");
         ok(count(r11.xml,"<type>quarter</type>")==8, "R11 staccato retains eight quarter-note rhythmic values");
-        ok(count(r11.xml,"<staccato/>")>=7, "R11 staccato articulation is explicit; releases do not become rests");
+        ok(count(r11.xml,"<staccato/>")==0, "R11 timing remains quarter-note without printed staccato");
         ok(r11.tempoReliable, "R11 pulse still recognized from attacks, tempo " + r11.bpm);
         okMeasureBlocksFill(r11.xml);
 
