@@ -147,7 +147,7 @@ public final class ZScoreRealMidiRegressionTest {
         CreationScoreGenerator.Generation held=run(overlap,2_200_000_000L);
         ok(attacks(xml(held.xml)).size()==4,"OVERLAP: every pitch remains one musical attack");
         ok(held.xml.contains("<voice>2</voice>"),"OVERLAP: separate voice for sustained C4");
-        ok(held.xml.contains("<tie type=\"start\"/>"),"OVERLAP: long duration tied when needed");
+        ok(held.xml.contains("<duration>2880</duration>"),"OVERLAP: C4 keeps the entire three-beat hold");
 
         // --- One Note On sustained 5/16: two figures with explicit intra-bar tie.
         CreationScoreGenerator.Generation five=run(Arrays.asList(
