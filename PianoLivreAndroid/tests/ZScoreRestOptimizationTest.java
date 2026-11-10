@@ -22,6 +22,7 @@ public final class ZScoreRestOptimizationTest {
         return n;
     }
     private static boolean allowed(int pos,int n){
+        if(pos%n==0)return true;
         switch(n){
             case 16: return pos==0;
             case 12: case 8: case 6: case 4: return pos%4==0;
