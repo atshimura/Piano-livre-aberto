@@ -11,8 +11,9 @@ import java.util.List;
  * time specifies articulation (staccato / legato) and genuine sustained overlap.
  *
  * A detached note remains one written quarter/half when its Note Off precedes
- * the next Note On. A brief overlap expresses legato; a sustained overlap must
- * retain its duration by allocating another voice. Every fragmentation of ONE
+ * the next Note On. MIDI overlap does NOT justify an expressive slur; significant
+ * sustained overlap retains its duration by allocating another voice.
+ * Every fragmentation of ONE
  * source attack (including within a bar) is tied, never a new musical attack.
  */
 public final class ScoreRhythmQuantizer {
