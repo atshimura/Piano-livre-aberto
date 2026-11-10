@@ -13,6 +13,9 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-007 — Planejamento da partitura simplificada sem ligaduras](ZAI-007-PARTITURA-SIMPLIFICADA-SEM-LIGADURAS.md): uma figura por Note On, MIDI original intacto, regeneração explícita de derivados antigos e edição manual futura.
+- [ZAI-007 — Entrega do APK principal 0.9.68](ZAI-007-ENTREGA-APK-PRINCIPAL-20261110.md): 355 verificações JVM, assinatura permanente, SHA-256 e download direto no GitHub sem Library.
+
 - [ZAI-006 — Entrega, evidências e APK 0.9.67 no GitHub](ZAI-006-ENTREGA-APK-PRINCIPAL-20261110.md): 314 verificações JVM, pacote principal, assinatura permanente, SHA-256 e link direto sem Library.
 
 - [ZAI-006 — Durações, S1 real e nenhuma ligadura de expressão automática](ZAI-006-DURACOES-S1-SEM-LIGADURA-EXPRESSAO.md): planejamento, testes com 22 ataques e nota sustentada por cinco minutos, preservação de pausas e APK principal.
