@@ -1,8 +1,11 @@
 plugins { id 'com.android.application' }
+
+// Only the explicit ZAi APK build uses an independent Android package.
+def zaiTestBuild = project.findProperty('pianolivre.zai.test')?.toString() == 'true'
 android {
   namespace 'br.org.pianolivre'
   compileSdk 36
-  defaultConfig { applicationId 'br.org.pianolivre'; minSdk 26; targetSdk 36; versionCode 20; versionName '0.9.11-open-beta' }
+  defaultConfig { applicationId 'br.org.pianolivre'; minSdk 26; targetSdk 36; versionCode 20; versionName '0.9.11-open-beta'; manifestPlaceholders = [pianoAppLabel: zaiTestBuild ? 'Piano Livre ZAi' : 'Piano Livre'] }
   // Public builds do not use the historical private-beta signing certificate.
   // Ordinary pull requests run with their own ephemeral Android debug key.
   def publicKeys = [
@@ -24,7 +27,7 @@ android {
   }
   buildTypes {
     release {
-      applicationIdSuffix '.opensource'
+      if (zaiTestBuild) { applicationIdSuffix '.opensource.zai' } else { applicationIdSuffix '.opensource' }
       debuggable false
       minifyEnabled false
       // PR/emulator builds use only the runner's disposable debug certificate.
@@ -32,7 +35,7 @@ android {
       signingConfig = hasPublicSigning ? signingConfigs.publicBeta : signingConfigs.debug
     }
     debug {
-      applicationIdSuffix '.opensource'
+      if (zaiTestBuild) { applicationIdSuffix '.opensource.zai' } else { applicationIdSuffix '.opensource' }
       if (hasPublicSigning) signingConfig signingConfigs.publicBeta
     }
   }

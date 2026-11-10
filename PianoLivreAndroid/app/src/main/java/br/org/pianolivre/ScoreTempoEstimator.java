@@ -6,29 +6,18 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Z-P1: estimates the quarter-note pulse of a take from attack intervals and held
- * durations. Musical inference, not a fixed ms→figure conversion (ZAI-001 §3).
+ * ZAI-002: beat inference uses the spacing between MIDI Note On attacks, not
+ * key-press durations (Note Off). Durations belong to articulation analysis.
  *
- * Method (deterministic, global for the whole take):
- * - Candidate quarter periods are built from observed inter-onset intervals and held
- *   durations, each interpreted as a common note value (16th..whole).
- * - Every candidate is scored by: onsets fitting the sixteenth-note grid, written values
- *   landing on usual figures (including dotted), intervals fitting the same grid, and a
- *   fragmentation penalty for unusual values. A fixed 120 BPM is never assumed.
- * - Ties are broken deterministically: the most common attack interval is interpreted as
- *   one quarter (the natural exercise reading). This keeps 8 quarters + 8 halves at 90 and
- *   at 120 BPM producing the same figures with their own tempo, instead of collapsing
- *   everything into a doubled or halved pulse.
- * - A half/double candidate that scores the same as the winner degrades confidence:
- *   the reading is musically ambiguous and the UI must label the tempo as unproven.
+ * Repeated short and long intervals in an approximate 1:2 relationship are
+ * interpreted against one pulse, even when the human performance is not exactly
+ * aligned to a global sixteenth-note grid. The shorter frequent interval is
+ * favoured as the quarter-note pulse; ambiguous cases are labelled.
  */
 public final class ScoreTempoEstimator {
-    /** Accepted quarter range: 30..240 BPM. */
-    public static final long MIN_QUARTER_NS = 250_000_000L, MAX_QUARTER_NS = 2_000_000_000L;
-    /** Grid resolution: sixteenth notes per quarter (the finest V0 figure, ZAI-001 §3.2
-     *  "1/16 grade" — musically the semicolcheia, 4 cells per quarter). */
+    public static final long MIN_QUARTER_NS = 250_000_000L;
+    public static final long MAX_QUARTER_NS = 2_000_000_000L;
     public static final int GRID_PER_QUARTER = 4;
-    /** Provisional tempo used only when nothing can be claimed. */
     public static final long PROVISIONAL_QUARTER_NS = 500_000_000L;
 
     public enum Confidence { HIGH, MEDIUM, LOW }
@@ -39,168 +28,106 @@ public final class ScoreTempoEstimator {
         public final Confidence confidence;
         public final List<String> warnings;
         public final double gridFitRatio;
-        Estimate(long quarterNs, double bpm, Confidence confidence, List<String> warnings, double fit) {
-            this.quarterNs = quarterNs; this.bpm = bpm; this.confidence = confidence;
-            this.warnings = Collections.unmodifiableList(warnings); this.gridFitRatio = fit;
+        Estimate(long q, double bpm, Confidence conf, List<String> warnings, double fit) {
+            quarterNs = q; this.bpm = bpm; confidence = conf;
+            this.warnings = Collections.unmodifiableList(new ArrayList<>(warnings));
+            gridFitRatio = fit;
         }
-        /** True when the tempo may be presented as identified; false keeps a labelled 120 BPM preview. */
         public boolean reliable() { return confidence != Confidence.LOW; }
     }
 
     private ScoreTempoEstimator() {}
 
-    /** Written figures in sixteenth-note grid cells: 16th, 8th, 8th., quarter, quarter.,
-     *  half, half., whole. One grid cell is one sixteenth. */
-    static final int[] USUAL_CELLS = {1, 2, 3, 4, 6, 8, 12, 16};
-    /** Candidate interpretations of an observed interval, as fraction of a quarter. */
-    private static final double[] ROLES = {1.0 / 4, 1.0 / 2, 1.0, 2.0, 3.0, 4.0};
+    private static Estimate provisional(List<String> warnings, double fit) {
+        warnings.add("Prévia provisória a 120 BPM; andamento não identificável com segurança");
+        return new Estimate(PROVISIONAL_QUARTER_NS, 120, Confidence.LOW, warnings, fit);
+    }
 
     public static Estimate estimate(List<ScoreMidiPairer.PairedNote> notes) throws IOException {
-        ArrayList<String> warnings = new ArrayList<>();
         if (notes == null || notes.isEmpty()) throw new IOException("Sem notas para estimar andamento");
-        if (notes.size() < 2) {
-            warnings.add("Gravação com nota única: andamento não identificável com segurança");
-            warnings.add("Prévia provisória a 120 BPM; o valor musical não está provado");
-            return new Estimate(PROVISIONAL_QUARTER_NS, 120.0, Confidence.LOW, warnings, 0.0);
+        ArrayList<String> warnings = new ArrayList<>();
+        ArrayList<Long> intervals = new ArrayList<>();
+        long previous = -1;
+        // Same-time chord tones count as one rhythmic attack.
+        for (ScoreMidiPairer.PairedNote note : notes) {
+            if (previous >= 0 && note.startNs > previous)
+                intervals.add(note.startNs - previous);
+            previous = note.startNs;
+        }
+        if (intervals.size() < 3) {
+            warnings.add("Poucos ataques distintos para estimar o pulso");
+            return provisional(warnings, 0);
         }
 
-        // --- Observed intervals (onset deltas) and held durations, in ns. ---
-        ArrayList<Long> deltasList = new ArrayList<>();
-        for (int i = 1; i < notes.size(); i++) {
-            long d = notes.get(i).startNs - notes.get(i - 1).startNs;
-            if (d > 0) deltasList.add(d);
-        }
-        ArrayList<Long> durationsList = new ArrayList<>();
-        for (ScoreMidiPairer.PairedNote n : notes) if (n.durationNs() > 0) durationsList.add(n.durationNs());
-        if (deltasList.isEmpty()) {
-            warnings.add("Todos os ataques coincidem: andamento não identificável com segurança");
-            warnings.add("Prévia provisória a 120 BPM; o valor musical não está provado");
-            return new Estimate(PROVISIONAL_QUARTER_NS, 120.0, Confidence.LOW, warnings, 1.0);
-        }
-
-        // --- Candidate quarter periods. ---
-        ArrayList<Long> candidates = new ArrayList<>();
-        for (long d : deltasList)
-            for (double role : ROLES) addCandidate(candidates, Math.round(d / role));
-        for (long d : durationsList) // sustained durations suggest legato figures; fewer roles.
-            for (double role : new double[]{1.0 / 8, 1.0 / 4, 1.0 / 2, 1.0, 2.0, 4.0})
-                addCandidate(candidates, Math.round(d / role));
-        Collections.sort(candidates);
-        if (candidates.isEmpty()) {
-            warnings.add("Intervalos fora da faixa de andamento suportada (30–240 BPM)");
-            warnings.add("Prévia provisória a 120 BPM; o valor musical não está provado");
-            return new Estimate(PROVISIONAL_QUARTER_NS, 120.0, Confidence.LOW, warnings, 0.0);
-        }
-
-        // Most common attack interval (fuzzy buckets) = the exercise's natural quarter reading.
-        long modalDelta = modalDelta(deltasList);
-
-        // --- Score every candidate. ---
-        long bestQuarter = candidates.get(0);
-        double bestScore = -1;
-        ArrayList<long[]> scored = new ArrayList<>(); // {quarterNs, scoreMillis}
-        for (long quarter : candidates) {
-            long grid = quarter / GRID_PER_QUARTER;
-            if (grid <= 0) continue;
-            double onsetFit = 0, valueFit = 0, deltaFit = 0;
-            for (ScoreMidiPairer.PairedNote n : notes) {
-                long start = Math.round(n.startNs / (double) grid);
-                if (Math.abs(n.startNs - start * grid) <= 0.35 * grid) onsetFit += 1;
-                long cells = Math.max(1, Math.round(n.durationNs() / (double) grid));
-                if (usual(cells)) valueFit += 1;
+        /*
+         * Group observed inter-onset intervals into approximate clusters
+         * (18% tolerance), then infer the quarter from the most common cluster.
+         * Half-note attacks near 2*q and longer phrase gaps near 4*q contribute
+         * musical evidence but MUST NOT force a fixed 120 BPM.
+         *
+         * Unlike the retired estimator, this does not reject rubato merely
+         * because accumulated absolute onsets drift off an ideal beat grid.
+         */
+        long best = 0;
+        int bestExact = -1;
+        int bestHarmonics = -1;
+        double bestError = Double.POSITIVE_INFINITY;
+        for (long seed : intervals) {
+            if (seed < MIN_QUARTER_NS || seed > MAX_QUARTER_NS) continue;
+            ArrayList<Long> cluster = new ArrayList<>();
+            for (long d : intervals)
+                if (near(d, seed, 0.18)) cluster.add(d);
+            if (cluster.size() < 3) continue;
+            Collections.sort(cluster);
+            long q = cluster.get(cluster.size() / 2);
+            if (q < MIN_QUARTER_NS || q > MAX_QUARTER_NS) continue;
+            int exact = 0, harmonics = 0;
+            double error = 0;
+            for (long d : intervals) {
+                if (near(d, q, 0.18)) {
+                    exact++; error += Math.abs(d / (double) q - 1);
+                } else if (near(d, 2L * q, 0.18)) {
+                    harmonics++; error += Math.abs(d / (double)(2L * q) - 1);
+                } else if (near(d, 3L * q, 0.18) || near(d, 4L * q, 0.18)) {
+                    harmonics++;
+                }
             }
-            for (long d : deltasList) {
-                long cells = Math.round(d / (double) grid);
-                if (Math.abs(d - cells * grid) <= 0.35 * grid) deltaFit += 1;
-            }
-            double n = notes.size(), nd = deltasList.size();
-            double score = 3 * (onsetFit / n) + 2 * (valueFit / n) + (deltaFit / nd);
-            scored.add(new long[]{quarter, Math.round(score * 1_000_000)});
-            // Deterministic tie-break: prefer the candidate closest to "modal delta = 1 quarter".
-            if (score > bestScore + 1e-9
-                    || (Math.abs(score - bestScore) <= 1e-9 && prefer(quarter, bestQuarter, modalDelta))) {
-                bestScore = score; bestQuarter = quarter;
+            // Exact repetition dominates: select the shortest frequent pulse
+            // when the counts tie (e.g. real halfs at 1.06s, quarters at .53s).
+            if (exact > bestExact
+                    || exact == bestExact && harmonics > bestHarmonics
+                    || exact == bestExact && harmonics == bestHarmonics
+                    && (q < best || best == 0)) {
+                best = q; bestExact = exact; bestHarmonics = harmonics; bestError = error;
             }
         }
-        scored.sort((a, b) -> b[1] != a[1] ? Long.compare(b[1], a[1]) : Long.compare(a[0], b[0]));
-
-        // --- Ambiguity and confidence. ---
-        double bestFit = fitRatio(notes, bestQuarter);
-        Confidence confidence;
-        long runnerQuarter = bestQuarter;
-        double runnerScore = bestScore;
-        if (scored.size() > 1) {
-            runnerQuarter = scored.get(1)[0];
-            runnerScore = scored.get(1)[1] / 1_000_000.0;
+        if (best == 0) {
+            warnings.add("Intervalos irregulares ou sem pulso suficientemente repetido");
+            return provisional(warnings, 0);
         }
-        // A half/double reading often scores the same: the 1/16 grid always fits when the
-        // winner fits. The modal-interval tie-break already chose deterministically; the
-        // ambiguity is reported, and confidence only drops when even the modal reading
-        // could not separate the candidates (equidistant ties) or the fit is weak.
-        double bestScorePoints = bestScore;
-        double ratio = (double) Math.max(runnerQuarter, bestQuarter) / Math.min(runnerQuarter, bestQuarter);
-        boolean halfDoubleTie = scored.size() > 1
-                && Math.abs(ratio - 2.0) < 0.05
-                && Math.abs(bestScorePoints - runnerScore) <= 0.02;
-        double dBest = Math.abs(Math.log(bestQuarter / (double) modalDelta));
-        double dRunner = Math.abs(Math.log(runnerQuarter / (double) modalDelta));
-        boolean modalTie = halfDoubleTie && Math.abs(dBest - dRunner) < 1e-9;
-        if (modalTie) warnings.add("Andamento de metade/dobro indistinguível nesta execução");
-        else if (halfDoubleTie)
-            warnings.add("Leitura de metade/dobro também é possível; adotou-se o intervalo de ataque mais comum como a semínima");
-        if (notes.size() < 4 || bestFit < 0.9 || modalTie) {
-            confidence = Confidence.LOW;
-            warnings.add("Confiança baixa: andamento não identificável com segurança");
-            warnings.add("Prévia provisória a 120 BPM; o valor musical não está provado");
-            return new Estimate(PROVISIONAL_QUARTER_NS, 120.0, Confidence.LOW, warnings, bestFit);
+        int matched = 0;
+        int doubled = 0;
+        for (long d : intervals) {
+            if (near(d, best, 0.22) || near(d, 2L * best, 0.22)
+                    || near(d, 3L * best, 0.22) || near(d, 4L * best, 0.22)) matched++;
+            if (near(d, 2L * best, 0.18)) doubled++;
         }
-        if (notes.size() >= 8 && bestFit >= 0.95) confidence = Confidence.HIGH;
-        else confidence = Confidence.MEDIUM;
-        double bpm = 60_000_000_000.0 / bestQuarter;
-        return new Estimate(bestQuarter, Math.round(bpm * 10) / 10.0, confidence, warnings, bestFit);
+        double fit = matched / (double) intervals.size();
+        if (fit < 0.65) {
+            warnings.add("Pulsação pouco estável (intervalos entre ataques muito variados)");
+            return provisional(warnings, fit);
+        }
+        if (doubled >= 2)
+            warnings.add("Intervalos em proporção 1:2 identificados; duração escrita será deduzida dos ataques, não do tempo de tecla");
+        if (fit < 0.9)
+            warnings.add("Pequenas variações de tempo normalizadas em torno do pulso estimado");
+        Confidence confidence = fit >= 0.90 && intervals.size() >= 6
+                ? Confidence.HIGH : Confidence.MEDIUM;
+        double bpm = Math.round((60_000_000_000.0 / best) * 10.0) / 10.0;
+        return new Estimate(best, bpm, confidence, warnings, fit);
     }
 
-    private static boolean usual(long cells) {
-        for (int u : USUAL_CELLS) if (u == cells) return true;
-        return false;
-    }
-    private static double fitRatio(List<ScoreMidiPairer.PairedNote> notes, long quarter) {
-        long grid = quarter / GRID_PER_QUARTER;
-        if (grid <= 0) return 0;
-        int fit = 0;
-        for (ScoreMidiPairer.PairedNote n : notes) {
-            long start = Math.round(n.startNs / (double) grid);
-            if (Math.abs(n.startNs - start * grid) <= 0.35 * grid) fit++;
-        }
-        return notes.isEmpty() ? 0 : fit / (double) notes.size();
-    }
-    /** True when candidate q should win over incumbent best for the same score. */
-    private static boolean prefer(long q, long best, long modalDelta) {
-        double dq = Math.abs(Math.log(q / (double) modalDelta));
-        double db = Math.abs(Math.log(best / (double) modalDelta));
-        if (Math.abs(dq - db) > 1e-12) return dq < db;
-        return q < best; // stable final ordering
-    }
-    /** Group intervals within ±15% buckets; return the bucket centre with the most members. */
-    private static long modalDelta(List<Long> deltas) {
-        ArrayList<Long> sorted = new ArrayList<>(deltas);
-        Collections.sort(sorted);
-        long bestCentre = sorted.get(0); int bestCount = -1;
-        int i = 0;
-        while (i < sorted.size()) {
-            long centre = sorted.get(i);
-            int j = i;
-            while (j < sorted.size() && sorted.get(j) <= centre + centre * 3 / 20) j++;
-            if (j - i > bestCount) { bestCount = j - i; bestCentre = centre; }
-            i = Math.max(i + 1, j);
-        }
-        return bestCentre;
-    }
-    /** Register a candidate inside the accepted tempo range, deduplicated by ±2%. */
-    private static void addCandidate(ArrayList<Long> candidates, long quarter) {
-        if (quarter < MIN_QUARTER_NS || quarter > MAX_QUARTER_NS) return;
-        for (long existing : candidates)
-            if (Math.abs(existing - quarter) * 50 < existing) return;
-        candidates.add(quarter);
+    private static boolean near(long value, long target, double tolerance) {
+        return target > 0 && Math.abs(value - (double) target) <= tolerance * target;
     }
 }

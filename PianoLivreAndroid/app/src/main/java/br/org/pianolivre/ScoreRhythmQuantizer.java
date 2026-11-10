@@ -7,65 +7,55 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Z-P1: quantizes paired notes onto the sixteenth-note grid and produces the written
- * plan for the score: fixed 4/4 measures, staff split at MIDI 60, voice allocation by
- * interval occupancy, chords, rests and bar-crossing ties (ZAI-001 §2, §3.3).
+ * ZAI-002: written rhythms are inferred from ATTACK SPACING, while key-release
+ * time specifies articulation (staccato / legato) and genuine sustained overlap.
  *
- * - Attack and release are quantized separately; a zero-length written note is forbidden
- *   and becomes one grid cell with a warning.
- * - Grid cell = one sixteenth note (semicolcheia), 4 per quarter; the finest V0 figure.
- * - Same staff (MIDI 60 or above → treble staff 1; below 60 → bass staff 2), same attack
- *   cell and same length, different pitches → one chord. Different lengths → independent
- *   voices, so no note is ever truncated to fit a single voice.
- * - A note still sounding when another starts on the same staff takes the next free voice;
- *   allocation is deterministic (lowest voice first, at most 4 per staff).
- * - Notes crossing a barline are split with tie start/stop; any length is decomposed into
- *   the largest writable figures (whole..16th, with dotted variants) aligned to the grid.
- * - Voice 1 of each staff exists in every measure (whole rest when silent), so both staves
- *   are always visible; higher voices appear only in measures where they sound.
+ * A detached note remains one written quarter/half when its Note Off precedes
+ * the next Note On. A brief overlap expresses legato; a sustained overlap must
+ * retain its duration by allocating another voice. Every fragmentation of ONE
+ * source attack (including within a bar) is tied, never a new musical attack.
  */
 public final class ScoreRhythmQuantizer {
     public static final int SPLIT_MIDI = 60;
     public static final int BEATS_PER_MEASURE = 4;
-    public static final int CELLS_PER_MEASURE = ScoreTempoEstimator.GRID_PER_QUARTER * BEATS_PER_MEASURE; // 16 sixteenths
-    public static final int DIVISIONS = 960; // MusicXML ticks per quarter, fixed resolution
-    public static final int TICKS_PER_CELL = DIVISIONS / ScoreTempoEstimator.GRID_PER_QUARTER; // 240 = one 16th
+    public static final int CELLS_PER_MEASURE = 16;
+    public static final int DIVISIONS = 960;
+    public static final int TICKS_PER_CELL = 240;
     public static final int MAX_MEASURES = 1024;
     public static final int MAX_VOICES_PER_STAFF = 4;
 
-    /** One written token inside a voice; notes keep their source for audits. */
     public static final class Token {
         public final boolean rest;
-        public final int pitch;
-        public final int cells; // writable figure length in sixteenth-note cells (4 = quarter)
+        public final int pitch, cells;
         public final boolean chord, tieStart, tieStop;
-        public final ScoreMidiPairer.PairedNote source; // null for rests
+        public final boolean staccato, slurStart, slurStop;
+        public final ScoreMidiPairer.PairedNote source;
         Token(boolean rest, int pitch, int cells, boolean chord, boolean tieStart, boolean tieStop,
               ScoreMidiPairer.PairedNote source) {
+            this(rest, pitch, cells, chord, tieStart, tieStop, source, false, false, false);
+        }
+        Token(boolean rest, int pitch, int cells, boolean chord, boolean tieStart, boolean tieStop,
+              ScoreMidiPairer.PairedNote source, boolean staccato, boolean slurStart, boolean slurStop) {
             this.rest = rest; this.pitch = pitch; this.cells = cells;
             this.chord = chord; this.tieStart = tieStart; this.tieStop = tieStop;
-            this.source = source;
+            this.source = source; this.staccato = staccato;
+            this.slurStart = slurStart; this.slurStop = slurStop;
         }
     }
-
-    /** One voice inside one measure of one staff, tokens in writing order. */
     public static final class VoicePlan {
-        public final int staff, voice; // voice: 1..4 treble staff, 5..8 bass staff
+        public final int staff, voice;
         public final List<Token> tokens;
         VoicePlan(int staff, int voice, List<Token> tokens) {
             this.staff = staff; this.voice = voice; this.tokens = Collections.unmodifiableList(tokens);
         }
     }
-
-    /** One measure: voices per staff, in writing order (staff 1 first). */
     public static final class MeasurePlan {
-        public final int index; // 0-based
+        public final int index;
         public final List<VoicePlan> voices;
         MeasurePlan(int index, List<VoicePlan> voices) {
             this.index = index; this.voices = Collections.unmodifiableList(voices);
         }
     }
-
     public static final class Plan {
         public final int measures;
         public final List<MeasurePlan> measureList;
@@ -76,92 +66,207 @@ public final class ScoreRhythmQuantizer {
             this.warnings = Collections.unmodifiableList(warnings); this.noteCount = noteCount;
         }
     }
-
     private ScoreRhythmQuantizer() {}
-
-    /** Writable figure lengths in sixteenth cells: whole, half., half, quarter., quarter,
-     *  8th., 8th, 16th. Largest first. */
     static final int[] FIGURES = {16, 12, 8, 6, 4, 3, 2, 1};
+
+    /** Return a normal figure when sufficiently close; preserve fine-grid values otherwise. */
+    private static long snap(long cells, boolean allowingLong) {
+        if (cells <= 1) return 1;
+        long chosen = cells, bestError = Long.MAX_VALUE;
+        for (int figure : FIGURES) {
+            long error = Math.abs(cells - figure);
+            if (error < bestError && error <= Math.max(0.5, 0.14 * figure)) {
+                bestError = error; chosen = figure;
+            }
+        }
+        if (allowingLong && cells > CELLS_PER_MEASURE)
+            return Math.max(CELLS_PER_MEASURE, Math.round(cells / 4.0) * 4L);
+        return chosen;
+    }
+    private static long cells(long nanos, long quarterNs) {
+        return Math.max(1, Math.round(nanos / (quarterNs / 4.0)));
+    }
 
     public static Plan quantize(List<ScoreMidiPairer.PairedNote> notes, long quarterNs) throws IOException {
         ArrayList<String> warnings = new ArrayList<>();
         if (notes == null || notes.isEmpty()) throw new IOException("Sem notas para escrever a partitura");
         if (quarterNs <= 0) throw new IOException("Andamento inválido para quantização");
-        long gridNs = quarterNs / ScoreTempoEstimator.GRID_PER_QUARTER;
-        if (gridNs <= 0) throw new IOException("Andamento inválido para quantização");
-
-        // --- Quantize starts and releases separately. ---
-        ArrayList<Placed> placed = new ArrayList<>(notes.size());
-        long maxEnd = 1; int offGrid = 0;
-        for (ScoreMidiPairer.PairedNote n : notes) {
-            long startCell = Math.round(n.startNs / (double) gridNs);
-            long endCell = Math.round(n.endNs / (double) gridNs);
-            if (Math.abs(n.startNs - startCell * gridNs) > 0.35 * gridNs
-                    || Math.abs(n.endNs - endCell * gridNs) > 0.35 * gridNs) offGrid++;
-            if (endCell <= startCell) {
-                endCell = startCell + 1;
-                warnings.add("Nota " + n.pitch + " com duração abaixo da grade; escrito o valor mínimo de 1/16");
+        if (notes.size() > ScoreMidiPairer.MAX_NOTES) throw new IOException("Número excessivo de notas");
+        ArrayList<ScoreMidiPairer.PairedNote> ordered = new ArrayList<>(notes);
+        ordered.sort(Comparator.comparingLong((ScoreMidiPairer.PairedNote n) -> n.startNs)
+                .thenComparingInt(n -> n.pitch));
+        int n = ordered.size();
+        long[] start = new long[n];
+        long chordToleranceNs = Math.min(65_000_000L, (long)(quarterNs * 0.12));
+        long groupStart = -1, groupCell = 0;
+        int noteGroups = 0;
+        for (int i = 0; i < n; i++) {
+            long onset = ordered.get(i).startNs;
+            if (groupStart < 0) {
+                groupStart = onset; groupCell = 0; noteGroups++;
+            } else if (onset - groupStart > chordToleranceNs) {
+                long delta = Math.max(1, onset - groupStart);
+                long gridCells = cells(delta, quarterNs);
+                groupCell += snap(gridCells, true);
+                groupStart = onset; noteGroups++;
             }
-            if (startCell < 0) startCell = 0;
-            placed.add(new Placed(n, startCell, endCell, n.pitch >= SPLIT_MIDI ? 1 : 2));
-            maxEnd = Math.max(maxEnd, endCell);
+            start[i] = groupCell;
         }
-        if (offGrid > 0)
-            warnings.add(offGrid + " nota(s) fora da grade de semicolcheia; quantizadas para a célula mais próxima");
 
-        long measureCount = (maxEnd + CELLS_PER_MEASURE - 1) / CELLS_PER_MEASURE;
-        if (measureCount > MAX_MEASURES)
-            throw new IOException("Gravação muito longa para uma partitura de " + MAX_MEASURES + " compassos");
-        int measures = (int) measureCount;
+        // Map the neighbouring DISTINCT attack on the SAME staff. Chord tones
+        // share one rhythmic start and must not look like short notes/rests.
+        long[] nextCell = new long[n], afterNextCell = new long[n], prevGap = new long[n];
+        long[] nextNs = new long[n];
+        int[] nextIndex = new int[n];
+        long[] currentCell = {-1, -1}, upcomingCell = {-1, -1}, upcoming2Cell = {-1, -1};
+        long[] currentNs = {-1, -1}, upcomingNs = {-1, -1};
+        int[] currentIndex = {-1, -1}, upcomingIndex = {-1, -1};
+        for (int i = n - 1; i >= 0; i--) {
+            int staff = ordered.get(i).pitch >= SPLIT_MIDI ? 0 : 1;
+            if (start[i] != currentCell[staff]) {
+                upcoming2Cell[staff] = upcomingCell[staff];
+                upcomingCell[staff] = currentCell[staff];
+                upcomingNs[staff] = currentNs[staff];
+                upcomingIndex[staff] = currentIndex[staff];
+                currentCell[staff] = start[i];
+                currentNs[staff] = ordered.get(i).startNs;
+                currentIndex[staff] = i;
+            } else {
+                currentIndex[staff] = i;
+            }
+            nextCell[i] = upcomingCell[staff];
+            afterNextCell[i] = upcoming2Cell[staff];
+            nextNs[i] = upcomingNs[staff];
+            nextIndex[i] = upcomingIndex[staff];
+        }
+        long[] lastStaffStart = {-1, -1}, gapBefore = {0, 0};
+        for (int i = 0; i < n; i++) {
+            int staff = ordered.get(i).pitch >= SPLIT_MIDI ? 0 : 1;
+            if (start[i] != lastStaffStart[staff]) {
+                gapBefore[staff] = lastStaffStart[staff] < 0 ? 0 : start[i] - lastStaffStart[staff];
+                lastStaffStart[staff] = start[i];
+            }
+            prevGap[i] = gapBefore[staff];
+        }
 
-        // --- Voice allocation per staff: chords first, then lowest free voice. ---
+        ArrayList<Placed> placed = new ArrayList<>();
+        boolean[] connected = new boolean[n];
+        long[] noteLength = new long[n];
+        boolean[] detached = new boolean[n];
+        int detachedCount = 0, connectedCount = 0, overlapCount = 0;
+        long maxEnd = 1;
+        for (int i = 0; i < n; i++) {
+            ScoreMidiPairer.PairedNote note = ordered.get(i);
+            long physicalCells = snap(cells(note.durationNs(), quarterNs), false);
+            long next = nextCell[i];
+            long gap = next >= 0 ? next - start[i] : 0;
+            long length;
+            if (next < 0) {
+                // End of a phrase: compare physical release with the previous
+                // rhythm. A long final held tone is not truncated.
+                long previous = prevGap[i];
+                // Very short final release can still be staccato, but a
+                // genuine shorter final note must NOT inherit a long gap
+                // from the preceding attack (R08: whole C4 plus quarter E4).
+                boolean shortStaccato = previous >= 4 && physicalCells <= 2;
+                boolean matchesPrevious = previous > 0
+                        && Math.abs(physicalCells - previous) <= Math.max(1.0, previous * 0.12);
+                length = shortStaccato || matchesPrevious ? previous : physicalCells;
+            } else {
+                length = gap;
+                // A sizeable silence between phrases is a genuine rest. Do not
+                // mistake the long inter-phrase gap for the written note value.
+                long after = afterNextCell[i] >= 0 ? afterNextCell[i] - next : 0;
+                boolean phraseGap = prevGap[i] >= 4 && gap >= 2 * prevGap[i]
+                        && after > 0 && after < gap * 0.65;
+                boolean isolatedRest = prevGap[i] == 0 && gap >= 8
+                        && physicalCells >= 3 && physicalCells * 1.6 <= gap;
+                if (phraseGap) length = prevGap[i];
+                else if (isolatedRest) length = physicalCells;
+                // Real long overlap is polyphony; mere key overlap near the
+                // next attack is legato, not a second voice.
+                long overlapNs = note.endNs - nextNs[i];
+                if (overlapNs > Math.max(100_000_000L, (long)(quarterNs * 0.32))) {
+                    length = Math.max(length, physicalCells);
+                    overlapCount++;
+                } else if (Math.abs(overlapNs) <= (long)(quarterNs * 0.21)
+                        && !phraseGap && !isolatedRest && !note.syntheticEnd) {
+                    connected[i] = true;
+                    connectedCount++;
+                }
+            }
+            length = Math.max(1, length);
+            noteLength[i] = length;
+            // Staccato describes key release, not a shorter MUSICAL figure.
+            // Exclude synthesized boundary releases (they are not performance).
+            if (!note.syntheticEnd && note.durationNs() < length * (quarterNs / 4.0) * 0.72
+                    && (next >= 0 || prevGap[i] > 0)) {
+                detached[i] = true;
+                detachedCount++;
+            }
+            maxEnd = Math.max(maxEnd, start[i] + length);
+        }
+        if (detachedCount > 0)
+            warnings.add(detachedCount + " nota(s) destacadas: duração musical inferida dos ataques, articulação staccato pelo Note Off");
+        if (connectedCount > 0) warnings.add(connectedCount + " conexão(ões) legato reconhecidas");
+        if (overlapCount > 0) warnings.add(overlapCount + " sobreposição(ões) sustentadas preservadas em vozes");
+
+        boolean[] slurStart = new boolean[n], slurStop = new boolean[n], incoming = new boolean[n];
+        for (int i = 0; i < n; i++) if (connected[i] && nextIndex[i] >= 0) incoming[nextIndex[i]] = true;
+        for (int i = 0; i < n; i++) {
+            // One slur for each connected legato run; chord duplicates on the
+            // same attack remain conservative (slur on the first voice).
+            slurStart[i] = connected[i] && !incoming[i];
+            slurStop[i] = incoming[i] && !connected[i];
+        }
+
+        for (int i = 0; i < n; i++) {
+            ScoreMidiPairer.PairedNote note = ordered.get(i);
+            placed.add(new Placed(note, start[i], start[i] + noteLength[i],
+                    note.pitch >= SPLIT_MIDI ? 1 : 2, detached[i], slurStart[i], slurStop[i]));
+        }
+        long count = (maxEnd + CELLS_PER_MEASURE - 1) / CELLS_PER_MEASURE;
+        if (count > MAX_MEASURES) throw new IOException("Gravação muito longa para a partitura");
+        int measures = (int) count;
+
+        // Deterministic allocation: same onset+end is a chord; genuine overlap
+        // with different duration occupies an independent voice.
         placed.sort(Comparator.comparingLong((Placed p) -> p.startCell)
-                .thenComparingLong(p -> p.endCell).thenComparingInt(p -> p.placed.pitch));
-        ArrayList<ArrayList<ArrayList<Slot>>> staffVoices = new ArrayList<>(); // per staff, per local voice
+                .thenComparingLong(p -> p.endCell).thenComparingInt(p -> p.note.pitch));
+        ArrayList<ArrayList<ArrayList<Slot>>> staffVoices = new ArrayList<>();
         staffVoices.add(new ArrayList<>()); staffVoices.add(new ArrayList<>());
         for (Placed p : placed) {
             ArrayList<ArrayList<Slot>> voices = staffVoices.get(p.staff - 1);
-            int target = -1; boolean asChord = false;
+            int target = -1; boolean chord = false;
             for (int v = 0; v < voices.size() && target < 0; v++) {
-                ArrayList<Slot> voice = voices.get(v);
-                Slot last = voice.get(voice.size() - 1);
-                if (last.startCell == p.startCell && last.endCell == p.endCell && last.pitch != p.placed.pitch) {
-                    target = v; asChord = true;
+                Slot tail = voices.get(v).get(voices.get(v).size() - 1);
+                if (tail.startCell == p.startCell && tail.endCell == p.endCell
+                        && tail.note.pitch != p.note.pitch) {
+                    target = v; chord = true;
                 }
             }
-            if (target < 0) {
-                for (int v = 0; v < voices.size() && target < 0; v++) {
-                    ArrayList<Slot> voice = voices.get(v);
-                    Slot last = voice.get(voice.size() - 1);
-                    if (last.endCell <= p.startCell) target = v;
-                }
+            for (int v = 0; v < voices.size() && target < 0; v++) {
+                Slot tail = voices.get(v).get(voices.get(v).size() - 1);
+                if (tail.endCell <= p.startCell) target = v;
             }
             if (target < 0) {
                 if (voices.size() >= MAX_VOICES_PER_STAFF)
-                    throw new IOException("Notas sobrepostas demais na pauta " + p.staff
-                            + "; o limite desta versão é " + MAX_VOICES_PER_STAFF + " vozes");
-                target = voices.size();
-                voices.add(new ArrayList<>());
+                    throw new IOException("Mais de quatro vozes simultâneas na pauta " + p.staff);
+                target = voices.size(); voices.add(new ArrayList<>());
             }
-            voices.get(target).add(new Slot(p, asChord));
+            voices.get(target).add(new Slot(p, chord));
         }
 
-        // --- Decompose each note into measure slices and writable figures with ties. ---
-        ArrayList<ArrayList<ArrayList<Draft>>> work = new ArrayList<>(); // [staff][voice] -> drafts
+        ArrayList<ArrayList<ArrayList<Draft>>> work = new ArrayList<>();
         for (int s = 0; s < 2; s++) {
-            ArrayList<ArrayList<Draft>> perStaff = new ArrayList<>();
-            for (int v = 0; v < staffVoices.get(s).size(); v++) perStaff.add(new ArrayList<>());
-            work.add(perStaff);
-        }
-        for (int s = 0; s < 2; s++) {
+            ArrayList<ArrayList<Draft>> staff = new ArrayList<>();
             for (int v = 0; v < staffVoices.get(s).size(); v++) {
-                ArrayList<Draft> drafts = work.get(s).get(v);
-                for (Slot slot : staffVoices.get(s).get(v))
-                    decompose(slot, drafts, warnings);
+                ArrayList<Draft> fragments = new ArrayList<>();
+                for (Slot slot : staffVoices.get(s).get(v)) decompose(slot, fragments);
+                staff.add(fragments);
             }
+            work.add(staff);
         }
-
-        // --- Consolidate voices per measure and fill rests. ---
         ArrayList<MeasurePlan> measurePlans = new ArrayList<>();
         int written = 0;
         for (int m = 0; m < measures; m++) {
@@ -171,42 +276,36 @@ public final class ScoreRhythmQuantizer {
                 for (int v = 0; v < work.get(s).size(); v++) {
                     ArrayList<Draft> drafts = new ArrayList<>();
                     for (Draft d : work.get(s).get(v)) if (d.measure == m) drafts.add(d);
-                    boolean isVoiceOne = v == 0;
                     if (drafts.isEmpty()) {
-                        ArrayList<Token> tokens = new ArrayList<>();
-                        if (isVoiceOne) tokens.add(new Token(true, 0, CELLS_PER_MEASURE, false, false, false, null));
-                        else continue;
-                        voicePlans.add(new VoicePlan(s + 1, voiceBase + v, tokens));
+                        if (v == 0) voicePlans.add(new VoicePlan(s + 1, voiceBase,
+                                Collections.singletonList(new Token(true, 0, CELLS_PER_MEASURE, false, false, false, null))));
                         continue;
                     }
-                    drafts.sort(Comparator.comparingLong((Draft d) -> d.pos).thenComparingInt(d -> d.chord ? 1 : 0));
+                    drafts.sort(Comparator.comparingLong((Draft d) -> d.pos)
+                            .thenComparingInt(d -> d.chord ? 1 : 0));
                     ArrayList<Token> tokens = new ArrayList<>();
-                    long cursor = 0, lastHeadPos = Long.MIN_VALUE;
+                    long cursor = 0, lastHeadPos = -1;
                     for (Draft d : drafts) {
-                        // Same voice at the same written position is by definition a chord member;
-                        // this also keeps tied chord continuations stacked after barline slices.
                         boolean chord = !tokens.isEmpty() && lastHeadPos == d.pos;
-                        if (d.pos > cursor) { fillRests(tokens, cursor, d.pos, warnings); cursor = d.pos; }
+                        if (d.pos > cursor) { fillRests(tokens, cursor, d.pos); cursor = d.pos; }
                         else if (d.pos < cursor && !chord)
                             throw new IOException("Sobreposição rítmica não resolvida na pauta " + (s + 1));
-                        tokens.add(new Token(false, d.source.pitch, d.cells, chord, d.tieStart, d.tieStop, d.source));
+                        tokens.add(new Token(false, d.note.pitch, d.cells, chord,
+                                d.tieStart, d.tieStop, d.note,
+                                d.staccato, d.slurStart, d.slurStop));
                         if (!chord) cursor += d.cells;
                         lastHeadPos = d.pos;
+                        written++;
                     }
-                    if (cursor < CELLS_PER_MEASURE) fillRests(tokens, cursor, CELLS_PER_MEASURE, warnings);
-                    if (cursor > CELLS_PER_MEASURE)
-                        throw new IOException("Compasso excedido na pauta " + (s + 1));
-                    for (Token t : tokens) if (!t.rest) written++;
+                    if (cursor < CELLS_PER_MEASURE) fillRests(tokens, cursor, CELLS_PER_MEASURE);
+                    if (cursor > CELLS_PER_MEASURE) throw new IOException("Compasso excedido na pauta " + (s + 1));
                     voicePlans.add(new VoicePlan(s + 1, voiceBase + v, tokens));
                 }
-                // A staff with no allocated voice at all still shows voice 1 with a whole rest.
                 boolean staffPresent = false;
                 for (VoicePlan vp : voicePlans) if (vp.staff == s + 1) staffPresent = true;
-                if (!staffPresent) {
-                    ArrayList<Token> tokens = new ArrayList<>();
-                    tokens.add(new Token(true, 0, CELLS_PER_MEASURE, false, false, false, null));
-                    voicePlans.add(new VoicePlan(s + 1, voiceBase, tokens));
-                }
+                if (!staffPresent)
+                    voicePlans.add(new VoicePlan(s + 1, voiceBase,
+                            Collections.singletonList(new Token(true, 0, CELLS_PER_MEASURE, false, false, false, null))));
             }
             voicePlans.sort(Comparator.comparingInt((VoicePlan vp) -> vp.staff).thenComparingInt(vp -> vp.voice));
             measurePlans.add(new MeasurePlan(m, voicePlans));
@@ -214,69 +313,78 @@ public final class ScoreRhythmQuantizer {
         return new Plan(measures, measurePlans, warnings, written);
     }
 
-    /** Slice one note across barlines, then split every slice into writable figures. */
-    private static void decompose(Slot slot, ArrayList<Draft> drafts, List<String> warnings) {
-        long from = slot.startCell, to = slot.endCell;
-        boolean firstSlice = true;
-        while (from < to) {
-            int measure = (int) (from / CELLS_PER_MEASURE);
-            long sliceEnd = Math.min(to, (measure + 1L) * CELLS_PER_MEASURE);
-            long remaining = sliceEnd - from;
-            boolean crossing = sliceEnd < to;
-            long cursor = from % CELLS_PER_MEASURE;
-            boolean firstFigure = true;
-            while (remaining > 0) {
-                int figure = -1;
-                for (int f : FIGURES)
-                    if (f <= remaining && cursor % f == 0 && cursor + f <= CELLS_PER_MEASURE) { figure = f; break; }
-                if (figure <= 0) { figure = 1; warnings.add("Duração irregular da nota " + slot.pitch + " escrita em 1/16"); }
-                boolean isLastOfSlice = remaining == figure;
-                boolean tieStart = crossing && isLastOfSlice;
-                boolean tieStop = !firstSlice && firstFigure && isLastOfSlice;
-                boolean chordHead = slot.chord && firstSlice && firstFigure;
-                drafts.add(new Draft(measure, cursor, figure, slot.placed.placed, chordHead, tieStart, tieStop));
-                cursor += figure; remaining -= figure; firstFigure = false;
-            }
-            firstSlice = false;
-            from = sliceEnd;
+    private static void decompose(Slot slot, ArrayList<Draft> fragments) {
+        long cursor = slot.startCell, end = slot.endCell;
+        int fragmentIndex = 0;
+        while (cursor < end) {
+            int measure = (int) (cursor / CELLS_PER_MEASURE);
+            long inMeasure = cursor % CELLS_PER_MEASURE;
+            long remainInMeasure = CELLS_PER_MEASURE - inMeasure;
+            long remaining = Math.min(end - cursor, remainInMeasure);
+            int figure = 1;
+            for (int candidate : FIGURES)
+                if (candidate <= remaining && inMeasure % candidate == 0) {
+                    figure = candidate; break;
+                }
+            boolean hasPrevious = fragmentIndex > 0;
+            boolean hasNext = cursor + figure < end;
+            // IMPORTANT: this must tie fragments inside the SAME BAR too.
+            fragments.add(new Draft(measure, inMeasure, figure, slot.note,
+                    slot.chord, hasNext, hasPrevious,
+                    slot.staccato && !hasPrevious,
+                    slot.slurStart && !hasPrevious,
+                    slot.slurStop && !hasNext));
+            fragmentIndex++; cursor += figure;
         }
     }
 
-    /** Decompose the gap [from,to) in grid cells into rest figures. */
-    private static void fillRests(List<Token> tokens, long from, long to, List<String> warnings) {
-        long pos = from, remaining = to - from;
-        while (remaining > 0) {
-            int figure = -1;
+    private static void fillRests(List<Token> tokens, long from, long to) {
+        long cursor = from;
+        while (cursor < to) {
+            int figure = 1;
             for (int f : FIGURES)
-                if (f <= remaining && pos % f == 0 && pos + f <= CELLS_PER_MEASURE) { figure = f; break; }
-            if (figure <= 0) { figure = 1; warnings.add("Pausa irregular normalizada para 1/16"); }
+                if (f <= to - cursor && cursor % f == 0) {
+                    figure = f; break;
+                }
             tokens.add(new Token(true, 0, figure, false, false, false, null));
-            pos += figure; remaining -= figure;
+            cursor += figure;
         }
     }
 
     private static final class Placed {
-        final ScoreMidiPairer.PairedNote placed; final long startCell, endCell; final int staff;
-        Placed(ScoreMidiPairer.PairedNote n, long s, long e, int st) { placed = n; startCell = s; endCell = e; staff = st; }
+        final ScoreMidiPairer.PairedNote note;
+        final long startCell, endCell;
+        final int staff;
+        final boolean staccato, slurStart, slurStop;
+        Placed(ScoreMidiPairer.PairedNote n, long from, long to, int staff,
+               boolean staccato, boolean slurStart, boolean slurStop) {
+            note=n; startCell=from; endCell=to; this.staff=staff;
+            this.staccato=staccato; this.slurStart=slurStart; this.slurStop=slurStop;
+        }
     }
     private static final class Slot {
-        final Placed placed; final boolean chord; final long startCell, endCell; final int pitch;
-        Slot(Placed p, boolean chord) {
-            placed = p; this.chord = chord; startCell = p.startCell; endCell = p.endCell; pitch = p.placed.pitch;
+        final Placed placed;
+        final ScoreMidiPairer.PairedNote note;
+        final long startCell, endCell;
+        final boolean chord, staccato, slurStart, slurStop;
+        Slot(Placed placed, boolean chord) {
+            this.placed=placed; note=placed.note;
+            startCell=placed.startCell; endCell=placed.endCell; this.chord=chord;
+            staccato=placed.staccato; slurStart=placed.slurStart; slurStop=placed.slurStop;
         }
     }
     private static final class Draft {
-        final int measure; final long pos; final int cells;
-        final ScoreMidiPairer.PairedNote source;
-        final boolean chord, tieStart, tieStop;
-        Draft(int measure, long pos, int cells, ScoreMidiPairer.PairedNote source,
-              boolean chord, boolean tieStart, boolean tieStop) {
-            this.measure = measure; this.pos = pos; this.cells = cells;
-            this.source = source; this.chord = chord; this.tieStart = tieStart; this.tieStop = tieStop;
-        }
-        Token token() {
-            boolean rest = source == null;
-            return new Token(rest, rest ? 0 : source.pitch, cells, chord, tieStart, tieStop, source);
+        final int measure;
+        final long pos;
+        final int cells;
+        final ScoreMidiPairer.PairedNote note;
+        final boolean chord, tieStart, tieStop, staccato, slurStart, slurStop;
+        Draft(int m, long p, int c, ScoreMidiPairer.PairedNote note,
+              boolean chord, boolean tieStart, boolean tieStop,
+              boolean staccato, boolean slurStart, boolean slurStop) {
+            measure=m; pos=p; cells=c; this.note=note; this.chord=chord;
+            this.tieStart=tieStart; this.tieStop=tieStop;
+            this.staccato=staccato; this.slurStart=slurStart; this.slurStop=slurStop;
         }
     }
 }
