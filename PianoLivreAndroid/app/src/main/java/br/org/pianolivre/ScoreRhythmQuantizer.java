@@ -181,9 +181,20 @@ public final class ScoreRhythmQuantizer {
                 // A real gap between groups/phrases takes priority over
                 // attack-spacing quantization. This is decisive for the
                 // separate C/Cm chords and C5 at the end of both S1 scales.
-                boolean genuineSilence = gap >= 8 && ratio < 0.80;
+                long followingGap = afterNextCell[i] >= 0
+                        ? afterNextCell[i] - next : 0;
+                // A long interval may itself be the repeated MUSICAL value
+                // (e.g. detached half-notes every 1.06 s). Contrast it with
+                // an isolated break between two chords, where no such local
+                // repetition exists. Inspect onsets, never the silence alone.
+                boolean previousMatches = prevGap[i] > 0
+                        && Math.abs(prevGap[i] - gap) <= Math.max(1, Math.round(gap * 0.22));
+                boolean followingMatches = followingGap > 0
+                        && Math.abs(followingGap - gap) <= Math.max(1, Math.round(gap * 0.22));
+                boolean repeatedPulse = previousMatches || followingMatches;
+                boolean genuineSilence = gap >= 8 && ratio < 0.80 && !repeatedPulse;
                 boolean detachedRegular = !note.syntheticEnd
-                        && gap <= 8 && ratio < 0.72;
+                        && (gap <= 8 || repeatedPulse) && ratio < 0.72;
                 boolean nearNextAttack = ratio >= 0.80 && ratio <= 1.16;
                 if (genuineSilence) {
                     length = physical;
