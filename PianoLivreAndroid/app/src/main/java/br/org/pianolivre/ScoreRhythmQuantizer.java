@@ -165,8 +165,13 @@ public final class ScoreRhythmQuantizer {
                 // End of a phrase: compare physical release with the previous
                 // rhythm. A long final held tone is not truncated.
                 long previous = prevGap[i];
-                length = previous > 0 && physicalCells <= previous * 1.4
-                        ? previous : physicalCells;
+                // Very short final release can still be staccato, but a
+                // genuine shorter final note must NOT inherit a long gap
+                // from the preceding attack (R08: whole C4 plus quarter E4).
+                boolean shortStaccato = previous >= 4 && physicalCells <= 2;
+                boolean matchesPrevious = previous > 0
+                        && Math.abs(physicalCells - previous) <= Math.max(1.0, previous * 0.12);
+                length = shortStaccato || matchesPrevious ? previous : physicalCells;
             } else {
                 length = gap;
                 // A sizeable silence between phrases is a genuine rest. Do not
