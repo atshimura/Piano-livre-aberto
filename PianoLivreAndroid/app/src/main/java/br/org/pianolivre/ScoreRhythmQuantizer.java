@@ -13,8 +13,9 @@ import java.util.List;
  * A detached note remains one written quarter/half when its Note Off precedes
  * the next Note On. MIDI overlap does NOT justify an expressive slur; significant
  * sustained overlap retains its duration by allocating another voice.
- * Every fragmentation of ONE
- * source attack (including within a bar) is tied, never a new musical attack.
+ * ZAI-007 simplifies each MIDI attack to exactly ONE written figure, without
+ * any automatic ties or expressive slurs. Original Note On/Off intervals are
+ * preserved in the .plc; notation length may be shortened at a barline.
  */
 public final class ScoreRhythmQuantizer {
     public static final int SPLIT_MIDI = 60;
@@ -257,12 +258,23 @@ public final class ScoreRhythmQuantizer {
             warnings.add(overlapCount + " sobreposição(ões) MIDI sustentadas preservadas sem ligadura de expressão");
         boolean[] slurStart = new boolean[n], slurStop = new boolean[n];
 
+        // ZAI-007: conservative readable notation. No MIDI attack may
+        // produce two written heads or automatic ties. The duration on paper
+        // is approximate (especially if the held note crosses a barline);
+        // original Note On/Off timestamps remain intact in source .plc.
+        long visualEnd = 1;
+        int approximated = 0;
         for (int i = 0; i < n; i++) {
             ScoreMidiPairer.PairedNote note = ordered.get(i);
-            placed.add(new Placed(note, start[i], start[i] + noteLength[i],
-                    note.pitch >= SPLIT_MIDI ? 1 : 2, detached[i], slurStart[i], slurStop[i]));
+            long length = singleFigureLength(noteLength[i], start[i]);
+            if (length != noteLength[i]) approximated++;
+            placed.add(new Placed(note, start[i], start[i] + length,
+                    note.pitch >= SPLIT_MIDI ? 1 : 2, detached[i], false, false));
+            visualEnd = Math.max(visualEnd, start[i] + length);
         }
-        long count = (maxEnd + CELLS_PER_MEASURE - 1) / CELLS_PER_MEASURE;
+        if (approximated > 0)
+            warnings.add(approximated + " duração(ões) aproximadas na partitura sem ligaduras; a gravação MIDI mantém os tempos originais");
+        long count = (visualEnd + CELLS_PER_MEASURE - 1) / CELLS_PER_MEASURE;
         if (count > MAX_MEASURES) throw new IOException("Gravação muito longa para a partitura");
         int measures = (int) count;
 
@@ -420,9 +432,8 @@ public final class ScoreRhythmQuantizer {
     }
 
     /**
-     * Prefer a single readable note over a 4+1/16 tie produced solely by
-     * jitter near the quantizer grid. When equally close, prefer the shorter
-     * figure. Long held chords retain multiple beats and cross-bar ties.
+     * Choose a sensible chord value before final one-figure simplification.
+     * Figure selection always remains limited to the current measure.
      */
     private static long simpleChordDuration(long cells) {
         if (cells <= 1) return 1;
@@ -440,29 +451,37 @@ public final class ScoreRhythmQuantizer {
         return chosen;
     }
 
-    private static void decompose(Slot slot, ArrayList<Draft> fragments) {
-        long cursor = slot.startCell, end = slot.endCell;
-        int fragmentIndex = 0;
-        while (cursor < end) {
-            int measure = (int) (cursor / CELLS_PER_MEASURE);
-            long inMeasure = cursor % CELLS_PER_MEASURE;
-            long remainInMeasure = CELLS_PER_MEASURE - inMeasure;
-            long remaining = Math.min(end - cursor, remainInMeasure);
-            int figure = 1;
-            for (int candidate : FIGURES)
-                if (candidate <= remaining && inMeasure % candidate == 0) {
-                    figure = candidate; break;
-                }
-            boolean hasPrevious = fragmentIndex > 0;
-            boolean hasNext = cursor + figure < end;
-            // IMPORTANT: this must tie fragments inside the SAME BAR too.
-            fragments.add(new Draft(measure, inMeasure, figure, slot.note,
-                    slot.chord, hasNext, hasPrevious,
-                    slot.staccato && !hasPrevious,
-                    slot.slurStart && !hasPrevious,
-                    slot.slurStop && !hasNext));
-            fragmentIndex++; cursor += figure;
+    /**
+     * Find exactly ONE conventional MusicXML figure that fits before the
+     * next barline. Do not require beat alignment to split a performance.
+     * Tie-free output deliberately omits any excess sustain in the visual
+     * score; the original MIDI retains that excess in its Note Off.
+     */
+    private static long singleFigureLength(long desired, long startCell) {
+        long available = CELLS_PER_MEASURE - startCell % CELLS_PER_MEASURE;
+        long target = Math.max(1, Math.min(desired, available));
+        int winner = 1;
+        long error = Long.MAX_VALUE;
+        for (int candidate : FIGURES) {
+            if (candidate > available) continue;
+            long delta = Math.abs(target - candidate);
+            if (delta < error || (delta == error && candidate < winner)) {
+                winner = candidate;
+                error = delta;
+            }
         }
+        return winner;
+    }
+
+    /** One MIDI Note On is one visible notehead, never a tied continuation. */
+    private static void decompose(Slot slot, ArrayList<Draft> fragments) {
+        int measure = (int) (slot.startCell / CELLS_PER_MEASURE);
+        long inMeasure = slot.startCell % CELLS_PER_MEASURE;
+        int figure = (int) (slot.endCell - slot.startCell);
+        if (figure < 1 || inMeasure + figure > CELLS_PER_MEASURE)
+            throw new IllegalStateException("Figura simplificada ultrapassa o compasso");
+        fragments.add(new Draft(measure, inMeasure, figure, slot.note,
+                slot.chord, false, false, slot.staccato, false, false));
     }
 
     private static void fillRests(List<Token> tokens, long from, long to) {
