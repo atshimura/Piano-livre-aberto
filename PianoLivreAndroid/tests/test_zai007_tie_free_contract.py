@@ -10,7 +10,7 @@ composer = java("ScoreXmlComposer.java")
 quantizer = java("ScoreRhythmQuantizer.java")
 preview = java("CreationScorePreviewScreen.java")
 store = java("CreationScoreStore.java")
-assert "ZAI-007-tie-free" in composer
+assert "ZAI-008-rests-wrap" in composer
 assert 'xml.append("<tie' not in composer
 assert 'xml.append("<tied' not in composer
 assert 'xml.append("<slur' not in composer
@@ -19,7 +19,7 @@ assert "One MIDI Note On is one visible notehead" in quantizer
 assert "hasPrevious" not in quantizer and "hasNext" not in quantizer
 assert "ScoreXmlComposer.isCurrentDerivedXml(prior.xml)" in preview
 assert "renderOutdated()" in preview
-assert 'button("Gerar prévia sem ligaduras"' in preview
+assert 'button("Gerar prévia atualizada"' in preview
 assert 'button("Voltar à composição"' in preview
 assert "os tempos completos permanecem na gravação MIDI original" in preview
 assert "storage.delete(" not in preview
