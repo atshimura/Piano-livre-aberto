@@ -217,10 +217,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
         clear();
         addText("Partitura de uma versão anterior",21,true,3);
         addText("Esta composição possui uma partitura salva com uma versão anterior do gerador, "
-            +"que pode conter pausas fragmentadas ou diagramação horizontal antiga. A gravação MIDI original permanece intacta. "
-            +"Para aplicar as pausas mais legíveis e a quebra automática de linhas, toque em Gerar prévia atualizada. "
+            +"que ainda exibe pausas, staccato ou outros símbolos acessórios. A gravação MIDI original permanece intacta. "
+            +"Para mostrar somente notas, acordes e valores rítmicos, toque em Gerar partitura básica. "
             +"A partitura antiga não será substituída até que você escolha Salvar partitura.",14,false,10);
-        attach(contents,button("Gerar prévia atualizada",true,this::regenerate),48,8);
+        attach(contents,button("Gerar partitura básica",true,this::regenerate),48,8);
         attach(contents,button("Voltar à composição",false,()->window.dismiss()),48,0);
     }
 
@@ -260,8 +260,9 @@ final class CreationScorePreviewScreen extends LinearLayout {
             :"Andamento não identificado com segurança — prévia a 120 BPM (provisória)";
         tempoLabel=label(measures+" compassos · 4/4 · "+tempoText,13,false,0xff57708A);
         attach(contents,tempoLabel,-2,9);
-        addText("Partitura simplificada: uma figura por nota, sem ligaduras automáticas. Pausas agrupadas e linhas ajustadas à largura. "
-            +"Sustentações que ultrapassam o compasso podem aparecer abreviadas; "
+        addText("Partitura básica: notas, acordes, duração musical e andamento; sem pausas visíveis, "
+            +"staccato ou ligaduras. As linhas se ajustam à largura da tela. "
+            +"A nota que ultrapassa um compasso pode aparecer abreviada; "
             +"os tempos completos permanecem na gravação MIDI original.",12,false,8);
         LinearLayout sheet=card();sheet.setPadding(dp(4),dp(4),dp(4),dp(4));
         int sheetHeight=Math.max(dp(210),Math.round(getResources().getDisplayMetrics().heightPixels*0.65f));
