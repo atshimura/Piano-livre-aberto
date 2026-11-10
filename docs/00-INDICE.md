@@ -13,6 +13,8 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-005 — Downloads diretos de APKs no GitHub, sem Library](ZAI-005-DISTRIBUICAO-APK-GITHUB-DIRETO.md): contrato de distribuição permanente via `zai/downloads`, SHA-256, metadados, links estáveis e cuidados de instalação.
+
 - [ZAI-004 — Entrega e APK principal assinado 0.9.66](ZAI-004-ENTREGA-APK-PRINCIPAL-20261110.md): execução CI, 266 verificações JVM, SHA-256, certificado permanente, compatibilidade e testes físicos pendentes.
 
 - [ZAI-004 — Coesão dos acordes MIDI e grafia de alturas](ZAI-004-ACORDES-COESAO-ALTURAS-APK-PRINCIPAL.md): caso real C/Cm, causas, critérios, regressões e APK principal 0.9.66.
