@@ -27,7 +27,7 @@ android {
   }
   buildTypes {
     release {
-      applicationIdSuffix (zaiTestBuild ? '.opensource.zai' : '.opensource')
+      if (zaiTestBuild) { applicationIdSuffix '.opensource.zai' } else { applicationIdSuffix '.opensource' }
       debuggable false
       minifyEnabled false
       // PR/emulator builds use only the runner's disposable debug certificate.
@@ -35,7 +35,7 @@ android {
       signingConfig = hasPublicSigning ? signingConfigs.publicBeta : signingConfigs.debug
     }
     debug {
-      applicationIdSuffix (zaiTestBuild ? '.opensource.zai' : '.opensource')
+      if (zaiTestBuild) { applicationIdSuffix '.opensource.zai' } else { applicationIdSuffix '.opensource' }
       if (hasPublicSigning) signingConfig signingConfigs.publicBeta
     }
   }
