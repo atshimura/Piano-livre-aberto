@@ -157,8 +157,12 @@ public final class ZScoreGeneratorXmlTest {
         ok(escaped.contains("A&lt;B&amp;C&gt;&quot;&apos;á"), "title fully escaped, incl. accent");
         CreationScoreGenerator.Generation longest = generate(Arrays.asList(
                 on(60, 0, 0), off(60, 16 * q, 1)), 18 * q);
-        ok(longest.measures == 4, "whole-note handling across four measures, got " + longest.measures);
-        ok(longest.xml.contains("<tie type=\"start\"/>"), "long note tied across bars");
+        ok(longest.measures == 1, "long note represented by one figure in one measure");
+        ok(count(longest.xml, "<type>whole</type>") >= 1, "long note uses one whole figure");
+        ok(!longest.xml.contains("<tie") && !longest.xml.contains("<slur"),
+                "long note does not generate automatic ties or expressive slurs");
+        ok(longest.notes.get(0).durationNs() == 16*q,
+                "source MIDI hold remains unmodified");
 
         System.out.println("ZScoreGeneratorXmlTest: " + checks + " verificações OK");
     }
