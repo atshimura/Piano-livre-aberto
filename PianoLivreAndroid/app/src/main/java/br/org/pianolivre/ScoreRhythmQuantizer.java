@@ -75,7 +75,7 @@ public final class ScoreRhythmQuantizer {
         long chosen = cells, bestError = Long.MAX_VALUE;
         for (int figure : FIGURES) {
             long error = Math.abs(cells - figure);
-            if (error < bestError && error <= Math.max(1.1, 0.23 * figure)) {
+            if (error < bestError && error <= Math.max(1.1, 0.14 * figure)) {
                 bestError = error; chosen = figure;
             }
         }
