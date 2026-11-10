@@ -13,6 +13,8 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-002 — Relatório de entrega do APK isolado e testes aprovados](ZAI-002-ENTREGA-APK-ISOLADO-20261109.md): CI, SHA-256, 14 notas reais, limitações físicas e identidade Android separada.
+
 - [ZAI-002 — Correção do ritmo e da articulação com MIDI real + APK ZAi isolado](ZAI-002-CORRECAO-RITMO-ARTICULACAO-APK-ISOLADO.md): contrato, 14 notas reais, estacato, legato, sobreposição, ligaduras e pacote exclusivo.
 
 - [ZAI-001 P5 — Integração e APK de teste assinado, GitHub Actions SUCCESS](ZAI-001-P5-INTEGRACAO-APK-TESTE.md): PRs #111/#112, run #42536602439, SHA-256 e ressalvas de testes físicos.
