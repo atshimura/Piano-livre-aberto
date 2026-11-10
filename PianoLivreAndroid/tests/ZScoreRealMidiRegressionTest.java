@@ -107,8 +107,8 @@ public final class ZScoreRealMidiRegressionTest {
                 "REAL: slow section should have seven half-note values");
         ok(count(actual.xml,"<type>quarter</type>")>=6,
                 "REAL: fast section should have at least six quarter-note values");
-        ok(count(actual.xml,"<staccato/>")>=10,
-                "REAL: detached playing must be marked staccato");
+        ok(count(actual.xml,"<staccato/>")==0,
+                "REAL: no printed staccato, even though Note Off preserves detached playing");
         ok(actual.xml.contains("<staves>2</staves>"),"REAL: two staves even with only treble notes");
         int upperRests=0;
         NodeList xmlNotes=realXml.getElementsByTagName("note");
@@ -124,7 +124,7 @@ public final class ZScoreRealMidiRegressionTest {
         // --- Staccato at stable BPM: 8 quarters, despite 180 ms key presses.
         CreationScoreGenerator.Generation stacc=run(uniform(8,500_000_000L,180_000_000L),4_000_000_000L);
         ok(count(stacc.xml,"<type>quarter</type>")==8,"STACC: eight written quarters");
-        ok(count(stacc.xml,"<staccato/>")>=7,"STACC: staccato articulation labels");
+        ok(count(stacc.xml,"<staccato/>")==0,"STACC: articulation is not printed in basic score");
         ok(attacks(xml(stacc.xml)).size()==8,"STACC: eight and only eight attacks");
 
         // --- Legato: Note Off 40ms after next attack, no sustained polyphony.
