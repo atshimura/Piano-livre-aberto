@@ -13,6 +13,8 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-006 — Entrega, evidências e APK 0.9.67 no GitHub](ZAI-006-ENTREGA-APK-PRINCIPAL-20261110.md): 314 verificações JVM, pacote principal, assinatura permanente, SHA-256 e link direto sem Library.
+
 - [ZAI-006 — Durações, S1 real e nenhuma ligadura de expressão automática](ZAI-006-DURACOES-S1-SEM-LIGADURA-EXPRESSAO.md): planejamento, testes com 22 ataques e nota sustentada por cinco minutos, preservação de pausas e APK principal.
 
 - [ZAI-005 — Downloads diretos de APKs no GitHub, sem Library](ZAI-005-DISTRIBUICAO-APK-GITHUB-DIRETO.md): contrato de distribuição permanente via `zai/downloads`, SHA-256, metadados, links estáveis e cuidados de instalação.
