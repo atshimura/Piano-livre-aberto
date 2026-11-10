@@ -120,8 +120,11 @@ public final class ZScoreGeneratorXmlTest {
         hasTwoVoices = distinct.size() >= 2;
         ok(hasTwoVoices, "R08 overlapping notes use separate voices, got " + distinct);
         ok(r08g.xml.contains("<backup>"), "R08 voices separated by backup");
-        // Two overlapping quarters with equal length but different pitches stay a chord-free overlap.
-        ok(count(r08g.xml, "<type>quarter</type>") >= 2, "R08 quarter figures preserved");
+        // C4 is a whole note (4 beats) and E4 is one quarter (1 beat).
+        // Do not require invented quarter fragments for the sustained note.
+        ok(count(r08g.xml, "<type>whole</type>") >= 1
+                && count(r08g.xml, "<type>quarter</type>") >= 1,
+                "R08 whole sustain plus quarter overlay preserved");
 
         // --- R09: half note starting on beat 4 crosses the barline with a tie. ---
         // First note anchors time zero; the tested half starts on beat 4 of measure 1.
