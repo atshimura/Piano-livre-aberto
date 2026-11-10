@@ -1,0 +1,7 @@
+Versao: 0.9.68-open-beta
+versionCode: 77
+Package: br.org.pianolivre.opensource
+SHA256: e948927fc2ec2f32f98049d840230a0e322f9fa3f615fb714bc848c01b4c0ba5
+Signer certificate SHA256: 7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290
+Build GitHub Actions: https://github.com/atshimura/Piano-livre-aberto/actions/runs/42897034593
+Fonte: zai/lab (PR #126, GPL-3.0-only)
