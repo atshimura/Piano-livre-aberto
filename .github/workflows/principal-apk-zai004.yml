@@ -10,7 +10,7 @@ on:
     paths:
       - '.github/workflows/principal-apk-zai004.yml'
       - 'PianoLivreAndroid/**'
-      - 'docs/ZAI-004-APK-PRINCIPAL-20261109.md'
+      - 'docs/ZAI-004-ACORDES-COESAO-ALTURAS-APK-PRINCIPAL.md'
 
 permissions:
   contents: read
