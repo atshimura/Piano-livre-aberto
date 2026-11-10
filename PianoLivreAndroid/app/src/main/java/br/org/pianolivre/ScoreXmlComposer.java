@@ -122,8 +122,9 @@ public final class ScoreXmlComposer {
                     xml.append("<type>").append(typeOf(token.cells)).append("</type>");
                     if (dotted(token.cells)) xml.append("<dot/>");
                     xml.append("<staff>").append(voice.staff).append("</staff>");
+                    // No automatic ties or expressive slurs in Creation.
                     // ZAI-009: articulation stays in source MIDI, not on the
-                    // Creation score. Keep only duration-bearing note values.
+                    // basic score. Keep only duration-bearing note values.
                     xml.append("</note>");
                 }
             }
