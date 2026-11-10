@@ -150,55 +150,56 @@ public final class ScoreRhythmQuantizer {
         }
 
         ArrayList<Placed> placed = new ArrayList<>();
-        boolean[] connected = new boolean[n];
         long[] noteLength = new long[n];
         boolean[] detached = new boolean[n];
-        int detachedCount = 0, connectedCount = 0, overlapCount = 0;
+        int detachedCount = 0, overlapCount = 0;
         long maxEnd = 1;
         for (int i = 0; i < n; i++) {
             ScoreMidiPairer.PairedNote note = ordered.get(i);
-            long physicalCells = snap(cells(note.durationNs(), quarterNs), false);
             long next = nextCell[i];
             long gap = next >= 0 ? next - start[i] : 0;
+            long physical = snap(cells(note.durationNs(), quarterNs), false);
             long length;
+
+            // A Note On is an attack. A Note Off ends that SAME key press.
+            // Note Off does not become a rest by itself, and the next Note On
+            // cannot truncate a key that is still down. Quantize the real
+            // duration unless clear attack spacing implies detached playing.
             if (next < 0) {
-                // End of a phrase: compare physical release with the previous
-                // rhythm. A long final held tone is not truncated.
+                // No upcoming attack: use actual key release. The only
+                // exception is a clearly detached *very short* final note
+                // in a locally regular series (R11: 62 ms on quarter beats).
                 long previous = prevGap[i];
-                // Very short final release can still be staccato, but a
-                // genuine shorter final note must NOT inherit a long gap
-                // from the preceding attack (R08: whole C4 plus quarter E4).
-                boolean shortStaccato = previous >= 4 && physicalCells <= 2;
-                boolean matchesPrevious = previous > 0
-                        && Math.abs(physicalCells - previous) <= Math.max(1.0, previous * 0.12);
-                length = shortStaccato || matchesPrevious ? previous : physicalCells;
+                boolean shortFinalStaccato = !note.syntheticEnd
+                        && previous >= 2 && previous <= 8
+                        && note.durationNs() < previous * (quarterNs / 4.0) * 0.35;
+                length = shortFinalStaccato ? previous : physical;
             } else {
-                length = gap;
-                // A sizeable silence between phrases is a genuine rest. Do not
-                // mistake the long inter-phrase gap for the written note value.
-                long after = afterNextCell[i] >= 0 ? afterNextCell[i] - next : 0;
-                boolean phraseGap = prevGap[i] >= 4 && gap >= 2 * prevGap[i]
-                        && after > 0 && after < gap * 0.65;
-                boolean isolatedRest = prevGap[i] == 0 && gap >= 8
-                        && physicalCells >= 3 && physicalCells * 1.6 <= gap;
-                if (phraseGap) length = prevGap[i];
-                else if (isolatedRest) length = physicalCells;
-                // Real long overlap is polyphony; mere key overlap near the
-                // next attack is legato, not a second voice.
-                long overlapNs = note.endNs - nextNs[i];
-                if (overlapNs > Math.max(100_000_000L, (long)(quarterNs * 0.32))) {
-                    length = Math.max(length, physicalCells);
-                    overlapCount++;
-                } else if (Math.abs(overlapNs) <= (long)(quarterNs * 0.21)
-                        && !phraseGap && !isolatedRest && !note.syntheticEnd) {
-                    connected[i] = true;
-                    connectedCount++;
+                long physicalNs = Math.max(0, note.durationNs());
+                long onsetGapNs = Math.max(1, nextNs[i] - note.startNs);
+                double ratio = physicalNs / (double) onsetGapNs;
+                // A real gap between groups/phrases takes priority over
+                // attack-spacing quantization. This is decisive for the
+                // separate C/Cm chords and C5 at the end of both S1 scales.
+                boolean genuineSilence = gap >= 8 && ratio < 0.80;
+                boolean detachedRegular = !note.syntheticEnd
+                        && gap <= 8 && ratio < 0.72;
+                boolean nearNextAttack = ratio >= 0.80 && ratio <= 1.16;
+                if (genuineSilence) {
+                    length = physical;
+                } else if (detachedRegular || nearNextAttack) {
+                    length = gap;
+                } else {
+                    // Significant held overlap or an atypical duration:
+                    // physical time decides the figure, not the next attack.
+                    length = physical;
                 }
+                long overlapNs = note.endNs - nextNs[i];
+                if (overlapNs >= Math.max(quarterNs / 8, 65_000_000L)
+                        && length > gap) overlapCount++;
             }
             length = Math.max(1, length);
             noteLength[i] = length;
-            // Staccato describes key release, not a shorter MUSICAL figure.
-            // Exclude synthesized boundary releases (they are not performance).
             if (!note.syntheticEnd && note.durationNs() < length * (quarterNs / 4.0) * 0.72
                     && (next >= 0 || prevGap[i] > 0)) {
                 detached[i] = true;
@@ -206,6 +207,7 @@ public final class ScoreRhythmQuantizer {
             }
             maxEnd = Math.max(maxEnd, start[i] + length);
         }
+
         // ZAI-004: a chord is one musical attack, even when individual fingers
         // release a few milliseconds apart on opposite sides of a grid boundary.
         // Only near-equal physical releases are normalized. A genuinely held
@@ -222,17 +224,13 @@ public final class ScoreRhythmQuantizer {
             warnings.add(coherentChords + " acorde(s) mantidos íntegros apesar de pequenas diferenças de liberação MIDI");
         if (detachedCount > 0)
             warnings.add(detachedCount + " nota(s) destacadas: duração musical inferida dos ataques, articulação staccato pelo Note Off");
-        if (connectedCount > 0) warnings.add(connectedCount + " conexão(ões) legato reconhecidas");
-        if (overlapCount > 0) warnings.add(overlapCount + " sobreposição(ões) sustentadas preservadas em vozes");
-
-        boolean[] slurStart = new boolean[n], slurStop = new boolean[n], incoming = new boolean[n];
-        for (int i = 0; i < n; i++) if (connected[i] && nextIndex[i] >= 0) incoming[nextIndex[i]] = true;
-        for (int i = 0; i < n; i++) {
-            // One slur for each connected legato run; chord duplicates on the
-            // same attack remain conservative (slur on the first voice).
-            slurStart[i] = connected[i] && !incoming[i];
-            slurStop[i] = incoming[i] && !connected[i];
-        }
+        // An overlap is factual MIDI data, not proof of musical phrasing.
+        // Never invent an expressive slur from timing. Source Note Off remains
+        // available for articulation analysis and significant overlaps are
+        // represented via actual sustained durations / independent voices.
+        if (overlapCount > 0)
+            warnings.add(overlapCount + " sobreposição(ões) MIDI sustentadas preservadas sem ligadura de expressão");
+        boolean[] slurStart = new boolean[n], slurStop = new boolean[n];
 
         for (int i = 0; i < n; i++) {
             ScoreMidiPairer.PairedNote note = ordered.get(i);
