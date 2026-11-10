@@ -50,8 +50,8 @@ public final class ZScoreTieFreeRegressionTest {
         CreationScoreGenerator.Generation five=write(Arrays.asList(
                 on(60,0,0),off(60,625_000_000L,1)),800_000_000L);
         noTies(five,1,"5/16");
-        ok(count(five.xml,"<type>quarter</type>")==1,
-                "5/16: one conventional approximation (quarter)");
+        ok(Math.abs(parse(five.xml).events.get(0).length-1.0)<1e-9,
+                "5/16: one conventional quarter-note approximation");
         ok(five.notes.get(0).durationNs()==625_000_000L,"5/16: MIDI unchanged");
 
         // A half note starting on beat 4 cannot fit the bar. Keep one
