@@ -151,14 +151,16 @@ public final class ZScoreRealMidiRegressionTest {
         ok(held.xml.contains("<voice>2</voice>"),"OVERLAP: separate voice for sustained C4");
         ok(held.xml.contains("<duration>2880</duration>"),"OVERLAP: C4 keeps the entire three-beat hold");
 
-        // --- One Note On sustained 5/16: two figures with explicit intra-bar tie.
+        // --- One Note On held for 5/16: one written figure, no tied heads.
         CreationScoreGenerator.Generation five=run(Arrays.asList(
             event(0x90,60,80,0,0),event(0x80,60,0,625_000_000L,1)),800_000_000L);
-        ok(five.xml.contains("<tie type=\"start\"/>"),"TIE: first fragment starts tie");
-        ok(five.xml.contains("<tie type=\"stop\"/>"),"TIE: second fragment stops tie");
-        ok(attacks(xml(five.xml)).size()==1,"TIE: no invented extra attack");
+        ok(!five.xml.contains("<tie"),"SIMPLE: zero automatic ties");
+        ok(!five.xml.contains("<slur"),"SIMPLE: zero expressive slurs");
+        ok(attacks(xml(five.xml)).size()==1,"SIMPLE: exactly one written head for one Note On");
+        ok(five.notes.get(0).durationNs()==625_000_000L,
+                "SIMPLE: original MIDI duration remains intact");
         Score fifth=Score.read(new ByteArrayInputStream(five.xml.getBytes(StandardCharsets.UTF_8)),"five16");
-        ok(fifth.events.size()==1,"TIE: Study recognises only one note");
+        ok(fifth.events.size()==1,"SIMPLE: Study recognises one written attack");
 
         System.out.println("ZScoreRealMidiRegressionTest: "+assertions+" verificações OK; real BPM="+actual.bpm);
     }

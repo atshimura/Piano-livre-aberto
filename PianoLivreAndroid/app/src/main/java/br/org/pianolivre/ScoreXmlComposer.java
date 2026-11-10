@@ -9,13 +9,21 @@ import java.io.IOException;
  *
  * - Voice blocks are separated by &lt;backup&gt;, each summing exactly one measure;
  *   chords are stacked right after their head note with &lt;chord/&gt;.
- * - Ties across barlines use &lt;tie&gt; plus &lt;notations&gt;&lt;tied&gt;.
+ * - ZAI-007: one written figure per MIDI attack, no generated ties or slurs.
+ *   When a note crosses a barline, its excess sustain stays in the MIDI .plc,
+ *   not in the intentionally simplified visual score.
  * - The estimated tempo is written as a metronome direction and &lt;sound tempo&gt; so the
  *   Study playback follows the recognized BPM; a provisional 120 is labelled by the UI.
  * - Output is byte-identical for identical inputs; the title is XML-escaped.
  */
 public final class ScoreXmlComposer {
     public static final int MAX_XML_CHARS = 8_000_000;
+    /** Revision for safe, non-destructive detection of outdated derivatives. */
+    public static final String GENERATOR_MARKER =
+            "<miscellaneous-field name=\"pianolivre-generator\">ZAI-007-tie-free</miscellaneous-field>";
+    public static boolean isCurrentDerivedXml(String xml) {
+        return xml != null && xml.contains(GENERATOR_MARKER);
+    }
 
     private ScoreXmlComposer() {}
 
@@ -73,7 +81,8 @@ public final class ScoreXmlComposer {
         xml.append("<?xml version=\"1.0\" encoding=\"utf-8\"?><score-partwise version=\"4.0\">");
         String safeTitle = escape(title.trim());
         xml.append("<work><work-title>").append(safeTitle).append("</work-title></work><movement-title>")
-           .append(safeTitle).append("</movement-title><identification><creator type=\"composer\">Criação MIDI</creator></identification>");
+           .append(safeTitle).append("</movement-title><identification><creator type=\"composer\">Criação MIDI</creator>")
+           .append("<miscellaneous>").append(GENERATOR_MARKER).append("</miscellaneous></identification>");
         xml.append("<part-list><score-part id=\"P1\"><part-name>Piano</part-name></score-part></part-list>");
         xml.append("<part id=\"P1\">");
         long measureTicks = (long) ScoreRhythmQuantizer.CELLS_PER_MEASURE * ScoreRhythmQuantizer.TICKS_PER_CELL;
@@ -106,23 +115,14 @@ public final class ScoreXmlComposer {
                         xml.append(pitchXml(token.pitch));
                     }
                     xml.append("<duration>").append(ticks).append("</duration>");
-                    if (token.tieStop) xml.append("<tie type=\"stop\"/>");
-                    if (token.tieStart) xml.append("<tie type=\"start\"/>");
                     xml.append("<voice>").append(voice.voice).append("</voice>");
                     xml.append("<type>").append(typeOf(token.cells)).append("</type>");
                     if (dotted(token.cells)) xml.append("<dot/>");
                     xml.append("<staff>").append(voice.staff).append("</staff>");
-                    // Creation does NOT infer expressive slurs. Only tied
-                    // fragments of the SAME source MIDI attack are generated.
-                    // Explicit slurs from imported MusicXML remain untouched.
-                    if (!token.rest && (token.tieStart || token.tieStop || token.staccato)) {
-                        xml.append("<notations>");
-                        if (token.tieStop) xml.append("<tied type=\"stop\"/>");
-                        if (token.tieStart) xml.append("<tied type=\"start\"/>");
-                        // Staccato changes articulation, not written duration.
-                        if (token.staccato) xml.append("<articulations><staccato/></articulations>");
-                        xml.append("</notations>");
-                    }
+                    // No automatic ties or expressive slurs in Creation.
+                    // Staccato may still be engraved as an articulation.
+                    if (!token.rest && token.staccato)
+                        xml.append("<notations><articulations><staccato/></articulations></notations>");
                     xml.append("</note>");
                 }
             }

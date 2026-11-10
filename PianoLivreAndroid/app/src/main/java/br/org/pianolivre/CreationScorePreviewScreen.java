@@ -157,7 +157,16 @@ final class CreationScorePreviewScreen extends LinearLayout {
                     try{
                         CreationScoreStore.Saved prior=storage.read(project.id);
                         if(prior.fingerprint.equals(fingerprint)&&prior.xml.length()>=40){
-                            reused=prior.xml;reusedBpm=prior.bpm;saved=true;
+                            if(ScoreXmlComposer.isCurrentDerivedXml(prior.xml)){
+                                reused=prior.xml;reusedBpm=prior.bpm;saved=true;
+                            }else{
+                                // The recording is unchanged, but the old
+                                // score may still contain automatic ties.
+                                // Never reuse it silently or overwrite it.
+                                post(()->{if(closed||id!=generation)return;
+                                    busy=false;renderOutdated();});
+                                return;
+                            }
                         }else notice="A partitura salva não corresponde mais à gravação; uma nova prévia será gerada.";
                     }catch(CreationScoreStore.LegacyScoreException old){
                         post(()->{if(closed||id!=generation)return;busy=false;legacy=true;renderLegacy();});
@@ -203,6 +212,18 @@ final class CreationScorePreviewScreen extends LinearLayout {
         if(notation!=null){notation.dispose();notation=null;}
         contents.removeAllViews();tempoLabel=null;
     }
+    /** PLS2 from an older engine: keep the file until the user saves a new score. */
+    private void renderOutdated(){
+        clear();
+        addText("Partitura de uma versão anterior",21,true,3);
+        addText("Esta composição possui uma partitura salva com uma versão anterior do gerador, "
+            +"que pode incluir ligaduras automáticas. A gravação MIDI original permanece intacta. "
+            +"Para aplicar a nova escrita simplificada, toque em Gerar prévia sem ligaduras. "
+            +"A partitura antiga não será substituída até que você escolha Salvar partitura.",14,false,10);
+        attach(contents,button("Gerar prévia sem ligaduras",true,this::regenerate),48,8);
+        attach(contents,button("Voltar à composição",false,()->window.dismiss()),48,0);
+    }
+
     /** Old PLS1 derivative: explained state, nothing deleted, regeneration offered. */
     private void renderLegacy(){
         clear();legacy=true;
@@ -239,6 +260,9 @@ final class CreationScorePreviewScreen extends LinearLayout {
             :"Andamento não identificado com segurança — prévia a 120 BPM (provisória)";
         tempoLabel=label(measures+" compassos · 4/4 · "+tempoText,13,false,0xff57708A);
         attach(contents,tempoLabel,-2,9);
+        addText("Partitura simplificada: uma figura por nota, sem ligaduras automáticas. "
+            +"Sustentações que ultrapassam o compasso podem aparecer abreviadas; "
+            +"os tempos completos permanecem na gravação MIDI original.",12,false,8);
         LinearLayout sheet=card();sheet.setPadding(dp(4),dp(4),dp(4),dp(4));
         int sheetHeight=Math.max(dp(240),Math.round(getResources().getDisplayMetrics().heightPixels*0.42f));
         NotationView view=new NotationView(activity,new NotationView.Listener(){
