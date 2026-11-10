@@ -35,13 +35,17 @@ public final class ScoreXmlComposer {
     }
     static boolean dotted(int cells) { return cells == 12 || cells == 6 || cells == 3; }
 
-    /** Natural spelling with sharps for the black keys; enharmonic sophistication is out of scope. */
+    /**
+     * Use the same fixed enharmonic convention as DiscoveryScoreBuilder.
+     * MIDI 63 is E-flat, not D-sharp; the pitch number remains unchanged.
+     * Later harmonic-context spelling remains a separate product feature.
+     */
     static String pitchXml(int pitch) {
-        String[] steps = {"C", "C", "D", "D", "E", "F", "F", "G", "G", "A", "A", "B"};
+        String[] steps = {"C", "C", "D", "E", "E", "F", "F", "G", "A", "A", "B", "B"};
+        int[] alters = {0, 1, 0, -1, 0, 0, 1, 0, -1, 0, -1, 0};
         int cls = pitch % 12, octave = pitch / 12 - 1;
-        String step = steps[cls];
-        String alter = (cls == 1 || cls == 3 || cls == 6 || cls == 8 || cls == 10) ? "<alter>1</alter>" : "";
-        return "<pitch><step>" + step + "</step>" + alter + "<octave>" + octave + "</octave></pitch>";
+        String alter = alters[cls] == 0 ? "" : "<alter>" + alters[cls] + "</alter>";
+        return "<pitch><step>" + steps[cls] + "</step>" + alter + "<octave>" + octave + "</octave></pitch>";
     }
 
     static String escape(String s) {

@@ -206,6 +206,20 @@ public final class ScoreRhythmQuantizer {
             }
             maxEnd = Math.max(maxEnd, start[i] + length);
         }
+        // ZAI-004: a chord is one musical attack, even when individual fingers
+        // release a few milliseconds apart on opposite sides of a grid boundary.
+        // Only near-equal physical releases are normalized. A genuinely held
+        // tone keeps its separate duration/voice for polyphonic notation.
+        int coherentChords = cohereChordReleases(ordered, start, noteLength, detached,
+                nextCell, prevGap, quarterNs);
+        maxEnd = 1;
+        detachedCount = 0;
+        for (int i = 0; i < n; i++) {
+            if (detached[i]) detachedCount++;
+            maxEnd = Math.max(maxEnd, start[i] + noteLength[i]);
+        }
+        if (coherentChords > 0)
+            warnings.add(coherentChords + " acorde(s) mantidos íntegros apesar de pequenas diferenças de liberação MIDI");
         if (detachedCount > 0)
             warnings.add(detachedCount + " nota(s) destacadas: duração musical inferida dos ataques, articulação staccato pelo Note Off");
         if (connectedCount > 0) warnings.add(connectedCount + " conexão(ões) legato reconhecidas");
@@ -311,6 +325,96 @@ public final class ScoreRhythmQuantizer {
             measurePlans.add(new MeasurePlan(m, voicePlans));
         }
         return new Plan(measures, measurePlans, warnings, written);
+    }
+
+    /**
+     * Groups only notes on the SAME staff and SAME quantized onset, with real
+     * Note Off events within a limited physical tolerance. Small release
+     * differences must never manufacture voices or ties in a simple chord.
+     *
+     * The group is formed from Note Off timestamps, not their rounded durations.
+     * A markedly longer note remains outside the group; its sustain/voice is
+     * therefore preserved (ZAI-002 polyphony contract).
+     */
+    private static int cohereChordReleases(List<ScoreMidiPairer.PairedNote> notes,
+            long[] starts, long[] lengths, boolean[] staccato,
+            long[] nextCell, long[] prevGap, long quarterNs) {
+        int count = 0;
+        final long toleranceNs = Math.min(70_000_000L,
+                Math.max(25_000_000L, (long)(quarterNs * 0.14)));
+        for (int begin = 0; begin < notes.size();) {
+            int end = begin + 1;
+            while (end < notes.size() && starts[end] == starts[begin]) end++;
+            for (int staff = 1; staff <= 2; staff++) {
+                ArrayList<Integer> indices = new ArrayList<>();
+                for (int i = begin; i < end; i++) {
+                    int noteStaff = notes.get(i).pitch >= SPLIT_MIDI ? 1 : 2;
+                    if (noteStaff == staff) indices.add(i);
+                }
+                indices.sort(Comparator.comparingLong(i -> notes.get(i).endNs));
+                for (int first = 0; first < indices.size();) {
+                    int last = first + 1;
+                    long earliestRelease = notes.get(indices.get(first)).endNs;
+                    while (last < indices.size()
+                            && notes.get(indices.get(last)).endNs - earliestRelease <= toleranceNs)
+                        last++;
+                    if (last - first >= 2) {
+                        boolean authentic = true;
+                        for (int a = first; a < last; a++) {
+                            ScoreMidiPairer.PairedNote current = notes.get(indices.get(a));
+                            if (current.syntheticEnd) authentic = false;
+                            for (int b = a + 1; b < last; b++)
+                                if (current.pitch == notes.get(indices.get(b)).pitch) authentic = false;
+                        }
+                        if (authentic) {
+                            long[] lengthsInGroup = new long[last - first];
+                            long[] holdsInGroup = new long[last - first];
+                            for (int a = first; a < last; a++) {
+                                int i = indices.get(a);
+                                lengthsInGroup[a - first] = lengths[i];
+                                holdsInGroup[a - first] = notes.get(i).durationNs();
+                            }
+                            java.util.Arrays.sort(lengthsInGroup);
+                            java.util.Arrays.sort(holdsInGroup);
+                            long nominal = lengthsInGroup[lengthsInGroup.length / 2];
+                            long written = simpleChordDuration(nominal);
+                            long physical = holdsInGroup[holdsInGroup.length / 2];
+                            for (int a = first; a < last; a++) {
+                                int i = indices.get(a);
+                                lengths[i] = written;
+                                staccato[i] = physical < written * (quarterNs / 4.0) * 0.72
+                                        && (nextCell[i] >= 0 || prevGap[i] > 0);
+                            }
+                            count++;
+                        }
+                    }
+                    first = last;
+                }
+            }
+            begin = end;
+        }
+        return count;
+    }
+
+    /**
+     * Prefer a single readable note over a 4+1/16 tie produced solely by
+     * jitter near the quantizer grid. When equally close, prefer the shorter
+     * figure. Long held chords retain multiple beats and cross-bar ties.
+     */
+    private static long simpleChordDuration(long cells) {
+        if (cells <= 1) return 1;
+        if (cells > CELLS_PER_MEASURE)
+            return Math.max(CELLS_PER_MEASURE, Math.round(cells / 4.0) * 4L);
+        int chosen = FIGURES[0];
+        long bestDifference = Long.MAX_VALUE;
+        for (int figure : FIGURES) {
+            long difference = Math.abs(cells - figure);
+            if (difference < bestDifference || (difference == bestDifference && figure < chosen)) {
+                chosen = figure;
+                bestDifference = difference;
+            }
+        }
+        return chosen;
     }
 
     private static void decompose(Slot slot, ArrayList<Draft> fragments) {

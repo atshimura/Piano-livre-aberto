@@ -13,6 +13,8 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-004 — Coesão dos acordes MIDI e grafia de alturas](ZAI-004-ACORDES-COESAO-ALTURAS-APK-PRINCIPAL.md): caso real C/Cm, causas, critérios, regressões e APK principal 0.9.66.
+
 - [ZAI-003 — APK principal 0.9.65 assinado, versão 74](ZAI-003-APK-ATUALIZACAO-PRINCIPAL-20261109.md): aprovação do mantenedor, CI, hash, assinatura, instalação sobre a beta 0.9.64 e limites de compatibilidade.
 
 - [ZAI-002 — Relatório de entrega do APK isolado e testes aprovados](ZAI-002-ENTREGA-APK-ISOLADO-20261109.md): CI, SHA-256, 14 notas reais, limitações físicas e identidade Android separada.
