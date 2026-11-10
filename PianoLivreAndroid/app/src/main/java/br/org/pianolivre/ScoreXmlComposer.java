@@ -20,7 +20,7 @@ public final class ScoreXmlComposer {
     public static final int MAX_XML_CHARS = 8_000_000;
     /** Revision for safe, non-destructive detection of outdated derivatives. */
     public static final String GENERATOR_MARKER =
-            "<miscellaneous-field name=\"pianolivre-generator\">ZAI-008-rests-wrap</miscellaneous-field>";
+            "<miscellaneous-field name=\"pianolivre-generator\">ZAI-009-basic-notes-duration</miscellaneous-field>";
     public static boolean isCurrentDerivedXml(String xml) {
         return xml != null && xml.contains(GENERATOR_MARKER);
     }
@@ -107,7 +107,10 @@ public final class ScoreXmlComposer {
                 firstVoiceOfMeasure = false;
                 for (ScoreRhythmQuantizer.Token token : voice.tokens) {
                     long ticks = (long) token.cells * ScoreRhythmQuantizer.TICKS_PER_CELL;
-                    xml.append("<note>");
+                    // Keep rest DURATIONS as invisible MusicXML events:
+                    // they preserve positions, voice sums and Study timing,
+                    // but do not belong to the minimal visual transcription.
+                    xml.append(token.rest ? "<note print-object=\"no\">" : "<note>");
                     if (token.rest) {
                         xml.append("<rest/>");
                     } else {
@@ -119,10 +122,8 @@ public final class ScoreXmlComposer {
                     xml.append("<type>").append(typeOf(token.cells)).append("</type>");
                     if (dotted(token.cells)) xml.append("<dot/>");
                     xml.append("<staff>").append(voice.staff).append("</staff>");
-                    // No automatic ties or expressive slurs in Creation.
-                    // Staccato may still be engraved as an articulation.
-                    if (!token.rest && token.staccato)
-                        xml.append("<notations><articulations><staccato/></articulations></notations>");
+                    // ZAI-009: articulation stays in source MIDI, not on the
+                    // Creation score. Keep only duration-bearing note values.
                     xml.append("</note>");
                 }
             }
