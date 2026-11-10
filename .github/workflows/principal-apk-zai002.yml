@@ -107,7 +107,7 @@ jobs:
           PIANOLIVRE_PUBLIC_KEY_PASSWORD: ${{ secrets.PIANOLIVRE_PUBLIC_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          gradle --no-daemon :app:assembleRelease -Ppianolivre.zai.test=false -Ppianolivre.beta.versionCode=74 -Ppianolivre.beta.versionName=0.9.65-open-beta -Ppianolivre.zai.test=true
+          gradle --no-daemon :app:assembleRelease -Ppianolivre.zai.test=false -Ppianolivre.beta.versionCode=74 -Ppianolivre.beta.versionName=0.9.65-open-beta
 
       - name: Verificar APK, identidade, assinatura e integridade
         run: |
