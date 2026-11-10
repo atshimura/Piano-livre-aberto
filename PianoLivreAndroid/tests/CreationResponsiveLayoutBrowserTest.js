@@ -65,7 +65,8 @@ function fixture(){
    });
    assert.equal(state.error,null,"OSMD render failure "+JSON.stringify(state));
    assert.equal(state.className,"creation-page","Creation has its own layout");
-   assert(state.headCount>=56,"all 56 noteheads engraved "+JSON.stringify(state));
+   // VexFlow uses the .vf-notehead class for 56 pitched notes and 14 full-rest glyphs.
+   assert.equal(state.headCount,70,"all 56 sounded notes and 14 bass rests engraved "+JSON.stringify(state));
    assert(state.scrollWidth<=state.clientWidth+2,
       "no horizontal scroll at "+width+"px "+JSON.stringify(state));
    assert.equal(state.clippedHeads,0,
@@ -79,6 +80,9 @@ function fixture(){
   await report(1100,720,false);
   await report(360,660,false,1.5);
   await report(360,660,false,0.7);
+
+  assert(measurements[0].rowCount>measurements[1].rowCount,
+    "narrow portrait must flow into more systems than landscape");
 
   // Free reading uses its previously established width/pinch behavior.
   const next=++token;
