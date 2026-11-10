@@ -117,11 +117,19 @@ jobs:
           mkdir -p build
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk" > build/principal-signature.txt
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > build/principal-metadata.txt
+          echo "META_DADOS_VERIFICACAO_INICIAL"
+          grep -E '^(package:|application-label:|sdkVersion:|targetSdkVersion:)' build/principal-metadata.txt
+          grep 'Signer #1 certificate SHA-256 digest:' build/principal-signature.txt
+          echo "CHECANDO: certificado permanente"
           grep -Fq 'Signer #1 certificate SHA-256 digest: 7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290' build/principal-signature.txt
+          echo "CHECANDO: pacote principal"
           grep -Fq "package: name='br.org.pianolivre.opensource'" build/principal-metadata.txt
+          echo "CHECANDO: rotulo do launcher"
           grep -Fq "application-label:'Piano Livre'" build/principal-metadata.txt
           if grep -Fq "name='br.org.pianolivre.opensource.zai'" build/principal-metadata.txt; then echo "::error::Identidade ZAi indevida no APK principal"; exit 1; fi
+          echo "CHECANDO: versionCode 74"
           grep -Fq "versionCode='74'" build/principal-metadata.txt
+          echo "CHECANDO: versionName 0.9.65"
           grep -Fq "versionName='0.9.65-open-beta'" build/principal-metadata.txt
           if grep -Fq 'android.permission.INTERNET' build/principal-metadata.txt; then
             echo "::error::APK recebeu permissao INTERNET"
