@@ -374,6 +374,8 @@ final class CreationScorePreviewScreen extends LinearLayout {
             :"Nenhuma anomalia MIDI encontrada. A gravação original permanece intacta.";
         TextView information=label("ⓘ  "+message,12,false,0xff57708A);
         information.setTag("creation-score-midi-info");
+        information.setContentDescription(message+" Partitura básica sem pausas visíveis, "
+            +"staccato ou ligaduras; os tempos completos permanecem na gravação MIDI original.");
         information.setMaxLines(2);
         attach(scoreFooter,information,-2,2);
 
