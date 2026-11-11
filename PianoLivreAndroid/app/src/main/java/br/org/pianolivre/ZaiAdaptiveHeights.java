@@ -19,14 +19,28 @@ final class ZaiAdaptiveHeights {
    this.gap=gap;this.cardHeight=cardHeight;this.fitsWithoutScroll=fitsWithoutScroll;
   }
  }
- static Landing landing(int usableHeightDp,float fontScale){
-  boolean compact=usableHeightDp<440;
-  int top=compact?5:8,bottom=compact?6:14,title=compact?32:43;
-  int description=compact?22:30,gap=compact?5:9;
-  int free=usableHeightDp-56-top-bottom-title-description-gap;
-  int minimum=Math.round((compact?172:260)*Math.max(1f,fontScale));
-  int cards=Math.min(compact?260:320,Math.max(minimum,free));
+ /**
+  * The previous layout subtracted a *nominal* 56dp header from the parent
+  * onSizeChanged height. In a real Android window the ScrollView can be shorter
+  * (system navigation, insets, layout). That discrepancy made the initial page
+  * scroll and focused the lower buttons, hiding "Escolha um modo".
+  *
+  * Input is now the measured CONTENT viewport, with the top bar already removed.
+  */
+ static Landing landingContent(int viewportHeightDp,float fontScale){
+  boolean compact=viewportHeightDp<384;
+  int top=compact?4:8,bottom=compact?5:14,title=compact?30:43;
+  int description=compact?24:30,gap=compact?4:9;
+  int free=viewportHeightDp-top-bottom-title-description-gap;
+  int minimum=Math.round((compact?168:240)*Math.max(1f,fontScale));
+  // Leave 2dp for view/pixel rounding, rather than relying on an exact fit.
+  // Accessibility minimum always wins over the cosmetic maximum card size.
+  int cards=Math.max(minimum,Math.min(compact?260:320,free-2));
   return new Landing(compact,top,bottom,title,description,gap,cards,free>=cards);
+ }
+ /** Legacy whole-screen calculation retained for previous regression coverage. */
+ static Landing landing(int usableHeightDp,float fontScale){
+  return landingContent(usableHeightDp-56,fontScale);
  }
  static final class Menu {
   final int record,projects;

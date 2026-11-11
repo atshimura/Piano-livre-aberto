@@ -7,6 +7,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -20,6 +21,7 @@ import android.widget.TextView;
 final class MusicLabLandingScreen extends LinearLayout {
  private final MainActivity activity;
  private final LinearLayout content,columns;
+ private final ScrollView scroll;
  private final TextView selectionTitle,selectionDescription;
  private final LinearLayout[] modeCards;
  private static final int NAVY=0xff0C2445,BLUE=0xff0969D2,INK=0xff09224A,MUTED=0xff54677F;
@@ -83,7 +85,12 @@ final class MusicLabLandingScreen extends LinearLayout {
   label.setGravity(Gravity.CENTER_VERTICAL|Gravity.LEFT);
   label.setPadding(dp(14),0,0,0);
   top.addView(label,new LayoutParams(0,-1,1));
-  ScrollView scroll=new ScrollView(a);scroll.setFillViewport(true);
+  scroll=new ScrollView(a);scroll.setFillViewport(true);
+  scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+  // Prevent a lower button receiving initial focus and pushing the title
+  // above the visible viewport when the screen is reopened.
+  scroll.setFocusableInTouchMode(true);
+  scroll.setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
   addView(scroll,new LayoutParams(-1,0,1));
   content=new LinearLayout(a);content.setOrientation(VERTICAL);
   content.setPadding(dp(14),dp(8),dp(14),dp(14));
@@ -111,16 +118,21 @@ final class MusicLabLandingScreen extends LinearLayout {
    if(i<2)item.rightMargin=dp(10);
    columns.addView(modeCards[i],item);
   }
+  // Measure the actual available ScrollView viewport AFTER all system insets
+  // and the 56dp toolbar; this is not necessarily root.getHeight()-56dp.
+  scroll.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or_,ob)->{
+   if(b>t && b-t!=ob-ot)fitViewportHeight(b-t);
+  });
  }
- /**
-  * The original 260dp cards plus 43/30dp labels forced the entire page to scroll
-  * on short landscape viewports. Fit the real window (including navigation insets)
-  * rather than the device display metrics. Keep scrolling only as an accessibility
-  * fallback when the usable height is genuinely too small or font scaling is large.
-  */
- @Override protected void onSizeChanged(int width,int height,int oldWidth,int oldHeight){
-  super.onSizeChanged(width,height,oldWidth,oldHeight);
-  if(height>0)fitVisibleHeight(height);
+ /** Reenter from Descobrir/Criação without restoring the old scrolled position. */
+ void showAtTop(){
+  scroll.requestFocus();
+  scroll.scrollTo(0,0);
+  scroll.post(()->{
+   if(getVisibility()!=View.VISIBLE)return;
+   if(scroll.getHeight()>0)fitViewportHeight(scroll.getHeight());
+   scroll.scrollTo(0,0);
+  });
  }
  private void setHeight(View view,int heightDp){
   LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)view.getLayoutParams();
@@ -149,10 +161,10 @@ final class MusicLabLandingScreen extends LinearLayout {
    setHeight(badge,compact?Math.max(17,Math.round(17*fontScale)):24);
   }
  }
- private void fitVisibleHeight(int heightPx){
+ private void fitViewportHeight(int heightPx){
   int heightDp=Math.round(heightPx/getResources().getDisplayMetrics().density);
   float fontScale=getResources().getConfiguration().fontScale;
-  ZaiAdaptiveHeights.Landing size=ZaiAdaptiveHeights.landing(heightDp,fontScale);
+  ZaiAdaptiveHeights.Landing size=ZaiAdaptiveHeights.landingContent(heightDp,fontScale);
   content.setPadding(dp(14),dp(size.topPadding),dp(14),dp(size.bottomPadding));
   selectionTitle.setTextSize(size.compact?20:25);
   selectionDescription.setTextSize(size.compact?12:14);
