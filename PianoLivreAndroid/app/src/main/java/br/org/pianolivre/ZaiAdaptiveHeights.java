@@ -34,7 +34,8 @@ final class ZaiAdaptiveHeights {
   int free=viewportHeightDp-top-bottom-title-description-gap;
   int minimum=Math.round((compact?168:240)*Math.max(1f,fontScale));
   // Leave 2dp for view/pixel rounding, rather than relying on an exact fit.
-  int cards=Math.min(compact?260:320,Math.max(minimum,free-2));
+  // Accessibility minimum always wins over the cosmetic maximum card size.
+  int cards=Math.max(minimum,Math.min(compact?260:320,free-2));
   return new Landing(compact,top,bottom,title,description,gap,cards,free>=cards);
  }
  /** Legacy whole-screen calculation retained for previous regression coverage. */
