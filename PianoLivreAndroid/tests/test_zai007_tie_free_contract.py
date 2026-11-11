@@ -10,7 +10,7 @@ composer = java("ScoreXmlComposer.java")
 quantizer = java("ScoreRhythmQuantizer.java")
 preview = java("CreationScorePreviewScreen.java")
 store = java("CreationScoreStore.java")
-assert "ZAI-009-basic-notes-duration" in composer
+assert "ZAI-010-simple-figures" in composer
 assert 'xml.append("<tie' not in composer
 assert 'xml.append("<tied' not in composer
 assert 'xml.append("<slur' not in composer
