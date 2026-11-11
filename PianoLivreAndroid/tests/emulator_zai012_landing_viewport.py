@@ -47,9 +47,13 @@ def inspect():
     assert title[1]>=top[3]-2,"title occluded by toolbar: "+str((top,title))
     assert desc[1]>=title[3]-2,"instruction overlaps heading: "+str((title,desc))
     assert all(x[1]>=desc[3] for x in (discover,learning,creation)), "card actions overlap intro"
-    assert max(x[3] for x in (discover,learning,creation)) <= max(
-        int(x) for n in root.iter("node") for x in re.findall(r"\d+",n.attrib.get("bounds",""))[3:4]
-    ),"card action below available display"
+    scrollers=[n for n in root.iter("node")
+               if "ScrollView" in n.attrib.get("class","")]
+    assert scrollers,"Laboratory content viewport must be an Android ScrollView"
+    viewport=bounds(scrollers[0])
+    assert title[1]>=viewport[1]-2,"title outside content viewport"
+    assert max(x[3] for x in (discover,learning,creation))<=viewport[3]+3, (
+        "card action below content viewport: "+str((viewport,discover,learning,creation)))
     return {"toolbar":top,"title":title,"description":desc,
             "discover":discover,"learn":learning,"creation":creation}
 
