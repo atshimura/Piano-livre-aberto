@@ -13,6 +13,9 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-010 — Entrega: Laboratório em três modos, Criação contextual, figuras sem pontos e APK principal 0.9.71](ZAI-010-ENTREGA-APK-PRINCIPAL-20261111.md): PR #138 integrado à zai/lab, 1.178 verificações JVM, build e assinatura permanente, SHA-256 e download GitHub verificado.
+- [ZAI-010 — Planejamento e contrato das telas e das figuras simples](ZAI-010-LABORATORIO-CRIACAO-PAINEL-FIGURAS.md): três modos, painel de duas colunas, revisão e biblioteca contextual, MusicXML sem pontos nas notas e MIDI original íntegro.
+
 - [ZAI-009 — Entrega: transcrição de notas/durações sem pausas visíveis, APK 0.9.70](ZAI-009-ENTREGA-APK-PRINCIPAL-20261110.md): 1.124 checks JVM, Chromium OSMD com 24 notas/16 pausas ocultas, assinatura permanente, hash e download raw.
 
 - [ZAI-009 — Transcrição básica de notas e durações, sem pausas e articulações visíveis](ZAI-009-NOTAS-DURACOES-SEM-SIMBOLOS.md): alturas, ataques, ritmo e acordes; pausas temporais não imprimíveis, S1, OSMD Chromium real e regressões, APK principal 0.9.70.
