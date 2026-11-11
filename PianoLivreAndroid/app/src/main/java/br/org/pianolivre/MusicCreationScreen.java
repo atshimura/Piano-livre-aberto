@@ -239,20 +239,19 @@ final class MusicCreationScreen extends LinearLayout {
   dashboard();leftMenu();showRightRecent();
  }
  private String captureLabel(MidiTakeRecorder.State current){switch(current){case RECORDING:return "Gravando… toque no piano conectado";case PAUSED:return "Pausada · "+take.eventCount()+" eventos recebidos";case REVIEW:return take.noteCount()==0?"Nenhuma nota gravada · descarte a tomada ou preserve os controles MIDI recebidos":"Revisão · "+take.noteCount()+" notas · "+take.eventCount()+" eventos";case INTERRUPTED:return "Trecho interrompido · "+take.interruption();case SAVED:return "Composição salva";case DISCARDED:return "Tomada descartada";default:return "Nova composição · pronta para gravar";}}
- private void showRecorder(){final long revision=++formRevision;page="recording";base("Nova gravação",this::requestLeave);if(take==null){take=new MidiTakeRecorder();takeCreatedAt=System.currentTimeMillis();}attach(body,mutedText("Perfil · "+profileName(),13),-2,8);
-  LinearLayout connection=horizontal();connectionStatus=mutedText(midiState(),12);
-  connection.addView(connectionStatus,new LayoutParams(0,-2,1));
-  Button midiSettings=button("USB-MIDI",false,()->a.selectMidi());midiSettings.setTextSize(12);
-  connection.addView(midiSettings,new LayoutParams(dp(105),dp(44)));attach(body,connection,-2,12);
+ private void showRecorder(){final long revision=++formRevision;page="recording";if(take==null){take=new MidiTakeRecorder();takeCreatedAt=System.currentTimeMillis();}
+  dashboard();showRightRecent();attach(dashboardLeft,mutedText("Gravação MIDI · "+profileName(),13),-2,8);
   LinearLayout recordingCard=card();recordingCard.setGravity(Gravity.CENTER);
+  recordingCard.setBackground(shape(0xff126BD9,18,0));
+  recordingCard.setTag("creation-live-recording-card");
   TextView state=text(take==null?"Pronta para gravar":captureLabel(take.state()),17,true);
-  state.setGravity(Gravity.CENTER);attach(recordingCard,state,-2,8);
-  recordingClock=text("00:00",34,true);recordingClock.setGravity(Gravity.CENTER);attach(recordingCard,recordingClock,-2,8);
+  state.setTextColor(white);state.setGravity(Gravity.CENTER);attach(recordingCard,state,-2,8);
+  recordingClock=text("00:00",34,true);recordingClock.setTextColor(white);recordingClock.setGravity(Gravity.CENTER);attach(recordingCard,recordingClock,-2,8);
   LinearLayout stats=horizontal();stats.setGravity(Gravity.CENTER);
-  recordingNotes=mutedText("0 notas",14);stats.addView(recordingNotes);
-  TextView count=mutedText("Eventos MIDI: 0",14);stats.addView(count);
+  recordingNotes=mutedText("0 notas",14);recordingNotes.setTextColor(white);stats.addView(recordingNotes);
+  TextView count=mutedText("Eventos MIDI: 0",14);count.setTextColor(white);stats.addView(count);
   recordingEvents=count;recordingNotes.setPadding(0,0,dp(18),0);
-  recordingCard.addView(stats);attach(body,recordingCard,-2,12);
+  recordingCard.addView(stats);attach(dashboardLeft,recordingCard,-2,12);
   Button start=button("●  Gravar",true,()->{if(hasUnsavedTake()){a.message("Pare e salve ou descarte a tomada atual antes de gravar novamente.");return;}MidiConnection.Snapshot s=a.midiConnection.snapshot();if(!s.canReceive){a.message("Conecte uma entrada MIDI funcional para gravar.");return;}try{take=new MidiTakeRecorder();takeProfileId=a.user;takeCreatedAt=System.currentTimeMillis();long startNs=android.os.SystemClock.elapsedRealtimeNanos();take.start(a.beginCreationCapture(),startNs);takeConnectionGeneration=s.generation;String session=UUID.randomUUID().toString();journal=new CreationJournal(a.getFilesDir(),session,"Gravação recuperável",takeProfileId,takeCreatedAt,startNs,s.target==null?"":s.target.name.substring(0,Math.min(120,s.target.name.length())));captureSession=new CaptureSession(take,journal);state.setText("Gravando… toque no piano conectado");}catch(IOException ex){take=null;a.message("Não foi possível iniciar com recuperação segura: "+ex.getMessage());}});
   Button pause=button("Pausar",false,()->{if(player.state()==MidiTakePlayer.State.PLAYING){player.pause();return;}if(take!=null&&take.state()==MidiTakeRecorder.State.RECORDING){try{take.pause(android.os.SystemClock.elapsedRealtimeNanos());persistJournalDelta();confirmJournalAsync();state.setText("Pausada · "+take.eventCount()+" eventos recebidos");}catch(IOException ex){a.message("O diário não foi confirmado; a gravação foi interrompida com segurança.");take.interrupt("Falha ao confirmar pausa");if(saveRecoverable("Trecho recuperável"))showHome();}}});
   Button resume=button("Continuar",false,()->{if(player.state()==MidiTakePlayer.State.PAUSED){player.resume();return;}if(take!=null&&take.state()==MidiTakeRecorder.State.PAUSED){long now=android.os.SystemClock.elapsedRealtimeNanos();if(journal==null||!journal.beginSegment(now)){a.message("Não foi possível iniciar um segmento seguro.");return;}if(a.user!=takeProfileId||!a.midiConnection.snapshot().canReceive||a.midiConnection.snapshot().generation!=takeConnectionGeneration){take.interrupt("A conexão ou o perfil mudou");state.setText("Salve o trecho antes de iniciar outra tomada");return;}take.resumeForeground(now,take.epoch(),a.beginCreationCapture());state.setText(take.state()==MidiTakeRecorder.State.RECORDING?"Gravando…":"Trecho recuperável · conexão mudou");}});
@@ -266,10 +265,19 @@ final class MusicCreationScreen extends LinearLayout {
   for(Button control:new Button[]{start,pause,resume,stop}){
    LayoutParams lp=new LayoutParams(0,dp(52),1);lp.rightMargin=dp(5);captureActions.addView(control,lp);
   }
-  attach(body,captureActions,52,9);
-  LinearLayout revisionActions=responsiveActions(body,8,save,preview,export);revisionActions.setTag("creation-review-actions");
-  attach(body,playbackStatus,-2,6);
-  discard.setTextColor(0xff9D4444);attach(body,discard,48,0);
+  attach(dashboardLeft,captureActions,52,9);
+  recordingReviewPanel=column();recordingReviewPanel.setTag("creation-review-actions");
+  LinearLayout revisionActions=responsiveActions(recordingReviewPanel,9,save,preview,export);
+  attach(recordingReviewPanel,playbackStatus,-2,8);
+  discard.setTextColor(0xff9D4444);attach(recordingReviewPanel,discard,48,7);
+  Button reviewShortcut=button("Revisar gravação  →",false,
+    ()->showRightReview(recordingReviewPanel));
+  reviewShortcut.setTag("creation-return-to-review");
+  attach(dashboardLeft,reviewShortcut,46,10);
+  Button all=button("▱  Minhas criações",false,this::requestList);
+  all.setTag("creation-my-projects");
+  attach(dashboardLeft,all,52,8);
+  final boolean[] reviewActivated={false};
 
 
   Runnable ticker=new Runnable(){public void run(){if(revision!=formRevision||!a.foreground||!"recording".equals(page)||take==null)return;MidiTakeRecorder.State current=take.state();if(current==MidiTakeRecorder.State.RECORDING&&take.elapsedNs(android.os.SystemClock.elapsedRealtimeNanos())>=MidiTakeRecorder.MAX_DURATION_NS){take.stop(android.os.SystemClock.elapsedRealtimeNanos());try{persistJournalDelta();confirmJournalAsync();}catch(IOException ignored){}current=take.state();}if(current==MidiTakeRecorder.State.RECORDING&&captureSession!=null&&!captureSession.checkpoint(android.os.SystemClock.elapsedRealtimeNanos())){take.interrupt("Falha no diário; salve o trecho");current=take.state();}boolean recording=current==MidiTakeRecorder.State.RECORDING,paused=current==MidiTakeRecorder.State.PAUSED,review=current==MidiTakeRecorder.State.REVIEW||current==MidiTakeRecorder.State.INTERRUPTED;
@@ -278,7 +286,12 @@ final class MusicCreationScreen extends LinearLayout {
     setShown(pause,recording||review&&player.state()==MidiTakePlayer.State.PLAYING);
     setShown(resume,paused||review&&player.state()==MidiTakePlayer.State.PAUSED);
     setShown(stop,recording||paused||player.state()!=MidiTakePlayer.State.STOPPED);
-    setShown(revisionActions,review);
+    if(review&&!reviewActivated[0]){
+      showRightReview(recordingReviewPanel);reviewActivated[0]=true;
+     }
+     setShown(reviewShortcut,review);
+     all.setEnabled(!recording&&!paused);
+     setShown(revisionActions,review);
     setShown(playbackStatus,review);setShown(discard,review||paused||recording);
     discard.setEnabled(review||paused||recording);
     String label=captureLabel(current);if(!state.getText().toString().equals(label))state.setText(label);
@@ -288,6 +301,29 @@ final class MusicCreationScreen extends LinearLayout {
     String counter="Eventos MIDI: "+take.eventCount();if(!count.getText().toString().equals(counter))count.setText(counter);
 a.handler.postDelayed(this,100);}};ticker.run();
 
+ }
+ /** Contextual review reuses original recorder save, export and playback actions. */
+ private void showRightReview(LinearLayout panel){
+  if(panel==null||dashboardRight==null||!"recording".equals(page))return;
+  if(panel.getParent() instanceof android.view.ViewGroup)
+   ((android.view.ViewGroup)panel.getParent()).removeView(panel);
+  rightContext="review";dashboardRight.removeAllViews();
+  LinearLayout head=horizontal();head.setGravity(Gravity.CENTER_VERTICAL);
+  TextView title=text("Revisar gravação",19,true);
+  head.addView(title,new LayoutParams(0,dp(44),1));
+  Button backButton=button("← Voltar às gravações recentes",false,this::leaveReviewPanel);
+  backButton.setTag("creation-review-back");backButton.setTextSize(11);
+  head.addView(backButton,new LayoutParams(dp(215),dp(44)));
+  attach(dashboardRight,head,44,12);
+  attach(dashboardRight,mutedText("Salve, reproduza ou exporte esta gravação sem sair do Laboratório.",12),-2,10);
+  attach(dashboardRight,panel,-2,0);
+ }
+ private void leaveReviewPanel(){
+  if(!hasUnsavedTake()){showRightRecent();return;}
+  activeDialog=new AlertDialog.Builder(a).setTitle("Gravação ainda não salva")
+   .setMessage("A tomada será mantida na memória e no diário local. Você poderá retomar a revisão pelo botão da esquerda. Sair não descarta nenhum evento MIDI.")
+   .setPositiveButton("Ver gravações recentes",(d,w)->showRightRecent())
+   .setNegativeButton("Continuar revisão",null).show();
  }
  private void saveTake(){
   if(take==null||(take.state()!=MidiTakeRecorder.State.REVIEW&&take.state()!=MidiTakeRecorder.State.INTERRUPTED)){a.message("Pare a gravação antes de salvar.");return;}
