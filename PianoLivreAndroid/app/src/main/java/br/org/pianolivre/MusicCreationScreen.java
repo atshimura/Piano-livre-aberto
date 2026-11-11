@@ -370,8 +370,15 @@ a.handler.postDelayed(this,100);}};ticker.run();
   disk.execute(()->{try{if(log!=null)log.discardAndDelete();source.discard();post(()->{busy=false;take=null;journal=null;showHome();});}catch(IOException error){post(()->{busy=false;a.message("Não foi possível concluir o descarte; o trecho foi mantido: "+error.getMessage());});}});
  }).setNegativeButton("Continuar",null).show();}
  private void showList(){
-  player.stop();restoreListPosition=true;page="list";base("Minhas Criações",this::showHome);
-  label(body,"Minhas Criações",23,true,10);
+  player.stop();restoreListPosition=true;page="list";dashboard();leftMenu();
+  rightContext="list";
+  LinearLayout head=horizontal();
+  TextView title=text("Minhas criações",20,true);
+  head.addView(title,new LayoutParams(0,dp(42),1));
+  Button backButton=button("← Voltar às gravações recentes",false,this::showHome);
+  backButton.setTag("creation-list-back");backButton.setTextSize(11);
+  head.addView(backButton,new LayoutParams(dp(215),dp(42)));
+  attach(dashboardRight,head,42,10);
   EditText search=new EditText(a);listSearch=search;search.setSingleLine(true);
   search.setTextSize(15);search.setHint("Buscar composição…");search.setContentDescription("Buscar composição");
   search.setPadding(dp(12),0,dp(12),0);search.setBackground(shape(white,13,0xffDCE7F2));
@@ -383,13 +390,13 @@ a.handler.postDelayed(this,100);}};ticker.run();
    LinearLayout toolbar=horizontal();toolbar.setTag("creation-project-toolbar");
    toolbar.addView(search,new LayoutParams(0,dp(48),2));
    View gap=new View(a);toolbar.addView(gap,new LayoutParams(dp(8),dp(1)));
-   toolbar.addView(filters,new LayoutParams(0,dp(48),3));attach(body,toolbar,48,12);
-  }else{attach(body,search,50,8);attach(body,filters,48,12);}
+   toolbar.addView(filters,new LayoutParams(0,dp(48),3));attach(dashboardRight,toolbar,48,12);
+  }else{attach(dashboardRight,search,50,8);attach(dashboardRight,filters,48,12);}
 
-  Spinner categories=new Spinner(a);String[] names={"Todas","Salvas","Recuperáveis","Lixeira"};
+  Spinner categories=new Spinner(a);String[] names={"Todas","Com partitura","Só gravação","Recuperáveis","Lixeira"};
   categories.setContentDescription("Filtrar composições");
   categories.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,names));
-  categories.setSelection(filter.ordinal());
+  categories.setSelection(catalogFilter);
   Spinner sorting=new Spinner(a);String[] sortNames={"Mais recentes","Mais antigos","Nome A–Z","Nome Z–A","Maior duração","Menor duração"};
   sorting.setContentDescription("Ordenar composições");
   sorting.setAdapter(new ArrayAdapter<>(a,android.R.layout.simple_spinner_dropdown_item,sortNames));
@@ -397,10 +404,12 @@ a.handler.postDelayed(this,100);}};ticker.run();
   int gap=dp(8);View space=new View(a);
   filters.addView(categories,new LayoutParams(0,dp(48),1));filters.addView(space,new LayoutParams(gap,dp(1)));
   filters.addView(sorting,new LayoutParams(0,dp(48),1));
-  LinearLayout results=column();attach(body,results,-2,0);
+  LinearLayout results=column();attach(dashboardRight,results,-2,0);
   Runnable refresh=()->{
    query=search.getText().toString();
-   filter=CreationProjectStore.Filter.values()[categories.getSelectedItemPosition()];
+   catalogFilter=categories.getSelectedItemPosition();
+   filter=catalogFilter==3?CreationProjectStore.Filter.RECOVERABLE:
+     catalogFilter==4?CreationProjectStore.Filter.TRASH:CreationProjectStore.Filter.ALL;
    sortMode=sorting.getSelectedItemPosition();
    results.removeAllViews();populate(results,filter,query);
   };
@@ -437,7 +446,17 @@ a.handler.postDelayed(this,100);}};ticker.run();
   final int owner=a.user,sort=sortMode;final long revision=++listRevision;target.addView(text("Carregando composições…",15,false));
   disk.execute(()->{try{
    Comparator<CreationProjectStore.Project> cmp;switch(sort){case 1:cmp=Comparator.comparingLong((CreationProjectStore.Project p)->p.editedAt);break;case 2:cmp=Comparator.comparing(p->p.title.toLowerCase(Locale.ROOT));break;case 3:cmp=Comparator.comparing((CreationProjectStore.Project p)->p.title.toLowerCase(Locale.ROOT)).reversed();break;case 4:cmp=Comparator.comparingLong((CreationProjectStore.Project p)->p.durationNs).reversed();break;case 5:cmp=Comparator.comparingLong((CreationProjectStore.Project p)->p.durationNs);break;default:cmp=null;}
-   if(cmp!=null)cmp=cmp.thenComparing(p->p.id);final List<CreationProjectStore.Project> projects=store.list(owner,f,q,cmp);
+   if(cmp!=null)cmp=cmp.thenComparing(p->p.id);
+   List<CreationProjectStore.Project> all=store.list(owner,f,q,cmp);
+   ArrayList<CreationProjectStore.Project> projects=new ArrayList<>();
+   final int selected=catalogFilter;
+   CreationScoreStore scoreStore=new CreationScoreStore(a.getFilesDir());
+   for(CreationProjectStore.Project item:all){
+    boolean hasScore=scoreStore.has(item.id);
+    if(selected==1&&(!hasScore||item.trash||item.recoverable))continue;
+    if(selected==2&&(hasScore||item.trash||item.recoverable))continue;
+    projects.add(item);
+   }
    post(()->{if(revision!=listRevision||!"list".equals(page)||a.user!=owner)return;target.removeAllViews();if(projects.isEmpty()){
      LinearLayout empty=card();attach(empty,mutedText("Nenhuma composição encontrada.",16),-2,10);
      if(!q.isEmpty())attach(empty,button("Limpar busca",false,()->{if(listSearch!=null)listSearch.setText("");}),48,0);
@@ -450,7 +469,7 @@ a.handler.postDelayed(this,100);}};ticker.run();
   String updated=p.editedAt!=p.createdAt?" · Editada "+new java.text.SimpleDateFormat("dd/MM",Locale.getDefault()).format(new Date(p.editedAt)):"";
   String subtitle=new java.text.SimpleDateFormat("dd/MM/yyyy",Locale.getDefault()).format(new Date(p.createdAt))
     +" · "+duration(p.durationNs)+updated+status;
-  Button row=button(p.title+"\n"+subtitle,false,()->showDetails(p.id));
+  Button row=button(p.title+"\n"+subtitle,false,()->{if(!busy)showDetails(p.id);});
   row.setSingleLine(false);row.setMaxLines(2);row.setTextSize(14);
   row.setTypeface(null,android.graphics.Typeface.NORMAL);row.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);
   row.setContentDescription(p.title+". "+subtitle+". Abrir composição");
@@ -458,34 +477,42 @@ a.handler.postDelayed(this,100);}};ticker.run();
   row.setBackground(shape(white,14,0xffE0E9F4));
   attach(target,row,72,8);
  }
- void showDetails(String id){if("list".equals(page))listScrollY=scroll.getScrollY();detailsBack="home".equals(page)?"home":"list";page="details";selectedId=id;base("Abrindo composição…",this::showList);disk.execute(()->{try{CreationProjectStore.Project project=store.get(id);post(()->{if("details".equals(page)&&id.equals(selectedId))renderDetails(project);});}catch(IOException error){post(()->{a.message("Não foi possível abrir a composição: "+error.getMessage());showList();});}});}
+ void showDetails(String id){if("list".equals(page))listScrollY=scroll.getScrollY();detailsBack="home".equals(page)?"home":"list";page="details";selectedId=id;dashboard();leftMenu();rightContext="details";label(dashboardRight,"Abrindo composição…",17,true,8);disk.execute(()->{try{CreationProjectStore.Project project=store.get(id);post(()->{if("details".equals(page)&&id.equals(selectedId))renderDetails(project);});}catch(IOException error){post(()->{a.message("Não foi possível abrir a composição: "+error.getMessage());showList();});}});}
  private void renderDetails(CreationProjectStore.Project p){
   String id=p.id;
   try{
    // Do not offer Gerar partitura while an interrupted deletion is pending.
    CreationScoreDeletion.recover(a.getFilesDir(),projectId->LibraryStore.removeCreationEveryProfile(a.prefs,projectId));
-   base("Detalhes da composição",this::requestLeave);
-   label(body,p.title,23,true,3);
-   attach(body,mutedText(p.trash?"Na Lixeira":p.recoverable?"Trecho recuperável":"Composição salva",13),-2,12);
+   dashboard();leftMenu();rightContext="details";
+    LinearLayout panel=dashboardRight;
+    LinearLayout head=horizontal();
+    TextView panelTitle=text("Detalhes da criação",19,true);
+    head.addView(panelTitle,new LayoutParams(0,dp(42),1));
+    Button backButton=button("← Minhas criações",false,this::showList);
+    backButton.setTag("creation-details-back");backButton.setTextSize(11);
+    head.addView(backButton,new LayoutParams(dp(176),dp(42)));
+    attach(panel,head,42,9);
+   label(panel,p.title,23,true,3);
+   attach(panel,mutedText(p.trash?"Na Lixeira":p.recoverable?"Trecho recuperável":"Composição salva",13),-2,12);
    LinearLayout summary=card();
    label(summary,"Duração  "+duration(p.durationNs),17,true,4);
    long noteCount=p.events.stream().filter(e->!e.generated&&e.command()==0x90&&e.data2>0).count();
    attach(summary,mutedText(noteCount+" notas · "+p.events.size()+" eventos MIDI",14),-2,0);
-   attach(body,summary,-2,12);
+   attach(panel,summary,-2,12);
    if(p.trash){
-    attach(body,button("Restaurar",true,()->mutate(()->store.restore(id,System.currentTimeMillis()))),50,9);
+    attach(panel,button("Restaurar",true,()->mutate(()->store.restore(id,System.currentTimeMillis()))),50,9);
     Button remove=button("Excluir definitivamente…",false,()->activeDialog=new AlertDialog.Builder(a)
      .setTitle("Excluir definitivamente?")
      .setMessage("Excluir definitivamente "+p.title+"? Esta ação não pode ser desfeita.")
      .setPositiveButton("Excluir",(d,w)->mutate(()->store.deletePermanently(id)))
      .setNegativeButton("Cancelar",null).show());
-    remove.setTextColor(0xff9D4444);attach(body,remove,48,12);
+    remove.setTextColor(0xff9D4444);attach(panel,remove,48,12);
    }else{
     if(p.recoverable){
      LinearLayout warning=card();
      attach(warning,mutedText("Gravação recuperável · revise o trecho íntegro antes de finalizar.",14),-2,7);
      attach(warning,button("Revisar e salvar trecho recuperado",true,()->mutate(()->store.finalizeRecovery(id,System.currentTimeMillis()))),50,0);
-     attach(body,warning,-2,12);
+     attach(panel,warning,-2,12);
     }
     LinearLayout playerCard=card();label(playerCard,"Reprodução no piano",17,true,6);
     playbackStatus=mutedText("Parado",13);attach(playerCard,playbackStatus,-2,9);
@@ -506,7 +533,7 @@ a.handler.postDelayed(this,100);}};ticker.run();
     trim.setTextColor(ink);trim.setChecked(ignoreSilence);
     trim.setOnCheckedChangeListener((v,checked)->ignoreSilence=checked);
     attach(playerCard,trim,-2,0);
-    attach(body,playerCard,-2,12);
+    attach(panel,playerCard,-2,12);
     updatePlaybackControls();
    }
    // A stored score follows a trashed project, but it cannot be opened or studied
@@ -538,14 +565,14 @@ a.handler.postDelayed(this,100);}};ticker.run();
      deleteScore.setTextColor(0xff9D4444);
      attach(scoreCard,deleteScore,48,10);
     }
-    attach(body,scoreCard,-2,12);
+    attach(panel,scoreCard,-2,12);
    }
    Button rename=button("Renomear",false,()->rename(p));
    Button infoButton=button("Informações da gravação  ▾",false,()->{});
    if(!p.trash){
     Button export=button("Exportar MIDI (.mid)",false,()->a.exportCreationMidi(id,p.title));
-    responsiveActions(body,12,rename,export,infoButton);
-   }else responsiveActions(body,12,rename,infoButton);
+    responsiveActions(panel,12,rename,export,infoButton);
+   }else responsiveActions(panel,12,rename,infoButton);
    LinearLayout infoCard=card();infoCard.setVisibility(View.GONE);
    label(infoCard,"Criada · "+new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",Locale.getDefault()).format(new Date(p.createdAt)),14,false,6);
    label(infoCard,"Última alteração · "+new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm",Locale.getDefault()).format(new Date(p.editedAt)),14,false,6);
@@ -554,10 +581,10 @@ a.handler.postDelayed(this,100);}};ticker.run();
    label(infoCard,"Perfil · "+profileName(),14,false,6);
    if(!p.instrument.isEmpty())label(infoCard,"Instrumento observado · "+p.instrument,14,false,0);
    infoButton.setOnClickListener(v->{boolean open=infoCard.getVisibility()!=View.VISIBLE;setShown(infoCard,open);infoButton.setText(open?"Informações da gravação  ▴":"Informações da gravação  ▾");});
-   attach(body,infoCard,-2,12);
+   attach(panel,infoCard,-2,12);
    if(!p.trash){
     Button trash=button("Mover composição para a Lixeira",false,()->mutate(()->store.moveToTrash(id,System.currentTimeMillis())));
-    trash.setTextColor(0xff9D4444);attach(body,trash,48,0);
+    trash.setTextColor(0xff9D4444);attach(panel,trash,48,0);
    }
   }catch(Exception ex){a.message("Não foi possível abrir a composição: "+ex.getMessage());showList();}
  }
