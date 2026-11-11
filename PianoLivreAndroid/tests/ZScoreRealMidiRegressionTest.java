@@ -149,7 +149,10 @@ public final class ZScoreRealMidiRegressionTest {
         CreationScoreGenerator.Generation held=run(overlap,2_200_000_000L);
         ok(attacks(xml(held.xml)).size()==4,"OVERLAP: every pitch remains one musical attack");
         ok(held.xml.contains("<voice>2</voice>"),"OVERLAP: separate voice for sustained C4");
-        ok(held.xml.contains("<duration>2880</duration>"),"OVERLAP: C4 keeps the entire three-beat hold");
+        ok(held.notes.get(0).durationNs()==1_500_000_000L,
+            "OVERLAP: C4 keeps the full three-beat hold in original MIDI");
+        ok(!held.xml.contains("<note><pitch><step>C</step><octave>4</octave></pitch><duration>2880</duration>"),
+            "OVERLAP: written figure approximates to an undotted value");
 
         // --- One Note On held for 5/16: one written figure, no tied heads.
         CreationScoreGenerator.Generation five=run(Arrays.asList(
