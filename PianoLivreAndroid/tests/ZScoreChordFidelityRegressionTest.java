@@ -114,9 +114,11 @@ public final class ZScoreChordFidelityRegressionTest {
         ok(stretched.notes.size()==3,"POLY: preserve all three sources");
         ok(stretchedNotes.size()==3,"POLY: three onsets, no accidental duplicate attacks");
         boolean hasLong=false;
-        for(Element n:stretchedNotes)
-            if(pitch(n)==67 && Integer.parseInt(inner(n,"duration"))>=2880)hasLong=true;
-        ok(hasLong,"POLY: sustained G4 not shortened to match release of C4/E4");
+        for(ScoreMidiPairer.PairedNote n:stretched.notes)
+            if(n.pitch==67 && n.durationNs()>=ns(2880)-ns(15))hasLong=true;
+        ok(hasLong,"POLY: raw sustained G4 Note Off remains beyond C4/E4");
+        for(Element n:stretchedNotes)ok(n.getElementsByTagName("dot").getLength()==0,
+            "POLY: single plain note figure, no dotted notation");
         ok(stretched.xml.contains("<voice>2</voice>"),
                 "POLY: significantly held note has its own voice");
 
