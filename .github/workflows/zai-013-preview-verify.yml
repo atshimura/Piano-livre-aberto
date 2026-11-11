@@ -59,3 +59,50 @@ jobs:
             node tests/CreationResponsiveLayoutBrowserTest.js
           PIANO_PLAYWRIGHT="$PWD/build/zai013-browser/node_modules/playwright" \
             node tests/CreationScoreLastStaffBrowserTest.js
+
+      - name: Guardar APK debug isolado para teste Android GUI
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZAI013-debug-${{ github.sha }}
+          path: PianoLivreAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  android-gui:
+    needs: testes-score-viewport
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ZAI013-debug-${{ github.sha }}
+          path: PianoLivreAndroid/app/build/outputs/apk/debug/
+      - name: Habilitar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_3
+          disable-animations: true
+          working-directory: PianoLivreAndroid
+          script: |
+            adb shell svc wifi disable
+            adb shell svc data disable
+            adb install app/build/outputs/apk/debug/app-debug.apk
+            python3 tests/emulator_zai013_score_preview.py
+      - name: Guardar screenshots/medidas mesmo em falha
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZAI013-android-layout-${{ github.sha }}
+          path: |
+            PianoLivreAndroid/zai013-*.png
+            PianoLivreAndroid/zai013-android-geometry.json
+            PianoLivreAndroid/window.xml
+          if-no-files-found: warn
+          retention-days: 14
