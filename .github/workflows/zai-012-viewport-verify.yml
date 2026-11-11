@@ -1,0 +1,100 @@
+name: Piano Livre ZAi - ZAI-012 altura real do seletor, GUI Android
+on:
+  push:
+    branches:
+      - zai/fix/zai012-seletor-viewport-real-20261111
+  pull_request:
+    branches:
+      - zai/lab
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contratos-e-apk-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: PianoLivreAndroid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Android SDK 36
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Contratos Java Python e invariantes do MIDI
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_public_snapshot.py
+          python3 tests/test_zai010_dashboard_contract.py
+          python3 tests/test_zai011_vertical_layout_contract.py
+          python3 tests/test_zai012_content_viewport_contract.py
+          python3 tests/test_creation_responsive_contract.py
+          python3 tests/test_creation_library_contract.py
+          mkdir -p build/zai012
+          javac -encoding UTF-8 -d build/zai012 \
+            app/src/main/java/br/org/pianolivre/ZaiAdaptiveHeights.java \
+            tests/ZaiAdaptiveHeightsTest.java \
+            tests/ZaiAdaptiveViewportRegressionTest.java
+          java -cp build/zai012 br.org.pianolivre.ZaiAdaptiveHeightsTest
+          java -cp build/zai012 br.org.pianolivre.ZaiAdaptiveViewportRegressionTest
+      - name: APK Android debug de app ID isolado
+        run: |
+          set -euo pipefail
+          gradle --no-daemon :app:assembleDebug -Ppianolivre.zai.test=true
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging app/build/outputs/apk/debug/app-debug.apk > build/zai012-metadata.txt
+          grep -Fq "package: name='br.org.pianolivre.opensource.zai'" build/zai012-metadata.txt
+          echo ZAI012_DEBUG_BUILD_PASS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZAI012-debug-${{ github.sha }}
+          path: PianoLivreAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  android-gui:
+    needs: contratos-e-apk-debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ZAI012-debug-${{ github.sha }}
+          path: PianoLivreAndroid/app/build/outputs/apk/debug/
+      - name: Preparar KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_3
+          disable-animations: true
+          working-directory: PianoLivreAndroid
+          script: |
+            adb shell svc wifi disable
+            adb shell svc data disable
+            adb install app/build/outputs/apk/debug/app-debug.apk
+            python3 tests/emulator_zai012_landing_viewport.py
+      - name: Guardar capturas e medidas da GUI mesmo em falha
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZAI012-viewport-gui-${{ github.sha }}
+          path: |
+            PianoLivreAndroid/zai012-*.png
+            PianoLivreAndroid/zai012-viewport-report.json
+            PianoLivreAndroid/window.xml
+          if-no-files-found: warn
+          retention-days: 14
