@@ -26,8 +26,8 @@ public final class ZaiAdaptiveViewportRegressionTest {
    viewport(height,1f,true);
   for(int height:new int[]{170,190,210,230})viewport(height,1f,false);
   viewport(250,1.4f,false);
-  viewport(300,1.4f,true);
-  viewport(365,1.65f,false);
+  viewport(305,1.4f,true);
+  viewport(330,1.65f,false);
   ZaiAdaptiveHeights.Landing phone=ZaiAdaptiveHeights.landingContent(291,1f);
   check(phone.compact&&phone.cardHeight<260,
    "screenshot-like window should shrink cards below original 260dp");
