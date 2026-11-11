@@ -150,26 +150,21 @@ final class MusicLabLandingScreen extends LinearLayout {
   }
  }
  private void fitVisibleHeight(int heightPx){
-  float density=getResources().getDisplayMetrics().density;
-  int heightDp=Math.round(heightPx/density);
+  int heightDp=Math.round(heightPx/getResources().getDisplayMetrics().density);
   float fontScale=getResources().getConfiguration().fontScale;
-  boolean compact=heightDp<440;
-  int topPad=compact?5:8,bottomPad=compact?6:14;
-  int titleHeight=compact?32:43,descriptionHeight=compact?22:30,gap=compact?5:9;
-  content.setPadding(dp(14),dp(topPad),dp(14),dp(bottomPad));
-  selectionTitle.setTextSize(compact?20:25);
-  selectionDescription.setTextSize(compact?12:14);
-  setHeight(selectionTitle,titleHeight);
-  setHeight(selectionDescription,descriptionHeight);
+  ZaiAdaptiveHeights.Landing size=ZaiAdaptiveHeights.landing(heightDp,fontScale);
+  content.setPadding(dp(14),dp(size.topPadding),dp(14),dp(size.bottomPadding));
+  selectionTitle.setTextSize(size.compact?20:25);
+  selectionDescription.setTextSize(size.compact?12:14);
+  setHeight(selectionTitle,size.titleHeight);
+  setHeight(selectionDescription,size.descriptionHeight);
   LinearLayout.LayoutParams row=(LinearLayout.LayoutParams)columns.getLayoutParams();
-  row.topMargin=dp(gap);
-  int free=heightDp-56-topPad-bottomPad-titleHeight-descriptionHeight-gap;
-  int minCard=Math.round((compact?172:260)*Math.max(1f,fontScale));
-  int target=Math.min(compact?260:320,Math.max(minCard,free));
-  for(LinearLayout card:modeCards)compactCard(card,compact,fontScale);
-  if(row.height!=dp(target)||row.topMargin!=dp(gap)){
-   row.height=dp(target);columns.setLayoutParams(row);
-  }
+  int margin=dp(size.gap),height=dp(size.cardHeight);
+  boolean update=row.height!=height||row.topMargin!=margin;
+  row.topMargin=margin;
+  for(LinearLayout card:modeCards)compactCard(card,size.compact,fontScale);
+  if(update){row.height=height;columns.setLayoutParams(row);}
+
  }
 
 }
