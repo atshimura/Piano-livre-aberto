@@ -16,7 +16,7 @@ import java.util.*;
 /** Native responsive entry point and one-take workflow for Laboratory → Creation. */
 final class MusicCreationScreen extends LinearLayout {
  AlertDialog activeDialog;
- private final MainActivity a;private final Runnable back;private final LinearLayout body,bar;private final ScrollView scroll;private int listScrollY,recoveryRetries;private long formRevision,homeRevision;private volatile String recoveryWarning;
+ private final MainActivity a;private final Runnable back;private final LinearLayout body,bar;private ScrollView scroll,leftScroll;private int listScrollY,recoveryRetries;private long formRevision,homeRevision;private volatile String recoveryWarning;
  private final java.util.concurrent.ExecutorService disk=java.util.concurrent.Executors.newSingleThreadExecutor();private boolean busy;private long listRevision;private int listProfile=-1;
  private volatile CaptureSession captureSession;
  private static final class CaptureSession {
@@ -37,7 +37,7 @@ final class MusicCreationScreen extends LinearLayout {
  MusicCreationScreen(MainActivity activity,Runnable goBack){super(activity);a=activity;back=goBack;setOrientation(VERTICAL);setVisibility(GONE);setBackgroundColor(0xffF7F9FC);
   player=new MidiTakePlayer(new MidiTakePlayer.Sink(){public boolean available(){return a.midiConnection.snapshot().canSend;}public boolean send(byte[] data){return a.midiConnection.send(data);}public void silence(){a.midiConnection.silence();}},(state,pos,duration)->post(()->{if(playbackStatus!=null)playbackStatus.setText((state==MidiTakePlayer.State.PLAYING?"Reproduzindo":state==MidiTakePlayer.State.PAUSED?"Pausada":"Parada")+" · "+String.format(Locale.ROOT,"%.1f / %.1f s",pos/1e9,duration/1e9));if("details".equals(page))updatePlaybackControls();}),command->a.handler.post(command));
   bar=new LinearLayout(a);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(dp(8),dp(3),dp(8),dp(3));bar.setBackgroundColor(navy);addView(bar,new LayoutParams(-1,dp(56)));
-  body=new LinearLayout(a);body.setOrientation(VERTICAL);body.setPadding(dp(16),dp(12),dp(16),dp(16));scroll=new ScrollView(a);scroll.setFillViewport(true);scroll.addView(body);addView(scroll,new LayoutParams(-1,0,1));
+  body=new LinearLayout(a);body.setOrientation(VERTICAL);body.setPadding(dp(12),dp(6),dp(12),dp(6));addView(body,new LayoutParams(-1,0,1));
   try{store=new CreationProjectStore(a.getFilesDir());}catch(IOException ex){a.message("Não foi possível abrir Minhas Criações: "+ex.getMessage());}
   showHome();
  }
@@ -166,7 +166,7 @@ final class MusicCreationScreen extends LinearLayout {
   base("Criação Musical",this::requestLeave);
   MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.CREATION,
     this::requestLeave,this::openDiscoverSafely,()->{});
-  body.setPadding(dp(15),dp(10),dp(15),dp(14));
+  body.setPadding(dp(12),dp(6),dp(12),dp(6));
   LinearLayout heading=horizontal();heading.setTag("creation-dashboard-header");
   LinearLayout intro=column();
   TextView title=text("Criação Musical",24,true);
@@ -181,17 +181,26 @@ final class MusicCreationScreen extends LinearLayout {
   info.setTextSize(12);info.setTag("creation-usb-information");
   LayoutParams ilp=new LayoutParams(dp(192),dp(44));ilp.leftMargin=dp(8);
   heading.addView(info,ilp);
-  attach(body,heading,-2,15);
+  attach(body,heading,-2,8);
 
+  // Header and actions stay visible; overflow scrolls inside the affected pane.
   LinearLayout columns=horizontal();columns.setGravity(Gravity.TOP);
   columns.setTag("creation-dashboard-two-columns");
-  attach(body,columns,-2,0);
+  body.addView(columns,new LayoutParams(-1,0,1));
   dashboardLeft=column();dashboardLeft.setTag("creation-dashboard-actions");
   dashboardRight=card();dashboardRight.setTag("creation-dashboard-context");
-  dashboardRight.setMinimumHeight(dp(255));
-  LayoutParams lp=new LayoutParams(0,-2,2);lp.rightMargin=dp(15);
-  columns.addView(dashboardLeft,lp);
-  columns.addView(dashboardRight,new LayoutParams(0,-2,3));
+  dashboardRight.setMinimumHeight(0);
+  leftScroll=new ScrollView(a);leftScroll.setTag("creation-left-scroll");
+  leftScroll.setFillViewport(true);
+  leftScroll.addView(dashboardLeft,new ScrollView.LayoutParams(-1,-2));
+  scroll=new ScrollView(a);scroll.setTag("creation-right-scroll");
+  scroll.setFillViewport(true);
+  scroll.addView(dashboardRight,new ScrollView.LayoutParams(-1,-2));
+  LayoutParams lp=new LayoutParams(0,-1,2);lp.rightMargin=dp(12);
+  columns.addView(leftScroll,lp);
+  columns.addView(scroll,new LayoutParams(0,-1,3));
+  leftScroll.addOnLayoutChangeListener((view,l,t,r,b,ol,ot,or,ob)->
+    {if(b>t&&b-t!=ob-ot)resizeMenuToPane();});
  }
  private String compactMidiState(){
   MidiConnection.Snapshot s=a.midiConnection.snapshot();
@@ -213,6 +222,27 @@ final class MusicCreationScreen extends LinearLayout {
    TextView warning=mutedText(recoveryWarning,13);warning.setTextColor(0xff986425);
    attach(dashboardLeft,warning,-2,10);
   }
+  if(leftScroll!=null)leftScroll.post(this::resizeMenuToPane);
+ }
+
+ /** Fit the home actions in the measured column height; do not change MIDI state. */
+ private void resizeMenuToPane(){
+  if(leftScroll==null||dashboardLeft==null||leftScroll.getHeight()<=0)return;
+  Button record=dashboardLeft.findViewWithTag("creation-new-recording");
+  Button projects=dashboardLeft.findViewWithTag("creation-my-projects");
+  if(record==null||projects==null)return;
+  int paneDp=Math.round(leftScroll.getHeight()/getResources().getDisplayMetrics().density);
+  int available=Math.max(0,paneDp-(recoveryWarning==null?0:38));
+  int projectH=available<230?48:64;
+  int recordH=Math.max(78,Math.min(152,available-projectH-22));
+  fitActionHeight(record,recordH);fitActionHeight(projects,projectH);
+ }
+ private void fitActionHeight(Button control,int heightDp){
+  int px=dp(heightDp);
+  LayoutParams lp=(LayoutParams)control.getLayoutParams();
+  if(lp.height==px)return;
+  control.setMinimumHeight(px);control.setMinHeight(px);
+  lp.height=px;control.setLayoutParams(lp);
  }
  private void showRightRecent(){
   if(dashboardRight==null)return;
