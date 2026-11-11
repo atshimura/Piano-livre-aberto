@@ -20,7 +20,9 @@ assert 'layout=creationPage?"\'creation-page\'"' in notation
 assert "loadCreationScore(Score score,double position)" in notation
 assert "notation.loadCreationScore(score,0)" in preview
 assert "PianoNotation.resize()" in notation
-assert "getResources().getDisplayMetrics().heightPixels*0.65f" in preview
+assert "getResources().getDisplayMetrics().heightPixels*0.65f" not in preview
+assert "scoreArea.addView(sheet,new LayoutParams(-1,0,1))" in preview
+assert "sheet.addView(view,new LayoutParams(-1,0,1))" in preview
 assert "ZAI-010-simple-figures" in composer
 assert "isCurrentDerivedXml(prior.xml)" in preview
 assert "Gerar partitura básica" in preview
