@@ -65,15 +65,20 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('button.setSingleLine(false);button.setMaxLines(2)',SCORE)
         self.assertIn('b.setTextSize(13)',SCORE)
         self.assertIn('b.setMinHeight(dp(48))',SCORE)
-        self.assertIn('actions(contents,back,save,add)',SCORE)
-        self.assertIn('actions(contents,back,save)',SCORE)
+        self.assertIn('actions(scoreFooter,back,save,add)',SCORE)
+        self.assertIn('actions(scoreFooter,back,save)',SCORE)
+        self.assertIn('scoreArea.addView(sheet,new LayoutParams(-1,0,1))',SCORE)
+        self.assertIn('sheet.addView(view,new LayoutParams(-1,0,1))',SCORE)
+        self.assertNotIn('actions(sheet,button("A−"',SCORE)
         self.assertIn('button("A−",false,()->applyZoom(zoom/1.25f))',SCORE)
         self.assertIn('button("A+",false,()->applyZoom(zoom*1.25f))',SCORE)
         self.assertIn('button("Ajustar à largura",false,()->applyZoom(1.0f))',SCORE)
         self.assertIn('setCreationZoom(zoom)',SCORE)
         self.assertIn('Andamento estimado: ',SCORE)
         self.assertIn('Andamento não identificado com segurança — prévia a 120 BPM (provisória)',SCORE)
-        self.assertIn('getResources().getDisplayMetrics().heightPixels*0.65f',SCORE)
+        self.assertNotIn('getResources().getDisplayMetrics().heightPixels*0.65f',SCORE)
+        self.assertIn('scoreToolbar.setTag("creation-score-tempo-zoom-toolbar")',SCORE)
+        self.assertIn('scoreFooter.setTag("creation-score-fixed-footer")',SCORE)
         # Retired C2 controls must not return in another screen of the preview.
         for retired in ('creation-score-note-row','Button chord=button("Acorde"','Selecionar intervalo de compassos',
                         'Desfazer','Refazer','Restaurar sugestão','Concluir ajustes',
