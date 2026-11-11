@@ -7,8 +7,8 @@ def src(name):
 landing=src("MusicLabLandingScreen.java")
 creation=src("MusicCreationScreen.java")
 planner=src("ZaiAdaptiveHeights.java")
-assert "onSizeChanged(int width,int height,int oldWidth,int oldHeight)" in landing
-assert "ZaiAdaptiveHeights.landing(heightDp,fontScale)" in landing
+assert "scroll.addOnLayoutChangeListener" in landing
+assert "ZaiAdaptiveHeights.landingContent(heightDp,fontScale)" in landing
 assert "setHeight(selectionTitle,size.titleHeight)" in landing
 assert "setHeight(selectionDescription,size.descriptionHeight)" in landing
 assert "row.height=height;columns.setLayoutParams(row)" in landing
