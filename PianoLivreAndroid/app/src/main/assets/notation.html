@@ -13,7 +13,9 @@
  body.free #score{width:153.846%;min-height:100%;transform:scale(0.65);transform-origin:top left}
  /* ZAI-008: only Creation uses page-width layout with automatic system breaks. */
  body.creation-page #viewport{width:100%;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;scroll-behavior:auto}
- body.creation-page #score{width:100%;max-width:100%;min-width:0;min-height:100%;box-sizing:border-box;transform:none;padding:4px 0 12px;overflow-x:clip}
+ /* ZAI-013: the score owns its vertical scroll. A real 96px trailing ink-free zone
+   lets the final staff scroll fully into view without being masked by UI chrome. */
+ body.creation-page #score{width:100%;max-width:100%;min-width:0;min-height:100%;box-sizing:border-box;transform:none;padding:4px 0 96px;overflow-x:clip}
  body.creation-page #score svg{max-width:100%;height:auto;overflow:visible}
  /* Research-only proof: preserve the existing Estudo renderer by default. */
  body.preview #viewport{overflow-x:auto;overflow-y:hidden;scroll-behavior:auto;overscroll-behavior-x:contain;touch-action:pan-x}
