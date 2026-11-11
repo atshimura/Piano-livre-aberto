@@ -13,6 +13,9 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-012 — Entrega: correção da rolagem no Laboratório e APK principal 0.9.73](ZAI-012-ENTREGA-APK-PRINCIPAL-20261111.md): 12 checks CI, GUI Android em três dispositivos simulados, SHA-256 e download assinado.
+- [ZAI-012 — Diagnóstico e correção com medição do viewport real](ZAI-012-CORRECAO-ROLAGEM-SELETOR-20261111.md): captura da regressão, foco/offset, dimensões do ScrollView e teste visual em emulador.
+
 - [ZAI-011 — Entrega: telas adaptativas do Laboratório e Criação, APK 0.9.72](ZAI-011-ENTREGA-ALTURA-RESPONSIVA-APK-20261111.md): PR #142, 89 verificações JVM de altura, CI Android, assinatura permanente e SHA-256 do APK publicado.
 - [ZAI-011 — Diagnóstico e contrato da adaptação vertical](ZAI-011-TELAS-LABORATORIO-CRIACAO-ALTURA-ADAPTATIVA.md): cartões por viewport, cabeçalho fixo, colunas com scroll independente e acessibilidade.
 
