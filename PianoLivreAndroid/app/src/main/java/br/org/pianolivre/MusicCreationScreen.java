@@ -232,10 +232,8 @@ final class MusicCreationScreen extends LinearLayout {
   Button projects=dashboardLeft.findViewWithTag("creation-my-projects");
   if(record==null||projects==null)return;
   int paneDp=Math.round(leftScroll.getHeight()/getResources().getDisplayMetrics().density);
-  int available=Math.max(0,paneDp-(recoveryWarning==null?0:38));
-  int projectH=available<230?48:64;
-  int recordH=Math.max(78,Math.min(152,available-projectH-22));
-  fitActionHeight(record,recordH);fitActionHeight(projects,projectH);
+  ZaiAdaptiveHeights.Menu size=ZaiAdaptiveHeights.creationMenu(paneDp,recoveryWarning!=null);
+  fitActionHeight(record,size.record);fitActionHeight(projects,size.projects);
  }
  private void fitActionHeight(Button control,int heightDp){
   int px=dp(heightDp);
