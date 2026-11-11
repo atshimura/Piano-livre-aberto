@@ -117,7 +117,7 @@ final class MusicCreationScreen extends LinearLayout {
   bar.addView(t,new LayoutParams(0,-1,1));
  }
  private void base(String title,Runnable returnAction){header(title,returnAction);body.removeAllViews();detailPlay=detailPause=detailResume=detailStop=null;playbackStatus=null;}
- void enter(){setVisibility(VISIBLE);if(hasUnsavedTake()){showRecorder();return;}if(listProfile!=a.user){listProfile=a.user;query="";filter=CreationProjectStore.Filter.ALL;sortMode=0;listScrollY=0;}if(!journalsScanned){journalsScanned=true;busy=true;disk.execute(()->{recoverJournals();post(()->{busy=false;showHome();});});}showHome();}
+ void enter(){setVisibility(VISIBLE);if(hasUnsavedTake()){showRecorder();return;}if(listProfile!=a.user){listProfile=a.user;query="";filter=CreationProjectStore.Filter.ALL;catalogFilter=0;sortMode=0;listScrollY=0;}if(!journalsScanned){journalsScanned=true;busy=true;disk.execute(()->{recoverJournals();post(()->{busy=false;showHome();});});}showHome();}
  boolean hasUnsavedTake(){return take!=null&&(take.state()==MidiTakeRecorder.State.RECORDING||take.state()==MidiTakeRecorder.State.PAUSED||take.state()==MidiTakeRecorder.State.REVIEW||take.state()==MidiTakeRecorder.State.INTERRUPTED);}
  void requestLeave(){if(busy){a.message("Aguarde a confirmação dos dados locais.");return;}player.stop();if("details".equals(page)){if("home".equals(detailsBack))showHome();else showList();return;}if("list".equals(page)){showHome();return;}if("recording".equals(page)){if(!hasUnsavedTake()){showHome();return;}activeDialog=new AlertDialog.Builder(a).setTitle("Gravação não salva").setMessage("Salve o trecho recuperável antes de sair?")
   .setPositiveButton("Salvar trecho",(d,w)->{if(saveRecoverable("Trecho recuperável"))showHome();else a.message("O trecho continua nesta tela e no diário local; tente salvar novamente.");}).setNegativeButton("Descartar",(d,w)->confirmDiscard()).setNeutralButton("Continuar",null).show();return;}back.run();}
@@ -146,18 +146,26 @@ final class MusicCreationScreen extends LinearLayout {
   LinearLayout connection=card();
   label(connection,"USB-MIDI",15,true,4);
   connectionStatus=mutedText(midiState(),13);attach(connection,connectionStatus,-2,7);
-  attach(connection,button("Gerenciar USB-MIDI",false,()->a.selectMidi()),48,0);
+  attach(connection,button("Informações USB-MIDI",false,()->a.showMidiDiagnostics()),48,0);
   return connection;
  }
  private String duration(long nanos){long seconds=Math.max(0,nanos/1_000_000_000L);return String.format(Locale.ROOT,"%02d:%02d",seconds/60,seconds%60);}
  private boolean wide(){return getResources().getDisplayMetrics().widthPixels/getResources().getDisplayMetrics().density>=850;}
  private void setShown(View view,boolean shown){int target=shown?View.VISIBLE:View.GONE;if(view.getVisibility()!=target)view.setVisibility(target);}
 
+ /** Never switch modes with a take still in the local recovery journal. */
+ private void openDiscoverSafely(){
+  if(hasUnsavedTake()){
+   a.message("Finalize e salve ou descarte a gravação antes de mudar para Descobrir.");
+   return;
+  }
+  a.screens.showDiscover();
+ }
  /** ZAI-010: single persistent landscape surface with contextual right column. */
  private void dashboard(){
   base("Criação Musical",this::requestLeave);
   MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.CREATION,
-    this::requestLeave,()->a.screens.showDiscover(),()->{});
+    this::requestLeave,this::openDiscoverSafely,()->{});
   body.setPadding(dp(15),dp(10),dp(15),dp(14));
   LinearLayout heading=horizontal();heading.setTag("creation-dashboard-header");
   LinearLayout intro=column();
