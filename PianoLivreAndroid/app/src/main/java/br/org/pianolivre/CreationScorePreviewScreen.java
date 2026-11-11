@@ -401,7 +401,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         // scarce vertical score height on a landscape phone.
         save.setContentDescription(saved
             ?"Partitura salva neste projeto e incluída no backup."
-            :"Salvar partitura. Depois poderá adicioná-la à Biblioteca Musical.");
+            :"Salvar partitura. Salve a partitura antes de adicioná-la à Biblioteca Musical.");
     }
     private void loadCurrent(){
         try{
