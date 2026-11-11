@@ -1,0 +1,109 @@
+# Distribuicao direta (sem dependencia dos links Library/sandbox do ChatGPT).
+# Replica o APK JA ASSINADO, sem reconstruir nem alterar o APK; main intocada.
+name: Piano Livre - download persistente do APK principal 0.9.73
+
+on:
+  push:
+    branches:
+      - zai/ci/downloads-0-9-73-20261111
+    paths:
+      - '.github/workflows/zai-downloads-0-9-73.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: zai-downloads-0-9-73
+  cancel-in-progress: false
+
+jobs:
+  arquivar-apk:
+    if: github.ref == 'refs/heads/zai/ci/downloads-0-9-73-20261111'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout apenas da branch tecnica
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Preparar Android SDK para verificar a assinatura
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'build-tools;36.0.0'
+
+      - name: Recuperar artefato original do Actions 43011986981
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pianolivre-downloads"
+          gh run download 43011986981 --repo "$GITHUB_REPOSITORY" \
+            --name "PianoLivre-PRINCIPAL-0.9.73-APK-assinado-27ead05b456a051ee46657d44c5a556f85750a70" \
+            --dir "$RUNNER_TEMP/pianolivre-downloads"
+          test -s "$RUNNER_TEMP/pianolivre-downloads/app/build/outputs/apk/release/app-release.apk"
+
+      - name: Verificar SHA-256, pacote, versao e certificado
+        run: |
+          set -euo pipefail
+          apk="$RUNNER_TEMP/pianolivre-downloads/app/build/outputs/apk/release/app-release.apk"
+          echo "9e64ee5fabb55c514053acbd7b14a2214be8f2905f4244ff83de1dabbe5571ce  $apk" | sha256sum -c -
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk" > "$RUNNER_TEMP/apk-certificate.txt"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > "$RUNNER_TEMP/apk-badging.txt"
+          grep -Fq "package: name='br.org.pianolivre.opensource' versionCode='82' versionName='0.9.73-open-beta'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -Fq "application-label:'Piano Livre'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -Fq "Signer #1 certificate SHA-256 digest: 7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290" "$RUNNER_TEMP/apk-certificate.txt"
+          if grep -q "android.permission.INTERNET" "$RUNNER_TEMP/apk-badging.txt"; then
+            echo "::error::Pacote nao pode requerer INTERNET"
+            exit 1
+          fi
+          if grep -q "application-debuggable" "$RUNNER_TEMP/apk-badging.txt"; then
+            echo "::error::Pacote release nao pode ser depuravel"
+            exit 1
+          fi
+          echo "APK_ORIGINAL_VERIFICADO: 0.9.73, certificado permanente, SHA-256 igual ao Actions"
+
+      - name: Gravar APK versionado na branch publica zai/downloads
+        run: |
+          set -euo pipefail
+          git fetch origin refs/heads/zai/downloads:refs/remotes/origin/zai/downloads
+          location="$RUNNER_TEMP/pianolivre-downloads-branch"
+          git worktree add -B zai/downloads "$location" refs/remotes/origin/zai/downloads
+          mkdir -p "$location/apks/principal"
+          source="$RUNNER_TEMP/pianolivre-downloads/app/build/outputs/apk/release/app-release.apk"
+          target="$location/apks/principal/PianoLivre-Principal-0.9.73-open-beta-assinado.apk"
+          if [ -f "$target" ]; then
+            echo "Arquivo ja existe; nao sobrescrever silenciosamente."
+            cmp -s "$source" "$target"
+          else
+            cp -- "$source" "$target"
+          fi
+          cat > "$location/apks/principal/PianoLivre-Principal-0.9.73-open-beta-SHA256.txt" <<'EOF'
+          Versao: 0.9.73-open-beta
+          versionCode: 82
+          Package: br.org.pianolivre.opensource
+          SHA256: 9e64ee5fabb55c514053acbd7b14a2214be8f2905f4244ff83de1dabbe5571ce
+          Signer certificate SHA256: 7bf1e9fa2d6cf1468463a2990e0a0699acc7c5efac45a77070c4d084e7798290
+          Build GitHub Actions: https://github.com/atshimura/Piano-livre-aberto/actions/runs/43011986981
+          Fonte: zai/lab (PR #146, GPL-3.0-only)
+          EOF
+          git -C "$location" config user.name 'github-actions[bot]'
+          git -C "$location" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$location" add apks/principal/PianoLivre-Principal-0.9.73-open-beta-assinado.apk apks/principal/PianoLivre-Principal-0.9.73-open-beta-SHA256.txt
+          if ! git -C "$location" diff --staged --quiet; then
+            git -C "$location" commit -m '[zai] downloads: arquiva APK principal 0.9.73 assinado com hash verificado'
+            git -C "$location" push origin HEAD:refs/heads/zai/downloads
+          fi
+
+      - name: Confirmar que o arquivo publicado e identico
+        run: |
+          set -euo pipefail
+          git fetch origin refs/heads/zai/downloads:refs/remotes/origin/zai/downloads
+          file="apks/principal/PianoLivre-Principal-0.9.73-open-beta-assinado.apk"
+          got=$(git show "refs/remotes/origin/zai/downloads:$file" | sha256sum | awk '{print $1}')
+          expected='9e64ee5fabb55c514053acbd7b14a2214be8f2905f4244ff83de1dabbe5571ce'
+          test "$got" = "$expected"
+          echo "DOWNLOAD_GITHUB_PUBLICADO_SHA256_OK=$got"
+          echo "https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/zai/downloads/$file"
