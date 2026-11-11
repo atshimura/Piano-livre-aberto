@@ -139,10 +139,11 @@ final class CreationScorePreviewScreen extends LinearLayout {
         Button b=new Button(activity);b.setText(s);b.setContentDescription(s);b.setTextSize(13);b.setAllCaps(false);
         b.setTextColor(primary?Color.WHITE:0xff172A44);
         b.setTypeface(null,android.graphics.Typeface.BOLD);
-        GradientDrawable bg=new GradientDrawable();
-        if(primary){bg.setColors(new int[]{0xff317FE0,0xff1260C6});
-            bg.setOrientation(GradientDrawable.Orientation.TOP_BOTTOM);}
-        else{bg.setColor(0xffF0F5FC);bg.setStroke(dp(1),0xffCAD8E9);}
+        GradientDrawable bg=primary
+            ?new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0xff317FE0,0xff1260C6})
+            :new GradientDrawable();
+        if(!primary){bg.setColor(0xffF0F5FC);bg.setStroke(dp(1),0xffCAD8E9);}
         bg.setCornerRadius(dp(14));
         b.setBackground(new RippleDrawable(ColorStateList.valueOf(
             primary?0x30ffffff:0x180C2445),bg,null));
