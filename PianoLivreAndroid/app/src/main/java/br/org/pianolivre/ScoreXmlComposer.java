@@ -20,7 +20,7 @@ public final class ScoreXmlComposer {
     public static final int MAX_XML_CHARS = 8_000_000;
     /** Revision for safe, non-destructive detection of outdated derivatives. */
     public static final String GENERATOR_MARKER =
-            "<miscellaneous-field name=\"pianolivre-generator\">ZAI-009-basic-notes-duration</miscellaneous-field>";
+            "<miscellaneous-field name=\"pianolivre-generator\">ZAI-010-simple-figures</miscellaneous-field>";
     public static boolean isCurrentDerivedXml(String xml) {
         return xml != null && xml.contains(GENERATOR_MARKER);
     }
@@ -114,13 +114,17 @@ public final class ScoreXmlComposer {
                     if (token.rest) {
                         xml.append("<rest/>");
                     } else {
+                        if (!ScoreRhythmQuantizer.isSimplePitchFigure(token.cells))
+                            throw new IOException("Nota com duração pontuada não permitida nesta etapa");
                         if (token.chord) xml.append("<chord/>");
                         xml.append(pitchXml(token.pitch));
                     }
                     xml.append("<duration>").append(ticks).append("</duration>");
                     xml.append("<voice>").append(voice.voice).append("</voice>");
                     xml.append("<type>").append(typeOf(token.cells)).append("</type>");
-                    if (dotted(token.cells)) xml.append("<dot/>");
+                    // Dots remain possible only in invisible rhythmic rests.
+                    // The visible pitched note is always an undotted figure.
+                    if (token.rest && dotted(token.cells)) xml.append("<dot/>");
                     xml.append("<staff>").append(voice.staff).append("</staff>");
                     // No automatic ties or expressive slurs in Creation.
                     // ZAI-009: articulation stays in source MIDI, not on the
