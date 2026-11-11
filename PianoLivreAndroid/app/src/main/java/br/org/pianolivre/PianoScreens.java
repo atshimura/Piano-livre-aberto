@@ -759,7 +759,8 @@ class PianoScreens {
   library.setVisibility(View.GONE);studio.setVisibility(View.GONE);freeRoot.setVisibility(View.GONE);
   if(lab!=null)lab.setVisibility(View.GONE);
   if(discovery!=null){discovery.leave();discovery.setVisibility(View.GONE);}
-  if(labLanding!=null){labLanding.setVisibility(View.VISIBLE);labLanding.showAtTop();}
+  if(labLanding!=null)labLanding.setVisibility(View.VISIBLE);
+  if(labLanding!=null)labLanding.showAtTop();
  }
  void showDiscover(){
   stopLabDemonstration();a.stopPlayback();a.finishStudyWindow();
