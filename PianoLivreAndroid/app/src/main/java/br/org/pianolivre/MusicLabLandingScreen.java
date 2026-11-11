@@ -19,6 +19,9 @@ import android.widget.TextView;
  */
 final class MusicLabLandingScreen extends LinearLayout {
  private final MainActivity activity;
+ private final LinearLayout content,columns;
+ private final TextView selectionTitle,selectionDescription;
+ private final LinearLayout[] modeCards;
  private static final int NAVY=0xff0C2445,BLUE=0xff0969D2,INK=0xff09224A,MUTED=0xff54677F;
  private int dp(float v){return Math.round(v*getResources().getDisplayMetrics().density);}
  private GradientDrawable background(int color,int radius,int stroke){
@@ -82,14 +85,14 @@ final class MusicLabLandingScreen extends LinearLayout {
   top.addView(label,new LayoutParams(0,-1,1));
   ScrollView scroll=new ScrollView(a);scroll.setFillViewport(true);
   addView(scroll,new LayoutParams(-1,0,1));
-  LinearLayout content=new LinearLayout(a);content.setOrientation(VERTICAL);
+  content=new LinearLayout(a);content.setOrientation(VERTICAL);
   content.setPadding(dp(14),dp(8),dp(14),dp(14));
   scroll.addView(content);
-  TextView choice=text("Escolha um modo",25,INK,true);
-  content.addView(choice,new LayoutParams(-1,dp(43)));
-  TextView description=text("Selecione como deseja usar o Laboratório Musical.",14,MUTED,false);
-  content.addView(description,new LayoutParams(-1,dp(30)));
-  LinearLayout columns=new LinearLayout(a);columns.setOrientation(HORIZONTAL);
+  selectionTitle=text("Escolha um modo",25,INK,true);
+  content.addView(selectionTitle,new LayoutParams(-1,dp(43)));
+  selectionDescription=text("Selecione como deseja usar o Laboratório Musical.",14,MUTED,false);
+  content.addView(selectionDescription,new LayoutParams(-1,dp(30)));
+  columns=new LinearLayout(a);columns.setOrientation(HORIZONTAL);
   columns.setGravity(Gravity.TOP);columns.setTag("lab-landing-three-columns");
   LinearLayout.LayoutParams rowLp=new LinearLayout.LayoutParams(-1,dp(260));
   rowLp.topMargin=dp(9);content.addView(columns,rowLp);
@@ -102,11 +105,71 @@ final class MusicLabLandingScreen extends LinearLayout {
   LinearLayout creation=card("♬","Criação",
     "Grave ideias musicais e transforme suas gravações em partitura.",
     "Abrir Criação   →",true,goCreation);
-  LinearLayout[] cards={discover,learn,creation};
-  for(int i=0;i<cards.length;i++){
+  modeCards=new LinearLayout[]{discover,learn,creation};
+  for(int i=0;i<modeCards.length;i++){
    LinearLayout.LayoutParams item=new LinearLayout.LayoutParams(0,-1,1);
    if(i<2)item.rightMargin=dp(10);
-   columns.addView(cards[i],item);
+   columns.addView(modeCards[i],item);
   }
  }
+ /**
+  * The original 260dp cards plus 43/30dp labels forced the entire page to scroll
+  * on short landscape viewports. Fit the real window (including navigation insets)
+  * rather than the device display metrics. Keep scrolling only as an accessibility
+  * fallback when the usable height is genuinely too small or font scaling is large.
+  */
+ @Override protected void onSizeChanged(int width,int height,int oldWidth,int oldHeight){
+  super.onSizeChanged(width,height,oldWidth,oldHeight);
+  if(height>0)fitVisibleHeight(height);
+ }
+ private void setHeight(View view,int heightDp){
+  LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)view.getLayoutParams();
+  int pixels=dp(heightDp);
+  if(lp.height!=pixels){lp.height=pixels;view.setLayoutParams(lp);}
+ }
+ private void compactCard(LinearLayout card,boolean compact,float fontScale){
+  int pad=compact?6:14;
+  card.setPadding(dp(pad),dp(pad),dp(pad),dp(pad));
+  TextView symbol=(TextView)card.getChildAt(0);
+  TextView heading=(TextView)card.getChildAt(1);
+  TextView detail=(TextView)card.getChildAt(2);
+  Button action=(Button)card.getChildAt(3);
+  symbol.setTextSize(compact?28:46);
+  heading.setTextSize(compact?18:22);
+  detail.setTextSize(compact?11:13);
+  detail.setMaxLines(3);
+  detail.setPadding(dp(compact?2:4),dp(compact?1:5),dp(compact?2:4),dp(compact?1:5));
+  action.setTextSize(compact?13:16);
+  setHeight(symbol,compact?28:62);
+  setHeight(heading,compact?27:39);
+  setHeight(action,compact?Math.max(42,Math.round(42*fontScale)):46);
+  if(card.getChildCount()>4){
+   TextView badge=(TextView)card.getChildAt(4);
+   badge.setTextSize(compact?10:11);
+   setHeight(badge,compact?Math.max(17,Math.round(17*fontScale)):24);
+  }
+ }
+ private void fitVisibleHeight(int heightPx){
+  float density=getResources().getDisplayMetrics().density;
+  int heightDp=Math.round(heightPx/density);
+  float fontScale=getResources().getConfiguration().fontScale;
+  boolean compact=heightDp<440;
+  int topPad=compact?5:8,bottomPad=compact?6:14;
+  int titleHeight=compact?32:43,descriptionHeight=compact?22:30,gap=compact?5:9;
+  content.setPadding(dp(14),dp(topPad),dp(14),dp(bottomPad));
+  selectionTitle.setTextSize(compact?20:25);
+  selectionDescription.setTextSize(compact?12:14);
+  setHeight(selectionTitle,titleHeight);
+  setHeight(selectionDescription,descriptionHeight);
+  LinearLayout.LayoutParams row=(LinearLayout.LayoutParams)columns.getLayoutParams();
+  row.topMargin=dp(gap);
+  int free=heightDp-56-topPad-bottomPad-titleHeight-descriptionHeight-gap;
+  int minCard=Math.round((compact?172:260)*Math.max(1f,fontScale));
+  int target=Math.min(compact?260:320,Math.max(minCard,free));
+  for(LinearLayout card:modeCards)compactCard(card,compact,fontScale);
+  if(row.height!=dp(target)||row.topMargin!=dp(gap)){
+   row.height=dp(target);columns.setLayoutParams(row);
+  }
+ }
+
 }
