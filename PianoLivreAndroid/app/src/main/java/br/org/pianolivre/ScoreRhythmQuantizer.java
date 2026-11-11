@@ -70,6 +70,8 @@ public final class ScoreRhythmQuantizer {
     }
     private ScoreRhythmQuantizer() {}
     static final int[] FIGURES = {16, 12, 8, 6, 4, 3, 2, 1};
+    /** ZAI-010: pitched attacks use undotted values only. Hidden rests may still be dotted. */
+    static final int[] PITCH_FIGURES = {16, 8, 4, 2, 1};
 
     /** Return a normal figure when sufficiently close; preserve fine-grid values otherwise. */
     private static long snap(long cells, boolean allowingLong) {
@@ -462,7 +464,7 @@ public final class ScoreRhythmQuantizer {
         long target = Math.max(1, Math.min(desired, available));
         int winner = 1;
         long error = Long.MAX_VALUE;
-        for (int candidate : FIGURES) {
+        for (int candidate : PITCH_FIGURES) {
             if (candidate > available) continue;
             long delta = Math.abs(target - candidate);
             if (delta < error || (delta == error && candidate < winner)) {
@@ -471,6 +473,12 @@ public final class ScoreRhythmQuantizer {
             }
         }
         return winner;
+    }
+
+    /** Pitched figures are never dotted, even when hidden rest figures are. */
+    static boolean isSimplePitchFigure(int cells) {
+        for (int value : PITCH_FIGURES) if (value == cells) return true;
+        return false;
     }
 
     /** One MIDI Note On is one visible notehead, never a tied continuation. */
