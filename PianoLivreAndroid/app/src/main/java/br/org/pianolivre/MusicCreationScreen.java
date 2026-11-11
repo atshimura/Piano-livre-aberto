@@ -32,6 +32,8 @@ final class MusicCreationScreen extends LinearLayout {
  private CreationProjectStore.Filter filter=CreationProjectStore.Filter.ALL;private String query="";private int sortMode=0;
  private final int navy=0xff101C31,ink=0xff172A44,blue=0xff286BCB,muted=0xff57708A,light=0xffF0F5FB,white=Color.WHITE;
  private TextView recordingClock,recordingNotes,recordingEvents;private Button detailPlay,detailPause,detailResume,detailStop;
+ private LinearLayout dashboardLeft,dashboardRight,recordingReviewPanel;
+ private String rightContext="recent";private int catalogFilter=0;
  MusicCreationScreen(MainActivity activity,Runnable goBack){super(activity);a=activity;back=goBack;setOrientation(VERTICAL);setVisibility(GONE);setBackgroundColor(0xffF7F9FC);
   player=new MidiTakePlayer(new MidiTakePlayer.Sink(){public boolean available(){return a.midiConnection.snapshot().canSend;}public boolean send(byte[] data){return a.midiConnection.send(data);}public void silence(){a.midiConnection.silence();}},(state,pos,duration)->post(()->{if(playbackStatus!=null)playbackStatus.setText((state==MidiTakePlayer.State.PLAYING?"Reproduzindo":state==MidiTakePlayer.State.PAUSED?"Pausada":"Parada")+" · "+String.format(Locale.ROOT,"%.1f / %.1f s",pos/1e9,duration/1e9));if("details".equals(page))updatePlaybackControls();}),command->a.handler.post(command));
   bar=new LinearLayout(a);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(dp(8),dp(3),dp(8),dp(3));bar.setBackgroundColor(navy);addView(bar,new LayoutParams(-1,dp(56)));
@@ -151,32 +153,90 @@ final class MusicCreationScreen extends LinearLayout {
  private boolean wide(){return getResources().getDisplayMetrics().widthPixels/getResources().getDisplayMetrics().density>=850;}
  private void setShown(View view,boolean shown){int target=shown?View.VISIBLE:View.GONE;if(view.getVisibility()!=target)view.setVisibility(target);}
 
- private void showHome(){
-  page="home";player.stop();take=null;captureSession=null;selectedId=null;
+ /** ZAI-010: single persistent landscape surface with contextual right column. */
+ private void dashboard(){
   base("Criação Musical",this::requestLeave);
-  MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.CREATION,this::requestLeave,()->a.screens.showLab(),()->{});
-  label(body,"Criação Musical",24,true,1);
-  attach(body,mutedText("Perfil ativo · "+profileName(),13),-2,12);
-  LinearLayout left=column(),right=column();
-  if(wide()){
-   LinearLayout columns=horizontal();columns.setGravity(Gravity.TOP);
-   attach(body,columns,-2,0);
-   LayoutParams lpLeft=new LayoutParams(0,-2,2);lpLeft.rightMargin=dp(14);
-   columns.addView(left,lpLeft);columns.addView(right,new LayoutParams(0,-2,3));
-  }else{attach(body,left,-2,0);attach(body,right,-2,0);}
-  attach(left,connectionCard(),-2,12);
-  Button record=button("＋  Nova gravação",true,()->showRecorder());
-  Button list=button("Minhas Criações",false,()->showList());
-  responsiveActions(left,14,record,list);
+  MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.CREATION,
+    this::requestLeave,()->a.screens.showDiscover(),()->{});
+  body.setPadding(dp(15),dp(10),dp(15),dp(14));
+  LinearLayout heading=horizontal();heading.setTag("creation-dashboard-header");
+  LinearLayout intro=column();
+  TextView title=text("Criação Musical",24,true);
+  attach(intro,title,-2,2);attach(intro,mutedText("Perfil ativo · "+profileName(),12),-2,0);
+  heading.addView(intro,new LayoutParams(0,-2,3));
+  connectionStatus=mutedText(compactMidiState(),12);
+  connectionStatus.setSingleLine(true);
+  connectionStatus.setEllipsize(android.text.TextUtils.TruncateAt.END);
+  connectionStatus.setContentDescription("Status da conexão USB-MIDI");
+  heading.addView(connectionStatus,new LayoutParams(0,-2,2));
+  Button info=button("ⓘ  Informações USB-MIDI",false,()->a.showMidiDiagnostics());
+  info.setTextSize(12);info.setTag("creation-usb-information");
+  LayoutParams ilp=new LayoutParams(dp(192),dp(44));ilp.leftMargin=dp(8);
+  heading.addView(info,ilp);
+  attach(body,heading,-2,15);
+
+  LinearLayout columns=horizontal();columns.setGravity(Gravity.TOP);
+  columns.setTag("creation-dashboard-two-columns");
+  attach(body,columns,-2,0);
+  dashboardLeft=column();dashboardLeft.setTag("creation-dashboard-actions");
+  dashboardRight=card();dashboardRight.setTag("creation-dashboard-context");
+  dashboardRight.setMinimumHeight(dp(255));
+  LayoutParams lp=new LayoutParams(0,-2,2);lp.rightMargin=dp(15);
+  columns.addView(dashboardLeft,lp);
+  columns.addView(dashboardRight,new LayoutParams(0,-2,3));
+ }
+ private String compactMidiState(){
+  MidiConnection.Snapshot s=a.midiConnection.snapshot();
+  return "USB-MIDI: "+(s.canReceive&&s.canSend?"conectado":s.canReceive?"entrada conectada":s.canSend?"saída conectada":"indisponível");
+ }
+ /** Leave the recording/revision state reachable; never destroy unsaved takes. */
+ private void leftMenu(){
+  dashboardLeft.removeAllViews();
+  Button record=button(hasUnsavedTake()?"◉  Retomar gravação / revisão":"＋  Nova gravação",true,this::showRecorder);
+  record.setTag("creation-new-recording");
+  record.setTextSize(20);record.setMinHeight(dp(152));record.setMinimumHeight(dp(152));
+  record.setBackground(new RippleDrawable(ColorStateList.valueOf(0x22ffffff),
+    shape(0xff0966D5,18,0),null));
+  attach(dashboardLeft,record,152,12);
+  Button list=button("▱  Minhas criações",false,this::requestList);
+  list.setTag("creation-my-projects");list.setTextSize(18);
+  attach(dashboardLeft,list,64,10);
   if(recoveryWarning!=null){
    TextView warning=mutedText(recoveryWarning,13);warning.setTextColor(0xff986425);
-   attach(left,warning,-2,10);
+   attach(dashboardLeft,warning,-2,10);
   }
-  LinearLayout heading=horizontal();TextView recent=text("Recentes",18,true);
-  heading.addView(recent,new LayoutParams(0,dp(40),1));
-  Button all=button("Ver todas",false,()->showList());all.setTextSize(12);
-  heading.addView(all,new LayoutParams(dp(124),dp(40)));attach(right,heading,40,8);
-  addProjects(right,CreationProjectStore.Filter.ALL,3);
+ }
+ private void showRightRecent(){
+  if(dashboardRight==null)return;
+  rightContext="recent";dashboardRight.removeAllViews();
+  LinearLayout head=horizontal();
+  TextView title=text("Gravações recentes",18,true);
+  head.addView(title,new LayoutParams(0,dp(43),1));
+  Button all=button("Ver todas  ›",false,this::requestList);
+  all.setTag("creation-view-all");all.setTextSize(12);
+  head.addView(all,new LayoutParams(dp(122),dp(43)));
+  attach(dashboardRight,head,43,10);
+  addProjects(dashboardRight,CreationProjectStore.Filter.ALL,3);
+ }
+ private void requestList(){
+  if(busy){a.message("Aguarde a confirmação dos dados locais.");return;}
+  if(take!=null&&(take.state()==MidiTakeRecorder.State.RECORDING
+      ||take.state()==MidiTakeRecorder.State.PAUSED)){
+   a.message("Pause e finalize a gravação antes de abrir a biblioteca.");return;
+  }
+  if(hasUnsavedTake()){
+   activeDialog=new AlertDialog.Builder(a).setTitle("Gravação não salva")
+    .setMessage("Você pode consultar Minhas criações sem descartar a tomada atual. Para retomá-la, use o botão da coluna esquerda.")
+    .setPositiveButton("Abrir Minhas criações",(d,w)->showList())
+    .setNegativeButton("Continuar revisão",null).show();
+   return;
+  }
+  showList();
+ }
+ private void showHome(){
+  if(hasUnsavedTake()){showRecorder();return;}
+  page="home";player.stop();take=null;captureSession=null;selectedId=null;
+  dashboard();leftMenu();showRightRecent();
  }
  private String captureLabel(MidiTakeRecorder.State current){switch(current){case RECORDING:return "Gravando… toque no piano conectado";case PAUSED:return "Pausada · "+take.eventCount()+" eventos recebidos";case REVIEW:return take.noteCount()==0?"Nenhuma nota gravada · descarte a tomada ou preserve os controles MIDI recebidos":"Revisão · "+take.noteCount()+" notas · "+take.eventCount()+" eventos";case INTERRUPTED:return "Trecho interrompido · "+take.interruption();case SAVED:return "Composição salva";case DISCARDED:return "Tomada descartada";default:return "Nova composição · pronta para gravar";}}
  private void showRecorder(){final long revision=++formRevision;page="recording";base("Nova gravação",this::requestLeave);if(take==null){take=new MidiTakeRecorder();takeCreatedAt=System.currentTimeMillis();}attach(body,mutedText("Perfil · "+profileName(),13),-2,8);
@@ -267,7 +327,7 @@ a.handler.postDelayed(this,100);}};ticker.run();
  String debugSelected(){return selectedId;}
  MidiTakeRecorder debugTake(){if((a.getApplicationInfo().flags&android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE)==0)throw new IllegalStateException();return take;}
  void onForeground(){if(!busy&&hasUnsavedTake())showRecorder();refreshConnection();}
- void refreshConnection(){if(connectionStatus!=null)connectionStatus.setText(midiState());}
+ void refreshConnection(){if(connectionStatus!=null)connectionStatus.setText(compactMidiState());}
  private void confirmJournalAsync(){final CreationJournal log=journal;if(log==null)return;disk.execute(()->{try{log.flush();}catch(IOException error){post(()->{if(journal==log)a.message("Não foi possível confirmar o diário. Salve ou exporte o trecho antes de sair.");});}});}
  private void confirmDiscard(){if(take==null)return;activeDialog=new AlertDialog.Builder(a).setTitle("Descartar gravação?").setMessage("Os eventos desta tomada serão removidos.").setPositiveButton("Descartar",(d,w)->{
   player.stop();final MidiTakeRecorder source=take;final CreationJournal log=journal;source.interrupt(android.os.SystemClock.elapsedRealtimeNanos(),"Descarte confirmado");busy=true;
@@ -327,7 +387,7 @@ a.handler.postDelayed(this,100);}};ticker.run();
   disk.execute(()->{try{
    List<CreationProjectStore.Project> projects=store.list(owner,f,"",null);
    post(()->{
-    if(revision!=homeRevision||!"home".equals(page)||a.user!=owner)return;
+    if(revision!=homeRevision||!"recent".equals(rightContext)||a.user!=owner)return;
     recent.removeAllViews();
     if(projects.isEmpty()){
      LinearLayout empty=card();
