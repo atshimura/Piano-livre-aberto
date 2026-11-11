@@ -13,6 +13,9 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-011 — Entrega: telas adaptativas do Laboratório e Criação, APK 0.9.72](ZAI-011-ENTREGA-ALTURA-RESPONSIVA-APK-20261111.md): PR #142, 89 verificações JVM de altura, CI Android, assinatura permanente e SHA-256 do APK publicado.
+- [ZAI-011 — Diagnóstico e contrato da adaptação vertical](ZAI-011-TELAS-LABORATORIO-CRIACAO-ALTURA-ADAPTATIVA.md): cartões por viewport, cabeçalho fixo, colunas com scroll independente e acessibilidade.
+
 - [ZAI-010 — Entrega: Laboratório em três modos, Criação contextual, figuras sem pontos e APK principal 0.9.71](ZAI-010-ENTREGA-APK-PRINCIPAL-20261111.md): PR #138 integrado à zai/lab, 1.178 verificações JVM, build e assinatura permanente, SHA-256 e download GitHub verificado.
 - [ZAI-010 — Planejamento e contrato das telas e das figuras simples](ZAI-010-LABORATORIO-CRIACAO-PAINEL-FIGURAS.md): três modos, painel de duas colunas, revisão e biblioteca contextual, MusicXML sem pontos nas notas e MIDI original íntegro.
 
