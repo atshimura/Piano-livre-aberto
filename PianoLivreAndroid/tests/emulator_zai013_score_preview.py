@@ -40,10 +40,17 @@ def geometry():
     save=rect(find(root,"Salvar partitura"))
     back=rect(find(root,"Voltar à composição"))
     views=[n for n in root.iter("node") if n.attrib.get("class")=="android.webkit.WebView"]
-    assert len(views)==1,"Expected a single OSMD WebView, found "+str(len(views))
-    score=rect(views[0])
+    boxes=[rect(n) for n in views]
     topBottom=max(tempo[3],minus[3],plus[3],fit[3])
     bottomTop=min(save[1],back[1])
+    # UiAutomator may report both the underlying Criação screen WebView and
+    # the fullscreen Dialog's notation WebView. Select the one whose whole
+    # rectangle is reserved strictly between zoom and footer; do not rely on
+    # the number or ordering of accessibility nodes.
+    matches=[box for box in boxes if box[1]>=topBottom-3 and box[3]<=bottomTop+3]
+    assert matches,"No score WebView entirely between toolbar/footer: "+repr(
+        {"candidates":boxes,"topBottom":topBottom,"bottomTop":bottomTop})
+    score=max(matches,key=lambda box:(box[2]-box[0])*(box[3]-box[1]))
     assert abs(minus[1]-tempo[1])<=9,"zoom must be beside BPM at the top"
     assert abs(plus[1]-tempo[1])<=9 and abs(fit[1]-tempo[1])<=9
     assert score[1]>=topBottom-3, "Top buttons obscure the score "+repr((tempo,minus,score))
