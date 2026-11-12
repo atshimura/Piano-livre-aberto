@@ -15,7 +15,7 @@ assert "row.height=height;columns.setLayoutParams(row)" in landing
 assert "for(LinearLayout card:modeCards)compactCard(card,size.compact,fontScale)" in landing
 assert "scroll.setFillViewport(true)" in landing  # emergency overflow only
 assert 'lab-landing-three-columns' in landing
-assert '"◷  Em breve",false' in landing
+assert '"Abrir Aprender   →",true,goLearn' in landing
 assert "fitsWithoutScroll" in planner
 assert "fontScale" in planner and "usableHeightDp" in planner
 assert "body.addView(columns,new LayoutParams(-1,0,1))" in creation
