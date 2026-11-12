@@ -58,31 +58,34 @@ class CreationResponsiveContracts(unittest.TestCase):
         self.assertIn('CreationScoreDeletion.delete(a.getFilesDir()',details)
 
     def test_block_c_preview_is_clean_and_zoomable(self):
-        # Z-P3: preview without musical adjustments, with zoom and fit-to-width.
-        self.assertIn('private void actions(LinearLayout parent,Button... buttons)',SCORE)
-        self.assertIn('((android.view.ViewGroup)button.getParent()).removeView(button)',SCORE)
-        self.assertIn('group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());})',SCORE)
-        self.assertIn('button.setSingleLine(false);button.setMaxLines(2)',SCORE)
-        self.assertIn('b.setTextSize(13)',SCORE)
-        self.assertIn('b.setMinHeight(dp(48))',SCORE)
-        self.assertIn('actions(scoreFooter,back,save,add)',SCORE)
-        self.assertIn('actions(scoreFooter,back,save)',SCORE)
+        # ZAI-014: one top bar, no separate tempo line or bottom action bar.
+        self.assertIn('header.setTag("creation-score-unified-header")',SCORE)
+        self.assertIn('header.addView(toolbarScroll,new LayoutParams(dp(306),-1))',SCORE)
+        self.assertIn('addView(header,new LayoutParams(-1,dp(56)))',SCORE)
+        self.assertIn('headerActionSlot.setTag("creation-score-top-action-slot")',SCORE)
         self.assertIn('scoreArea.addView(sheet,new LayoutParams(-1,0,1))',SCORE)
         self.assertIn('sheet.addView(view,new LayoutParams(-1,0,1))',SCORE)
-        self.assertNotIn('actions(sheet,button("A−"',SCORE)
-        self.assertIn('button("A−",false,()->applyZoom(zoom/1.25f))',SCORE)
-        self.assertIn('button("A+",false,()->applyZoom(zoom*1.25f))',SCORE)
-        self.assertIn('button("Ajustar à largura",false,()->applyZoom(1.0f))',SCORE)
+        self.assertIn('Button smaller=compactTool("A−"',SCORE)
+        self.assertIn('Button larger=compactTool("A+"',SCORE)
+        self.assertIn('Button fit=compactTool("↔","Ajustar à largura"',SCORE)
+        self.assertIn('Button info=compactTool("ⓘ"',SCORE)
+        self.assertIn('headerActionSlot.addView(primary,new LayoutParams(-1,dp(48)))',SCORE)
         self.assertIn('setCreationZoom(zoom)',SCORE)
         self.assertIn('Andamento estimado: ',SCORE)
         self.assertIn('Andamento não identificado com segurança — prévia a 120 BPM (provisória)',SCORE)
-        self.assertNotIn('getResources().getDisplayMetrics().heightPixels*0.65f',SCORE)
-        self.assertIn('scoreToolbar.setTag("creation-score-tempo-zoom-toolbar")',SCORE)
-        self.assertIn('scoreFooter.setTag("creation-score-fixed-footer")',SCORE)
-        # Retired C2 controls must not return in another screen of the preview.
-        for retired in ('creation-score-note-row','Button chord=button("Acorde"','Selecionar intervalo de compassos',
-                        'Desfazer','Refazer','Restaurar sugestão','Concluir ajustes',
-                        'responsiveFields','scrollableSettings','Uniformizar trecho','Atribuir mão / voz'):
+        self.assertNotIn('scoreFooter',SCORE)
+        self.assertNotIn('actions(scoreFooter',SCORE)
+        self.assertNotIn('heightPixels*0.65f',SCORE)
+        self.assertIn('toolbarScroll.setHorizontalScrollBarEnabled(false)',SCORE)
+        self.assertIn('fitUnifiedHeader(int screenWidthPx)',SCORE)
+        self.assertIn('new AlertDialog.Builder(activity)',SCORE)
+        self.assertIn('button("+ Biblioteca",true,',SCORE)
+        self.assertIn('button("✓ Biblioteca",false,',SCORE)
+        # Retired C2 adjustments cannot return under the unified toolbar.
+        for retired in ('creation-score-note-row','Button chord=button("Acorde"',
+                        'Selecionar intervalo de compassos','Desfazer','Refazer',
+                        'Restaurar sugestão','Concluir ajustes','responsiveFields',
+                        'scrollableSettings','Uniformizar trecho','Atribuir mão / voz'):
             self.assertNotIn(retired,SCORE)
 
     def test_block_c_retired_adjustment_pipeline_is_gone(self):
