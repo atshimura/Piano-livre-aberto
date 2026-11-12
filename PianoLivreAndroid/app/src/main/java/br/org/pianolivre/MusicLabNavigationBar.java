@@ -43,7 +43,7 @@ final class MusicLabNavigationBar {
   View space=new View(parent.getContext());parent.addView(space,new LinearLayout.LayoutParams(dp(parent,width),dp(parent,1)));
  }
 
- static void populate(LinearLayout bar,int selected,Runnable back,Runnable goDiscover,Runnable goCreation){
+ static void populate(LinearLayout bar,int selected,Runnable back,Runnable goDiscover,Runnable goLearn,Runnable goCreation){
   if(selected!=DISCOVER&&selected!=LEARN&&selected!=CREATION)throw new IllegalArgumentException("Invalid Laboratory tab");
   bar.removeAllViews();bar.setOrientation(LinearLayout.HORIZONTAL);bar.setGravity(Gravity.CENTER_VERTICAL);
   bar.setTag("lab-navigation");bar.setBackgroundColor(NAVY);
@@ -70,14 +70,14 @@ final class MusicLabNavigationBar {
   bar.addView(tabs,small?new LinearLayout.LayoutParams(0,dp(bar,48),1):new LinearLayout.LayoutParams(dp(bar,390),dp(bar,48)));
   String[] names={"Descobrir","Aprender","Criação"};
   for(int i=0;i<names.length;i++){
-   final int tab=i;boolean active=i==selected;boolean unavailable=i==LEARN;
+   final int tab=i;boolean active=i==selected;boolean unavailable=false;
    Button b=button(bar,names[i],names[i]+(active?" selecionado":unavailable?" indisponível nesta versão":""),unavailable?MUTED:WHITE,verySmall?11:13);
    b.setTag("lab-nav-"+names[i].toLowerCase(java.util.Locale.ROOT));
    background(bar,b,active?ACTIVE:PANEL);
    b.setSelected(active);
    b.setEnabled(!unavailable&&!active);
    if(active)b.setClickable(false);
-   if(!active&&!unavailable)b.setOnClickListener(v->{if(tab==DISCOVER)goDiscover.run();else goCreation.run();});
+   if(!active&&!unavailable)b.setOnClickListener(v->{if(tab==DISCOVER)goDiscover.run();else if(tab==LEARN)goLearn.run();else goCreation.run();});
    tabs.addView(b,new LinearLayout.LayoutParams(0,dp(bar,40),1));
   }
  }

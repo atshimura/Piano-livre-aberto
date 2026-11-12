@@ -72,7 +72,7 @@ final class MusicLabLandingScreen extends LinearLayout {
   }
   return surface;
  }
- MusicLabLandingScreen(MainActivity a,Runnable goBack,Runnable goDiscover,Runnable goCreation){
+ MusicLabLandingScreen(MainActivity a,Runnable goBack,Runnable goDiscover,Runnable goLearn,Runnable goCreation){
   super(a);activity=a;setTag("lab-landing");setOrientation(VERTICAL);
   setBackgroundColor(0xffF6F9FF);setVisibility(GONE);
   LinearLayout top=new LinearLayout(a);top.setGravity(Gravity.CENTER_VERTICAL);
@@ -107,8 +107,8 @@ final class MusicLabLandingScreen extends LinearLayout {
     "Explore notas, acordes e ideias musicais de forma livre.",
     "Abrir Descobrir   →",true,goDiscover);
   LinearLayout learn=card("♧","Aprender",
-    "Modo voltado ao estudo guiado e acompanhamento da prática.",
-    "◷  Em breve",false,()->{});
+    "Escolha o que tocar ou aprenda a ler partituras em lições progressivas.",
+    "Abrir Aprender   →",true,goLearn);
   LinearLayout creation=card("♬","Criação",
     "Grave ideias musicais e transforme suas gravações em partitura.",
     "Abrir Criação   →",true,goCreation);

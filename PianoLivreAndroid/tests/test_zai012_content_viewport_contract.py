@@ -20,7 +20,7 @@ assert "static Landing landingContent(int viewportHeightDp,float fontScale)" in 
 assert "int free=viewportHeightDp-top-bottom-title-description-gap" in heights
 assert "free-2" in heights
 assert 'lab-landing-three-columns' in landing
-assert '"◷  Em breve",false' in landing
+assert '"Abrir Aprender   →",true,goLearn' in landing
 assert 'goDiscover' in landing and 'goCreation' in landing
 assert 'creation.requestLeave();return;' in screens
 print("ZAI012_CONTENT_VIEWPORT_CONTRACT_PASS")

@@ -39,7 +39,7 @@ def inspect():
     title=bounds(find(root,"Escolha um modo"))
     desc=bounds(find(root,"Selecione como deseja usar"))
     discover=bounds(find(root,"Abrir Descobrir"))
-    learning=bounds(find(root,"Em breve"))
+    learning=bounds(find(root,"Abrir Aprender"))
     creation=bounds(find(root,"Abrir Criação"))
     for name,b in (("title",title),("description",desc),
                    ("Discover",discover),("Learn",learning),("Creation",creation)):

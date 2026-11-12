@@ -12,11 +12,11 @@ xml=src("ScoreXmlComposer.java")
 preview=src("CreationScorePreviewScreen.java")
 assert 'setOrientation(HORIZONTAL)' in landing
 assert 'lab-landing-three-columns' in landing
-for expected in ["Escolha um modo","Descobrir","Aprender","Em breve","Criação",
-                 "Explore notas, acordes","estudo guiado","transforme suas gravações"]:
+for expected in ["Escolha um modo","Descobrir","Aprender","Abrir Aprender","Criação",
+                 "Explore notas, acordes","lições progressivas","transforme suas gravações"]:
  assert expected in landing,expected
 assert 'card("♧","Aprender"' in landing
-assert '"◷  Em breve",false' in landing, "Learn must be explicitly disabled"
+assert '"Abrir Aprender   →",true,goLearn' in landing, "Learn is now active in ZAI-015"
 assert "labLanding=new MusicLabLandingScreen" in screens
 assert "void showDiscover()" in screens and "void showLab()" in screens
 assert 'if(labLanding!=null)labLanding.setVisibility(View.VISIBLE)' in screens

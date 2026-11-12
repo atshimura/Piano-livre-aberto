@@ -21,9 +21,9 @@ final class MusicLabDiscoveryScreen extends LinearLayout {
  final DiscoveryStaffView staff;
  private final Handler handler=new Handler();private volatile long callbackGeneration=0;
  private boolean observing=false;
- MusicLabDiscoveryScreen(MainActivity a,Runnable goBack,Runnable goCreation){super(a);activity=a;setOrientation(VERTICAL);setBackgroundColor(0xffF7F9FC);setVisibility(GONE);
+ MusicLabDiscoveryScreen(MainActivity a,Runnable goBack,Runnable goLearn,Runnable goCreation){super(a);activity=a;setOrientation(VERTICAL);setBackgroundColor(0xffF7F9FC);setVisibility(GONE);
   LinearLayout bar=new LinearLayout(a);
-  MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.DISCOVER,goBack,()->{},goCreation);
+  MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.DISCOVER,goBack,()->{},goLearn,goCreation);
   // Stable handles for the existing Discovery debug probes.
   back=bar.findViewWithTag("lab-nav-back");discover=bar.findViewWithTag("lab-nav-descobrir");
   learn=bar.findViewWithTag("lab-nav-aprender");creation=bar.findViewWithTag("lab-nav-criação");

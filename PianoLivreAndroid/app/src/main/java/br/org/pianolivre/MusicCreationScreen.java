@@ -165,7 +165,10 @@ final class MusicCreationScreen extends LinearLayout {
  private void dashboard(){
   base("Criação Musical",this::requestLeave);
   MusicLabNavigationBar.populate(bar,MusicLabNavigationBar.CREATION,
-    this::requestLeave,this::openDiscoverSafely,()->{});
+    this::requestLeave,this::openDiscoverSafely,()->{
+      if(hasUnsavedTake()){a.message("Finalize e salve ou descarte a gravação antes de mudar para Aprender.");return;}
+      a.screens.showLearning();
+    },()->{});
   body.setPadding(dp(12),dp(6),dp(12),dp(6));
   LinearLayout heading=horizontal();heading.setTag("creation-dashboard-header");
   LinearLayout intro=column();
