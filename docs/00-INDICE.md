@@ -13,6 +13,9 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-015 — Entrega: modo Aprender, lições de leitura musical, MIDI e APK principal 0.9.76](ZAI-015-ENTREGA-APK-PRINCIPAL-20261112.md): PRs #158/#159/#160, 138 verificações JVM, 78 contratos, GUI Android, assinatura permanente, hash e download direto.
+- [ZAI-015 — Plano: Escolher e tocar e Ler partitura](ZAI-015-APRENDER-TELAS-MOTOR-MIDI-20261112.md): quatro telas aprovadas, progressão pedagógica, catálogo, reconhecimento USB-MIDI/virtual e dados locais por perfil.
+
 - [ZAI-014 — Entrega: barra única na prévia, partitura ampliada e APK 0.9.75](ZAI-014-ENTREGA-APK-PRINCIPAL-20261111.md): PR #154, testes de OSMD e Android GUI, assinatura permanente, SHA-256 e download.
 - [ZAI-014 — Plano aprovado da barra única superior](ZAI-014-PREVIA-BARRA-UNICA-20261111.md): Voltar, composição, BPM, zoom, informações MIDI e Salvar/Biblioteca sem rodapé.
 
