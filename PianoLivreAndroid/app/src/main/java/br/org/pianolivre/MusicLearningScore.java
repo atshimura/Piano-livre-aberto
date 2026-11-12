@@ -42,7 +42,7 @@ public final class MusicLearningScore {
   for(int m=0;m<count;m++){
    b.append("<measure number=\"").append(m+1).append("\">");
    if(m==0){
-    b.append("<attributes><divisions>1</divisions><key><fifths>0</fifths></key>")
+    b.append("<attributes><divisions>4</divisions><key><fifths>0</fifths></key>")
      .append("<time><beats>4</beats><beat-type>4</beat-type></time><staves>1</staves>")
      .append("<clef number=\"1\"><sign>").append(e.hand==1?"F":"G")
      .append("</sign><line>").append(e.hand==1?4:2).append("</line></clef></attributes>");
