@@ -284,12 +284,14 @@ final class MusicLearningScreen extends LinearLayout {
  private void showPickerResults(String query){
   if(pickerResults==null)return;
   List<MusicLabCatalog.Entry> options=MusicLearningEngine.catalog(selectionType,query);
-  if(selected==null||!options.contains(selected)){
-   MusicLabCatalog.Entry found=null;
-   if(selectionType==MusicLearningEngine.CHORD&&query.isEmpty())for(MusicLabCatalog.Entry e:options)
-    if(e.title.startsWith("Dó maior")){found=e;break;}
-   selected=found!=null?found:options.isEmpty()?null:options.get(0);
-  }
+  // MusicLabCatalog creates fresh immutable Entry objects on each query.
+  // Compare semantic keys, not object identity, or tapping a choice resets it.
+  MusicLabCatalog.Entry match=null;
+  if(selected!=null)for(MusicLabCatalog.Entry e:options)
+   if(e.kind.equals(selected.kind)&&e.title.equals(selected.title)){match=e;break;}
+  if(match==null&&selectionType==MusicLearningEngine.CHORD&&query.isEmpty())
+   for(MusicLabCatalog.Entry e:options)if(e.title.startsWith("Dó maior")){match=e;break;}
+  selected=match!=null?match:options.isEmpty()?null:options.get(0);
   pickerResults.removeAllViews();
   if(options.isEmpty()){
    pickerResults.addView(text("Nenhum conteúdo corresponde à busca.",12,false,MUTED),new LayoutParams(-1,dp(45)));
