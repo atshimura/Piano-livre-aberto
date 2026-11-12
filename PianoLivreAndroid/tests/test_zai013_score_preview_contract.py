@@ -52,5 +52,5 @@ must('padding:4px 0 64px;overflow-x:clip',html)
 must('body.free #viewport{overflow:auto;scroll-behavior:auto}',html)
 must('body.continuous #viewport{overflow:hidden}',html)
 must('body.preview #viewport{overflow-x:auto;overflow-y:hidden',html)
-assert screen.index('addView(header,new LayoutParams(-1,dp(56)))')<screen.index('scoreArea.addView(sheet'),"header should precede the musical area")
+assert screen.index('addView(header,new LayoutParams(-1,dp(56)))') < screen.index('scoreArea.addView(sheet'), "header precedes the musical area"
 print("ZAI013_SCORE_PREVIEW_CONTRACT_PASS updated_for_ZAI014")
