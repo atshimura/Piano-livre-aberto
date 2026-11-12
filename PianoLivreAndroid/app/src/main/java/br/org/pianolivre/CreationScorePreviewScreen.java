@@ -30,9 +30,10 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private final MainActivity activity;
     private final CreationProjectStore.Project project;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
-    private final LinearLayout contents,scoreToolbar,scoreArea,scoreFooter;
+    private final LinearLayout contents,scoreToolbar,scoreArea,header,headerActionSlot;
     private final ScrollView scroll;
     private final HorizontalScrollView toolbarScroll;
+    private final TextView nameLabel;
     private Dialog window;
     private NotationView notation;
     private volatile boolean closed,busy;
@@ -76,44 +77,63 @@ final class CreationScorePreviewScreen extends LinearLayout {
     }
     private CreationScorePreviewScreen(MainActivity a,CreationProjectStore.Project p){
         super(a);activity=a;project=p;setOrientation(VERTICAL);setBackgroundColor(0xffF7F9FC);
-        LinearLayout header=horizontal();header.setPadding(dp(12),dp(5),dp(12),dp(5));header.setBackgroundColor(0xff101C31);
-        Button close=button("← Voltar",false,()->confirmClose());
-        close.setTextColor(Color.WHITE);
+        // One fixed 56dp bar. The toolbar can scroll HORIZONTALLY in very
+        // narrow landscape windows; Back and the primary action never scroll.
+        header=horizontal();
+        header.setTag("creation-score-unified-header");
+        header.setPadding(dp(8),dp(4),dp(8),dp(4));
+        header.setBackgroundColor(0xff101C31);
+        Button close=button("←",false,()->confirmClose());
+        close.setTextSize(22);close.setTextColor(Color.WHITE);
+        close.setContentDescription("Voltar à composição");
+        close.setTooltipText("Voltar à composição");
+        close.setPadding(0,0,0,0);
         GradientDrawable backSurface=new GradientDrawable();
-        backSurface.setColor(0xff283F5C);backSurface.setCornerRadius(dp(14));
+        backSurface.setColor(0xff283F5C);backSurface.setCornerRadius(dp(12));
         close.setBackground(new RippleDrawable(ColorStateList.valueOf(0x30ffffff),backSurface,null));
         close.setTag("creation-score-header-back");
-        header.addView(close,new LayoutParams(dp(110),dp(48)));
-        TextView name=label(p.title,18,true,Color.WHITE);
-        name.setSingleLine(true);name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        name.setPadding(dp(15),0,0,0);
-        header.addView(name,new LayoutParams(0,dp(56),1));
-        addView(header,new LayoutParams(-1,dp(58)));
+        header.addView(close,new LayoutParams(dp(48),dp(48)));
 
-        // Only the score preview uses this fixed toolbar, viewport and footer.
-        // Loading, outdated derivations and error states retain the legacy
-        // accessible ScrollView below the header.
+        nameLabel=label(p.title,16,true,Color.WHITE);
+        nameLabel.setTag("creation-score-header-title");
+        nameLabel.setSingleLine(true);
+        nameLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        nameLabel.setContentDescription("Composição: "+p.title);
+        nameLabel.setPadding(dp(8),0,dp(7),0);
+        header.addView(nameLabel,new LayoutParams(0,-1,1));
+
         toolbarScroll=new HorizontalScrollView(a);
         toolbarScroll.setHorizontalScrollBarEnabled(false);
-        toolbarScroll.setFillViewport(true);
-        toolbarScroll.setBackgroundColor(0xffF0F5FD);
+        toolbarScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        toolbarScroll.setFillViewport(false);
         toolbarScroll.setVisibility(GONE);
-        scoreToolbar=horizontal();scoreToolbar.setPadding(dp(12),dp(5),dp(12),dp(5));
+        toolbarScroll.setTag("creation-score-inline-tools-scroll");
+        scoreToolbar=horizontal();
         scoreToolbar.setTag("creation-score-tempo-zoom-toolbar");
+        scoreToolbar.setPadding(0,0,0,0);
         toolbarScroll.addView(scoreToolbar,new android.widget.FrameLayout.LayoutParams(-2,-1));
-        addView(toolbarScroll,new LayoutParams(-1,dp(60)));
+        header.addView(toolbarScroll,new LayoutParams(dp(306),-1));
 
+        headerActionSlot=horizontal();
+        headerActionSlot.setTag("creation-score-top-action-slot");
+        headerActionSlot.setVisibility(GONE);
+        LayoutParams actionSlotParams=new LayoutParams(dp(116),-1);
+        actionSlotParams.leftMargin=dp(5);
+        header.addView(headerActionSlot,actionSlotParams);
+        addView(header,new LayoutParams(-1,dp(56)));
+        header.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or_,ob)->{
+            if(r>l && r-l!=or_-ol)fitUnifiedHeader(r-l);
+        });
+
+        // Legacy/outdated/loading states still have their accessible
+        // vertical ScrollView, but no extra persistent bars.
         contents=vertical();contents.setPadding(dp(14),dp(12),dp(14),dp(24));
         scroll=new ScrollView(a);scroll.setFillViewport(true);scroll.addView(contents);
         addView(scroll,new LayoutParams(-1,0,1));
 
-        scoreArea=vertical();scoreArea.setPadding(dp(12),dp(7),dp(12),dp(4));
+        scoreArea=vertical();scoreArea.setPadding(dp(6),dp(4),dp(6),dp(5));
         scoreArea.setTag("creation-score-reading-area");scoreArea.setVisibility(GONE);
         addView(scoreArea,new LayoutParams(-1,0,1));
-
-        scoreFooter=vertical();scoreFooter.setPadding(dp(12),dp(2),dp(12),dp(6));
-        scoreFooter.setTag("creation-score-fixed-footer");scoreFooter.setVisibility(GONE);
-        addView(scoreFooter,new LayoutParams(-1,-2));
         addText("Preparando a gravação…",16,true,12);
     }
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
@@ -153,32 +173,6 @@ final class CreationScorePreviewScreen extends LinearLayout {
         b.setOnClickListener(v->{if(!busy&&!closed)run.run();});
         return b;
     }
- private void actions(LinearLayout parent,Button... buttons){
-  LinearLayout group=vertical();group.setTag("creation-score-responsive-actions");attach(parent,group,-2,8);
-  final int[] prev={-1};
-  java.util.function.IntConsumer reflow=width->{
-   int gap=dp(8);float scale=getResources().getConfiguration().fontScale;
-   int cell=dp(Math.max(140,Math.round(140*scale)));
-   int cols=width<=0?1:Math.max(1,Math.min(buttons.length,(width+gap)/(cell+gap)));
-   if(cols==prev[0])return;
-   for(Button button:buttons)if(button.getParent() instanceof android.view.ViewGroup)
-    ((android.view.ViewGroup)button.getParent()).removeView(button);
-   prev[0]=cols;group.removeAllViews();
-   for(int start=0;start<buttons.length;start+=cols){
-    LinearLayout row=horizontal();LayoutParams rp=new LayoutParams(-1,dp(56));
-    rp.bottomMargin=dp(start+cols<buttons.length?6:0);group.addView(row,rp);
-    int end=Math.min(buttons.length,start+cols);
-    for(int i=start;i<end;i++){
-     Button button=buttons[i];button.setSingleLine(false);button.setMaxLines(2);
-     LayoutParams cp=new LayoutParams(0,-1,1);cp.rightMargin=dp(i<end-1?8:0);row.addView(button,cp);
-    }
-   }
-  };
-  reflow.accept(0);
-  group.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
-   if(r>l)group.post(()->{if(group.getWidth()>0)reflow.accept(group.getWidth());});
-  });
- }
     private void shutdown(){
         closed=true;generation++;if(notation!=null){notation.dispose();notation=null;}
         worker.shutdownNow();
@@ -250,9 +244,9 @@ final class CreationScorePreviewScreen extends LinearLayout {
     private void clear(){
         if(notation!=null){notation.dispose();notation=null;}
         contents.removeAllViews();tempoLabel=null;
-        scoreToolbar.removeAllViews();scoreArea.removeAllViews();scoreFooter.removeAllViews();
-        toolbarScroll.setVisibility(GONE);scoreArea.setVisibility(GONE);
-        scoreFooter.setVisibility(GONE);scroll.setVisibility(VISIBLE);
+        scoreToolbar.removeAllViews();headerActionSlot.removeAllViews();scoreArea.removeAllViews();
+        toolbarScroll.setVisibility(GONE);headerActionSlot.setVisibility(GONE);
+        scoreArea.setVisibility(GONE);scroll.setVisibility(VISIBLE);
     }
     /** PLS2 from an older engine: keep the file until the user saves a new score. */
     private void renderOutdated(){
@@ -293,60 +287,127 @@ final class CreationScorePreviewScreen extends LinearLayout {
             }catch(Exception ex){post(()->failure(id,ex));}
         });
     }
-    /** Upper tempo/zoom toolbar is outside the score viewport and never covers a staff. */
+    /** A short, high-contrast action with at least a 48dp touch target. */
+    private Button compactTool(String text,String description,Runnable action){
+        Button b=button(text,false,action);
+        b.setTextSize(14);
+        b.setTextColor(Color.WHITE);
+        b.setPadding(0,0,0,0);
+        b.setMinHeight(dp(48));b.setMinimumHeight(dp(48));
+        GradientDrawable bg=new GradientDrawable();
+        bg.setColor(0xff293F5D);bg.setStroke(dp(1),0xff536A88);
+        bg.setCornerRadius(dp(12));
+        b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x32ffffff),bg,null));
+        b.setElevation(dp(1));
+        b.setContentDescription(description);
+        b.setTooltipText(description);
+        return b;
+    }
+    private void addTool(View v,int widthDp,int spacingDp){
+        LayoutParams p=new LayoutParams(dp(widthDp),dp(48));
+        p.rightMargin=dp(spacingDp);
+        scoreToolbar.addView(v,p);
+    }
+    /** Preserve the primary action and Back during horizontal toolbar overflow. */
+    private void fitUnifiedHeader(int screenWidthPx){
+        int widthDp=Math.round(screenWidthPx/getResources().getDisplayMetrics().density);
+        boolean compact=widthDp<560;
+        if(nameLabel.getVisibility()!=(compact?GONE:VISIBLE))
+            nameLabel.setVisibility(compact?GONE:VISIBLE);
+        // Width left after 48dp Back, 116dp primary, horizontal padding
+        // and at least 96dp of visible title on a spacious phone/tablet.
+        int titleRoom=compact?0:Math.min(180,Math.max(72,(widthDp-460)/2));
+        int available=Math.max(112,widthDp-48-116-16-5-titleRoom);
+        int target=dp(Math.min(306,available));
+        LayoutParams lp=(LayoutParams)toolbarScroll.getLayoutParams();
+        if(lp.width!=target){lp.width=target;toolbarScroll.setLayoutParams(lp);}
+    }
+    private String midiMessage(){
+        return warnings.size()>0
+            ?warnings.size()+" observações da interpretação MIDI registradas; a gravação original permanece intacta."
+            :"Nenhuma anomalia MIDI encontrada. A gravação original permanece intacta.";
+    }
+    private void showMidiInfo(){
+        if(closed)return;
+        new AlertDialog.Builder(activity)
+            .setTitle("Informações da partitura")
+            .setMessage(midiMessage()+"\n\nA partitura usa figuras simples, sem pausas visíveis, staccato ou ligaduras automáticas. "
+                +"As durações reais e os eventos MIDI permanecem na gravação original. "
+                +"O zoom altera somente a visualização.")
+            .setPositiveButton("Fechar",null)
+            .show();
+    }
+    /** All controls share ONE horizontal bar above the entire score viewport. */
     private void renderScoreToolbar(){
-        scoreToolbar.removeAllViews();
+        scoreToolbar.removeAllViews();headerActionSlot.removeAllViews();
         String tempoText=tempoReliable
             ?"Andamento estimado: "+Math.round(bpm)+" BPM"
             :"Andamento não identificado com segurança — prévia a 120 BPM (provisória)";
         int shownBpm=(int)Math.round(tempoReliable?bpm:120);
-        LinearLayout chip=horizontal();chip.setPadding(dp(13),0,dp(13),0);
+        LinearLayout chip=horizontal();
+        chip.setGravity(Gravity.CENTER);
         GradientDrawable chipBg=new GradientDrawable();
-        chipBg.setColor(0xffDCEAFB);chipBg.setCornerRadius(dp(13));
+        chipBg.setColor(0xff254B74);chipBg.setCornerRadius(dp(12));
         chip.setBackground(chipBg);
         chip.setTag("creation-score-tempo-chip");
-        tempoLabel=label("♩  "+shownBpm+" bpm",15,true,0xff112B50);
+        tempoLabel=label("♩ "+shownBpm+" bpm",14,true,Color.WHITE);
         tempoLabel.setSingleLine(true);
         tempoLabel.setContentDescription(measures+" compassos · 4/4 · "+tempoText);
         chip.addView(tempoLabel,new LayoutParams(-2,-1));
-        LayoutParams chipParams=new LayoutParams(-2,dp(48));chipParams.rightMargin=dp(10);
-        scoreToolbar.addView(chip,chipParams);
+        addTool(chip,96,5);
 
-        View separator=new View(activity);separator.setBackgroundColor(0xffC4D2E5);
-        LayoutParams separatorParams=new LayoutParams(dp(1),dp(30));
-        separatorParams.rightMargin=dp(10);
-        scoreToolbar.addView(separator,separatorParams);
+        Button smaller=compactTool("A−","Diminuir zoom da partitura",()->applyZoom(zoom/1.25f));
+        smaller.setTag("creation-score-zoom-out");
+        Button larger=compactTool("A+","Aumentar zoom da partitura",()->applyZoom(zoom*1.25f));
+        larger.setTag("creation-score-zoom-in");
+        Button fit=compactTool("↔","Ajustar à largura",()->applyZoom(1.0f));
+        fit.setTag("creation-score-zoom-fit");
+        Button info=compactTool("ⓘ","Informações da interpretação MIDI",this::showMidiInfo);
+        info.setTag("creation-score-midi-info");
+        info.setContentDescription("Informações da interpretação MIDI; "+midiMessage());
+        addTool(smaller,48,4);addTool(larger,48,4);
+        addTool(fit,48,4);addTool(info,48,0);
 
-        Button smaller=button("A−",false,()->applyZoom(zoom/1.25f));
-        smaller.setTag("creation-score-zoom-out");smaller.setContentDescription("Diminuir zoom da partitura");
-        Button larger=button("A+",false,()->applyZoom(zoom*1.25f));
-        larger.setTag("creation-score-zoom-in");larger.setContentDescription("Aumentar zoom da partitura");
-        Button fit=button("Ajustar à largura",false,()->applyZoom(1.0f));
-        fit.setTag("creation-score-zoom-fit");fit.setContentDescription("Ajustar partitura à largura");
-        fit.setTextColor(0xff0954A7);
-        for(Button action:new Button[]{smaller,larger}){
-            LayoutParams params=new LayoutParams(dp(60),dp(48));
-            params.rightMargin=dp(6);
-            scoreToolbar.addView(action,params);
+        boolean inLibrary=saved&&new LibraryStore(activity.prefs,activity.user).hasCreation(project.id);
+        Button primary;
+        if(!saved){
+            primary=button("Salvar",true,this::saveCurrent);
+            primary.setContentDescription("Salvar partitura. Salve a partitura antes de adicioná-la à Biblioteca Musical.");
+            primary.setTag("creation-score-top-save");
+        }else if(!inLibrary){
+            primary=button("+ Biblioteca",true,()->{
+                if(closed||busy)return;busy=true;
+                activity.addCreationScoreToLibrary(project.id,ok->{
+                    if(closed)return;busy=false;renderPreview();
+                });
+            });
+            primary.setContentDescription("Adicionar à Biblioteca Musical a partitura salva");
+            primary.setTag("creation-score-top-library-add");
+        }else{
+            primary=button("✓ Biblioteca",false,()->{});
+            primary.setContentDescription("Partitura salva e adicionada à Biblioteca Musical");
+            primary.setTag("creation-score-top-library-added");
+            primary.setEnabled(false);
         }
-        LayoutParams fitParams=new LayoutParams(dp(176),dp(48));
-        scoreToolbar.addView(fit,fitParams);
+        primary.setSingleLine(true);primary.setTextSize(13);
+        primary.setPadding(dp(3),0,dp(3),0);
+        headerActionSlot.addView(primary,new LayoutParams(-1,dp(48)));
+        headerActionSlot.setVisibility(VISIBLE);
+        toolbarScroll.setVisibility(VISIBLE);
+        header.post(()->{if(!closed&&getWidth()>0)fitUnifiedHeader(getWidth());});
     }
     private void renderPreview(){
         if(xml==null||closed)return;
         clear();
         scroll.setVisibility(GONE);
-        toolbarScroll.setVisibility(VISIBLE);
         scoreArea.setVisibility(VISIBLE);
-        scoreFooter.setVisibility(VISIBLE);
         renderScoreToolbar();
 
-        // NotationView itself is the only scrollable score surface. Unlike the
-        // former 65%-of-display fixed-height WebView, it receives the EXACT
-        // remaining measured height after toolbar, status and footer.
+        // No footer, no second toolbar and no Android-level page scroll.
+        // The OSMD WebView fills all the height below the 56dp header.
         LinearLayout sheet=card();
         sheet.setTag("creation-score-sheet");
-        sheet.setPadding(dp(5),dp(5),dp(5),dp(5));
+        sheet.setPadding(dp(3),dp(3),dp(3),dp(3));
         scoreArea.addView(sheet,new LayoutParams(-1,0,1));
         NotationView view=new NotationView(activity,new NotationView.Listener(){
             public void onRendered(){
@@ -368,40 +429,6 @@ final class CreationScorePreviewScreen extends LinearLayout {
         view.setTag("creation-score-notation-viewport");
         sheet.addView(view,new LayoutParams(-1,0,1));
         view.post(()->{if(!closed&&notation==view)loadCurrent();});
-
-        String message=warnings.size()>0
-            ?warnings.size()+" observações da interpretação MIDI registradas; a gravação original permanece intacta."
-            :"Nenhuma anomalia MIDI encontrada. A gravação original permanece intacta.";
-        TextView information=label("ⓘ  "+message,12,false,0xff57708A);
-        information.setTag("creation-score-midi-info");
-        information.setContentDescription(message+" Partitura básica sem pausas visíveis, "
-            +"staccato ou ligaduras; os tempos completos permanecem na gravação MIDI original.");
-        information.setMaxLines(2);
-        attach(scoreFooter,information,-2,2);
-
-        Button back=button("Voltar à composição",false,()->confirmClose());
-        Button save=button(saved?"Partitura salva ✓":"Salvar partitura",true,this::saveCurrent);
-        back.setTag("creation-score-bottom-back");
-        save.setTag("creation-score-bottom-save");
-        boolean inLibrary=new LibraryStore(activity.prefs,activity.user).hasCreation(project.id);
-        if(saved&&!inLibrary){
-            Button add=button("Adicionar à Biblioteca",true,()->{
-                if(closed||busy)return;busy=true;
-                activity.addCreationScoreToLibrary(project.id,ok->{
-                    if(closed)return;busy=false;renderPreview();
-                });
-            });
-            actions(scoreFooter,back,save,add);
-        }else actions(scoreFooter,back,save);
-        if(saved&&inLibrary){
-            TextView hint=label("✓ Na Biblioteca Musical · abra a Biblioteca para estudar.",12,false,0xff57708A);
-            attach(scoreFooter,hint,-2,2);
-        }
-        // The secondary status is kept in accessibility without consuming
-        // scarce vertical score height on a landscape phone.
-        save.setContentDescription(saved
-            ?"Partitura salva neste projeto e incluída no backup."
-            :"Salvar partitura. Salve a partitura antes de adicioná-la à Biblioteca Musical.");
     }
     private void loadCurrent(){
         try{
