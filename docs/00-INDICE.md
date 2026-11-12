@@ -13,6 +13,9 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-013 — Entrega: prévia com zoom junto ao BPM e última pauta desobstruída, APK 0.9.74](ZAI-013-ENTREGA-APK-PRINCIPAL-20261111.md): PR #150, testes em navegador OSMD e GUI Android, assinatura pública permanente, SHA-256 e download GitHub.
+- [ZAI-013 — Planejamento: barra superior de zoom e segurança da última pauta](ZAI-013-PREVIA-PAUTA-FINAL-ZOOM-TOPO-20261111.md): layout aprovado, diagnóstico de sobreposição, comportamento de zoom/rolagem e critérios de teste.
+
 - [ZAI-012 — Entrega: correção da rolagem no Laboratório e APK principal 0.9.73](ZAI-012-ENTREGA-APK-PRINCIPAL-20261111.md): 12 checks CI, GUI Android em três dispositivos simulados, SHA-256 e download assinado.
 - [ZAI-012 — Diagnóstico e correção com medição do viewport real](ZAI-012-CORRECAO-ROLAGEM-SELETOR-20261111.md): captura da regressão, foco/offset, dimensões do ScrollView e teste visual em emulador.
 
