@@ -13,6 +13,9 @@
 
 ## Linha ZAi — reinício do gerador (08/11/2026)
 
+- [ZAI-014 — Entrega: barra única na prévia, partitura ampliada e APK 0.9.75](ZAI-014-ENTREGA-APK-PRINCIPAL-20261111.md): PR #154, testes de OSMD e Android GUI, assinatura permanente, SHA-256 e download.
+- [ZAI-014 — Plano aprovado da barra única superior](ZAI-014-PREVIA-BARRA-UNICA-20261111.md): Voltar, composição, BPM, zoom, informações MIDI e Salvar/Biblioteca sem rodapé.
+
 - [ZAI-013 — Entrega: prévia com zoom junto ao BPM e última pauta desobstruída, APK 0.9.74](ZAI-013-ENTREGA-APK-PRINCIPAL-20261111.md): PR #150, testes em navegador OSMD e GUI Android, assinatura pública permanente, SHA-256 e download GitHub.
 - [ZAI-013 — Planejamento: barra superior de zoom e segurança da última pauta](ZAI-013-PREVIA-PAUTA-FINAL-ZOOM-TOPO-20261111.md): layout aprovado, diagnóstico de sobreposição, comportamento de zoom/rolagem e critérios de teste.
 
