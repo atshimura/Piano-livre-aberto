@@ -15,7 +15,7 @@ public final class MusicLearningEngine {
  };
  public static final String[] RHYTHM_NAMES={"Semibreve","Mínima","Semínima","Colcheia","Semicolcheia"};
  public static final String[] RHYTHM_TYPES={"whole","half","quarter","eighth","16th"};
- public static final int[] RHYTHM_LENGTHS={4,2,1,1,1};
+ public static final int[] RHYTHM_LENGTHS={16,8,4,2,1};
  public static final int MODULE_COUNT=5;
 
  public static final class Exercise {
