@@ -332,7 +332,7 @@ final class CreationScorePreviewScreen extends LinearLayout {
         new AlertDialog.Builder(activity)
             .setTitle("Informações da partitura")
             .setMessage(midiMessage()+"\n\nA partitura usa figuras simples, sem pausas visíveis, staccato ou ligaduras automáticas. "
-                +"As durações reais e os eventos MIDI permanecem na gravação original. "
+                +"Os eventos permanecem íntegros: os tempos completos permanecem na gravação MIDI original. "
                 +"O zoom altera somente a visualização.")
             .setPositiveButton("Fechar",null)
             .show();
