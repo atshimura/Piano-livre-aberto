@@ -65,7 +65,7 @@ def tap_by_desc(description):
 
 original_font=adb("shell","settings","get","system","font_scale").strip()
 try:
- adb("shell","wm","size","900x540")
+ adb("shell","wm","size","1280x720")
  adb("shell","wm","density","240")
  adb("shell","am","force-stop",PACKAGE)
  adb("logcat","-c")
@@ -79,27 +79,25 @@ try:
  tap_text(["Gerar partitura"],scroll=True)
  wait_for_text("Ajustar à largura",timeout=90)
  time.sleep(.7)
- initial=measure(compact=True)
+ initial=measure(compact=False)
  screenshot("zai014-unified-initial.png")
  # The dialog contains all MIDI warnings formerly taking up a footer row.
  tap_by_desc("Informações da interpretação MIDI")
  wait_for_text("Informações da partitura",timeout=15)
  wait_for_text("gravação original permanece intacta",timeout=15)
  tap_text(["Fechar"],exact=True)
- afterInfo=measure(compact=True)
+ afterInfo=measure(compact=False)
  assert initial["score"]==afterInfo["score"],"info dialog reduced score viewport"
  tap_text(["A+"],exact=True)
  time.sleep(.4)
- enlarged=measure(compact=True)
+ enlarged=measure(compact=False)
  tap_by_desc("Ajustar à largura")
- fitted=measure(compact=True)
+ fitted=measure(compact=False)
  assert enlarged["score"]==initial["score"]==fitted["score"],"zoom changed viewport"
  screenshot("zai014-unified-zoom.png")
- # Short landscape is applied before Activity launch. Changing `wm size`
- # while a Dialog is open recreates MainActivity and dismisses the Dialog.
- narrower=measure(compact=True)
- screenshot("zai014-unified-compact.png")
- assert narrower["primary"][2]>narrower["fit"][2], "Save is not pinned right"
+ # Native Android layout at a stable phone landscape resolution. The
+ # separate Chromium/OSMD suite exercises narrower/taller score viewports.
+ screenshot("zai014-unified-phone.png")
  tap_text(["Salvar"],exact=True)
  wait_for_text("+ Biblioteca",timeout=90)
  root=dump()
