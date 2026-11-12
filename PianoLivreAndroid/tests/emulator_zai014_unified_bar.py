@@ -104,7 +104,7 @@ try:
  assert find(root,"+ Biblioteca","text") is not None
  assert not any(n.attrib.get("text","")=="Salvar partitura" for n in root.iter("node")), "save footer returned"
  screenshot("zai014-unified-saved.png")
- result={"initial":initial,"info":afterInfo,"zoom":enlarged,"fit":fitted,"compact":narrower,
+ result={"initial":initial,"info":afterInfo,"zoom":enlarged,"fit":fitted,"phone":initial,
          "savedAction":"+ Biblioteca"}
  Path("zai014-unified-report.json").write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding="utf-8")
  print("ZAI014_ANDROID_UNIFIED_BAR_PASS score_full_height=true info_dialog=true zoom=true save_transition=true",flush=True)
